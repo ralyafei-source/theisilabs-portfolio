@@ -156,7 +156,23 @@ textarea.form-input{resize:vertical;font-family:'Cairo',sans-serif;font-size:13p
 .ind-bull{background:rgba(0,212,106,.15);color:var(--green);}
 .ind-bear{background:rgba(255,69,96,.15);color:var(--red);}
 .ind-neu{background:rgba(136,153,187,.15);color:var(--text2);}
-.drag-hint{font-size:11px;color:var(--text3);text-align:center;margin-bottom:10px;}
+/* LIVE PRICE STATUS BAR */
+.price-bar{display:flex;align-items:center;gap:12px;padding:8px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;margin-bottom:10px;font-size:11px;flex-wrap:wrap;}
+.price-bar-status{display:flex;align-items:center;gap:6px;font-weight:700;}
+.price-bar-time{color:var(--text3);font-family:var(--mono);}
+.price-bar-btn{padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--cyan);font-size:11px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif;}
+.price-bar-btn:hover{background:rgba(0,200,255,.1);}
+.dot-live{width:6px;height:6px;background:var(--green);border-radius:50%;display:inline-block;animation:pulse 2s infinite;}
+.dot-static{width:6px;height:6px;background:var(--text3);border-radius:50%;display:inline-block;}
+.dot-loading{width:6px;height:6px;background:var(--gold);border-radius:50%;display:inline-block;animation:pulse .8s infinite;}
+
+/* API KEY MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.modal-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:440px;width:90%;}
+.modal-title{font-size:18px;font-weight:900;margin-bottom:6px;}
+.modal-sub{font-size:12px;color:var(--text2);margin-bottom:20px;line-height:1.6;}
+.modal-note{font-size:11px;color:var(--text3);margin-top:12px;line-height:1.6;}
+</style>
 
 /* TODAY PERFORMANCE BAR */
 .today-bar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:10px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;}
@@ -231,6 +247,39 @@ textarea.form-input{resize:vertical;font-family:'Cairo',sans-serif;font-size:13p
     <div class="hstat"><div class="hstat-val" id="h-score" style="color:var(--cyan)">—</div><div class="hstat-lbl">Health Score</div></div>
     <div class="hstat"><div class="hstat-val" style="color:var(--text2);font-size:13px;" id="h-updated">—<span class="live-dot"></span></div><div class="hstat-lbl">Last Update</div></div>
   </div>
+</div>
+
+<!-- API KEY MODAL -->
+<div id="apiModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <div class="modal-title">🔑 Connect Live Prices</div>
+    <div class="modal-sub">Enter your Alpha Vantage API key to get real-time stock prices. Your key is saved only on this device — never sent anywhere except Alpha Vantage.</div>
+    <div class="form-group">
+      <label class="form-label">Alpha Vantage API Key</label>
+      <input class="form-input" id="apiKeyInput" type="password" placeholder="e.g. ABCDE12345FGHIJ" autocomplete="off">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:6px;">
+      <button class="btn btn-primary" onclick="saveApiKey()" style="flex:1;">Save & Fetch Prices</button>
+      <button class="btn btn-outline" onclick="closeApiModal()">Cancel</button>
+    </div>
+    <div class="modal-note">
+      🔒 Key stored in your browser localStorage only.<br>
+      📌 Free tier: 25 requests/day — enough for daily updates.<br>
+      🌐 Get a free key at alphavantage.co
+    </div>
+  </div>
+</div>
+
+<!-- PRICE STATUS BAR -->
+<div class="price-bar" id="priceBar">
+  <div class="price-bar-status" id="priceStatus">
+    <span class="dot-static"></span>
+    <span style="color:var(--text2);">Using static prices from April 2026</span>
+  </div>
+  <span class="price-bar-time" id="priceTime"></span>
+  <button class="price-bar-btn" onclick="openApiModal()">🔑 Connect Live Prices</button>
+  <button class="price-bar-btn" id="refreshBtn" onclick="fetchLivePrices()" style="display:none;">🔄 Refresh Now</button>
+  <button class="price-bar-btn" onclick="clearApiKey()" id="clearKeyBtn" style="display:none;color:var(--text3);">✕ Disconnect</button>
 </div>
 
 <!-- TODAY PERFORMANCE BAR -->
@@ -1217,6 +1266,144 @@ function tDragEnd(){
 }
 
 // ============================================================
+// LIVE PRICES — ALPHA VANTAGE
+// ============================================================
+const AV_KEY = 'theisilabs_av_key';
+const AV_LAST_FETCH = 'theisilabs_av_last_fetch';
+const AV_CACHED_PRICES = 'theisilabs_av_prices';
+
+function openApiModal(){
+  const existing = localStorage.getItem(AV_KEY);
+  if(existing) document.getElementById('apiKeyInput').value = existing;
+  document.getElementById('apiModal').style.display='flex';
+}
+function closeApiModal(){
+  document.getElementById('apiModal').style.display='none';
+}
+
+function saveApiKey(){
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if(!key){alert('Please enter your API key.');return;}
+  localStorage.setItem(AV_KEY, key);
+  closeApiModal();
+  fetchLivePrices();
+}
+
+function clearApiKey(){
+  localStorage.removeItem(AV_KEY);
+  localStorage.removeItem(AV_LAST_FETCH);
+  localStorage.removeItem(AV_CACHED_PRICES);
+  updatePriceBarUI(false, false);
+  renderAll();
+}
+
+function updatePriceBarUI(isLive, isLoading){
+  const status = document.getElementById('priceStatus');
+  const timeEl = document.getElementById('priceTime');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const clearBtn = document.getElementById('clearKeyBtn');
+  const connectBtn = document.querySelector('.price-bar-btn');
+
+  if(isLoading){
+    status.innerHTML = '<span class="dot-loading"></span> <span style="color:var(--gold);">Fetching live prices...</span>';
+    return;
+  }
+  if(isLive){
+    const lastFetch = localStorage.getItem(AV_LAST_FETCH);
+    const timeAgo = lastFetch ? new Date(parseInt(lastFetch)).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '';
+    status.innerHTML = '<span class="dot-live"></span> <span style="color:var(--green);">Live prices active</span>';
+    timeEl.textContent = timeAgo ? 'Updated ' + timeAgo : '';
+    refreshBtn.style.display='inline-block';
+    clearBtn.style.display='inline-block';
+    if(connectBtn) connectBtn.style.display='none';
+  } else {
+    status.innerHTML = '<span class="dot-static"></span> <span style="color:var(--text2);">Using static prices from April 2026</span>';
+    timeEl.textContent = '';
+    refreshBtn.style.display='none';
+    clearBtn.style.display='none';
+    if(connectBtn) connectBtn.style.display='inline-block';
+  }
+}
+
+async function fetchLivePrices(){
+  const key = localStorage.getItem(AV_KEY);
+  if(!key){openApiModal();return;}
+
+  updatePriceBarUI(false, true);
+
+  // Alpha Vantage free tier: batch up to 100 symbols
+  // We use GLOBAL_QUOTE for individual — but free tier is limited
+  // So we fetch top 16 most valuable positions first
+  const topSymbols = [...positions]
+    .sort((a,b)=>(b.price*b.shares)-(a.price*a.shares))
+    .slice(0,16)
+    .map(p=>p.sym)
+    .join(',');
+
+  try{
+    const url = `https://www.alphavantage.co/query?function=BATCH_STOCK_QUOTES&symbols=${topSymbols}&apikey=${key}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if(data['Error Message']||data['Note']){
+      // API limit hit or error
+      const msg = data['Note'] ? 'API rate limit reached. Try again in 1 minute.' : 'Invalid API key. Please check and try again.';
+      updatePriceBarUI(false, false);
+      document.getElementById('priceStatus').innerHTML = `<span class="dot-static"></span> <span style="color:var(--red);">${msg}</span>`;
+      return;
+    }
+
+    const quotes = data['Stock Quotes'] || [];
+    let updated = 0;
+
+    quotes.forEach(q=>{
+      const sym = q['1. symbol'];
+      const price = parseFloat(q['2. price']);
+      if(!sym||isNaN(price)||price<=0) return;
+      const pos = positions.find(p=>p.sym===sym);
+      if(pos){pos.price=price;updated++;}
+    });
+
+    if(updated>0){
+      // Cache the prices
+      const priceMap = {};
+      positions.forEach(p=>priceMap[p.sym]=p.price);
+      localStorage.setItem(AV_CACHED_PRICES, JSON.stringify(priceMap));
+      localStorage.setItem(AV_LAST_FETCH, Date.now().toString());
+      saveLocal();
+      renderAll();
+      updatePriceBarUI(true, false);
+    } else {
+      updatePriceBarUI(false, false);
+      document.getElementById('priceStatus').innerHTML = '<span class="dot-static"></span> <span style="color:var(--gold);">No price data returned — market may be closed</span>';
+    }
+  } catch(e){
+    updatePriceBarUI(false, false);
+    document.getElementById('priceStatus').innerHTML = '<span class="dot-static"></span> <span style="color:var(--red);">Connection error — check your internet</span>';
+  }
+}
+
+function loadCachedPrices(){
+  const key = localStorage.getItem(AV_KEY);
+  if(!key) return;
+  // Apply cached prices if available
+  try{
+    const cached = localStorage.getItem(AV_CACHED_PRICES);
+    if(cached){
+      const priceMap = JSON.parse(cached);
+      positions.forEach(p=>{if(priceMap[p.sym])p.price=priceMap[p.sym];});
+      updatePriceBarUI(true, false);
+    }
+    // Auto-refresh if last fetch was more than 30 min ago
+    const lastFetch = parseInt(localStorage.getItem(AV_LAST_FETCH)||'0');
+    const thirtyMin = 30*60*1000;
+    if(Date.now()-lastFetch > thirtyMin){
+      fetchLivePrices();
+    }
+  }catch(e){}
+}
+
+// ============================================================
 // TODAY'S PERFORMANCE BAR
 // ============================================================
 function renderTodayBar(){
@@ -1567,6 +1754,7 @@ function renderAll(){updateHeader();renderOverview();renderTodayBar();}
 
 document.getElementById('txn-date').value=new Date().toISOString().split('T')[0];
 loadLocal();
+loadCachedPrices();
 renderAll();
 loadBriefings();
 </script>
