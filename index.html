@@ -1882,7 +1882,110 @@ function parseAnalysisSections(content){
 
   return result;
 }
+// ===== AI ADVISOR =====
+const firms=['gs','bw','br','ms','jp','ba','he','rt','mk'];
+let advisorLang='ar';
+let advisorDate=new Date().toISOString().split('T')[0];
+let analysisData=null;
 
+function setAdvisorLang(l,btn){
+  advisorLang=l;
+  document.querySelectorAll('.advisor-lang-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(analysisData) renderAnalysis(analysisData);
+}
+
+function showFirm(id,btn){
+  document.querySelectorAll('.firm-tab').forEach(b=>b.classList.remove('active','gs','bw','br','ms','jp','ba','he','rt','mk'));
+  document.querySelectorAll('.firm-content').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active',id);
+  document.getElementById('firm-'+id).classList.add('active');
+}
+
+function navigateDate(dir){
+  const d=new Date(advisorDate);
+  d.setDate(d.getDate()+dir);
+  advisorDate=d.toISOString().split('T')[0];
+  loadAnalysis();
+}
+
+function goToToday(){
+  advisorDate=new Date().toISOString().split('T')[0];
+  loadAnalysis();
+}
+
+async function loadAnalysis(){
+  document.getElementById('advisorLoading').style.display='block';
+  document.getElementById('advisorEmpty').style.display='none';
+  document.getElementById('advisorContent').style.display='none';
+  document.getElementById('advisorDateDisplay').textContent=advisorDate;
+  try{
+    const r=await fetch('/api/analysis?date='+advisorDate);
+    const d=await r.json();
+    if(d.content){
+      analysisData=d;
+      renderAnalysis(d);
+      document.getElementById('advisorLoading').style.display='none';
+      document.getElementById('advisorContent').style.display='block';
+    }else{
+      document.getElementById('advisorLoading').style.display='none';
+      document.getElementById('advisorEmpty').style.display='block';
+    }
+  }catch(e){
+    document.getElementById('advisorLoading').style.display='none';
+    document.getElementById('advisorEmpty').style.display='block';
+  }
+}
+
+function renderAnalysis(data){
+  if(!data||!data.content) return;
+  const content=data.content;
+  const isAr=advisorLang==='ar';
+  const ts=data.generated?new Date(data.generated).toLocaleString():'';
+  const sections=parseAnalysisSections(content);
+  firms.forEach(f=>{
+    const body=document.getElementById(f+'-body');
+    const tsEl=document.getElementById(f+'-ts');
+    if(body){
+      const text=sections[f]||(isAr?'لا توجد بيانات متاحة لهذا القسم':'No data available for this section');
+      body.innerHTML=text.replace(/\n/g,'<br>');
+      body.className='firm-body'+(isAr?'':' en');
+    }
+    if(tsEl) tsEl.textContent=ts?'Generated: '+ts:'';
+  });
+}
+
+function parseAnalysisSections(content){
+  const markers={
+    gs:['GOLDMAN','Goldman Sachs','غولدمان'],
+    bw:['BRIDGEWATER','Bridgewater','برجووتر'],
+    br:['BLACKROCK','BlackRock','بلاك روك'],
+    ms:['MORGAN STANLEY','Morgan Stanley','مورغان ستانلي'],
+    jp:['JPMORGAN','JPMorgan','جي بي مورغان'],
+    ba:['BAIN','Bain','باين'],
+    he:['HARVARD','Harvard','هارفارد'],
+    rt:['RENAISSANCE','Renaissance','رينيسانس'],
+    mk:['MCKINSEY','McKinsey','ماكنزي']
+  };
+  const lines=content.split('\n');
+  let currentFirm=null;
+  let currentText=[];
+  const result={};
+  lines.forEach(line=>{
+    let matched=false;
+    for(const [firm,keys] of Object.entries(markers)){
+      if(keys.some(k=>line.toUpperCase().includes(k.toUpperCase()))){
+        if(currentFirm) result[currentFirm]=currentText.join('\n').trim();
+        currentFirm=firm;currentText=[line];matched=true;break;
+      }
+    }
+    if(!matched&&currentFirm) currentText.push(line);
+  });
+  if(currentFirm) result[currentFirm]=currentText.join('\n').trim();
+  if(Object.keys(result).length===0) result.gs=content;
+  return result;
+}
+  
 // ===== PROMPT =====
 function renderPrompt(){
   const syms=stocks.map(s=>s.sym).join(',');
