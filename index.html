@@ -252,39 +252,7 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
 .tx-sum-val{font-size:18px;font-weight:900;font-family:'IBM Plex Mono',monospace;}
 .tx-sum-label{font-size:10px;color:var(--text2);margin-top:2px;}
 
-/* AI ADVISOR */
-.advisor-date-nav{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
-.advisor-date-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;transition:all .15s;}
-.advisor-date-btn:hover{border-color:var(--accent);color:var(--accent);}
-.advisor-date-current{font-size:14px;font-weight:700;color:var(--accent);font-family:'IBM Plex Mono',monospace;padding:6px 14px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);border-radius:8px;}
-.advisor-lang-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto;}
-.advisor-lang-btn{padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text2);font-family:'Cairo',sans-serif;transition:all .15s;}
-.advisor-lang-btn.active{background:var(--gold);color:#000;}
-.firm-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
-.firm-tab{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-size:11px;font-weight:700;font-family:'IBM Plex Mono',monospace;transition:all .15s;white-space:nowrap;}
-.firm-tab:hover{border-color:var(--accent);color:var(--accent);}
-.firm-tab.active{color:#000;}
-.firm-tab.gs{background:linear-gradient(135deg,#00d4ff,#0099cc);border-color:transparent;color:#000;}
-.firm-tab.bw{background:linear-gradient(135deg,#ff6b35,#cc4400);border-color:transparent;color:#fff;}
-.firm-tab.br{background:linear-gradient(135deg,#00ff88,#00aa55);border-color:transparent;color:#000;}
-.firm-tab.ms{background:linear-gradient(135deg,#ffd700,#cc9900);border-color:transparent;color:#000;}
-.firm-tab.jp{background:linear-gradient(135deg,#9966ff,#6633cc);border-color:transparent;color:#fff;}
-.firm-tab.ba{background:linear-gradient(135deg,#ff4444,#cc0000);border-color:transparent;color:#fff;}
-.firm-tab.he{background:linear-gradient(135deg,#00d4ff,#9966ff);border-color:transparent;color:#fff;}
-.firm-tab.rt{background:linear-gradient(135deg,#ffd700,#ff6b35);border-color:transparent;color:#000;}
-.firm-tab.mk{background:linear-gradient(135deg,#00ff88,#00d4ff);border-color:transparent;color:#000;}
-.firm-content{display:none;}
-.firm-content.active{display:block;}
-.firm-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);}
-.firm-logo{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#000;flex-shrink:0;}
-.firm-title{font-size:16px;font-weight:700;}
-.firm-subtitle{font-size:11px;color:var(--text2);margin-top:2px;}
-.firm-body{font-size:13px;line-height:1.9;color:var(--text);white-space:pre-wrap;direction:rtl;text-align:right;}
-.firm-body.en{direction:ltr;text-align:left;}
-.advisor-loading{display:flex;align-items:center;gap:10px;color:var(--text2);font-size:13px;padding:30px;}
-.advisor-empty{text-align:center;padding:40px;color:var(--text2);}
-.advisor-empty-icon{font-size:48px;margin-bottom:12px;}
-.advisor-ts{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:12px;direction:ltr;text-align:left;}
+
 </style>
 </head>
 <body>
@@ -821,60 +789,7 @@ WOLF remains at critical lows<br><br>
     </div>
   </div>
 </div>
-<!-- ===== AI ADVISOR TAB ===== -->
-<div id="tab-advisor" class="tab-content">
-  <div class="card">
-    <div class="section-hdr" style="margin-bottom:16px;">
-      <div>
-        <div class="section-title">🏦 AI Advisor — 9 Framework Analysis</div>
-        <div class="section-sub">Daily deep analysis powered by world's top investment frameworks</div>
-      </div>
-      <button class="btn btn-outline" style="font-size:11px;padding:5px 12px;" onclick="loadAnalysis()">↺ Refresh</button>
-    </div>
-    <div class="advisor-date-nav">
-      <button class="advisor-date-btn" onclick="navigateDate(-1)">← Previous</button>
-      <div class="advisor-date-current" id="advisorDateDisplay">Today</div>
-      <button class="advisor-date-btn" onclick="navigateDate(1)">Next →</button>
-      <button class="advisor-date-btn" onclick="goToToday()" style="border-color:var(--accent);color:var(--accent);">Today</button>
-      <div class="advisor-lang-toggle">
-        <button class="advisor-lang-btn active" onclick="setAdvisorLang('ar',this)">عربي</button>
-        <button class="advisor-lang-btn" onclick="setAdvisorLang('en',this)">EN</button>
-      </div>
-    </div>
-    <div class="firm-tabs">
-      <button class="firm-tab gs active" onclick="showFirm('gs',this)">Goldman Sachs</button>
-      <button class="firm-tab bw" onclick="showFirm('bw',this)">Bridgewater</button>
-      <button class="firm-tab br" onclick="showFirm('br',this)">BlackRock</button>
-      <button class="firm-tab ms" onclick="showFirm('ms',this)">Morgan Stanley</button>
-      <button class="firm-tab jp" onclick="showFirm('jp',this)">JPMorgan</button>
-      <button class="firm-tab ba" onclick="showFirm('ba',this)">Bain</button>
-      <button class="firm-tab he" onclick="showFirm('he',this)">Harvard</button>
-      <button class="firm-tab rt" onclick="showFirm('rt',this)">Renaissance</button>
-      <button class="firm-tab mk" onclick="showFirm('mk',this)">McKinsey</button>
-    </div>
-    <div id="advisorLoading" style="display:none;">
-      <div class="advisor-loading"><div class="briefing-dot"></div><span>Loading analysis...</span></div>
-    </div>
-    <div id="advisorEmpty">
-      <div class="advisor-empty">
-        <div class="advisor-empty-icon">🏦</div>
-        <div style="font-size:14px;font-weight:700;margin-bottom:8px;">No Analysis Available Yet</div>
-        <div style="font-size:12px;color:var(--text2);">Analysis will appear here automatically after Make.com runs.<br>Or run Scenario 977 manually to generate today's analysis.</div>
-      </div>
-    </div>
-    <div id="advisorContent" style="display:none;">
-      <div class="firm-content active" id="firm-gs"><div class="firm-header"><div class="firm-logo" style="background:linear-gradient(135deg,#00d4ff,#0099cc);">GS</div><div><div class="firm-title">Goldman Sachs — Stock Screener</div><div class="firm-subtitle">Buy/Sell signals, P/E analysis, price targets, stop-loss levels</div></div></div><div class="firm-body" id="gs-body"></div><div class="advisor-ts" id="gs-ts"></div></div>
-      <div class="firm-content" id="firm-bw"><div class="firm-header"><div class="firm-logo" style="background:linear-gradient(135deg,#ff6b35,#cc4400);">BW</div><div><div class="firm-title">Bridgewater — Risk Assessment</div><div class="firm-subtitle">Stress test, correlation risk, tail risk, recession scenario</div></div></div><div class="firm-body" id="bw-body"></div><div class="advisor-ts" id="bw-ts"></div></div>
-      <div class="firm-content" id="firm-br"><div class="firm-header"><div class="firm-logo" style="background:linear-gradient(135deg,#00ff88,#00aa55);">BR</div><div><div class="firm-title">BlackRock — Portfolio Health</div><div class="firm-subtitle">Asset allocation, rebalancing, health score, cash recommendation</div></div></div><div class="firm-body" id="br-body"></div><div class="advisor-ts" id="br-ts"></div></div>
-      <div class="firm-content" id="firm-ms"><div class="firm-header"><div class="firm-logo" style="background:linear-gradient(135deg,#ffd700,#cc9900);">MS</div><div><div class="firm-title">Morgan Stanley — Valuation</div><div class="firm-subtitle">DCF analysis, fair value vs market price, overvalued/undervalued</div></div></div><div class="firm-body" id="ms-body"></div><div class="advisor-ts" id="ms-ts"></div></div>
-      <div class="firm-content" id="firm-jp"><div class="firm-header"><div class="firm-logo" style="background:linear-gradient(135deg,#9966ff,#6633cc);color:#fff;">JP</div><div><div class="firm-title">JPMorgan — Earnings Preview</div><div class="firm-subtitle">Beat/miss history, options implied move, pre-earnings strategy</div></div></div><div class="firm-body" id="jp-body"></div><div class="advisor-ts" id="jp-ts"></div></div>
-      <div class="firm-content" id="firm-ba"><div class="firm-header"><div class="firm-logo" style="background:linear-gradient(135deg,#ff4444,#cc0000);color:#fff;">BA</div><div><div class="firm-title">Bain — Competitive Analysis</div><div class="firm-subtitle">Sector winners, competitive moat, SWOT, market share trends</div></div></div><div class="firm-body" id="ba-body"></div><div class="advisor-ts" id="ba-ts"></div></div>
-      <div class="firm-content" id="firm-he"><div class="firm-header"><div class="firm-logo" style="background:linear-gradient(135deg,#00d4ff,#9966ff);color:#fff;">HE</div><div><div class="firm-title">Harvard Endowment — Income Strategy</div><div class="firm-subtitle">Dividend safety, DRIP projection, passive income estimate</div></div></div><div class="firm-body" id="he-body"></div><div class="advisor-ts" id="he-ts"></div></div>
-      <div class="firm-content" id="firm-rt"><div class="firm-header"><div class="firm-logo" style="background:linear-gradient(135deg,#ffd700,#ff6b35);">RT</div><div><div class="firm-title">Renaissance Technologies — Patterns</div><div class="firm-subtitle">Seasonal patterns, short interest, institutional flow, anomalies</div></div></div><div class="firm-body" id="rt-body"></div><div class="advisor-ts" id="rt-ts"></div></div>
-      <div class="firm-content" id="firm-mk"><div class="firm-header"><div class="firm-logo" style="background:linear-gradient(135deg,#00ff88,#00d4ff);">MK</div><div><div class="firm-title">McKinsey — Macro Impact</div><div class="firm-subtitle">Fed policy, GDP impact, sector rotation, macro timeline</div></div></div><div class="firm-body" id="mk-body"></div><div class="advisor-ts" id="mk-ts"></div></div>
-    </div>
-  </div>
-</div>
+
 <!-- ===== SETUP TAB ===== -->
 <div id="tab-setup" class="tab-content">
   <div class="grid-2">
@@ -1882,109 +1797,7 @@ function parseAnalysisSections(content){
 
   return result;
 }
-// ===== AI ADVISOR =====
-const firms=['gs','bw','br','ms','jp','ba','he','rt','mk'];
-let advisorLang='ar';
-let advisorDate=new Date().toISOString().split('T')[0];
-let analysisData=null;
 
-function setAdvisorLang(l,btn){
-  advisorLang=l;
-  document.querySelectorAll('.advisor-lang-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  if(analysisData) renderAnalysis(analysisData);
-}
-
-function showFirm(id,btn){
-  document.querySelectorAll('.firm-tab').forEach(b=>b.classList.remove('active','gs','bw','br','ms','jp','ba','he','rt','mk'));
-  document.querySelectorAll('.firm-content').forEach(c=>c.classList.remove('active'));
-  btn.classList.add('active',id);
-  document.getElementById('firm-'+id).classList.add('active');
-}
-
-function navigateDate(dir){
-  const d=new Date(advisorDate);
-  d.setDate(d.getDate()+dir);
-  advisorDate=d.toISOString().split('T')[0];
-  loadAnalysis();
-}
-
-function goToToday(){
-  advisorDate=new Date().toISOString().split('T')[0];
-  loadAnalysis();
-}
-
-async function loadAnalysis(){
-  document.getElementById('advisorLoading').style.display='block';
-  document.getElementById('advisorEmpty').style.display='none';
-  document.getElementById('advisorContent').style.display='none';
-  document.getElementById('advisorDateDisplay').textContent=advisorDate;
-  try{
-    const r=await fetch('/api/analysis?date='+advisorDate);
-    const d=await r.json();
-    if(d.content){
-      analysisData=d;
-      renderAnalysis(d);
-      document.getElementById('advisorLoading').style.display='none';
-      document.getElementById('advisorContent').style.display='block';
-    }else{
-      document.getElementById('advisorLoading').style.display='none';
-      document.getElementById('advisorEmpty').style.display='block';
-    }
-  }catch(e){
-    document.getElementById('advisorLoading').style.display='none';
-    document.getElementById('advisorEmpty').style.display='block';
-  }
-}
-
-function renderAnalysis(data){
-  if(!data||!data.content) return;
-  const content=data.content;
-  const isAr=advisorLang==='ar';
-  const ts=data.generated?new Date(data.generated).toLocaleString():'';
-  const sections=parseAnalysisSections(content);
-  firms.forEach(f=>{
-    const body=document.getElementById(f+'-body');
-    const tsEl=document.getElementById(f+'-ts');
-    if(body){
-      const text=sections[f]||(isAr?'لا توجد بيانات متاحة لهذا القسم':'No data available for this section');
-      body.innerHTML=text.replace(/\n/g,'<br>');
-      body.className='firm-body'+(isAr?'':' en');
-    }
-    if(tsEl) tsEl.textContent=ts?'Generated: '+ts:'';
-  });
-}
-
-function parseAnalysisSections(content){
-  const markers={
-    gs:['GOLDMAN','Goldman Sachs','غولدمان'],
-    bw:['BRIDGEWATER','Bridgewater','برجووتر'],
-    br:['BLACKROCK','BlackRock','بلاك روك'],
-    ms:['MORGAN STANLEY','Morgan Stanley','مورغان ستانلي'],
-    jp:['JPMORGAN','JPMorgan','جي بي مورغان'],
-    ba:['BAIN','Bain','باين'],
-    he:['HARVARD','Harvard','هارفارد'],
-    rt:['RENAISSANCE','Renaissance','رينيسانس'],
-    mk:['MCKINSEY','McKinsey','ماكنزي']
-  };
-  const lines=content.split('\n');
-  let currentFirm=null;
-  let currentText=[];
-  const result={};
-  lines.forEach(line=>{
-    let matched=false;
-    for(const [firm,keys] of Object.entries(markers)){
-      if(keys.some(k=>line.toUpperCase().includes(k.toUpperCase()))){
-        if(currentFirm) result[currentFirm]=currentText.join('\n').trim();
-        currentFirm=firm;currentText=[line];matched=true;break;
-      }
-    }
-    if(!matched&&currentFirm) currentText.push(line);
-  });
-  if(currentFirm) result[currentFirm]=currentText.join('\n').trim();
-  if(Object.keys(result).length===0) result.gs=content;
-  return result;
-}
   
 // ===== PROMPT =====
 function renderPrompt(){
