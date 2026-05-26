@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Financial Intelligence Dashboard</title>
+<title>Financial Intelligence Dashboard v3</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -195,6 +195,30 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
 .modal-stat-label{font-size:10px;color:var(--text2);margin-bottom:5px;}
 .modal-stat-val{font-size:20px;font-weight:900;font-family:'IBM Plex Mono',monospace;}
 .modal-period-bar{display:flex;gap:8px;margin-bottom:14px;}
+
+/* TRANSACTIONS */
+.tx-table{width:100%;border-collapse:collapse;}
+.tx-table th{padding:8px 12px;font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--bg3);text-align:left;}
+.tx-table td{padding:10px 12px;font-size:12px;border-bottom:1px solid rgba(30,45,74,.4);}
+.tx-table tr:hover td{background:rgba(0,212,255,.02);}
+.tx-dup{background:rgba(255,215,0,.06)!important;}
+.tx-recorded{opacity:.45;}
+.tx-badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:600;}
+.tx-buy{background:rgba(0,200,100,.15);color:var(--green);}
+.tx-sell{background:rgba(255,68,68,.15);color:var(--red);}
+.tx-dup-badge{background:rgba(255,215,0,.15);color:var(--gold);}
+.tx-ok-badge{background:rgba(0,200,100,.12);color:var(--green);}
+.tx-rec-badge{background:rgba(74,90,122,.3);color:var(--text3);}
+.upload-area{border:2px dashed var(--border);border-radius:14px;padding:40px;text-align:center;cursor:pointer;transition:border-color .2s;}
+.upload-area:hover{border-color:var(--accent);}
+.upload-area-icon{font-size:40px;margin-bottom:12px;}
+.upload-area-text{font-size:14px;font-weight:600;margin-bottom:6px;}
+.upload-area-sub{font-size:12px;color:var(--text2);}
+.tx-summary{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+.tx-sum-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-size:12px;}
+.tx-sum-val{font-size:18px;font-weight:900;font-family:'IBM Plex Mono',monospace;}
+.tx-sum-label{font-size:10px;color:var(--text2);margin-top:2px;}
+
 /* AI ADVISOR */
 .advisor-date-nav{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
 .advisor-date-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;transition:all .15s;}
@@ -228,31 +252,6 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
 .advisor-empty{text-align:center;padding:40px;color:var(--text2);}
 .advisor-empty-icon{font-size:48px;margin-bottom:12px;}
 .advisor-ts{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:12px;direction:ltr;text-align:left;}
-  
-/* TRANSACTIONS */
-.tx-table{width:100%;border-collapse:collapse;}
-.tx-table th{padding:8px 12px;font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--bg3);text-align:left;}
-.tx-table td{padding:10px 12px;font-size:12px;border-bottom:1px solid rgba(30,45,74,.4);}
-.tx-table tr:hover td{background:rgba(0,212,255,.02);}
-.tx-dup{background:rgba(255,215,0,.06)!important;}
-.tx-recorded{opacity:.45;}
-.tx-badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:600;}
-.tx-buy{background:rgba(0,200,100,.15);color:var(--green);}
-.tx-sell{background:rgba(255,68,68,.15);color:var(--red);}
-.tx-dup-badge{background:rgba(255,215,0,.15);color:var(--gold);}
-.tx-ok-badge{background:rgba(0,200,100,.12);color:var(--green);}
-.tx-rec-badge{background:rgba(74,90,122,.3);color:var(--text3);}
-.upload-area{border:2px dashed var(--border);border-radius:14px;padding:40px;text-align:center;cursor:pointer;transition:border-color .2s;}
-.upload-area:hover{border-color:var(--accent);}
-.upload-area-icon{font-size:40px;margin-bottom:12px;}
-.upload-area-text{font-size:14px;font-weight:600;margin-bottom:6px;}
-.upload-area-sub{font-size:12px;color:var(--text2);}
-.tx-summary{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
-.tx-sum-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-size:12px;}
-.tx-sum-val{font-size:18px;font-weight:900;font-family:'IBM Plex Mono',monospace;}
-.tx-sum-label{font-size:10px;color:var(--text2);margin-top:2px;}
-
-
 </style>
 </head>
 <body>
@@ -304,7 +303,7 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
       <div class="nav-tab" onclick="showTab('alerts',this)">🔔 <span class="nt">Alerts</span></div>
       <div class="nav-tab" onclick="showTab('transactions',this)">💳 <span class="nt">Transactions</span></div>
       <div class="nav-tab" onclick="showTab('advisor',this)">🏦 <span class="nt">AI Advisor</span></div>
-            <div class="nav-tab" onclick="showTab('setup',this)">⚙️ <span class="nt">Setup</span></div>
+      <div class="nav-tab" onclick="showTab('setup',this)">⚙️ <span class="nt">Setup</span></div>
       <div class="nav-tab" onclick="showTab('prompt',this)">🤖 <span class="nt">Claude Prompt</span></div>
     </div>
   </div>
@@ -980,7 +979,7 @@ const T={
   en:{
     hTitle:'Financial Intelligence',hSub:'Arabic Market Analysis System',
     hPortfolio:'Portfolio',hStocks:'Stocks',hMonth:'This Month',hActive:'Active',hSystem:'System',
-    navPortfolio:'Portfolio',navTrends:'Trends',navIndicators:'Indicators',navAlerts:'Alerts',navTransactions:'Transactions',navSetup:'Setup',navPrompt:'Claude Prompt',
+    navPortfolio:'Portfolio',navTrends:'Trends',navIndicators:'Indicators',navAlerts:'Alerts',navTransactions:'Transactions',navAdvisor:'AI Advisor',navSetup:'Setup',navPrompt:'Claude Prompt',
     pTotalLabel:'Total Portfolio',pBestLabel:'Best Performer',pReviewLabel:'Needs Review',pLargestLabel:'Largest Position',
     pMonthChange:'▲ $68,431 this month',pWolfDesc:'Wolfspeed $41 remaining',
     pAllStocks:'All Holdings',pSub:'44 securities — as of April 2026',
@@ -1011,7 +1010,7 @@ const T={
   ar:{
     hTitle:'المحلل المالي الذكي',hSub:'نظام تحليل السوق الأمريكي',
     hPortfolio:'المحفظة',hStocks:'سهم',hMonth:'هذا الشهر',hActive:'نشط',hSystem:'النظام',
-    navPortfolio:'المحفظة',navTrends:'الاتجاهات',navIndicators:'المؤشرات',navAlerts:'التنبيهات',navTransactions:'المعاملات',navSetup:'الإعداد',navPrompt:'نص Claude',
+    navPortfolio:'المحفظة',navTrends:'الاتجاهات',navIndicators:'المؤشرات',navAlerts:'التنبيهات',navTransactions:'المعاملات',navAdvisor:'المستشار الذكي',navSetup:'الإعداد',navPrompt:'نص Claude',
     pTotalLabel:'إجمالي المحفظة',pBestLabel:'أفضل أداء',pReviewLabel:'يحتاج مراجعة',pLargestLabel:'أكبر مركز',
     pMonthChange:'▲ $68,431 هذا الشهر',pWolfDesc:'وولفسبيد $41 متبقي',
     pAllStocks:'جميع الأسهم',pSub:'44 ورقة مالية — أبريل 2026',
@@ -1089,7 +1088,7 @@ function applyTranslations(){
     const el=document.getElementById(id);
     if(el&&t[key]!==undefined) el.innerHTML=t[key];
   });
-  const navKeys=['navPortfolio','navTrends','navIndicators','navAlerts','navTransactions','navSetup','navPrompt'];
+  const navKeys=['navPortfolio','navTrends','navIndicators','navAlerts','navTransactions','navAdvisor','navSetup','navPrompt'];
   document.querySelectorAll('.nt').forEach((el,i)=>{if(t[navKeys[i]]) el.textContent=t[navKeys[i]];});
   document.querySelectorAll('[data-en][data-ar]').forEach(btn=>{
     btn.textContent=lang==='ar'?btn.dataset.ar:btn.dataset.en;
@@ -1798,7 +1797,6 @@ function parseAnalysisSections(content){
   return result;
 }
 
-  
 // ===== PROMPT =====
 function renderPrompt(){
   const syms=stocks.map(s=>s.sym).join(',');
