@@ -24,7 +24,15 @@ module.exports = async function handler(req, res) {
   if (req.method === 'POST') {
     const apiKey = req.headers['x-api-key'] || (req.body && req.body.api_key);
     if (apiKey !== BRIEFING_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
-    const content = (req.body && req.body.content) || '';
+   let content = (req.body && req.body.content) || '';
+// Handle case where content is a JSON string with type/text structure
+try {
+  const parsed = JSON.parse(content);
+  if (parsed.text) content = parsed.text;
+  if (parsed.content) content = parsed.content;
+} catch(e) {
+  // content is already plain text, keep as is
+}
     if (!content) return res.status(400).json({ error: 'No content' });
 
     try {
