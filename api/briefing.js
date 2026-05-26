@@ -1,6 +1,6 @@
 const BRIEFING_API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
 
-export default function handler(req, res) {
+module.exports = function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -17,11 +17,11 @@ export default function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const apiKey = req.headers['x-api-key'] || req.body?.api_key;
+    const apiKey = req.headers['x-api-key'] || (req.body && req.body.api_key);
     if (apiKey !== BRIEFING_API_KEY) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-    const content = req.body?.content || req.body?.text || '';
+    const content = (req.body && req.body.content) || (req.body && req.body.text) || '';
     if (!content) {
       return res.status(400).json({ error: 'No content provided' });
     }
@@ -32,4 +32,5 @@ export default function handler(req, res) {
     });
   }
 
-  return res.status(4
+  return res.status(405).json({ error: 'Method not allowed' });
+};
