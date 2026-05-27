@@ -115,8 +115,21 @@ module.exports = async (req, res) => {
     const key = authHeader?.replace('Bearer ', '') || req.body?.api_key;
     if (key !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
 
-    const { type, date, week, month, content, generated } = req.body;
+    let { type, date, week, month, content, generated } = req.body;
     if (!content) return res.status(400).json({ error: 'No content' });
+
+    // Sanitize content — extract text if Claude returned JSON object
+    if (typeof content === 'string' && content.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(content);
+        if (parsed.text) content = parsed.text;
+        else if (parsed.content) content = parsed.content;
+      } catch(e) { /* keep as is */ }
+    }
+    // Also handle array format
+    if (Array.isArray(content)) {
+      content = content.map(c => c.text || c).join('');
+    }
 
     const path = getFilePath(type || 'daily', date, week, month);
     const data = {
