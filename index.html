@@ -2043,10 +2043,10 @@ async function fetchLivePrices(){
   if(indicator) indicator.textContent='⏳ Loading live prices...';
 
   try{
-    const r=await fetch('/api/prices');
+    const r=await fetch('/api/prices?t='+Date.now());
     if(!r.ok) throw new Error(`HTTP ${r.status}`);
     const d=await r.json();
-    if(!d.prices || d.count===0) throw new Error('No prices returned');
+    if(!d.prices) throw new Error('No prices in response');
 
     let updated=0;
     stocks.forEach(s=>{
@@ -2054,7 +2054,7 @@ async function fetchLivePrices(){
       if(q && q.price){
         s.price=q.price;
         s.gl=((q.price - s.cost)/s.cost)*100;
-        s.mv=Math.round(s._shares * q.price);
+        if(s._shares) s.mv=Math.round(s._shares * q.price);
         updated++;
       }
     });
@@ -2071,7 +2071,8 @@ async function fetchLivePrices(){
     renderTrends();
 
   } catch(e){
-    if(indicator) indicator.innerHTML=`<span style="color:var(--text3)">⚠️ Live prices unavailable — showing cached data (${e.message})</span>`;
+    console.error('fetchLivePrices error:', e);
+    if(indicator) indicator.innerHTML=`<span style="color:var(--red)">⚠️ ${e.message}</span>`;
   }
 }
 
@@ -2273,7 +2274,8 @@ async function submitTrade(){
 }
 
 // Close modal on backdrop click
-document.getElementById('tradeModal').addEventListener('click', function(e){
+const _modal = document.getElementById('tradeModal');
+if(_modal) _modal.addEventListener('click', function(e){
   if(e.target===this) closeTradeModal();
 });
 
