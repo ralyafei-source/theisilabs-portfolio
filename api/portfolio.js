@@ -1,84 +1,58 @@
-{
-  "meta": {
-    "owner": "Rashed",
-    "broker": "Wio Invest",
-    "currency": "USD",
-    "last_updated": "2026-05-27",
-    "total_value_usd": 694171.23,
-    "source": "Verified directly from Wio Invest app screenshots — May 27, 2026",
-    "note": "Prices and market values update live from Yahoo Finance. Shares and cost basis fixed until next Wio export."
-  },
-
-  "cash_summary": {
-    "fresh_cash_deposited": 490944,
-    "fresh_cash_note": "Total new cash added Nov 2023 to Jul 2025. Deposits after that date not captured in CSV.",
-    "total_buy_orders_usd": 1429841,
-    "total_sell_orders_usd": 1099059,
-    "money_recycled": 938897,
-    "current_portfolio_value_usd": 694171,
-    "return_on_fresh_cash_pct": 41.4
-  },
-
-  "holdings": [
-    {"sym":"NVDA", "name":"NVIDIA Corporation",       "name_ar":"انفيديا",        "shares":300.80,   "cost":81.14,   "sector":"tech"},
-    {"sym":"AMZN", "name":"Amazon.com Inc.",           "name_ar":"أمازون",         "shares":152.56,   "cost":205.64,  "sector":"tech"},
-    {"sym":"MU",   "name":"Micron Technology Inc.",    "name_ar":"ميكرون",         "shares":40.00,    "cost":172.77,  "sector":"tech"},
-    {"sym":"OKTA", "name":"Okta Inc.",                 "name_ar":"أوكتا",          "shares":577.08,   "cost":91.84,   "sector":"tech"},
-    {"sym":"MSFT", "name":"Microsoft Corporation",     "name_ar":"مايكروسوفت",     "shares":43.29,    "cost":424.11,  "sector":"tech"},
-    {"sym":"CRM",  "name":"Salesforce Inc.",           "name_ar":"سيلزفورس",       "shares":100.01,   "cost":239.45,  "sector":"tech"},
-    {"sym":"PANW", "name":"Palo Alto Networks Inc.",   "name_ar":"بالو ألتو",      "shares":105.07,   "cost":176.35,  "sector":"tech"},
-    {"sym":"CRWD", "name":"CrowdStrike Holdings Inc.", "name_ar":"كراودسترايك",    "shares":22.40,    "cost":446.50,  "sector":"tech"},
-    {"sym":"AAPL", "name":"Apple Inc.",                "name_ar":"أبل",            "shares":22.14,    "cost":184.37,  "sector":"tech"},
-    {"sym":"GOOGL","name":"Alphabet Inc.",             "name_ar":"ألفابت",         "shares":50.37,    "cost":260.64,  "sector":"tech"},
-    {"sym":"FTNT", "name":"Fortinet Inc.",             "name_ar":"فورتينت",        "shares":50.48,    "cost":66.48,   "sector":"tech"},
-    {"sym":"ADBE", "name":"Adobe Inc.",                "name_ar":"أدوبي",          "shares":9.90,     "cost":534.84,  "sector":"tech"},
-    {"sym":"ONTO", "name":"Onto Innovation Inc.",      "name_ar":"أونتو إنوفيشنز", "shares":92.99,    "cost":179.53,  "sector":"tech"},
-    {"sym":"NOW",  "name":"ServiceNow Inc.",           "name_ar":"سيرفيس ناو",     "shares":55.03,    "cost":93.61,   "sector":"tech"},
-    {"sym":"SIMO", "name":"Silicon Motion Technology", "name_ar":"سيليكون موشن",   "shares":50.00,    "cost":131.75,  "sector":"tech"},
-    {"sym":"APH",  "name":"Amphenol Corporation",      "name_ar":"أمفينول",        "shares":100.55,   "cost":125.04,  "sector":"tech"},
-    {"sym":"IOT",  "name":"Samsara Inc.",              "name_ar":"سامسارا",        "shares":376.73,   "cost":37.14,   "sector":"tech"},
-    {"sym":"IONQ", "name":"IonQ Inc.",                 "name_ar":"آيون كيو",       "shares":74.72,    "cost":58.95,   "sector":"tech"},
-    {"sym":"PATH", "name":"UiPath Inc.",               "name_ar":"يو آي باث",      "shares":647.32,   "cost":14.81,   "sector":"tech"},
-    {"sym":"ZETA", "name":"Zeta Global Holdings",      "name_ar":"زيتا غلوبال",    "shares":550.66,   "cost":18.58,   "sector":"tech"},
-    {"sym":"CRDO", "name":"Credo Technology Group",    "name_ar":"كريدو تك",       "shares":54.32,    "cost":130.45,  "sector":"tech"},
-    {"sym":"COMM", "name":"CommScope Holding Co.",     "name_ar":"كوم سكوب",       "shares":500.64,   "cost":16.07,   "sector":"tech"},
-    {"sym":"TIGO", "name":"Millicom International",    "name_ar":"ميليكوم",        "shares":49.71,    "cost":64.95,   "sector":"tech"},
-    {"sym":"DY",   "name":"Dycom Industries Inc.",     "name_ar":"دايكوم",         "shares":6.90,     "cost":434.78,  "sector":"tech"},
-    {"sym":"DUOL", "name":"Duolingo Inc.",             "name_ar":"دولينغو",        "shares":190.28,   "cost":316.92,  "sector":"spec"},
-    {"sym":"BTBT", "name":"Bit Digital Inc.",          "name_ar":"بت ديجيتال",     "shares":5000.12,  "cost":4.03,    "sector":"spec"},
-    {"sym":"MVST", "name":"Microvast Holdings Inc.",   "name_ar":"مايكروفاست",     "shares":6093.41,  "cost":4.58,    "sector":"spec"},
-    {"sym":"MSTR", "name":"Strategy Inc.",             "name_ar":"ستراتيجي",       "shares":75.15,    "cost":344.24,  "sector":"spec"},
-    {"sym":"PONY", "name":"Pony AI Inc.",              "name_ar":"بوني AI",        "shares":1000.55,  "cost":20.07,   "sector":"spec"},
-    {"sym":"WOLF", "name":"Wolfspeed Inc.",            "name_ar":"وولفسبيد",       "shares":1.41,     "cost":1052.70, "sector":"spec"},
-    {"sym":"SERV", "name":"Serve Robotics Inc.",       "name_ar":"سيرف روبوتيكس",  "shares":700.06,   "cost":14.86,   "sector":"spec"},
-    {"sym":"SOFI", "name":"SoFi Technologies Inc.",    "name_ar":"سوفي",           "shares":125.16,   "cost":16.42,   "sector":"spec"},
-    {"sym":"ATYR", "name":"aTyr Pharma Inc.",          "name_ar":"أيتير فارما",    "shares":13501.01, "cost":2.27,    "sector":"bio"},
-    {"sym":"NTLA", "name":"Intellia Therapeutics Inc.","name_ar":"إنتيليا",        "shares":1086.43,  "cost":18.41,   "sector":"bio"},
-    {"sym":"SMMT", "name":"Summit Therapeutics Inc.",  "name_ar":"سميت ثيرابيوتيكس","shares":400.24, "cost":18.61,   "sector":"bio"},
-    {"sym":"COR",  "name":"Cencora Inc.",              "name_ar":"سينسورا",        "shares":27.56,    "cost":362.84,  "sector":"bio"},
-    {"sym":"NEM",  "name":"Newmont Corporation",       "name_ar":"نيومونت",        "shares":24.46,    "cost":122.66,  "sector":"mining"},
-    {"sym":"B",    "name":"Barrick Mining Corp.",      "name_ar":"باريك للتعدين",  "shares":63.05,    "cost":47.58,   "sector":"mining"},
-    {"sym":"SEZL", "name":"Sezzle Inc.",               "name_ar":"سيزل",           "shares":330.84,   "cost":90.74,   "sector":"spec"},
-    {"sym":"CLS",  "name":"Celestica Inc.",            "name_ar":"سيليستيكا",      "shares":19.00,    "cost":45.01,   "sector":"tech"},
-    {"sym":"PLTR", "name":"Palantir Technologies Inc.","name_ar":"بالانتير",       "shares":89.79,    "cost":23.41,   "sector":"tech"},
-    {"sym":"NVO",  "name":"Novo Nordisk A/S",          "name_ar":"نوفو نورديسك",   "shares":5.06,     "cost":55.02,   "sector":"bio"},
-    {"sym":"QQQ",  "name":"Invesco QQQ ETF",           "name_ar":"صندوق QQQ",      "shares":25.74,    "cost":441.46,  "sector":"etf"},
-    {"sym":"VOO",  "name":"Vanguard S&P 500 ETF",      "name_ar":"فانغارد S&P",    "shares":7.72,     "cost":531.16,  "sector":"etf"},
-    {"sym":"SPY",  "name":"SPDR S&P 500 ETF",          "name_ar":"SPDR S&P",       "shares":21.04,    "cost":521.19,  "sector":"etf"},
-    {"sym":"IVV",  "name":"iShares Core S&P 500",      "name_ar":"iShares S&P",    "shares":3.46,     "cost":578.54,  "sector":"etf"},
-    {"sym":"SMH",  "name":"VanEck Semiconductor ETF",  "name_ar":"صندوق رقائق",    "shares":4.00,     "cost":253.47,  "sector":"etf"},
-    {"sym":"VGT",  "name":"Vanguard Info Tech ETF",    "name_ar":"صندوق تقنية",    "shares":67.43,    "cost":74.70,   "sector":"etf"},
-    {"sym":"SPUS", "name":"SP Funds Sharia ETF",       "name_ar":"صندوق إسلامي",   "shares":121.78,   "cost":49.36,   "sector":"etf"},
-    {"sym":"XLP",  "name":"Consumer Staples ETF",      "name_ar":"صندوق استهلاكي", "shares":60.53,    "cost":82.61,   "sector":"etf"},
-    {"sym":"QQQM", "name":"Invesco NASDAQ 100 ETF",    "name_ar":"صندوق ناسداك",   "shares":6.13,     "cost":220.64,  "sector":"etf"},
-    {"sym":"IBIT", "name":"iShares Bitcoin Trust ETF", "name_ar":"صندوق بيتكوين",  "shares":56.45,    "cost":35.43,   "sector":"etf"}
-  ],
-
-  "aed_holdings": [
-    {"sym":"BTC",       "name":"Bitcoin",              "amount":0.19467,    "currency":"AED"},
-    {"sym":"ETH",       "name":"Ethereum",             "amount":0.72314,    "currency":"AED"},
-    {"sym":"XRP",       "name":"Ripple",               "amount":5600.44781, "currency":"AED"},
-    {"sym":"ADNOCDIST", "name":"ADNOC Distribution",   "shares":5015.00,    "currency":"AED"},
-    {"sym":"ADNOCLS",   "name":"ADNOC Logistics",      "shares":2000.00,    "currency":"AED"}
-  ]
-}
+const BRIEFING_API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const REPO = 'ralyafei-source/theisilabs-portfolio';
+const FILE_PATH = 'data/portfolio.json';
+module.exports = async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method === 'GET') {
+    try {
+      const r = await fetch(`https://raw.githubusercontent.com/${REPO}/main/${FILE_PATH}?t=${Date.now()}`);
+      if (!r.ok) return res.status(200).json({ prices: {}, date: null });
+      const data = await r.json();
+      return res.status(200).json(data);
+    } catch(e) {
+      return res.status(200).json({ prices: {}, date: null });
+    }
+  }
+  if (req.method === 'POST') {
+    const apiKey = req.headers['x-api-key'] || (req.body && req.body.api_key);
+    if (apiKey !== BRIEFING_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    const prices = (req.body && req.body.prices) || {};
+    if (!prices) return res.status(400).json({ error: 'No prices provided' });
+    try {
+      const data = { prices, date: new Date().toISOString() };
+      const encoded = Buffer.from(JSON.stringify(data)).toString('base64');
+      const getRes = await fetch(`https://api.github.com/repos/${REPO}/contents/${FILE_PATH}`, {
+        headers: {
+          'Authorization': `token ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      const getSha = getRes.ok ? (await getRes.json()).sha : null;
+      const putRes = await fetch(`https://api.github.com/repos/${REPO}/contents/${FILE_PATH}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: 'Update portfolio prices',
+          content: encoded,
+          ...(getSha && { sha: getSha })
+        })
+      });
+      if (!putRes.ok) {
+        const err = await putRes.json();
+        return res.status(500).json({ error: err.message });
+      }
+      return res.status(200).json({ success: true });
+    } catch(e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+  return res.status(405).json({ error: 'Method not allowed' });
+};
