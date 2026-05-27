@@ -66,6 +66,11 @@ main{padding:24px 0;}
 .ptable{width:100%;border-collapse:collapse;}
 .ptable th{text-align:left;padding:9px 14px;font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);background:var(--bg3);}
 .ptable th.num{text-align:right;}
+.ptable th.sortable{cursor:pointer;user-select:none;}
+.ptable th.sortable:hover{color:var(--accent);}
+.ptable th.sort-active{color:var(--accent);}
+.sort-arrow{margin-left:4px;font-size:9px;opacity:0.5;}
+.ptable th.sort-active .sort-arrow{opacity:1;}
 .ptable td{padding:11px 14px;font-size:12px;border-bottom:1px solid rgba(30,45,74,.5);}
 .ptable td.num{text-align:right;}
 .ptable tr:hover td{background:rgba(0,212,255,.03);}
@@ -414,12 +419,12 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
     <div style="overflow-x:auto;">
       <table class="ptable" id="pTable">
         <thead><tr>
-          <th id="th-sym">Symbol</th>
-          <th id="th-name">Name</th>
-          <th id="th-sector">Sector</th>
-          <th id="th-value" class="num">Market Value</th>
-          <th id="th-gl" class="num">Gain / Loss</th>
-          <th id="th-status" class="num">Status</th>
+          <th id="th-sym"  class="sortable" onclick="sortP('sym')">Symbol <span class="sort-arrow">↕</span></th>
+          <th id="th-name" class="sortable" onclick="sortP('name')">Name <span class="sort-arrow">↕</span></th>
+          <th id="th-sector" class="sortable" onclick="sortP('sec')">Sector <span class="sort-arrow">↕</span></th>
+          <th id="th-value" class="num sortable sort-active" onclick="sortP('mv')">Market Value <span class="sort-arrow">↓</span></th>
+          <th id="th-gl" class="num sortable" onclick="sortP('gl')">Gain / Loss <span class="sort-arrow">↕</span></th>
+          <th id="th-status" class="num sortable" onclick="sortP('status')">Status <span class="sort-arrow">↕</span></th>
         </tr></thead>
         <tbody id="pBody"></tbody>
       </table>
@@ -970,6 +975,8 @@ const newsItems=[
 // State
 let lang='en';
 let pFilter='all';
+let pSortCol='mv'; // default sort by market value
+let pSortDir=-1;   // -1 = descending, 1 = ascending
 let tPeriod='1D';
 let tSize='md';
 let tFilterStr='';
@@ -1121,6 +1128,22 @@ function showTab(name,el){
 }
 
 // ===== PORTFOLIO =====
+function sortP(col){
+  if(pSortCol===col){ pSortDir*=-1; } else { pSortCol=col; pSortDir=-1; }
+  // Update header arrows
+  document.querySelectorAll('.ptable th.sortable').forEach(th=>{
+    th.classList.remove('sort-active');
+    th.querySelector('.sort-arrow').textContent='↕';
+  });
+  const colMap={sym:'th-sym',name:'th-name',sec:'th-sector',mv:'th-value',gl:'th-gl',status:'th-status'};
+  const activeEl=document.getElementById(colMap[col]);
+  if(activeEl){
+    activeEl.classList.add('sort-active');
+    activeEl.querySelector('.sort-arrow').textContent=pSortDir===-1?'↓':'↑';
+  }
+  renderPortfolio();
+}
+
 function filterP(f){pFilter=f;renderPortfolio();}
 function renderPortfolio(){
   const t=T[lang];
@@ -1137,7 +1160,18 @@ function renderPortfolio(){
   let list=[...stocks];
   if(pFilter==='gain') list=list.filter(s=>s.gl>0);
   if(pFilter==='loss') list=list.filter(s=>s.gl<0);
-  list.sort((a,b)=>b.mv-a.mv);
+
+  // Sort by selected column
+  list.sort((a,b)=>{
+    let va, vb;
+    if(pSortCol==='sym')    { va=a.sym; vb=b.sym; return pSortDir*(va<vb?-1:va>vb?1:0); }
+    if(pSortCol==='name')   { va=lang==='ar'?a.ar:a.en; vb=lang==='ar'?b.ar:b.en; return pSortDir*(va<vb?-1:va>vb?1:0); }
+    if(pSortCol==='sec')    { va=a.sec; vb=b.sec; return pSortDir*(va<vb?-1:va>vb?1:0); }
+    if(pSortCol==='mv')     { return pSortDir*(b.mv-a.mv); }
+    if(pSortCol==='gl')     { return pSortDir*(b.gl-a.gl); }
+    if(pSortCol==='status') { return pSortDir*(b.gl-a.gl); } // status mirrors gl order
+    return pSortDir*(b.mv-a.mv);
+  });
 
   document.getElementById('pBody').innerHTML=list.map(s=>{
     const up=s.gl>=0;
