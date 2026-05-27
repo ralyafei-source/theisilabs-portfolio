@@ -367,23 +367,23 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
   <div class="grid-4">
     <div class="stat-card blue">
       <div class="stat-label" id="p-total-label">Total Portfolio</div>
-      <div class="stat-value" style="color:var(--accent)">$694K</div>
-      <div class="stat-change up" id="p-month-change">▲ $68,431 this month</div>
+      <div class="stat-value sensitive" id="stat-total" style="color:var(--accent)">$694K</div>
+      <div class="stat-change up sensitive" id="p-month-change">▲ $68,431 this month</div>
     </div>
     <div class="stat-card green">
       <div class="stat-label" id="p-best-label">Best Performer</div>
-      <div class="stat-value" style="color:var(--green);font-size:18px">CLS +810%</div>
-      <div class="stat-change up">Celestica Inc.</div>
+      <div class="stat-value sensitive" id="stat-best" style="color:var(--green);font-size:18px">CLS +810%</div>
+      <div class="stat-change up sensitive" id="stat-best-name">Celestica Inc.</div>
     </div>
     <div class="stat-card orange">
       <div class="stat-label" id="p-review-label">Needs Review</div>
-      <div class="stat-value" style="color:var(--red);font-size:18px">WOLF -97%</div>
-      <div class="stat-change dn" id="p-wolf-desc">Wolfspeed $41 remaining</div>
+      <div class="stat-value sensitive" id="stat-worst" style="color:var(--red);font-size:18px">WOLF -97%</div>
+      <div class="stat-change dn sensitive" id="p-wolf-desc">Wolfspeed $41 remaining</div>
     </div>
     <div class="stat-card gold">
       <div class="stat-label" id="p-largest-label">Largest Position</div>
-      <div class="stat-value" style="color:var(--gold);font-size:20px">NVDA</div>
-      <div class="stat-change up">$60,031 | +145.94%</div>
+      <div class="stat-value sensitive" id="stat-largest" style="color:var(--gold);font-size:20px">NVDA</div>
+      <div class="stat-change up sensitive" id="stat-largest-detail">$60,031 | +145.94%</div>
     </div>
   </div>
 
@@ -2067,12 +2067,50 @@ async function fetchLivePrices(){
     const pv=document.getElementById('portfolio-val');
     if(pv && !privacyOn) pv.textContent='$'+total.toLocaleString();
 
+    updateStatCards();
     renderPortfolio();
     renderTrends();
 
   } catch(e){
     console.error('fetchLivePrices error:', e);
     if(indicator) indicator.innerHTML=`<span style="color:var(--red)">⚠️ ${e.message}</span>`;
+  }
+}
+
+function updateStatCards(){
+  if(!stocks.length) return;
+
+  // Total portfolio
+  const total = stocks.reduce((a,s)=>a+s.mv,0);
+  const totalEl = document.getElementById('stat-total');
+  if(totalEl && !privacyOn) totalEl.textContent = '$'+Math.round(total/1000)+'K';
+
+  // Best performer (highest gl%)
+  const best = [...stocks].sort((a,b)=>b.gl-a.gl)[0];
+  if(best){
+    const bestEl = document.getElementById('stat-best');
+    const bestNameEl = document.getElementById('stat-best-name');
+    if(bestEl && !privacyOn) bestEl.textContent = best.sym+' '+(best.gl>=0?'+':'')+best.gl.toFixed(1)+'%';
+    if(bestNameEl) bestNameEl.textContent = best.en;
+  }
+
+  // Worst performer (lowest gl%)
+  const worst = [...stocks].sort((a,b)=>a.gl-b.gl)[0];
+  if(worst){
+    const worstEl = document.getElementById('stat-worst');
+    const worstDescEl = document.getElementById('p-wolf-desc');
+    if(worstEl && !privacyOn) worstEl.textContent = worst.sym+' '+worst.gl.toFixed(1)+'%';
+    if(worstDescEl && !privacyOn) worstDescEl.textContent = worst.en+' $'+worst.mv.toLocaleString()+' remaining';
+  }
+
+  // Largest position (highest mv)
+  const largest = [...stocks].sort((a,b)=>b.mv-a.mv)[0];
+  if(largest){
+    const largestEl = document.getElementById('stat-largest');
+    const largestDetailEl = document.getElementById('stat-largest-detail');
+    if(largestEl) largestEl.textContent = largest.sym;
+    if(largestDetailEl && !privacyOn) largestDetailEl.textContent =
+      '$'+largest.mv.toLocaleString()+' | '+(largest.gl>=0?'+':'')+largest.gl.toFixed(2)+'%';
   }
 }
 
