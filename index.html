@@ -234,19 +234,25 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
 .advisor-lang-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto;}
 .advisor-lang-btn{padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text2);font-family:'Cairo',sans-serif;transition:all .15s;}
 .advisor-lang-btn.active{background:var(--gold);color:#000;}
-.firm-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
-.firm-tab{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-size:11px;font-weight:700;font-family:'IBM Plex Mono',monospace;transition:all .15s;white-space:nowrap;}
+.analysis-group{margin-bottom:20px;}
+.group-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;padding:4px 10px;border-radius:6px;display:inline-block;}
+.group-label.daily{background:rgba(0,200,100,0.15);color:#00c864;}
+.group-label.weekly{background:rgba(255,215,0,0.15);color:#ffd700;}
+.group-label.monthly{background:rgba(100,180,255,0.15);color:#64b4ff;}
+.firm-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;}
+.firm-tab{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-size:11px;font-weight:700;font-family:'IBM Plex Mono',monospace;transition:all .15s;white-space:nowrap;position:relative;}
 .firm-tab:hover{border-color:var(--accent);color:var(--accent);}
-.firm-tab.active{color:#000;}
-.firm-tab.gs{background:linear-gradient(135deg,#00d4ff,#0099cc);border-color:transparent;color:#000;}
-.firm-tab.bw{background:linear-gradient(135deg,#ff6b35,#cc4400);border-color:transparent;color:#fff;}
-.firm-tab.br{background:linear-gradient(135deg,#00ff88,#00aa55);border-color:transparent;color:#000;}
-.firm-tab.ms{background:linear-gradient(135deg,#ffd700,#cc9900);border-color:transparent;color:#000;}
-.firm-tab.jp{background:linear-gradient(135deg,#9966ff,#6633cc);border-color:transparent;color:#fff;}
-.firm-tab.ba{background:linear-gradient(135deg,#ff4444,#cc0000);border-color:transparent;color:#fff;}
-.firm-tab.he{background:linear-gradient(135deg,#00d4ff,#9966ff);border-color:transparent;color:#fff;}
-.firm-tab.rt{background:linear-gradient(135deg,#ffd700,#ff6b35);border-color:transparent;color:#000;}
-.firm-tab.mk{background:linear-gradient(135deg,#00ff88,#00d4ff);border-color:transparent;color:#000;}
+.firm-tab.active{border-color:transparent;color:#000;}
+.firm-tab.signals{background:linear-gradient(135deg,#00c864,#009944);}
+.firm-tab.earnings{background:linear-gradient(135deg,#00d4ff,#0099cc);}
+.firm-tab.macro{background:linear-gradient(135deg,#9966ff,#6633cc);color:#fff !important;}
+.firm-tab.risk{background:linear-gradient(135deg,#ff6b35,#cc4400);color:#fff !important;}
+.firm-tab.fairvalue{background:linear-gradient(135deg,#ffd700,#cc9900);}
+.firm-tab.momentum{background:linear-gradient(135deg,#00ff88,#00aa55);}
+.firm-tab.competitive{background:linear-gradient(135deg,#ff4444,#cc0000);color:#fff !important;}
+.firm-tab.longview{background:linear-gradient(135deg,#00d4ff,#9966ff);color:#fff !important;}
+.firm-tab.health{background:linear-gradient(135deg,#64b4ff,#3366cc);color:#fff !important;}
+.tab-stale{font-size:9px;opacity:0.7;font-weight:400;display:block;margin-top:1px;}
 .firm-content{display:none;}
 .firm-content.active{display:block;}
 .firm-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);}
@@ -658,17 +664,54 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
 
-    <!-- Firm Tabs -->
-    <div class="firm-tabs" id="firmTabs">
-      <button class="firm-tab gs active" onclick="showFirm('gs',this)">Goldman Sachs</button>
-      <button class="firm-tab bw" onclick="showFirm('bw',this)">Bridgewater</button>
-      <button class="firm-tab br" onclick="showFirm('br',this)">BlackRock</button>
-      <button class="firm-tab ms" onclick="showFirm('ms',this)">Morgan Stanley</button>
-      <button class="firm-tab jp" onclick="showFirm('jp',this)">JPMorgan</button>
-      <button class="firm-tab ba" onclick="showFirm('ba',this)">Bain</button>
-      <button class="firm-tab he" onclick="showFirm('he',this)">Harvard</button>
-      <button class="firm-tab rt" onclick="showFirm('rt',this)">Renaissance</button>
-      <button class="firm-tab mk" onclick="showFirm('mk',this)">McKinsey</button>
+    <!-- Grouped Analysis Tabs -->
+    <div id="firmTabs">
+
+      <div class="analysis-group">
+        <div class="group-label daily">🔴 Daily — Updates every morning</div>
+        <div class="firm-tabs">
+          <button class="firm-tab signals active" onclick="showFirm('signals',this)">
+            📊 Daily Signals<span class="tab-stale" id="stale-signals"></span>
+          </button>
+          <button class="firm-tab earnings" onclick="showFirm('earnings',this)">
+            📅 Earnings &amp; Events<span class="tab-stale" id="stale-earnings"></span>
+          </button>
+          <button class="firm-tab macro" onclick="showFirm('macro',this)">
+            🌍 Macro Today<span class="tab-stale" id="stale-macro"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="analysis-group">
+        <div class="group-label weekly">🟡 Weekly — Updates every Saturday</div>
+        <div class="firm-tabs">
+          <button class="firm-tab risk" onclick="showFirm('risk',this)">
+            ⚠️ Risk Radar<span class="tab-stale" id="stale-risk"></span>
+          </button>
+          <button class="firm-tab fairvalue" onclick="showFirm('fairvalue',this)">
+            💎 Fair Value<span class="tab-stale" id="stale-fairvalue"></span>
+          </button>
+          <button class="firm-tab momentum" onclick="showFirm('momentum',this)">
+            📈 Momentum<span class="tab-stale" id="stale-momentum"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="analysis-group">
+        <div class="group-label monthly">🔵 Monthly — Updates first Sunday</div>
+        <div class="firm-tabs">
+          <button class="firm-tab competitive" onclick="showFirm('competitive',this)">
+            🏰 Competitive Edge<span class="tab-stale" id="stale-competitive"></span>
+          </button>
+          <button class="firm-tab longview" onclick="showFirm('longview',this)">
+            🔭 Long View<span class="tab-stale" id="stale-longview"></span>
+          </button>
+          <button class="firm-tab health" onclick="showFirm('health',this)">
+            ⚖️ Portfolio Health<span class="tab-stale" id="stale-health"></span>
+          </button>
+        </div>
+      </div>
+
     </div>
 
     <!-- Loading State -->
@@ -691,115 +734,115 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
 
-    <!-- Firm Contents -->
+    <!-- Analysis Content Panels -->
     <div id="advisorContent" style="display:none;">
 
-      <div class="firm-content active" id="firm-gs">
+      <div class="firm-content active" id="firm-signals">
         <div class="firm-header">
-          <div class="firm-logo" style="background:linear-gradient(135deg,#00d4ff,#0099cc);">GS</div>
+          <div class="firm-logo" style="background:linear-gradient(135deg,#00c864,#009944);">📊</div>
           <div>
-            <div class="firm-title" id="gs-title">Goldman Sachs — Stock Screener</div>
-            <div class="firm-subtitle" id="gs-sub">Buy/Sell signals, P/E analysis, price targets, stop-loss levels</div>
+            <div class="firm-title">Daily Signals</div>
+            <div class="firm-subtitle">Buy/Sell ratings for all positions · Price targets · Stop-loss · Conviction trade</div>
           </div>
         </div>
-        <div class="firm-body" id="gs-body"></div>
-        <div class="advisor-ts" id="gs-ts"></div>
+        <div class="firm-body" id="signals-body"></div>
+        <div class="advisor-ts" id="signals-ts"></div>
       </div>
 
-      <div class="firm-content" id="firm-bw">
+      <div class="firm-content" id="firm-earnings">
         <div class="firm-header">
-          <div class="firm-logo" style="background:linear-gradient(135deg,#ff6b35,#cc4400);">BW</div>
+          <div class="firm-logo" style="background:linear-gradient(135deg,#00d4ff,#0099cc);">📅</div>
           <div>
-            <div class="firm-title" id="bw-title">Bridgewater — Risk Assessment</div>
-            <div class="firm-subtitle" id="bw-sub">Stress test, correlation risk, tail risk, recession scenario</div>
+            <div class="firm-title">Earnings &amp; Events</div>
+            <div class="firm-subtitle">Upcoming earnings · Beat/miss history · Pre-earnings strategy</div>
           </div>
         </div>
-        <div class="firm-body" id="bw-body"></div>
-        <div class="advisor-ts" id="bw-ts"></div>
+        <div class="firm-body" id="earnings-body"></div>
+        <div class="advisor-ts" id="earnings-ts"></div>
       </div>
 
-      <div class="firm-content" id="firm-br">
+      <div class="firm-content" id="firm-macro">
         <div class="firm-header">
-          <div class="firm-logo" style="background:linear-gradient(135deg,#00ff88,#00aa55);">BR</div>
+          <div class="firm-logo" style="background:linear-gradient(135deg,#9966ff,#6633cc);color:#fff;">🌍</div>
           <div>
-            <div class="firm-title" id="br-title">BlackRock — Portfolio Health</div>
-            <div class="firm-subtitle" id="br-sub">Asset allocation, rebalancing, health score, cash recommendation</div>
+            <div class="firm-title">Macro Today</div>
+            <div class="firm-subtitle">Fed policy · Inflation · Geopolitical impact on your portfolio</div>
           </div>
         </div>
-        <div class="firm-body" id="br-body"></div>
-        <div class="advisor-ts" id="br-ts"></div>
+        <div class="firm-body" id="macro-body"></div>
+        <div class="advisor-ts" id="macro-ts"></div>
       </div>
 
-      <div class="firm-content" id="firm-ms">
+      <div class="firm-content" id="firm-risk">
         <div class="firm-header">
-          <div class="firm-logo" style="background:linear-gradient(135deg,#ffd700,#cc9900);">MS</div>
+          <div class="firm-logo" style="background:linear-gradient(135deg,#ff6b35,#cc4400);color:#fff;">⚠️</div>
           <div>
-            <div class="firm-title" id="ms-title">Morgan Stanley — Valuation</div>
-            <div class="firm-subtitle" id="ms-sub">DCF analysis, fair value vs market price, overvalued/undervalued</div>
+            <div class="firm-title">Risk Radar</div>
+            <div class="firm-subtitle">Stress test · Dollar risk per position · Concentration risk · Hedge suggestions</div>
           </div>
         </div>
-        <div class="firm-body" id="ms-body"></div>
-        <div class="advisor-ts" id="ms-ts"></div>
+        <div class="firm-body" id="risk-body"></div>
+        <div class="advisor-ts" id="risk-ts"></div>
       </div>
 
-      <div class="firm-content" id="firm-jp">
+      <div class="firm-content" id="firm-fairvalue">
         <div class="firm-header">
-          <div class="firm-logo" style="background:linear-gradient(135deg,#9966ff,#6633cc);color:#fff;">JP</div>
+          <div class="firm-logo" style="background:linear-gradient(135deg,#ffd700,#cc9900);">💎</div>
           <div>
-            <div class="firm-title" id="jp-title">JPMorgan — Earnings Preview</div>
-            <div class="firm-subtitle" id="jp-sub">Beat/miss history, options implied move, pre-earnings strategy</div>
+            <div class="firm-title">Fair Value</div>
+            <div class="firm-subtitle">DCF for all positions · Overvalued vs undervalued · Best upside opportunities</div>
           </div>
         </div>
-        <div class="firm-body" id="jp-body"></div>
-        <div class="advisor-ts" id="jp-ts"></div>
+        <div class="firm-body" id="fairvalue-body"></div>
+        <div class="advisor-ts" id="fairvalue-ts"></div>
       </div>
 
-      <div class="firm-content" id="firm-ba">
+      <div class="firm-content" id="firm-momentum">
         <div class="firm-header">
-          <div class="firm-logo" style="background:linear-gradient(135deg,#ff4444,#cc0000);color:#fff;">BA</div>
+          <div class="firm-logo" style="background:linear-gradient(135deg,#00ff88,#00aa55);">📈</div>
           <div>
-            <div class="firm-title" id="ba-title">Bain — Competitive Analysis</div>
-            <div class="firm-subtitle" id="ba-sub">Sector winners, competitive moat, SWOT, market share trends</div>
+            <div class="firm-title">Momentum</div>
+            <div class="firm-subtitle">Momentum signals · Mean reversion · Seasonal patterns · Short interest</div>
           </div>
         </div>
-        <div class="firm-body" id="ba-body"></div>
-        <div class="advisor-ts" id="ba-ts"></div>
+        <div class="firm-body" id="momentum-body"></div>
+        <div class="advisor-ts" id="momentum-ts"></div>
       </div>
 
-      <div class="firm-content" id="firm-he">
+      <div class="firm-content" id="firm-competitive">
         <div class="firm-header">
-          <div class="firm-logo" style="background:linear-gradient(135deg,#00d4ff,#9966ff);color:#fff;">HE</div>
+          <div class="firm-logo" style="background:linear-gradient(135deg,#ff4444,#cc0000);color:#fff;">🏰</div>
           <div>
-            <div class="firm-title" id="he-title">Harvard Endowment — Income Strategy</div>
-            <div class="firm-subtitle" id="he-sub">Dividend safety, DRIP projection, passive income estimate</div>
+            <div class="firm-title">Competitive Edge</div>
+            <div class="firm-subtitle">Moat ratings · Competitive threats · 5-year winners and losers</div>
           </div>
         </div>
-        <div class="firm-body" id="he-body"></div>
-        <div class="advisor-ts" id="he-ts"></div>
+        <div class="firm-body" id="competitive-body"></div>
+        <div class="advisor-ts" id="competitive-ts"></div>
       </div>
 
-      <div class="firm-content" id="firm-rt">
+      <div class="firm-content" id="firm-longview">
         <div class="firm-header">
-          <div class="firm-logo" style="background:linear-gradient(135deg,#ffd700,#ff6b35);">RT</div>
+          <div class="firm-logo" style="background:linear-gradient(135deg,#00d4ff,#9966ff);color:#fff;">🔭</div>
           <div>
-            <div class="firm-title" id="rt-title">Renaissance Technologies — Patterns</div>
-            <div class="firm-subtitle" id="rt-sub">Seasonal patterns, short interest, institutional flow, anomalies</div>
+            <div class="firm-title">Long View</div>
+            <div class="firm-subtitle">10-year outlook · Best positions to hold until 2036 · Portfolio projections</div>
           </div>
         </div>
-        <div class="firm-body" id="rt-body"></div>
-        <div class="advisor-ts" id="rt-ts"></div>
+        <div class="firm-body" id="longview-body"></div>
+        <div class="advisor-ts" id="longview-ts"></div>
       </div>
 
-      <div class="firm-content" id="firm-mk">
+      <div class="firm-content" id="firm-health">
         <div class="firm-header">
-          <div class="firm-logo" style="background:linear-gradient(135deg,#00ff88,#00d4ff);">MK</div>
+          <div class="firm-logo" style="background:linear-gradient(135deg,#64b4ff,#3366cc);color:#fff;">⚖️</div>
           <div>
-            <div class="firm-title" id="mk-title">McKinsey — Macro Impact</div>
-            <div class="firm-subtitle" id="mk-sub">Fed policy, GDP impact, sector rotation, macro timeline</div>
+            <div class="firm-title">Portfolio Health</div>
+            <div class="firm-subtitle">Health score · Asset allocation · Monthly rebalancing plan</div>
           </div>
         </div>
-        <div class="firm-body" id="mk-body"></div>
-        <div class="advisor-ts" id="mk-ts"></div>
+        <div class="firm-body" id="health-body"></div>
+        <div class="advisor-ts" id="health-ts"></div>
       </div>
 
     </div>
@@ -1765,7 +1808,7 @@ function loadTxFromStorage(){
 }
 
 // ===== AI ADVISOR =====
-const firms=['gs','bw','br','ms','jp','ba','he','rt','mk'];
+const firms=['signals','earnings','macro','risk','fairvalue','momentum','competitive','longview','health'];
 const firmNames={
   en:{gs:'Goldman Sachs',bw:'Bridgewater',br:'BlackRock',ms:'Morgan Stanley',jp:'JPMorgan',ba:'Bain',he:'Harvard',rt:'Renaissance',mk:'McKinsey'},
   ar:{gs:'غولدمان ساكس',bw:'برجووتر',br:'بلاك روك',ms:'مورغان ستانلي',jp:'جي بي مورغان',ba:'باين',he:'هارفارد',rt:'رينيسانس',mk:'ماكنزي'}
@@ -1862,7 +1905,8 @@ async function loadAnalysis(){
   try{
     const r=await fetch(`/api/analysis?date=${advisorDate}`);
     const d=await r.json();
-    if(d.content){
+    const hasData = d.daily||d.weekly||d.monthly;
+    if(hasData){
       analysisData=d;
       renderAnalysis(d);
       document.getElementById('advisorLoading').style.display='none';
@@ -1907,7 +1951,22 @@ function mdToHtml(text){
     t = t.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
     // *italic*
     t = t.replace(/\*(.+?)\*/g, '<i>$1</i>');
-    // emoji + text preservation
+    // Subtle color for buy/sell signals — word boundaries only
+    t = t.replace(/\bStrong Buy\b/g, '<b style="color:#00c864">Strong Buy</b>');
+    t = t.replace(/\bBuy\b/g, '<span style="color:#00c864">Buy</span>');
+    t = t.replace(/\bStrong Sell\b/g, '<b style="color:#ff4444">Strong Sell</b>');
+    t = t.replace(/\bSell\b/g, '<span style="color:#ff4444">Sell</span>');
+    t = t.replace(/\bReduce\b/g, '<span style="color:#ff6b35">Reduce</span>');
+    t = t.replace(/\bHold\b/g, '<span style="color:#8899bb">Hold</span>');
+    // Arabic equivalents
+    t = t.replace(/شراء قوي/g, '<b style="color:#00c864">شراء قوي</b>');
+    t = t.replace(/Strong Buy/g, '<b style="color:#00c864">Strong Buy</b>');
+    t = t.replace(/بِع فوراً/g, '<b style="color:#ff4444">بِع فوراً</b>');
+    t = t.replace(/بِع/g, '<span style="color:#ff4444">بِع</span>');
+    t = t.replace(/احتفظ/g, '<span style="color:#8899bb">احتفظ</span>');
+    t = t.replace(/قوي/g, '<span style="color:#00c864">قوي</span>');
+    t = t.replace(/ضعيف/g, '<span style="color:#ff4444">ضعيف</span>');
+    t = t.replace(/متوسط/g, '<span style="color:#ffd700">متوسط</span>');
     return t;
   }
 
@@ -1967,51 +2026,83 @@ function mdToHtml(text){
 }
 
 function renderAnalysis(data){
-  if(!data||!data.content) return;
+  if(!data) return;
   const isAr=advisorLang==='ar';
-  const ts=data.generated?new Date(data.generated).toLocaleString():'';
-  const cached=translationCache[advisorDate];
 
-  let contentToRender=data.content;
+  // Map sections to their source file and timestamp
+  const sourceMap = {
+    signals:     {src:'daily',   label:'DAILY SIGNALS'},
+    earnings:    {src:'daily',   label:'EARNINGS'},
+    macro:       {src:'daily',   label:'MACRO'},
+    risk:        {src:'weekly',  label:'RISK RADAR'},
+    fairvalue:   {src:'weekly',  label:'FAIR VALUE'},
+    momentum:    {src:'weekly',  label:'MOMENTUM'},
+    competitive: {src:'monthly', label:'COMPETITIVE EDGE'},
+    longview:    {src:'monthly', label:'LONG VIEW'},
+    health:      {src:'monthly', label:'PORTFOLIO HEALTH'}
+  };
 
-  // Use translated content if available and EN mode
-  if(!isAr && cached && cached!=='__arabic__'){
-    contentToRender=cached;
-  }
-
-  const sections=parseAnalysisSections(contentToRender);
+  // Parse sections from each source
+  const parsed = {
+    daily:   data.daily   ? parseAnalysisSections(data.daily.content,   'daily')   : {},
+    weekly:  data.weekly  ? parseAnalysisSections(data.weekly.content,  'weekly')  : {},
+    monthly: data.monthly ? parseAnalysisSections(data.monthly.content, 'monthly') : {}
+  };
 
   firms.forEach(f=>{
-    const body=document.getElementById(f+'-body');
-    const tsEl=document.getElementById(f+'-ts');
-    if(body){
-      let text=sections[f]||(isAr?'لا توجد بيانات متاحة لهذا القسم':'No data available for this section');
-      if(!isAr && cached==='__arabic__'){
-        text='⚠️ Translation failed. Showing original Arabic below.<br><br>'+text;
-      }
-      body.innerHTML=mdToHtml(text);
-      body.style.direction=isAr?'rtl':'ltr';
-      body.style.textAlign=isAr?'right':'left';
-      body.className='firm-body'+(isAr?'':' en');
+    const body  = document.getElementById(f+'-body');
+    const tsEl  = document.getElementById(f+'-ts');
+    const stale = document.getElementById('stale-'+f);
+    if(!body) return;
+
+    const {src} = sourceMap[f];
+    const srcData = data[src];
+    const sections = parsed[src];
+
+    let text = sections[f] || (isAr ? 'لا توجد بيانات — سيتم التحديث في الموعد المجدول' : 'No data yet — updates on schedule');
+
+    body.innerHTML = mdToHtml(text);
+    body.style.direction = isAr ? 'rtl' : 'ltr';
+    body.style.textAlign = isAr ? 'right' : 'left';
+    body.className = 'firm-body' + (isAr ? '' : ' en');
+
+    if(tsEl && srcData?.generated){
+      const d = new Date(srcData.generated);
+      tsEl.textContent = `Updated: ${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
     }
-    if(tsEl) tsEl.textContent=ts?`Generated: ${ts}`:'';
+
+    if(stale && srcData?.date){
+      const today = new Date().toISOString().slice(0,10);
+      if(srcData.date !== today){
+        stale.textContent = `From ${srcData.date}`;
+      } else {
+        stale.textContent = '';
+      }
+    }
   });
 }
 
-function parseAnalysisSections(content){
+function parseAnalysisSections(content, type){
   const sections={};
-  // Try to split by firm markers
-  const markers={
-    gs:['GOLDMAN','Goldman Sachs','غولدمان'],
-    bw:['BRIDGEWATER','Bridgewater','برجووتر'],
-    br:['BLACKROCK','BlackRock','بلاك روك'],
-    ms:['MORGAN STANLEY','Morgan Stanley','مورغان ستانلي'],
-    jp:['JPMORGAN','JPMorgan','جي بي مورغان'],
-    ba:['BAIN','Bain','باين'],
-    he:['HARVARD','Harvard','هارفارد'],
-    rt:['RENAISSANCE','Renaissance','رينيسانس'],
-    mk:['MCKINSEY','McKinsey','ماكنزي']
+  // Map section markers by type
+  const markersByType = {
+    daily: {
+      signals:   ['DAILY SIGNALS','إشارات اليوم'],
+      earnings:  ['EARNINGS','الأرباح والأحداث'],
+      macro:     ['MACRO TODAY','MACRO','ماكرو اليوم']
+    },
+    weekly: {
+      risk:      ['RISK RADAR','رادار المخاطر'],
+      fairvalue: ['FAIR VALUE','القيمة العادلة'],
+      momentum:  ['MOMENTUM','إشارات الزخم']
+    },
+    monthly: {
+      competitive: ['COMPETITIVE EDGE','الميزة التنافسية'],
+      longview:    ['LONG VIEW','النظرة طويلة المدى'],
+      health:      ['PORTFOLIO HEALTH','صحة المحفظة']
+    }
   };
+  const markers = markersByType[type] || markersByType.daily;
 
   // If content has clear section markers, split it
   let remaining=content;
