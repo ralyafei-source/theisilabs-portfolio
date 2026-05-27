@@ -276,7 +276,7 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
           <div class="hstat-label" id="h-stocks">Stocks</div>
         </div>
         <div class="hstat">
-          <div class="hstat-val up">+12.4%</div>
+          <div class="hstat-val up" id="header-month-pct">+12.4%</div>
           <div class="hstat-label" id="h-month">This Month</div>
         </div>
         <div class="hstat">
@@ -348,6 +348,12 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
 
 <!-- ===== PORTFOLIO TAB ===== -->
 <div id="tab-portfolio" class="tab-content active">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+    <div id="live-price-indicator" style="font-size:11px;color:var(--text2);font-family:'IBM Plex Mono',monospace;">
+      ⏳ Loading live prices...
+    </div>
+    <button onclick="fetchLivePrices()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:4px 12px;border-radius:7px;cursor:pointer;font-size:11px;font-family:'Cairo',sans-serif;">↺ Refresh Prices</button>
+  </div>
   <div class="grid-4">
     <div class="stat-card blue">
       <div class="stat-label" id="p-total-label">Total Portfolio</div>
@@ -1158,8 +1164,17 @@ async function loadBriefing(){
   try{
     const r=await fetch('/api/briefing');
     const d=await r.json();
-    if(d.content){
-      box.innerHTML=`<div class="briefing-box" dir="rtl">${d.content.replace(/\n/g,'<br>')}</div><div class="briefing-ts">${d.date||'Just now'}</div>`;
+    // Extract text — handles string, array [{type:"text",text:"..."}], or object {text:"..."}
+    let text='';
+    if(typeof d.content==='string'){
+      text=d.content;
+    } else if(Array.isArray(d.content)){
+      text=d.content.filter(c=>c.type==='text').map(c=>c.text||'').join('\n');
+    } else if(d.content && typeof d.content.text==='string'){
+      text=d.content.text;
+    }
+    if(text.trim()){
+      box.innerHTML=`<div class="briefing-box" dir="rtl">${text.replace(/\n/g,'<br>')}</div><div class="briefing-ts">${d.date||'Just now'}</div>`;
     } else {
       box.innerHTML=`<div class="briefing-box" style="direction:ltr;text-align:left;color:var(--text2);font-size:12px;">
         No briefing available yet.<br><br>
@@ -1683,12 +1698,40 @@ const firmNames={
 let advisorLang='ar';
 let advisorDate=new Date().toISOString().split('T')[0];
 let analysisData=null;
+let translationCache={}; // key: date, value: translated sections
 
 function setAdvisorLang(l,btn){
   advisorLang=l;
   document.querySelectorAll('.advisor-lang-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  if(analysisData) renderAnalysis(analysisData);
+  if(!analysisData) return;
+  if(l==='en' && !translationCache[advisorDate]){
+    translateAnalysis(analysisData);
+  } else {
+    renderAnalysis(analysisData);
+  }
+}
+
+async function translateAnalysis(data){
+  // Show translating state
+  document.querySelectorAll('.firm-body').forEach(el=>{
+    el.innerHTML='<span style="color:var(--text2);font-size:12px;">🔄 Translating...</span>';
+  });
+  try{
+    const r=await fetch('/api/translate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({text:data.content, date:advisorDate})
+    });
+    const d=await r.json();
+    if(d.translated){
+      translationCache[advisorDate]=d.translated;
+    }
+  } catch(e){
+    // Translation failed — fall back to showing Arabic with EN note
+    translationCache[advisorDate]='__arabic__';
+  }
+  renderAnalysis(data);
 }
 
 function showFirm(id,btn){
@@ -1735,20 +1778,30 @@ async function loadAnalysis(){
 
 function renderAnalysis(data){
   if(!data||!data.content) return;
-  const content=data.content;
   const isAr=advisorLang==='ar';
   const ts=data.generated?new Date(data.generated).toLocaleString():'';
+  const cached=translationCache[advisorDate];
 
-  // Parse sections from content
-  // Content is structured with firm markers
-  const sections=parseAnalysisSections(content);
+  let contentToRender=data.content;
+
+  // Use translated content if available and EN mode
+  if(!isAr && cached && cached!=='__arabic__'){
+    contentToRender=cached;
+  }
+
+  const sections=parseAnalysisSections(contentToRender);
 
   firms.forEach(f=>{
     const body=document.getElementById(f+'-body');
     const tsEl=document.getElementById(f+'-ts');
     if(body){
-      const text=sections[f]||(isAr?'لا توجد بيانات متاحة لهذا القسم':'No data available for this section');
+      let text=sections[f]||(isAr?'لا توجد بيانات متاحة لهذا القسم':'No data available for this section');
+      if(!isAr && cached==='__arabic__'){
+        text='⚠️ Translation failed. Showing original Arabic below.<br><br>'+text;
+      }
       body.innerHTML=text.replace(/\n/g,'<br>');
+      body.style.direction=isAr?'rtl':'ltr';
+      body.style.textAlign=isAr?'right':'left';
       body.className='firm-body'+(isAr?'':' en');
     }
     if(tsEl) tsEl.textContent=ts?`Generated: ${ts}`:'';
@@ -1800,52 +1853,71 @@ function parseAnalysisSections(content){
 
 // ===== PRIVACY TOGGLE =====
 let privacyOn=false;
-const privateValues={
-  'portfolio-val':'$612,774',
-  'p-month-change':'▲ $68,431 this month',
-  'p-wolf-desc':'Wolfspeed $41 remaining',
-};
 
 function togglePrivacy(){
   privacyOn=!privacyOn;
   const eye=privacyOn?'🙈':'👁';
   const btn=document.getElementById('privacyBtn');
-  if(btn) btn.textContent=eye;
-  document.getElementById('h-portfolio').innerHTML=lang==='ar'?'المحفظة':'Portfolio';
+  if(btn){
+    btn.textContent=eye;
+    btn.style.background=privacyOn?'rgba(255,107,53,0.15)':''
+    btn.style.borderColor=privacyOn?'var(--accent3)':'';
+    btn.style.color=privacyOn?'var(--accent3)':'';
+  }
 
-  // Header portfolio value
+  // Header portfolio value & monthly %
   const pv=document.getElementById('portfolio-val');
   if(pv) pv.textContent=privacyOn?'$ ••••••':'$612,774';
+  const mp=document.getElementById('header-month-pct');
+  if(mp) mp.textContent=privacyOn?'••••':'+ 12.4%';
 
-  // Stat cards
+  // Stat cards (portfolio overview)
   document.querySelectorAll('.stat-value,.stat-change').forEach(el=>{
     if(privacyOn){
-      if(!el.dataset.original) el.dataset.original=el.innerHTML;
-      const text=el.textContent;
-      if(text.includes('$')||text.match(/[+\-]\d/)) el.textContent='••••';
+      if(!el.dataset.orig) el.dataset.orig=el.innerHTML;
+      const txt=el.textContent;
+      if(txt.includes('$')||txt.match(/[+\-]\d/)||txt.includes('%')) el.textContent='••••';
     } else {
-      if(el.dataset.original){
-        el.innerHTML=el.dataset.original;
-        el.dataset.original='';
-      }
+      if(el.dataset.orig){ el.innerHTML=el.dataset.orig; el.dataset.orig=''; }
     }
   });
 
-  // Portfolio table - only $ values
+  // Portfolio table — $ and % columns
   document.querySelectorAll('#pBody td').forEach(td=>{
     if(privacyOn){
-      if(td.textContent.includes('$')||td.textContent.includes('%')){
-        if(!td.dataset.original) td.dataset.original=td.innerHTML;
+      const txt=td.textContent;
+      if(txt.includes('$')||txt.includes('%')){
+        if(!td.dataset.orig) td.dataset.orig=td.innerHTML;
         td.textContent='••••';
       }
     } else {
-      if(td.dataset.original){
-        td.innerHTML=td.dataset.original;
-        td.dataset.original='';
-      }
+      if(td.dataset.orig){ td.innerHTML=td.dataset.orig; td.dataset.orig=''; }
+    }
+  });
+
+  // Trend cards — price, pct, cost
+  document.querySelectorAll('.s-price,.s-pct-up,.s-pct-dn,.s-cost').forEach(el=>{
+    if(privacyOn){
+      if(!el.dataset.orig) el.dataset.orig=el.innerHTML;
+      el.textContent='••••';
+    } else {
+      if(el.dataset.orig){ el.innerHTML=el.dataset.orig; el.dataset.orig=''; }
+    }
+  });
+
+  // p-month-change and p-wolf-desc
+  ['p-month-change','p-wolf-desc'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    if(privacyOn){
+      if(!el.dataset.orig) el.dataset.orig=el.innerHTML;
+      el.textContent='••••';
+    } else {
+      if(el.dataset.orig){ el.innerHTML=el.dataset.orig; el.dataset.orig=''; }
     }
   });
 }
+
 
 // ===== PROMPT =====
 function renderPrompt(){
@@ -1862,12 +1934,61 @@ function copyPrompt(){
   navigator.clipboard.writeText(text).then(()=>alert(lang==='ar'?'✅ تم النسخ':'✅ Copied!'));
 }
 
+// ===== LIVE PRICES (Yahoo Finance via /api/prices) =====
+let pricesLoaded=false;
+
+async function fetchLivePrices(){
+  const indicator=document.getElementById('live-price-indicator');
+  if(indicator) indicator.textContent='⏳ Loading live prices...';
+  try{
+    const r=await fetch('/api/prices');
+    if(!r.ok) throw new Error('API error');
+    const d=await r.json();
+    if(!d.prices) throw new Error('No prices');
+
+    let updated=0;
+    stocks.forEach(s=>{
+      const q=d.prices[s.sym];
+      if(q && q.price){
+        s.price=q.price;
+        // Recalculate gain/loss % from cost basis
+        s.gl=((q.price - s.cost)/s.cost)*100;
+        // Recalculate market value: estimate shares from original mv/price ratio
+        // shares = original mv / original price (stored in data)
+        if(!s._shares) s._shares=s.mv/s._origPrice||1;
+        s.mv=Math.round(s._shares * q.price);
+        updated++;
+      }
+    });
+
+    pricesLoaded=true;
+    const ts=new Date(d.updated).toLocaleTimeString();
+    if(indicator) indicator.innerHTML=`<span style="color:var(--green)">✅ Live prices — ${updated} stocks updated — ${ts}</span>`;
+
+    // Update header portfolio total
+    const total=stocks.reduce((a,s)=>a+s.mv,0);
+    const pv=document.getElementById('portfolio-val');
+    if(pv && !privacyOn) pv.textContent='$'+total.toLocaleString();
+
+    // Re-render portfolio table and trends
+    renderPortfolio();
+    renderTrends();
+
+  } catch(e){
+    if(indicator) indicator.innerHTML=`<span style="color:var(--text3)">⚠️ Live prices unavailable — showing cached data</span>`;
+  }
+}
+
+// Store original prices on first load so we can calculate shares
+stocks.forEach(s=>{ s._origPrice=s.price; s._shares=s.mv/s.price; });
+
 // ===== INIT =====
 applyTranslations();
 renderPortfolio();
 renderNews();
 loadBriefing();
 loadTxFromStorage();
+fetchLivePrices();
 </script>
 </body>
 </html>
