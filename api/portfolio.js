@@ -1,7 +1,7 @@
 const BRIEFING_API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const REPO = 'ralyafei-source/theisilabs-portfolio';
-const FILE_PATH = 'data/portfolio.json';
+const FILE_PATH = 'data/portfolio-prices-cache.json';
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
