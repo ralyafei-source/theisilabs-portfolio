@@ -1,5 +1,5 @@
-// api/prices.js — uses FMP (already working API key)
-const API_KEY = 'pSwvmzs4KUzvmePFIbSF0ulu5KnxcrHj';
+// api/prices.js — Yahoo Finance with cookie+crumb authentication
+// This bypasses Yahoo Finance's datacenter IP blocking
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,24 +13,58 @@ module.exports = async (req, res) => {
     'CRDO','NEM','B','CLS','PLTR'
   ];
 
+  const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
   try {
-    const url = `https://financialmodelingprep.com/api/v3/quote/${symbols.join(',')}?apikey=${API_KEY}`;
-    const response = await fetch(url);
+    // Step 1 — Get session cookie from Yahoo Finance
+    const cookieRes = await fetch('https://fc.yahoo.com', {
+      headers: { 'User-Agent': UA },
+      redirect: 'follow'
+    });
+    const rawCookie = cookieRes.headers.get('set-cookie') || '';
+    // Extract the A3 cookie which is the important one
+    const cookie = rawCookie.split(',').map(c => c.split(';')[0].trim()).join('; ');
 
-    if (!response.ok) throw new Error(`FMP error: ${response.status}`);
+    // Step 2 — Get crumb token (required for API calls)
+    const crumbRes = await fetch('https://query2.finance.yahoo.com/v1/test/getcrumb', {
+      headers: {
+        'User-Agent': UA,
+        'Cookie': cookie,
+        'Accept': 'text/plain'
+      }
+    });
+    const crumb = await crumbRes.text();
 
-    const quotes = await response.json();
+    if (!crumb || crumb.includes('Unauthorized') || crumb.length > 20) {
+      throw new Error('Could not get Yahoo Finance crumb');
+    }
 
-    if (!Array.isArray(quotes)) throw new Error('Invalid FMP response');
+    // Step 3 — Fetch all 44 stock quotes
+    const quotesUrl = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${symbols.join(',')}&crumb=${encodeURIComponent(crumb)}&lang=en&region=US`;
+    const quotesRes = await fetch(quotesUrl, {
+      headers: {
+        'User-Agent': UA,
+        'Cookie': cookie,
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!quotesRes.ok) throw new Error(`Yahoo quotes error: ${quotesRes.status}`);
+
+    const data = await quotesRes.json();
+    const quotes = data.quoteResponse?.result || [];
+
+    if (quotes.length === 0) throw new Error('No quotes returned');
 
     const prices = {};
     quotes.forEach(q => {
-      if (q.price) {
+      if (q.regularMarketPrice) {
         prices[q.symbol] = {
-          price: q.price,
-          change: q.change || 0,
-          changePct: q.changesPercentage || 0,
-          name: q.name || q.symbol
+          price: q.regularMarketPrice,
+          change: q.regularMarketChange || 0,
+          changePct: q.regularMarketChangePercent || 0,
+          name: q.longName || q.shortName || q.symbol,
+          marketState: q.marketState || 'REGULAR'
         };
       }
     });
@@ -39,10 +73,40 @@ module.exports = async (req, res) => {
       prices,
       count: Object.keys(prices).length,
       updated: new Date().toISOString(),
-      source: 'FMP'
+      source: 'Yahoo Finance'
     });
 
   } catch (e) {
-    res.status(500).json({ error: e.message, prices: {}, updated: new Date().toISOString() });
+    // Fallback to FMP if Yahoo fails
+    try {
+      const FMP_KEY = 'pSwvmzs4KUzvmePFIbSF0ulu5KnxcrHj';
+      const fmpUrl = `https://financialmodelingprep.com/api/v3/quote/${symbols.join(',')}?apikey=${FMP_KEY}`;
+      const fmpRes = await fetch(fmpUrl);
+      const fmpData = await fmpRes.json();
+
+      const prices = {};
+      if (Array.isArray(fmpData)) {
+        fmpData.forEach(q => {
+          if (q.price) {
+            prices[q.symbol] = {
+              price: q.price,
+              change: q.change || 0,
+              changePct: q.changesPercentage || 0,
+              name: q.name || q.symbol
+            };
+          }
+        });
+      }
+
+      res.json({
+        prices,
+        count: Object.keys(prices).length,
+        updated: new Date().toISOString(),
+        source: 'FMP (Yahoo fallback)'
+      });
+
+    } catch (e2) {
+      res.status(500).json({ error: e.message, fallbackError: e2.message, prices: {} });
+    }
   }
 };
