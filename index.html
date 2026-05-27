@@ -1818,11 +1818,26 @@ function setAdvisorLang(l,btn){
   document.querySelectorAll('.advisor-lang-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   if(!analysisData) return;
-  if(l==='en' && !translationCache[advisorDate]){
-    translateAnalysis(analysisData);
+  if(l==='en'){
+    const needsTranslation = ['daily','weekly','monthly'].some(type =>
+      analysisData[type] && !translationCache[type+'-'+advisorDate]
+    );
+    if(needsTranslation){
+      translateAnalysis(analysisData);
+    } else {
+      renderAnalysis(analysisData);
+    }
   } else {
     renderAnalysis(analysisData);
   }
+}
+
+function extractText(src){
+  if(!src) return '';
+  if(typeof src==='string') return src;
+  if(Array.isArray(src)) return src.filter(c=>c.type==='text').map(c=>c.text||'').join('\n');
+  if(src.text) return src.text;
+  return '';
 }
 
 async function translateAnalysis(data){
@@ -1831,45 +1846,39 @@ async function translateAnalysis(data){
     el.innerHTML='<span style="color:var(--text2);font-size:12px;">🔄 Translating to English...</span>';
   });
 
-  // Extract text from content — handles string or array [{type:"text",text:"..."}]
-  let textToTranslate='';
-  if(typeof data.content==='string'){
-    textToTranslate=data.content;
-  } else if(Array.isArray(data.content)){
-    textToTranslate=data.content.filter(c=>c.type==='text').map(c=>c.text||'').join('\n');
-  } else if(data.content && typeof data.content.text==='string'){
-    textToTranslate=data.content.text;
-  }
+  // New format: data = {daily:{content:...}, weekly:{content:...}, monthly:{content:...}}
+  // Translate each type separately and cache individually
+  const types = ['daily','weekly','monthly'];
 
-  if(!textToTranslate.trim()){
-    translationCache[advisorDate]='__arabic__';
-    renderAnalysis(data);
-    return;
-  }
+  for(const type of types){
+    const src = data[type];
+    if(!src) continue;
+    const cacheKey = type+'-'+advisorDate;
+    if(translationCache[cacheKey]) continue; // already cached
 
-  try{
-    const r=await fetch('/api/translate',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({text:textToTranslate, date:advisorDate})
-    });
-    const d=await r.json();
-    if(d.translated){
-      translationCache[advisorDate]=d.translated;
-    } else {
-      // Show actual error from API so we can debug
-      const errMsg=d.error||'Unknown error';
-      document.querySelectorAll('.firm-body').forEach(el=>{
-        el.innerHTML=`<span style="color:var(--red);font-size:12px;">❌ Translation error: ${errMsg}</span>`;
-      });
-      return;
+    const textToTranslate = extractText(src.content);
+    if(!textToTranslate.trim()){
+      translationCache[cacheKey]='__arabic__';
+      continue;
     }
-  } catch(e){
-    document.querySelectorAll('.firm-body').forEach(el=>{
-      el.innerHTML=`<span style="color:var(--red);font-size:12px;">❌ Translation failed: ${e.message}</span>`;
-    });
-    return;
+
+    try{
+      const r=await fetch('/api/translate',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text:textToTranslate, date:cacheKey})
+      });
+      const d=await r.json();
+      if(d.translated){
+        translationCache[cacheKey]=d.translated;
+      } else {
+        translationCache[cacheKey]='__arabic__';
+      }
+    } catch(e){
+      translationCache[cacheKey]='__arabic__';
+    }
   }
+
   renderAnalysis(data);
 }
 
@@ -2054,8 +2063,16 @@ function renderAnalysis(data){
     const {src} = sourceMap[f];
     const srcData = data[src];
     const sections = parsed[src];
+    const cacheKey = src+'-'+advisorDate;
+    const cached = translationCache[cacheKey];
 
-    let text = sections[f] || (isAr ? 'لا توجد بيانات — سيتم التحديث في الموعد المجدول' : 'No data yet — updates on schedule');
+    // Use translated content if EN mode and translation available
+    let sectionsToUse = sections;
+    if(!isAr && cached && cached !== '__arabic__'){
+      sectionsToUse = parseAnalysisSections(cached, src);
+    }
+
+    let text = sectionsToUse[f] || (isAr ? 'لا توجد بيانات — سيتم التحديث في الموعد المجدول' : 'No data yet — updates on schedule');
 
     body.innerHTML = mdToHtml(text);
     body.style.direction = isAr ? 'rtl' : 'ltr';
