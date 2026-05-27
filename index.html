@@ -1807,7 +1807,9 @@ const firmNames={
   ar:{gs:'غولدمان ساكس',bw:'برجووتر',br:'بلاك روك',ms:'مورغان ستانلي',jp:'جي بي مورغان',ba:'باين',he:'هارفارد',rt:'رينيسانس',mk:'ماكنزي'}
 };
 let advisorLang='ar';
-let advisorDate=new Date().toISOString().split('T')[0];
+// Use UAE timezone (UTC+4) for date
+const _uaeNow = new Date(Date.now() + 4 * 60 * 60 * 1000);
+let advisorDate = _uaeNow.toISOString().split('T')[0];
 let analysisData=null;
 let translationCache={}; // key: date, value: translated sections
 
@@ -1886,7 +1888,8 @@ function navigateDate(dir){
 }
 
 function goToToday(){
-  advisorDate=new Date().toISOString().split('T')[0];
+  const _now=new Date(Date.now()+4*60*60*1000);
+  advisorDate=_now.toISOString().split('T')[0];
   loadAnalysis();
 }
 
