@@ -1934,52 +1934,65 @@ function copyPrompt(){
   navigator.clipboard.writeText(text).then(()=>alert(lang==='ar'?'✅ تم النسخ':'✅ Copied!'));
 }
 
-// ===== LIVE PRICES (Yahoo Finance via /api/prices) =====
+// ===== LIVE PRICES (Yahoo Finance — called directly from browser, no server needed) =====
 let pricesLoaded=false;
 
 async function fetchLivePrices(){
   const indicator=document.getElementById('live-price-indicator');
   if(indicator) indicator.textContent='⏳ Loading live prices...';
+
+  const allSymbols=[
+    'NVDA','AMZN','MU','OKTA','MSFT','CRM','PANW','CRWD','AAPL','GOOGL',
+    'FTNT','QQQ','VOO','SPY','IVV','SMH','VGT','SPUS','XLP','QQQM',
+    'IBIT','DUOL','BTBT','ATYR','MVST','MSTR','PONY','WOLF','NTLA','ONTO',
+    'NOW','SIMO','SEZL','APH','IOT','IONQ','SERV','SMMT','PATH','ZETA',
+    'CRDO','NEM','B','CLS','PLTR'
+  ];
+
   try{
-    const r=await fetch('/api/prices');
-    if(!r.ok) throw new Error('API error');
+    // Call Yahoo Finance directly from browser — browser IPs are not blocked
+    const url=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${allSymbols.join(',')}&lang=en&region=US&corsDomain=finance.yahoo.com`;
+    const r=await fetch(url,{
+      headers:{
+        'Accept':'application/json',
+        'Origin':'https://finance.yahoo.com'
+      }
+    });
+
+    if(!r.ok) throw new Error(`Yahoo error: ${r.status}`);
     const d=await r.json();
-    if(!d.prices) throw new Error('No prices');
+    const quotes=d.quoteResponse?.result||[];
+    if(quotes.length===0) throw new Error('No quotes returned');
 
     let updated=0;
-    stocks.forEach(s=>{
-      const q=d.prices[s.sym];
-      if(q && q.price){
-        s.price=q.price;
-        // Recalculate gain/loss % from cost basis
-        s.gl=((q.price - s.cost)/s.cost)*100;
-        // Recalculate market value: estimate shares from original mv/price ratio
-        // shares = original mv / original price (stored in data)
-        if(!s._shares) s._shares=s.mv/s._origPrice||1;
-        s.mv=Math.round(s._shares * q.price);
+    quotes.forEach(q=>{
+      const s=stocks.find(s=>s.sym===q.symbol);
+      if(s && q.regularMarketPrice){
+        s.price=q.regularMarketPrice;
+        s.gl=((q.regularMarketPrice - s.cost)/s.cost)*100;
+        s.mv=Math.round(s._shares * q.regularMarketPrice);
         updated++;
       }
     });
 
     pricesLoaded=true;
-    const ts=new Date(d.updated).toLocaleTimeString();
-    if(indicator) indicator.innerHTML=`<span style="color:var(--green)">✅ Live prices — ${updated} stocks updated — ${ts}</span>`;
+    const ts=new Date().toLocaleTimeString();
+    if(indicator) indicator.innerHTML=`<span style="color:var(--green)">✅ Live prices (Yahoo Finance) — ${updated} stocks — ${ts}</span>`;
 
     // Update header portfolio total
     const total=stocks.reduce((a,s)=>a+s.mv,0);
     const pv=document.getElementById('portfolio-val');
     if(pv && !privacyOn) pv.textContent='$'+total.toLocaleString();
 
-    // Re-render portfolio table and trends
     renderPortfolio();
     renderTrends();
 
   } catch(e){
-    if(indicator) indicator.innerHTML=`<span style="color:var(--text3)">⚠️ Live prices unavailable — showing cached data</span>`;
+    if(indicator) indicator.innerHTML=`<span style="color:var(--text3)">⚠️ Live prices unavailable — showing cached data (${e.message})</span>`;
   }
 }
 
-// Store original prices on first load so we can calculate shares
+// Store original prices and share counts on first load
 stocks.forEach(s=>{ s._origPrice=s.price; s._shares=s.mv/s.price; });
 
 // ===== INIT =====
