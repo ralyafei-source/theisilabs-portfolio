@@ -976,7 +976,7 @@ const newsItems=[
 let lang='en';
 let pFilter='all';
 let pSortCol='mv'; // default sort by market value
-let pSortDir=-1;   // -1 = descending, 1 = ascending
+let pSortDir=1;    // 1 = descending (largest first), -1 = ascending
 let tPeriod='1D';
 let tSize='md';
 let tFilterStr='';
@@ -1129,7 +1129,7 @@ function showTab(name,el){
 
 // ===== PORTFOLIO =====
 function sortP(col){
-  if(pSortCol===col){ pSortDir*=-1; } else { pSortCol=col; pSortDir=-1; }
+  if(pSortCol===col){ pSortDir*=-1; } else { pSortCol=col; pSortDir=1; }
   // Update header arrows
   document.querySelectorAll('.ptable th.sortable').forEach(th=>{
     th.classList.remove('sort-active');
@@ -1139,7 +1139,7 @@ function sortP(col){
   const activeEl=document.getElementById(colMap[col]);
   if(activeEl){
     activeEl.classList.add('sort-active');
-    activeEl.querySelector('.sort-arrow').textContent=pSortDir===-1?'↓':'↑';
+    activeEl.querySelector('.sort-arrow').textContent=pSortDir===1?'↓':'↑';
   }
   renderPortfolio();
 }
@@ -1163,14 +1163,13 @@ function renderPortfolio(){
 
   // Sort by selected column
   list.sort((a,b)=>{
-    let va, vb;
-    if(pSortCol==='sym')    { va=a.sym; vb=b.sym; return pSortDir*(va<vb?-1:va>vb?1:0); }
-    if(pSortCol==='name')   { va=lang==='ar'?a.ar:a.en; vb=lang==='ar'?b.ar:b.en; return pSortDir*(va<vb?-1:va>vb?1:0); }
-    if(pSortCol==='sec')    { va=a.sec; vb=b.sec; return pSortDir*(va<vb?-1:va>vb?1:0); }
-    if(pSortCol==='mv')     { return pSortDir*(b.mv-a.mv); }
-    if(pSortCol==='gl')     { return pSortDir*(b.gl-a.gl); }
-    if(pSortCol==='status') { return pSortDir*(b.gl-a.gl); } // status mirrors gl order
-    return pSortDir*(b.mv-a.mv);
+    if(pSortCol==='sym')    { const d=a.sym<b.sym?-1:a.sym>b.sym?1:0; return pSortDir===1?d:-d; }
+    if(pSortCol==='name')   { const va=lang==='ar'?a.ar:a.en; const vb=lang==='ar'?b.ar:b.en; const d=va<vb?-1:va>vb?1:0; return pSortDir===1?d:-d; }
+    if(pSortCol==='sec')    { const d=a.sec<b.sec?-1:a.sec>b.sec?1:0; return pSortDir===1?d:-d; }
+    if(pSortCol==='mv')     { return pSortDir===1?b.mv-a.mv:a.mv-b.mv; }
+    if(pSortCol==='gl')     { return pSortDir===1?b.gl-a.gl:a.gl-b.gl; }
+    if(pSortCol==='status') { return pSortDir===1?b.gl-a.gl:a.gl-b.gl; }
+    return b.mv-a.mv;
   });
 
   document.getElementById('pBody').innerHTML=list.map(s=>{
