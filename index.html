@@ -359,7 +359,10 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
     <div id="live-price-indicator" style="font-size:11px;color:var(--text2);font-family:'IBM Plex Mono',monospace;">
       ⏳ Loading live prices...
     </div>
-    <button onclick="fetchLivePrices()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:4px 12px;border-radius:7px;cursor:pointer;font-size:11px;font-family:'Cairo',sans-serif;">↺ Refresh Prices</button>
+    <div style="display:flex;gap:8px;">
+      <button onclick="fetchLivePrices()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:4px 12px;border-radius:7px;cursor:pointer;font-size:11px;font-family:'Cairo',sans-serif;">↺ Refresh Prices</button>
+      <button onclick="openTradeModal()" style="background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#000;padding:4px 14px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;font-family:'Cairo',sans-serif;">+ Record Trade</button>
+    </div>
   </div>
   <div class="grid-4">
     <div class="stat-card blue">
@@ -2075,6 +2078,205 @@ async function fetchLivePrices(){
 // Store original prices and share counts on first load
 stocks.forEach(s=>{ s._origPrice=s.price; s._shares=s.mv/s.price; });
 
+// ===== TRADE MODAL =====
+const API_KEY = 'theisilabs2026';
+let tradeAction = 'BUY';
+let selectedSym = '';
+
+function openTradeModal(){
+  // Populate stock dropdown from current stocks array
+  const sel = document.getElementById('tradeSymSelect');
+  sel.innerHTML = '<option value="">— Select existing stock —</option>';
+  [...stocks].sort((a,b)=>a.sym.localeCompare(b.sym)).forEach(s=>{
+    sel.innerHTML += `<option value="${s.sym}">${s.sym} — ${s.en}</option>`;
+  });
+  // Reset form
+  document.getElementById('tradeSymNew').value='';
+  document.getElementById('tradeShares').value='';
+  document.getElementById('tradePrice').value='';
+  document.getElementById('tradeStatus').textContent='';
+  document.getElementById('tradePreview').textContent='Enter stock, shares and price to see preview...';
+  document.getElementById('newStockFields').style.display='none';
+  document.getElementById('sharesPriceFields').style.display='grid';
+  setTradeAction('BUY');
+  const modal = document.getElementById('tradeModal');
+  modal.style.display='flex';
+}
+
+function closeTradeModal(){
+  document.getElementById('tradeModal').style.display='none';
+}
+
+function setTradeAction(action){
+  tradeAction = action;
+  ['BUY','SELL','REMOVE'].forEach(a=>{
+    const btn = document.getElementById('btn-'+a.toLowerCase());
+    if(a===action){
+      if(a==='BUY')    { btn.style.border='2px solid var(--green)';  btn.style.background='rgba(0,200,100,.2)'; btn.style.color='var(--green)'; }
+      if(a==='SELL')   { btn.style.border='2px solid var(--red)';    btn.style.background='rgba(255,68,68,.2)'; btn.style.color='var(--red)'; }
+      if(a==='REMOVE') { btn.style.border='2px solid var(--text2)';  btn.style.background='rgba(100,100,100,.2)'; btn.style.color='var(--text)'; }
+    } else {
+      btn.style.border='1px solid var(--border)';
+      btn.style.background='var(--bg3)';
+      btn.style.color='var(--text2)';
+    }
+  });
+  // Hide shares/price for REMOVE
+  document.getElementById('sharesPriceFields').style.display = action==='REMOVE'?'none':'grid';
+  updatePreview();
+}
+
+function onSymSelect(val){
+  selectedSym = val;
+  document.getElementById('tradeSymNew').value='';
+  document.getElementById('newStockFields').style.display='none';
+  // Auto-fill current price
+  if(val){
+    const s = stocks.find(s=>s.sym===val);
+    if(s) document.getElementById('tradePrice').value = s.price.toFixed(2);
+  }
+  updatePreview();
+}
+
+function onNewSym(val){
+  selectedSym = val.toUpperCase();
+  document.getElementById('tradeSymSelect').value='';
+  const isNew = val && !stocks.find(s=>s.sym===val.toUpperCase());
+  document.getElementById('newStockFields').style.display = (isNew && tradeAction==='BUY') ? 'block' : 'none';
+  updatePreview();
+}
+
+function updatePreview(){
+  const sym = selectedSym || document.getElementById('tradeSymNew').value.toUpperCase();
+  const shares = parseFloat(document.getElementById('tradeShares').value);
+  const price = parseFloat(document.getElementById('tradePrice').value);
+  const box = document.getElementById('tradePreview');
+
+  if(!sym){ box.textContent='Select or enter a stock symbol...'; return; }
+
+  const existing = stocks.find(s=>s.sym===sym);
+
+  if(tradeAction==='REMOVE'){
+    if(!existing){ box.innerHTML=`<span style="color:var(--red)">⚠️ ${sym} not found in portfolio</span>`; return; }
+    box.innerHTML=`<span style="color:var(--red)">🗑 Remove ${sym} (${existing._shares?.toFixed(2)||'?'} shares) completely from portfolio</span>`;
+    return;
+  }
+
+  if(!shares || !price || isNaN(shares) || isNaN(price)){
+    box.textContent='Enter shares and price to see preview...'; return;
+  }
+
+  const total = shares * price;
+
+  if(tradeAction==='BUY'){
+    if(existing){
+      const oldShares = existing._shares || (existing.mv/existing.price);
+      const newShares = oldShares + shares;
+      const newCost = ((oldShares * existing.cost) + total) / newShares;
+      box.innerHTML=`<span style="color:var(--green)">📈 BUY ${shares} × $${price.toFixed(2)} = $${total.toLocaleString(undefined,{maximumFractionDigits:2})}</span><br>
+        <span style="color:var(--text2)">New position: ${newShares.toFixed(4)} shares | New avg cost: $${newCost.toFixed(2)}</span>`;
+    } else {
+      box.innerHTML=`<span style="color:var(--green)">📈 NEW: Buy ${shares} ${sym} × $${price.toFixed(2)} = $${total.toLocaleString(undefined,{maximumFractionDigits:2})}</span>`;
+    }
+  } else if(tradeAction==='SELL'){
+    if(!existing){ box.innerHTML=`<span style="color:var(--red)">⚠️ ${sym} not found in portfolio</span>`; return; }
+    const heldShares = existing._shares || (existing.mv/existing.price);
+    const remaining = heldShares - shares;
+    const gain = (price - existing.cost) * shares;
+    const gainPct = ((price/existing.cost)-1)*100;
+    const gainColor = gain>=0?'var(--green)':'var(--red)';
+    if(remaining < 0){ box.innerHTML=`<span style="color:var(--red)">⚠️ Cannot sell ${shares} — only ${heldShares.toFixed(4)} held</span>`; return; }
+    box.innerHTML=`<span style="color:var(--red)">📉 SELL ${shares} × $${price.toFixed(2)} = $${total.toLocaleString(undefined,{maximumFractionDigits:2})}</span><br>
+      <span style="color:${gainColor}">Gain/Loss: ${gain>=0?'+':''}$${gain.toFixed(2)} (${gainPct>=0?'+':''}${gainPct.toFixed(2)}%)</span><br>
+      <span style="color:var(--text2)">Remaining: ${remaining < 0.01 ? '0 (fully sold)' : remaining.toFixed(4)+' shares'}</span>`;
+  }
+}
+
+async function submitTrade(){
+  const sym = (selectedSym || document.getElementById('tradeSymNew').value).toUpperCase();
+  const shares = parseFloat(document.getElementById('tradeShares').value);
+  const price = parseFloat(document.getElementById('tradePrice').value);
+  const status = document.getElementById('tradeStatus');
+  const btn = document.getElementById('tradeSubmitBtn');
+
+  if(!sym){ status.innerHTML='<span style="color:var(--red)">Please select or enter a stock symbol</span>'; return; }
+  if(tradeAction!=='REMOVE' && (!shares||!price||isNaN(shares)||isNaN(price))){
+    status.innerHTML='<span style="color:var(--red)">Please enter shares and price</span>'; return;
+  }
+
+  // Build payload
+  const payload = { action:tradeAction, sym, shares, price, api_key: API_KEY };
+
+  // New stock details
+  const isNew = !stocks.find(s=>s.sym===sym);
+  if(tradeAction==='BUY' && isNew){
+    const name = document.getElementById('newStockName').value.trim();
+    if(!name){ status.innerHTML='<span style="color:var(--red)">Please enter the stock name</span>'; return; }
+    payload.newStock = {
+      name,
+      name_ar: document.getElementById('newStockNameAr').value.trim() || sym,
+      sector: document.getElementById('newStockSector').value
+    };
+  }
+
+  btn.textContent='Saving...'; btn.disabled=true;
+  status.innerHTML='<span style="color:var(--text2)">⏳ Updating portfolio.json on GitHub...</span>';
+
+  try{
+    const r = await fetch('/api/update-portfolio', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':API_KEY},
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+
+    if(d.success){
+      status.innerHTML=`<span style="color:var(--green)">✅ Portfolio updated! ${d.result.action} — ${d.total_holdings} holdings total</span>`;
+
+      // Update local stocks array immediately (no need to reload)
+      const idx = stocks.findIndex(s=>s.sym===sym);
+      if(tradeAction==='BUY'){
+        if(idx>=0){
+          stocks[idx]._shares = d.result.shares;
+          stocks[idx].cost = d.result.cost;
+          stocks[idx].mv = Math.round(d.result.shares * stocks[idx].price);
+          stocks[idx].gl = ((stocks[idx].price / d.result.cost) - 1) * 100;
+        } else if(payload.newStock){
+          stocks.push({
+            sym, en:payload.newStock.name, ar:payload.newStock.name_ar,
+            cost:price, price:price, mv:Math.round(shares*price), gl:0,
+            sec:payload.newStock.sector, _shares:shares, _origPrice:price
+          });
+        }
+      } else if(tradeAction==='SELL'){
+        if(idx>=0){
+          if(d.result.shares < 0.01){ stocks.splice(idx,1); }
+          else {
+            stocks[idx]._shares = d.result.shares;
+            stocks[idx].mv = Math.round(d.result.shares * stocks[idx].price);
+          }
+        }
+      } else if(tradeAction==='REMOVE'){
+        if(idx>=0) stocks.splice(idx,1);
+      }
+
+      renderPortfolio();
+      setTimeout(closeTradeModal, 2000);
+    } else {
+      status.innerHTML=`<span style="color:var(--red)">❌ Error: ${d.error}</span>`;
+    }
+  } catch(e){
+    status.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;
+  }
+
+  btn.textContent='Confirm Trade'; btn.disabled=false;
+}
+
+// Close modal on backdrop click
+document.getElementById('tradeModal').addEventListener('click', function(e){
+  if(e.target===this) closeTradeModal();
+});
+
 // ===== INIT =====
 applyTranslations();
 renderPortfolio();
@@ -2083,5 +2285,75 @@ loadBriefing();
 loadTxFromStorage();
 fetchLivePrices();
 </script>
+<!-- ===== TRADE MODAL ===== -->
+<div id="tradeModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;width:420px;max-width:95vw;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div style="font-size:16px;font-weight:900;">📝 Record Trade</div>
+      <button onclick="closeTradeModal()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;">✕</button>
+    </div>
+
+    <!-- Action Toggle -->
+    <div style="display:flex;gap:8px;margin-bottom:18px;">
+      <button id="btn-buy"  onclick="setTradeAction('BUY')"  style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--green);background:rgba(0,200,100,.15);color:var(--green);font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif;">📈 BUY</button>
+      <button id="btn-sell" onclick="setTradeAction('SELL')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif;">📉 SELL</button>
+      <button id="btn-remove" onclick="setTradeAction('REMOVE')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif;">🗑 REMOVE</button>
+    </div>
+
+    <!-- Stock Symbol -->
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">STOCK SYMBOL</label>
+      <div style="display:flex;gap:8px;">
+        <select id="tradeSymSelect" onchange="onSymSelect(this.value)" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;">
+          <option value="">— Select existing stock —</option>
+        </select>
+        <span style="color:var(--text2);line-height:38px;">or</span>
+        <input id="tradeSymNew" placeholder="New: TSLA" style="width:100px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;" oninput="onNewSym(this.value)">
+      </div>
+    </div>
+
+    <!-- New Stock Details (hidden unless new) -->
+    <div id="newStockFields" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--accent);margin-bottom:10px;font-weight:700;">NEW STOCK DETAILS</div>
+      <input id="newStockName" placeholder="Full name (e.g. Tesla Inc.)" style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-family:'Cairo',sans-serif;font-size:12px;margin-bottom:8px;">
+      <input id="newStockNameAr" placeholder="Arabic name (e.g. تيسلا)" dir="rtl" style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-family:'Cairo',sans-serif;font-size:12px;margin-bottom:8px;">
+      <select id="newStockSector" style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-family:'Cairo',sans-serif;font-size:12px;">
+        <option value="tech">Technology</option>
+        <option value="spec">Speculative</option>
+        <option value="bio">Biotech</option>
+        <option value="etf">ETF</option>
+        <option value="mining">Mining</option>
+      </select>
+    </div>
+
+    <!-- Shares & Price -->
+    <div id="sharesPriceFields" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div>
+        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">SHARES</label>
+        <input id="tradeShares" type="number" step="0.0001" placeholder="e.g. 10" oninput="updatePreview()" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">PRICE PER SHARE ($)</label>
+        <input id="tradePrice" type="number" step="0.01" placeholder="e.g. 215.00" oninput="updatePreview()" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;">
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div id="tradePreview" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px;font-size:12px;min-height:52px;font-family:'IBM Plex Mono',monospace;color:var(--text2);">
+      Enter stock, shares and price to see preview...
+    </div>
+
+    <!-- Submit -->
+    <div style="display:flex;gap:10px;">
+      <button onclick="submitTrade()" id="tradeSubmitBtn" style="flex:1;padding:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#000;border-radius:10px;font-weight:900;font-size:14px;cursor:pointer;font-family:'Cairo',sans-serif;">Confirm Trade</button>
+      <button onclick="closeTradeModal()" style="padding:12px 18px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:10px;cursor:pointer;font-family:'Cairo',sans-serif;">Cancel</button>
+    </div>
+
+    <!-- Status -->
+    <div id="tradeStatus" style="margin-top:12px;text-align:center;font-size:12px;"></div>
+  </div>
+</div>
 </body>
 </html>
