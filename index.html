@@ -2080,19 +2080,19 @@ function parseAnalysisSections(content, type){
   // Map section markers by type
   const markersByType = {
     daily: {
-      signals:   ['DAILY SIGNALS','إشارات اليوم'],
-      earnings:  ['EARNINGS','الأرباح والأحداث'],
-      macro:     ['MACRO TODAY','MACRO','ماكرو اليوم']
+      signals:   ['DAILY SIGNALS','إشارات اليوم','القسم الأول','إشارات اليوم','الإشارات اليومية'],
+      earnings:  ['EARNINGS & EVENTS','EARNINGS','الأرباح والأحداث','القسم الثاني','الأرباح والأحداث القادمة'],
+      macro:     ['MACRO TODAY','MACRO','ماكرو اليوم','القسم الثالث','الماكرو اليوم']
     },
     weekly: {
-      risk:      ['RISK RADAR','رادار المخاطر'],
-      fairvalue: ['FAIR VALUE','القيمة العادلة'],
-      momentum:  ['MOMENTUM','إشارات الزخم']
+      risk:      ['RISK RADAR','رادار المخاطر','القسم الأول'],
+      fairvalue: ['FAIR VALUE','القيمة العادلة','القسم الثاني'],
+      momentum:  ['MOMENTUM','إشارات الزخم','القسم الثالث']
     },
     monthly: {
-      competitive: ['COMPETITIVE EDGE','الميزة التنافسية'],
-      longview:    ['LONG VIEW','النظرة طويلة المدى'],
-      health:      ['PORTFOLIO HEALTH','صحة المحفظة']
+      competitive: ['COMPETITIVE EDGE','الميزة التنافسية','القسم الأول'],
+      longview:    ['LONG VIEW','النظرة طويلة المدى','القسم الثاني'],
+      health:      ['PORTFOLIO HEALTH','صحة المحفظة','القسم الثالث']
     }
   };
   const markers = markersByType[type] || markersByType.daily;
