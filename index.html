@@ -1840,42 +1840,47 @@ function extractText(src){
   return '';
 }
 
+// Get which route type the current active firm tab belongs to
+function getActiveRouteType(){
+  const activeTab = document.querySelector('.firm-tab.active');
+  if(!activeTab) return 'daily';
+  const firmId = activeTab.getAttribute('onclick')?.match(/'([^']+)'/)?.[1] || 'signals';
+  const typeMap = {
+    signals:'daily', earnings:'daily', macro:'daily',
+    risk:'weekly', fairvalue:'weekly', momentum:'weekly',
+    competitive:'monthly', longview:'monthly', health:'monthly'
+  };
+  return typeMap[firmId] || 'daily';
+}
+
 async function translateAnalysis(data){
-  // Show translating state on all firm bodies
+  // Only translate the currently active route type
+  const activeType = getActiveRouteType();
+  const cacheKey = activeType+'-'+advisorDate;
+
+  // Show translating state only on active firm bodies
   document.querySelectorAll('.firm-body').forEach(el=>{
     el.innerHTML='<span style="color:var(--text2);font-size:12px;">🔄 Translating to English...</span>';
   });
 
-  // New format: data = {daily:{content:...}, weekly:{content:...}, monthly:{content:...}}
-  // Translate each type separately and cache individually
-  const types = ['daily','weekly','monthly'];
+  if(!translationCache[cacheKey]){
+    const src = data[activeType];
+    const textToTranslate = src ? extractText(src.content) : '';
 
-  for(const type of types){
-    const src = data[type];
-    if(!src) continue;
-    const cacheKey = type+'-'+advisorDate;
-    if(translationCache[cacheKey]) continue; // already cached
-
-    const textToTranslate = extractText(src.content);
     if(!textToTranslate.trim()){
       translationCache[cacheKey]='__arabic__';
-      continue;
-    }
-
-    try{
-      const r=await fetch('/api/translate',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({text:textToTranslate, date:cacheKey})
-      });
-      const d=await r.json();
-      if(d.translated){
-        translationCache[cacheKey]=d.translated;
-      } else {
+    } else {
+      try{
+        const r=await fetch('/api/translate',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({text:textToTranslate, date:cacheKey})
+        });
+        const d=await r.json();
+        translationCache[cacheKey] = d.translated || '__arabic__';
+      } catch(e){
         translationCache[cacheKey]='__arabic__';
       }
-    } catch(e){
-      translationCache[cacheKey]='__arabic__';
     }
   }
 
@@ -1883,6 +1888,15 @@ async function translateAnalysis(data){
 }
 
 function showFirm(id,btn){
+  // If in EN mode, trigger translation for the new tab's route type
+  if(advisorLang==='en' && analysisData){
+    const typeMap={signals:'daily',earnings:'daily',macro:'daily',risk:'weekly',fairvalue:'weekly',momentum:'weekly',competitive:'monthly',longview:'monthly',health:'monthly'};
+    const type=typeMap[id]||'daily';
+    const cacheKey=type+'-'+advisorDate;
+    if(!translationCache[cacheKey]){
+      setTimeout(()=>translateAnalysis(analysisData),50);
+    }
+  }
   document.querySelectorAll('.firm-tab').forEach(b=>b.classList.remove('active','gs','bw','br','ms','jp','ba','he','rt','mk'));
   document.querySelectorAll('.firm-content').forEach(c=>c.classList.remove('active'));
   btn.classList.add('active',id);
