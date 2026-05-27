@@ -275,11 +275,11 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
       </div>
       <div class="header-right">
         <div class="hstat" style="cursor:pointer;" onclick="togglePrivacy()" title="Click to hide/show values">
-          <div class="hstat-val up" id="portfolio-val">$612,774</div>
+          <div class="hstat-val up" id="portfolio-val">$694,171</div>
           <div class="hstat-label" id="h-portfolio">Portfolio 👁</div>
         </div>
         <div class="hstat">
-          <div class="hstat-val" style="color:var(--accent)">44</div>
+          <div class="hstat-val" style="color:var(--accent)">52</div>
           <div class="hstat-label" id="h-stocks">Stocks</div>
         </div>
         <div class="hstat">
@@ -364,7 +364,7 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
   <div class="grid-4">
     <div class="stat-card blue">
       <div class="stat-label" id="p-total-label">Total Portfolio</div>
-      <div class="stat-value" style="color:var(--accent)">$612K</div>
+      <div class="stat-value" style="color:var(--accent)">$694K</div>
       <div class="stat-change up" id="p-month-change">▲ $68,431 this month</div>
     </div>
     <div class="stat-card green">
@@ -408,7 +408,7 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
     <div class="section-hdr">
       <div>
         <div class="section-title" id="p-all-stocks">All Holdings</div>
-        <div class="section-sub" id="p-sub">44 securities — as of April 2026</div>
+        <div class="section-sub" id="p-sub">52 securities — as of April 2026</div>
       </div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-outline" onclick="filterP('all')" id="btn-all" style="font-size:12px;padding:7px 12px;">All</button>
@@ -526,7 +526,7 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
           <div class="tg-msg" id="tgMsg">
 🌅 <strong>Morning Portfolio Brief</strong><br>
 Wed, 21 May 2026 | 7:00 AM<br><br>
-💼 <strong>Portfolio: $612,774</strong><br><br>
+💼 <strong>Portfolio: $694,171</strong><br><br>
 📈 <strong>Top Moves:</strong><br>
 • NVDA ▲ 2.1% | $60,031<br>
 • MU ▲ 1.8% | $38,787<br>
@@ -890,52 +890,66 @@ WOLF remains at critical lows<br><br>
 </main>
 
 <script>
+// ── Portfolio verified from Wio Invest app — May 27, 2026 ──
+// price/mv/gl are placeholders — live prices overwrite on load
 const stocks=[
-  {sym:'NVDA',en:'NVIDIA',ar:'انفيديا',cost:81.14,price:199.57,mv:60031,gl:145.94,sec:'tech'},
-  {sym:'AMZN',en:'Amazon',ar:'أمازون',cost:205.64,price:265.06,mv:40438,gl:28.89,sec:'tech'},
-  {sym:'MU',en:'Micron',ar:'ميكرون',cost:172.77,price:517.16,mv:38787,gl:199.33,sec:'tech'},
-  {sym:'OKTA',en:'Okta',ar:'أوكتا',cost:91.84,price:73.65,mv:42501,gl:-19.81,sec:'tech'},
-  {sym:'MSFT',en:'Microsoft',ar:'مايكروسوفت',cost:424.11,price:407.78,mv:17653,gl:-3.85,sec:'tech'},
-  {sym:'CRM',en:'Salesforce',ar:'سيلزفورس',cost:239.45,price:176.53,mv:17655,gl:-26.28,sec:'tech'},
-  {sym:'PANW',en:'Palo Alto',ar:'بالو ألتو',cost:176.35,price:179.32,mv:18841,gl:1.69,sec:'tech'},
-  {sym:'CRWD',en:'CrowdStrike',ar:'كراودسترايك',cost:446.50,price:445.75,mv:9983,gl:-0.17,sec:'tech'},
-  {sym:'AAPL',en:'Apple',ar:'أبل',cost:184.37,price:271.35,mv:6007,gl:47.18,sec:'tech'},
-  {sym:'GOOGL',en:'Alphabet',ar:'ألفابت',cost:260.64,price:384.80,mv:19381,gl:47.64,sec:'tech'},
-  {sym:'FTNT',en:'Fortinet',ar:'فورتينت',cost:66.48,price:84.31,mv:4255,gl:26.81,sec:'tech'},
-  {sym:'QQQ',en:'QQQ ETF',ar:'صندوق QQQ',cost:441.46,price:667.74,mv:17189,gl:51.26,sec:'etf'},
-  {sym:'VOO',en:'Vanguard S&P',ar:'فانغارد S&P',cost:531.16,price:660.58,mv:5098,gl:24.36,sec:'etf'},
-  {sym:'SPY',en:'SPDR S&P',ar:'SPDR S&P',cost:521.19,price:718.66,mv:15118,gl:37.89,sec:'etf'},
-  {sym:'IVV',en:'iShares S&P',ar:'iShares S&P',cost:578.54,price:722.07,mv:2496,gl:24.81,sec:'etf'},
-  {sym:'SMH',en:'Semicon ETF',ar:'صندوق رقائق',cost:253.47,price:506.72,mv:2027,gl:99.91,sec:'etf'},
-  {sym:'VGT',en:'Info Tech ETF',ar:'صندوق تقنية',cost:74.70,price:103.18,mv:6957,gl:38.13,sec:'etf'},
-  {sym:'SPUS',en:'Sharia ETF',ar:'صندوق إسلامي',cost:49.36,price:53.76,mv:6546,gl:8.91,sec:'etf'},
-  {sym:'XLP',en:'Consumer ETF',ar:'صندوق استهلاكي',cost:82.61,price:84.31,mv:5102,gl:2.06,sec:'etf'},
-  {sym:'QQQM',en:'NASDAQ ETF',ar:'صندوق ناسداك',cost:220.64,price:274.90,mv:1686,gl:24.59,sec:'etf'},
-  {sym:'IBIT',en:'Bitcoin ETF',ar:'صندوق بيتكوين',cost:35.43,price:43.32,mv:2445,gl:22.27,sec:'etf'},
-  {sym:'DUOL',en:'Duolingo',ar:'دولينغو',cost:316.92,price:110.10,mv:20950,gl:-65.26,sec:'spec'},
-  {sym:'BTBT',en:'Bit Digital',ar:'بت ديجيتال',cost:4.03,price:1.51,mv:7550,gl:-62.53,sec:'spec'},
-  {sym:'ATYR',en:'aTyr Pharma',ar:'أيتير فارما',cost:2.27,price:0.81,mv:10900,gl:-64.37,sec:'bio'},
-  {sym:'MVST',en:'Microvast',ar:'مايكروفاست',cost:4.58,price:1.93,mv:11760,gl:-57.86,sec:'spec'},
-  {sym:'MSTR',en:'Strategy',ar:'ستراتيجي',cost:344.24,price:165.45,mv:12434,gl:-51.94,sec:'spec'},
-  {sym:'PONY',en:'Pony AI',ar:'بوني AI',cost:20.07,price:9.87,mv:9875,gl:-50.82,sec:'spec'},
-  {sym:'WOLF',en:'Wolfspeed',ar:'وولفسبيد',cost:1052.70,price:29.53,mv:41,gl:-97.19,sec:'spec'},
-  {sym:'NTLA',en:'Intellia',ar:'إنتيليا',cost:18.41,price:13.48,mv:14645,gl:-26.78,sec:'bio'},
-  {sym:'ONTO',en:'Onto Innovations',ar:'أونتو إنوفيشنز',cost:179.53,price:295.06,mv:27438,gl:64.35,sec:'tech'},
-  {sym:'NOW',en:'ServiceNow',ar:'سيرفيس ناو',cost:93.61,price:88.31,mv:4859,gl:-5.66,sec:'tech'},
-  {sym:'SIMO',en:'Silicon Motion',ar:'سيليكون موشن',cost:131.75,price:218.78,mv:10939,gl:66.06,sec:'tech'},
-  {sym:'SEZL',en:'Sezzle',ar:'سيزل',cost:90.74,price:79.60,mv:26334,gl:-12.28,sec:'spec'},
-  {sym:'APH',en:'Amphenol',ar:'أمفينول',cost:125.04,price:147.27,mv:14808,gl:17.78,sec:'tech'},
-  {sym:'IOT',en:'Samsara',ar:'سامسارا',cost:37.14,price:28.74,mv:10827,gl:-22.62,sec:'tech'},
-  {sym:'IONQ',en:'IonQ',ar:'آيون كيو',cost:58.95,price:45.12,mv:3371,gl:-23.46,sec:'tech'},
-  {sym:'SERV',en:'Serve Robotics',ar:'سيرف روبوتيكس',cost:14.86,price:9.43,mv:6601,gl:-36.54,sec:'spec'},
-  {sym:'SMMT',en:'Summit Therap.',ar:'سميت ثيرابيوتيكس',cost:18.61,price:21.46,mv:8589,gl:15.31,sec:'bio'},
-  {sym:'PATH',en:'UiPath',ar:'يو آي باث',cost:14.81,price:10.30,mv:6667,gl:-30.44,sec:'tech'},
-  {sym:'ZETA',en:'Zeta Global',ar:'زيتا غلوبال',cost:18.58,price:18.42,mv:10143,gl:-0.86,sec:'tech'},
-  {sym:'CRDO',en:'Credo Tech',ar:'كريدو تك',cost:130.45,price:174.01,mv:9452,gl:33.39,sec:'tech'},
-  {sym:'NEM',en:'Newmont',ar:'نيومونت',cost:122.66,price:111.09,mv:2717,gl:-9.43,sec:'mining'},
-  {sym:'B',en:'Barrick Mining',ar:'باريك للتعدين',cost:47.58,price:39.34,mv:2480,gl:-17.32,sec:'mining'},
-  {sym:'CLS',en:'Celestica',ar:'سيليستيكا',cost:45.01,price:409.59,mv:7780,gl:809.96,sec:'tech'},
-  {sym:'PLTR',en:'Palantir',ar:'بالانتير',cost:23.41,price:139.11,mv:12490,gl:494.32,sec:'tech'},
+  // TECH
+  {sym:'NVDA',en:'NVIDIA',ar:'انفيديا',cost:81.14,price:214.86,mv:64630,gl:164.79,sec:'tech'},
+  {sym:'AMZN',en:'Amazon',ar:'أمازون',cost:205.64,price:265.29,mv:40474,gl:28.99,sec:'tech'},
+  {sym:'MU',en:'Micron',ar:'ميكرون',cost:172.77,price:895.88,mv:35835,gl:418.54,sec:'tech'},
+  {sym:'OKTA',en:'Okta',ar:'أوكتا',cost:91.84,price:93.81,mv:54136,gl:2.15,sec:'tech'},
+  {sym:'MSFT',en:'Microsoft',ar:'مايكروسوفت',cost:424.11,price:416.03,mv:18010,gl:-1.90,sec:'tech'},
+  {sym:'CRM',en:'Salesforce',ar:'سيلزفورس',cost:239.45,price:179.08,mv:17910,gl:-25.21,sec:'tech'},
+  {sym:'PANW',en:'Palo Alto',ar:'بالو ألتو',cost:176.35,price:256.75,mv:26977,gl:45.59,sec:'tech'},
+  {sym:'CRWD',en:'CrowdStrike',ar:'كراودسترايك',cost:446.50,price:671.55,mv:15040,gl:50.40,sec:'tech'},
+  {sym:'AAPL',en:'Apple',ar:'أبل',cost:184.37,price:308.33,mv:6826,gl:67.24,sec:'tech'},
+  {sym:'GOOGL',en:'Alphabet',ar:'ألفابت',cost:260.64,price:388.88,mv:19587,gl:49.20,sec:'tech'},
+  {sym:'FTNT',en:'Fortinet',ar:'فورتينت',cost:66.48,price:133.96,mv:6762,gl:101.50,sec:'tech'},
+  {sym:'ADBE',en:'Adobe',ar:'أدوبي',cost:534.84,price:240.56,mv:2382,gl:-55.02,sec:'tech'},
+  {sym:'ONTO',en:'Onto Innovations',ar:'أونتو إنوفيشنز',cost:179.53,price:274.17,mv:25496,gl:52.71,sec:'tech'},
+  {sym:'NOW',en:'ServiceNow',ar:'سيرفيس ناو',cost:93.61,price:99.92,mv:5499,gl:6.74,sec:'tech'},
+  {sym:'SIMO',en:'Silicon Motion',ar:'سيليكون موشن',cost:131.75,price:290.32,mv:14516,gl:120.36,sec:'tech'},
+  {sym:'APH',en:'Amphenol',ar:'أمفينول',cost:125.04,price:139.56,mv:14033,gl:11.61,sec:'tech'},
+  {sym:'IOT',en:'Samsara',ar:'سامسارا',cost:37.14,price:31.16,mv:11739,gl:-16.10,sec:'tech'},
+  {sym:'IONQ',en:'IonQ',ar:'آيون كيو',cost:58.95,price:63.62,mv:4754,gl:7.92,sec:'tech'},
+  {sym:'PATH',en:'UiPath',ar:'يو آي باث',cost:14.81,price:11.09,mv:7179,gl:-25.10,sec:'tech'},
+  {sym:'ZETA',en:'Zeta Global',ar:'زيتا غلوبال',cost:18.58,price:19.65,mv:10820,gl:5.76,sec:'tech'},
+  {sym:'CRDO',en:'Credo Tech',ar:'كريدو تك',cost:130.45,price:221.64,mv:12040,gl:69.90,sec:'tech'},
+  {sym:'VISN',en:'Vistance Network',ar:'فيستانس نتورك',cost:16.07,price:12.67,mv:6343,gl:-21.16,sec:'tech'},
+  {sym:'TIGO',en:'Millicom',ar:'ميليكوم',cost:64.95,price:83.03,mv:4126,gl:27.81,sec:'tech'},
+  {sym:'DY',en:'Dycom',ar:'دايكوم',cost:434.78,price:420.76,mv:2903,gl:-3.22,sec:'tech'},
+  {sym:'CLS',en:'Celestica',ar:'سيليستيكا',cost:45.01,price:370.78,mv:7045,gl:723.87,sec:'tech'},
+  {sym:'PLTR',en:'Palantir',ar:'بالانتير',cost:23.41,price:136.60,mv:12265,gl:483.60,sec:'tech'},
+  // SPECULATIVE
+  {sym:'DUOL',en:'Duolingo',ar:'دولينغو',cost:316.92,price:106.48,mv:20261,gl:-66.40,sec:'spec'},
+  {sym:'BTBT',en:'Bit Digital',ar:'بت ديجيتال',cost:4.03,price:1.99,mv:9950,gl:-50.62,sec:'spec'},
+  {sym:'MVST',en:'Microvast',ar:'مايكروفاست',cost:4.58,price:1.44,mv:8774,gl:-68.56,sec:'spec'},
+  {sym:'MSTR',en:'Strategy',ar:'ستراتيجي',cost:344.24,price:159.93,mv:12019,gl:-53.54,sec:'spec'},
+  {sym:'PONY',en:'Pony AI',ar:'بوني AI',cost:20.07,price:9.34,mv:9345,gl:-53.46,sec:'spec'},
+  {sym:'WOLF',en:'Wolfspeed',ar:'وولفسبيد',cost:1052.70,price:73.50,mv:104,gl:-93.02,sec:'spec'},
+  {sym:'SERV',en:'Serve Robotics',ar:'سيرف روبوتيكس',cost:14.86,price:8.97,mv:6280,gl:-39.64,sec:'spec'},
+  {sym:'SOFI',en:'SoFi Technologies',ar:'سوفي',cost:16.42,price:15.98,mv:2000,gl:-2.68,sec:'spec'},
+  {sym:'SEZL',en:'Sezzle',ar:'سيزل',cost:90.74,price:109.98,mv:36386,gl:21.20,sec:'spec'},
+  // BIOTECH
+  {sym:'ATYR',en:'aTyr Pharma',ar:'أيتير فارما',cost:2.27,price:0.484,mv:6539,gl:-78.63,sec:'bio'},
+  {sym:'NTLA',en:'Intellia',ar:'إنتيليا',cost:18.41,price:12.61,mv:13700,gl:-31.50,sec:'bio'},
+  {sym:'SMMT',en:'Summit Therap.',ar:'سميت ثيرابيوتيكس',cost:18.61,price:17.00,mv:6804,gl:-8.65,sec:'bio'},
+  {sym:'COR',en:'Cencora',ar:'سينسورا',cost:362.84,price:270.82,mv:7463,gl:-25.37,sec:'bio'},
+  {sym:'NVO',en:'Novo Nordisk',ar:'نوفو نورديسك',cost:55.02,price:44.20,mv:224,gl:-19.67,sec:'bio'},
+  // MINING
+  {sym:'NEM',en:'Newmont',ar:'نيومونت',cost:122.66,price:111.61,mv:2730,gl:-9.01,sec:'mining'},
+  {sym:'B',en:'Barrick Mining',ar:'باريك للتعدين',cost:47.58,price:42.10,mv:2654,gl:11.52,sec:'mining'},
+  // ETFs
+  {sym:'QQQ',en:'QQQ ETF',ar:'صندوق QQQ',cost:441.46,price:730.28,mv:18799,gl:65.42,sec:'etf'},
+  {sym:'VOO',en:'Vanguard S&P',ar:'فانغارد S&P',cost:531.16,price:690.01,mv:5326,gl:29.91,sec:'etf'},
+  {sym:'SPY',en:'SPDR S&P',ar:'SPDR S&P',cost:521.19,price:750.59,mv:15790,gl:44.02,sec:'etf'},
+  {sym:'IVV',en:'iShares S&P',ar:'iShares S&P',cost:578.54,price:754.03,mv:2607,gl:30.33,sec:'etf'},
+  {sym:'SMH',en:'Semicon ETF',ar:'صندوق رقائق',cost:253.47,price:602.14,mv:2409,gl:137.56,sec:'etf'},
+  {sym:'VGT',en:'Info Tech ETF',ar:'صندوق تقنية',cost:74.70,price:118.05,mv:7960,gl:58.04,sec:'etf'},
+  {sym:'SPUS',en:'Sharia ETF',ar:'صندوق إسلامي',cost:49.36,price:57.83,mv:7042,gl:17.15,sec:'etf'},
+  {sym:'XLP',en:'Consumer ETF',ar:'صندوق استهلاكي',cost:82.61,price:83.63,mv:5062,gl:1.23,sec:'etf'},
+  {sym:'QQQM',en:'NASDAQ ETF',ar:'صندوق ناسداك',cost:220.64,price:300.68,mv:1844,gl:36.28,sec:'etf'},
+  {sym:'IBIT',en:'Bitcoin ETF',ar:'صندوق بيتكوين',cost:35.43,price:42.99,mv:2427,gl:21.34,sec:'etf'},
 ];
 
 const sectors={
@@ -998,7 +1012,7 @@ const T={
     navPortfolio:'Portfolio',navTrends:'Trends',navIndicators:'Indicators',navAlerts:'Alerts',navTransactions:'Transactions',navAdvisor:'AI Advisor',navSetup:'Setup',navPrompt:'Claude Prompt',
     pTotalLabel:'Total Portfolio',pBestLabel:'Best Performer',pReviewLabel:'Needs Review',pLargestLabel:'Largest Position',
     pMonthChange:'▲ $68,431 this month',pWolfDesc:'Wolfspeed $41 remaining',
-    pAllStocks:'All Holdings',pSub:'44 securities — as of April 2026',
+    pAllStocks:'All Holdings',pSub:'52 securities — as of April 2026',
     btnAll:'All',btnGain:'Gainers',btnLoss:'Losers',
     thSym:'Symbol',thName:'Name',thSector:'Sector',thValue:'Market Value',thGL:'Gain / Loss',thStatus:'Status',
     statusReview:'⚠️ Review',statusStrong:'✅ Strong',
@@ -1029,7 +1043,7 @@ const T={
     navPortfolio:'المحفظة',navTrends:'الاتجاهات',navIndicators:'المؤشرات',navAlerts:'التنبيهات',navTransactions:'المعاملات',navAdvisor:'المستشار الذكي',navSetup:'الإعداد',navPrompt:'نص Claude',
     pTotalLabel:'إجمالي المحفظة',pBestLabel:'أفضل أداء',pReviewLabel:'يحتاج مراجعة',pLargestLabel:'أكبر مركز',
     pMonthChange:'▲ $68,431 هذا الشهر',pWolfDesc:'وولفسبيد $41 متبقي',
-    pAllStocks:'جميع الأسهم',pSub:'44 ورقة مالية — أبريل 2026',
+    pAllStocks:'جميع الأسهم',pSub:'52 ورقة مالية — أبريل 2026',
     btnAll:'الكل',btnGain:'رابحة',btnLoss:'خاسرة',
     thSym:'الرمز',thName:'الاسم',thSector:'القطاع',thValue:'القيمة السوقية',thGL:'الربح / الخسارة',thStatus:'الحالة',
     statusReview:'⚠️ مراجعة',statusStrong:'✅ قوي',
@@ -1154,8 +1168,8 @@ function renderPortfolio(){
   const dateStr=`${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
   const subEl=document.getElementById('p-sub');
   if(subEl) subEl.textContent=lang==='ar'
-    ?`44 ورقة مالية — ${dateStr}`
-    :`44 securities — as of ${dateStr}`;
+    ?`52 ورقة مالية — ${dateStr}`
+    :`52 securities — as of ${dateStr}`;
 
   let list=[...stocks];
   if(pFilter==='gain') list=list.filter(s=>s.gl>0);
@@ -1951,7 +1965,7 @@ function togglePrivacy(){
 
   // Header portfolio value & monthly %
   const pv=document.getElementById('portfolio-val');
-  if(pv) pv.textContent=privacyOn?'$ ••••••':'$612,774';
+  if(pv) pv.textContent=privacyOn?'$ ••••••':'$694,171';
   const mp=document.getElementById('header-month-pct');
   if(mp) mp.textContent=privacyOn?'••••':'+ 12.4%';
 
