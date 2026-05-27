@@ -1,9 +1,9 @@
-// api/prices.js — Save this file as: api/prices.js in your GitHub repo
-// Fetches live prices for all 44 portfolio stocks from Yahoo Finance
-// Free, no API key needed, runs server-side (no CORS issues)
+// api/prices.js — uses FMP (already working API key)
+const API_KEY = 'pSwvmzs4KUzvmePFIbSF0ulu5KnxcrHj';
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
 
   const symbols = [
     'NVDA','AMZN','MU','OKTA','MSFT','CRM','PANW','CRWD','AAPL','GOOGL',
@@ -14,40 +14,32 @@ module.exports = async (req, res) => {
   ];
 
   try {
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols.join(',')}&lang=en&region=US&corsDomain=finance.yahoo.com`;
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Accept': 'application/json',
-        'Origin': 'https://finance.yahoo.com',
-        'Referer': 'https://finance.yahoo.com/'
-      }
-    });
+    const url = `https://financialmodelingprep.com/api/v3/quote/${symbols.join(',')}?apikey=${API_KEY}`;
+    const response = await fetch(url);
 
-    if (!response.ok) throw new Error(`Yahoo API error: ${response.status}`);
+    if (!response.ok) throw new Error(`FMP error: ${response.status}`);
 
-    const data = await response.json();
-    const quotes = data.quoteResponse?.result || [];
+    const quotes = await response.json();
+
+    if (!Array.isArray(quotes)) throw new Error('Invalid FMP response');
 
     const prices = {};
     quotes.forEach(q => {
-      if (q.regularMarketPrice) {
+      if (q.price) {
         prices[q.symbol] = {
-          price: q.regularMarketPrice,
-          change: q.regularMarketChange || 0,
-          changePct: q.regularMarketChangePercent || 0,
-          name: q.longName || q.shortName || q.symbol,
-          marketState: q.marketState || 'REGULAR'
+          price: q.price,
+          change: q.change || 0,
+          changePct: q.changesPercentage || 0,
+          name: q.name || q.symbol
         };
       }
     });
 
-    // Cache for 5 minutes
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
     res.json({
       prices,
       count: Object.keys(prices).length,
-      updated: new Date().toISOString()
+      updated: new Date().toISOString(),
+      source: 'FMP'
     });
 
   } catch (e) {
