@@ -267,9 +267,9 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
         </div>
       </div>
       <div class="header-right">
-        <div class="hstat">
-          <div class="hstat-val up">$612,774</div>
-          <div class="hstat-label" id="h-portfolio">Portfolio</div>
+        <div class="hstat" style="cursor:pointer;" onclick="togglePrivacy()" title="Click to hide/show values">
+          <div class="hstat-val up" id="portfolio-val">$612,774</div>
+          <div class="hstat-label" id="h-portfolio">Portfolio 👁</div>
         </div>
         <div class="hstat">
           <div class="hstat-val" style="color:var(--accent)">44</div>
@@ -285,6 +285,7 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
           </div>
           <div class="hstat-label" id="h-system">System</div>
         </div>
+        <button onclick="togglePrivacy()" id="privacyBtn" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:14px;font-family:'Cairo',sans-serif;" title="Hide/Show values">👁</button>
         <div class="lang-toggle">
           <button class="lang-btn active" onclick="setLang('en',this)">EN</button>
           <button class="lang-btn" onclick="setLang('ar',this)">عربي</button>
@@ -1795,6 +1796,55 @@ function parseAnalysisSections(content){
   if(Object.keys(result).length===0) result.gs=content;
 
   return result;
+}
+
+// ===== PRIVACY TOGGLE =====
+let privacyOn=false;
+const privateValues={
+  'portfolio-val':'$612,774',
+  'p-month-change':'▲ $68,431 this month',
+  'p-wolf-desc':'Wolfspeed $41 remaining',
+};
+
+function togglePrivacy(){
+  privacyOn=!privacyOn;
+  const eye=privacyOn?'🙈':'👁';
+  const btn=document.getElementById('privacyBtn');
+  if(btn) btn.textContent=eye;
+  document.getElementById('h-portfolio').innerHTML=lang==='ar'?'المحفظة':'Portfolio';
+
+  // Header portfolio value
+  const pv=document.getElementById('portfolio-val');
+  if(pv) pv.textContent=privacyOn?'$ ••••••':'$612,774';
+
+  // Stat cards
+  document.querySelectorAll('.stat-value,.stat-change').forEach(el=>{
+    if(privacyOn){
+      if(!el.dataset.original) el.dataset.original=el.innerHTML;
+      const text=el.textContent;
+      if(text.includes('$')||text.match(/[+\-]\d/)) el.textContent='••••';
+    } else {
+      if(el.dataset.original){
+        el.innerHTML=el.dataset.original;
+        el.dataset.original='';
+      }
+    }
+  });
+
+  // Portfolio table - only $ values
+  document.querySelectorAll('#pBody td').forEach(td=>{
+    if(privacyOn){
+      if(td.textContent.includes('$')||td.textContent.includes('%')){
+        if(!td.dataset.original) td.dataset.original=td.innerHTML;
+        td.textContent='••••';
+      }
+    } else {
+      if(td.dataset.original){
+        td.innerHTML=td.dataset.original;
+        td.dataset.original='';
+      }
+    }
+  });
 }
 
 // ===== PROMPT =====
