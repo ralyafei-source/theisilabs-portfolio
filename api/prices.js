@@ -1,8 +1,9 @@
-// api/prices.js — FMP stable endpoint (same as gainers/losers)
-const FMP_KEY = 'pSwvmzs4KUzvmePFIbSF0ulu5KnxcrHj';
+// api/prices.js — uses yahoo-finance2 npm package (handles auth automatically)
+const yahooFinance = require('yahoo-finance2').default;
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
 
   const symbols = [
     'NVDA','AMZN','MU','OKTA','MSFT','CRM','PANW','CRWD','AAPL','GOOGL',
@@ -12,50 +13,30 @@ module.exports = async (req, res) => {
     'CRDO','NEM','B','CLS','PLTR'
   ];
 
-  const debug = [];
-  const prices = {};
-
   try {
-    // FMP stable endpoint — same one used for gainers/losers in Make.com
-    // Supports comma-separated symbols
-    const url = `https://financialmodelingprep.com/stable/quote?symbol=${symbols.join(',')}&apikey=${FMP_KEY}`;
+    const quotes = await yahooFinance.quote(symbols);
+    const list = Array.isArray(quotes) ? quotes : [quotes];
 
-    const r = await fetch(url);
-    const text = await r.text();
-    debug.push(`Status: ${r.status}`);
-    debug.push(`Response preview: ${text.slice(0, 200)}`);
-
-    let data;
-    try { data = JSON.parse(text); } catch(e) {
-      throw new Error(`Parse error: ${text.slice(0, 100)}`);
-    }
-
-    if (!Array.isArray(data)) {
-      throw new Error(`Not array: ${JSON.stringify(data).slice(0, 150)}`);
-    }
-
-    data.forEach(q => {
-      if (q.symbol && q.price) {
+    const prices = {};
+    list.forEach(q => {
+      if (q && q.symbol && q.regularMarketPrice) {
         prices[q.symbol] = {
-          price: q.price,
-          change: q.change || 0,
-          changePct: q.changesPercentage || 0,
-          name: q.name || q.symbol
+          price: q.regularMarketPrice,
+          change: q.regularMarketChange || 0,
+          changePct: q.regularMarketChangePercent || 0,
+          name: q.shortName || q.symbol
         };
       }
     });
-
-    debug.push(`Got ${data.length} quotes, ${Object.keys(prices).length} with prices`);
 
     res.json({
       prices,
       count: Object.keys(prices).length,
       updated: new Date().toISOString(),
-      source: 'FMP stable',
-      debug
+      source: 'Yahoo Finance'
     });
 
   } catch (e) {
-    res.status(500).json({ error: e.message, debug, prices: {} });
+    res.status(500).json({ error: e.message, prices: {} });
   }
 };
