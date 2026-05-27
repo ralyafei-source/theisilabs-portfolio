@@ -1,66 +1,135 @@
-const fs = require('fs');
-const path = require('path');
-const BRIEFING_API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const REPO = 'ralyafei-source/theisilabs-portfolio';
+// api/analysis.js
+// Supports 3 analysis types: daily, weekly, monthly
+// GET: reads appropriate file based on type + date params
+// POST: writes to appropriate file
 
-module.exports = async function handler(req, res) {
+const REPO  = 'ralyafei-source/theisilabs-portfolio';
+const TOKEN = process.env.GITHUB_TOKEN;
+const API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
+
+function getFilePath(type, date, week, month) {
+  if (type === 'weekly')  return `data/analysis-weekly-${week || date?.slice(0,7)}.json`;
+  if (type === 'monthly') return `data/analysis-monthly-${month || date?.slice(0,7)}.json`;
+  return `data/analysis-daily-${date}.json`;
+}
+
+async function readFile(path) {
+  const r = await fetch(
+    `https://raw.githubusercontent.com/${REPO}/main/${path}?t=${Date.now()}`
+  );
+  if (!r.ok) return null;
+  return await r.json();
+}
+
+async function writeFile(path, data) {
+  // Get current sha
+  const check = await fetch(
+    `https://api.github.com/repos/${REPO}/contents/${path}`,
+    { headers: { Authorization: `token ${TOKEN}` } }
+  );
+  let sha = null;
+  if (check.ok) {
+    const existing = await check.json();
+    sha = existing.sha;
+  }
+
+  const content = Buffer.from(JSON.stringify(data, null, 2)).toString('base64');
+  const body = {
+    message: `Update ${path}`,
+    content,
+    ...(sha && { sha })
+  };
+
+  const r = await fetch(
+    `https://api.github.com/repos/${REPO}/contents/${path}`,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: `token ${TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    }
+  );
+  return r.ok;
+}
+
+module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  // ── GET: read analysis ──
   if (req.method === 'GET') {
-    try {
-      const date = req.query.date || new Date().toISOString().split('T')[0];
-      const FILE_PATH = `data/analysis-${date}.json`;
-      const r = await fetch(`https://raw.githubusercontent.com/${REPO}/main/${FILE_PATH}?t=${Date.now()}`);
-      if (!r.ok) return res.status(200).json({ content: null, date });
-      const data = await r.json();
-      return res.status(200).json(data);
-    } catch(e) {
-      return res.status(200).json({ content: null });
+    const { date, type, week, month } = req.query;
+
+    // If specific type requested
+    if (type) {
+      const path = getFilePath(type, date, week, month);
+      const data = await readFile(path);
+      if (data) return res.json(data);
+      return res.json({ error: 'Not found' });
     }
+
+    // Default: return all 3 types for dashboard
+    const today = date || new Date().toISOString().slice(0, 10);
+    const thisWeek = today.slice(0, 7); // approximate
+    const thisMonth = today.slice(0, 7);
+
+    // Try to find most recent daily file
+    const dailyData  = await readFile(`data/analysis-daily-${today}.json`);
+
+    // Find most recent weekly (try last 7 days)
+    let weeklyData = null;
+    for (let i = 0; i <= 7; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const ds = d.toISOString().slice(0, 10);
+      const w = ds.slice(0, 7);
+      const data = await readFile(`data/analysis-weekly-${w}.json`);
+      if (data) { weeklyData = data; break; }
+    }
+
+    // Find most recent monthly
+    let monthlyData = null;
+    for (let i = 0; i <= 2; i++) {
+      const d = new Date(today);
+      d.setMonth(d.getMonth() - i);
+      const m = d.toISOString().slice(0, 7);
+      const data = await readFile(`data/analysis-monthly-${m}.json`);
+      if (data) { monthlyData = data; break; }
+    }
+
+    return res.json({
+      daily:   dailyData,
+      weekly:  weeklyData,
+      monthly: monthlyData,
+      date:    today
+    });
   }
 
+  // ── POST: save analysis ──
   if (req.method === 'POST') {
-    const apiKey = req.headers['x-api-key'] || (req.body && req.body.api_key);
-    if (apiKey !== BRIEFING_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
-    const content = (req.body && req.body.content) || '';
-    const date = new Date().toISOString().split('T')[0];
+    const authHeader = req.headers['authorization'];
+    const key = authHeader?.replace('Bearer ', '') || req.body?.api_key;
+    if (key !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { type, date, week, month, content, generated } = req.body;
     if (!content) return res.status(400).json({ error: 'No content' });
-    try {
-      const FILE_PATH = `data/analysis-${date}.json`;
-      const data = { content, date, generated: new Date().toISOString() };
-      const encoded = Buffer.from(JSON.stringify(data)).toString('base64');
-      const getRes = await fetch(`https://api.github.com/repos/${REPO}/contents/${FILE_PATH}`, {
-        headers: {
-          'Authorization': `token ${GITHUB_TOKEN}`,
-          'Accept': 'application/vnd.github.v3+json'
-        }
-      });
-      const getSha = getRes.ok ? (await getRes.json()).sha : null;
-      const putRes = await fetch(`https://api.github.com/repos/${REPO}/contents/${FILE_PATH}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `token ${GITHUB_TOKEN}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message: `Analysis ${date}`,
-          content: encoded,
-          ...(getSha && { sha: getSha })
-        })
-      });
-      if (!putRes.ok) {
-        const err = await putRes.json();
-        return res.status(500).json({ error: err.message });
-      }
-      return res.status(200).json({ success: true, date });
-    } catch(e) {
-      return res.status(500).json({ error: e.message });
-    }
+
+    const path = getFilePath(type || 'daily', date, week, month);
+    const data = {
+      type:      type || 'daily',
+      date:      date || new Date().toISOString().slice(0, 10),
+      content,
+      generated: generated || new Date().toISOString()
+    };
+
+    const ok = await writeFile(path, data);
+    if (ok) return res.json({ success: true, path });
+    return res.status(500).json({ error: 'Failed to save' });
   }
-  return res.status(405).json({ error: 'Method not allowed' });
+
+  res.status(405).json({ error: 'Method not allowed' });
 };
