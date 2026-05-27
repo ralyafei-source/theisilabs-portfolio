@@ -1772,23 +1772,49 @@ function setAdvisorLang(l,btn){
 }
 
 async function translateAnalysis(data){
-  // Show translating state
+  // Show translating state on all firm bodies
   document.querySelectorAll('.firm-body').forEach(el=>{
-    el.innerHTML='<span style="color:var(--text2);font-size:12px;">🔄 Translating...</span>';
+    el.innerHTML='<span style="color:var(--text2);font-size:12px;">🔄 Translating to English...</span>';
   });
+
+  // Extract text from content — handles string or array [{type:"text",text:"..."}]
+  let textToTranslate='';
+  if(typeof data.content==='string'){
+    textToTranslate=data.content;
+  } else if(Array.isArray(data.content)){
+    textToTranslate=data.content.filter(c=>c.type==='text').map(c=>c.text||'').join('\n');
+  } else if(data.content && typeof data.content.text==='string'){
+    textToTranslate=data.content.text;
+  }
+
+  if(!textToTranslate.trim()){
+    translationCache[advisorDate]='__arabic__';
+    renderAnalysis(data);
+    return;
+  }
+
   try{
     const r=await fetch('/api/translate',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({text:data.content, date:advisorDate})
+      body:JSON.stringify({text:textToTranslate, date:advisorDate})
     });
     const d=await r.json();
     if(d.translated){
       translationCache[advisorDate]=d.translated;
+    } else {
+      // Show actual error from API so we can debug
+      const errMsg=d.error||'Unknown error';
+      document.querySelectorAll('.firm-body').forEach(el=>{
+        el.innerHTML=`<span style="color:var(--red);font-size:12px;">❌ Translation error: ${errMsg}</span>`;
+      });
+      return;
     }
   } catch(e){
-    // Translation failed — fall back to showing Arabic with EN note
-    translationCache[advisorDate]='__arabic__';
+    document.querySelectorAll('.firm-body').forEach(el=>{
+      el.innerHTML=`<span style="color:var(--red);font-size:12px;">❌ Translation failed: ${e.message}</span>`;
+    });
+    return;
   }
   renderAnalysis(data);
 }
