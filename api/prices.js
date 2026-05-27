@@ -1,5 +1,5 @@
-// api/prices.js — uses yahoo-finance2 npm package (handles auth automatically)
-const yahooFinance = require('yahoo-finance2').default;
+// api/prices.js — Yahoo Finance v8/chart, individual requests in parallel
+// v8/chart works without authentication, confirmed working 2025/2026
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,20 +13,40 @@ module.exports = async (req, res) => {
     'CRDO','NEM','B','CLS','PLTR'
   ];
 
+  const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
+
+  async function fetchOne(symbol) {
+    try {
+      const url = `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
+      const r = await fetch(url, { headers: { 'User-Agent': UA } });
+      if (!r.ok) return null;
+      const d = await r.json();
+      const meta = d?.chart?.result?.[0]?.meta;
+      if (!meta?.regularMarketPrice) return null;
+      return {
+        symbol,
+        price: meta.regularMarketPrice,
+        change: meta.regularMarketPrice - meta.chartPreviousClose,
+        changePct: ((meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose) * 100,
+        name: symbol
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
   try {
-    const quotes = await yahooFinance.quote(symbols);
-    const list = Array.isArray(quotes) ? quotes : [quotes];
+    // Fetch all 44 stocks in parallel
+    const results = await Promise.all(symbols.map(fetchOne));
 
     const prices = {};
-    list.forEach(q => {
-      if (q && q.symbol && q.regularMarketPrice) {
-        prices[q.symbol] = {
-          price: q.regularMarketPrice,
-          change: q.regularMarketChange || 0,
-          changePct: q.regularMarketChangePercent || 0,
-          name: q.shortName || q.symbol
-        };
-      }
+    results.forEach(q => {
+      if (q) prices[q.symbol] = {
+        price: q.price,
+        change: q.change,
+        changePct: q.changePct,
+        name: q.name
+      };
     });
 
     res.json({
