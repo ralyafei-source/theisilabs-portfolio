@@ -641,32 +641,7 @@ WOLF remains at critical lows<br><br>
     </div>
   </div>
 </div>
-<div class="card">
-    <div class="section-hdr">
-      <div>
-        <div class="section-title" id="p-all-stocks">All Holdings</div>
-        <div class="section-sub" id="p-sub">52 securities — as of April 2026</div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-outline" onclick="filterP('all')" id="btn-all" style="font-size:12px;padding:7px 12px;">All</button>
-        <button class="btn btn-outline" onclick="filterP('gain')" id="btn-gain" style="font-size:12px;padding:7px 12px;">Gainers</button>
-        <button class="btn btn-outline" onclick="filterP('loss')" id="btn-loss" style="font-size:12px;padding:7px 12px;">Losers</button>
-      </div>
-    </div>
-    <div style="overflow-x:auto;">
-      <table class="ptable" id="pTable">
-        <thead><tr>
-          <th id="th-sym" class="sortable" onclick="sortP('sym')">Symbol <span class="sort-arrow">↕</span></th>
-          <th id="th-name" class="sortable" onclick="sortP('name')">Name <span class="sort-arrow">↕</span></th>
-          <th id="th-sector" class="sortable" onclick="sortP('sec')">Sector <span class="sort-arrow">↕</span></th>
-          <th id="th-value" class="num sortable sort-active" onclick="sortP('mv')">Market Value <span class="sort-arrow">↓</span></th>
-          <th id="th-gl" class="num sortable" onclick="sortP('gl')">Gain / Loss <span class="sort-arrow">↕</span></th>
-          <th id="th-status" class="num sortable" onclick="sortP('status')">Status <span class="sort-arrow">↕</span></th>
-        </tr></thead>
-        <tbody id="pBody"></tbody>
-      </table>
-    </div>
-  </div>
+
   
 <!-- ===== AI ADVISOR TAB ===== -->
 <div id="tab-advisor" class="tab-content">
