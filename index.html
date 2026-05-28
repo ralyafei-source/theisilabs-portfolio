@@ -3521,10 +3521,12 @@ function highlightGlossaryTerms(container) {
 
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
-      const p = node.parentElement;
-      if (!p) return NodeFilter.FILTER_REJECT;
-      if (p.classList.contains('glossary-term')) return NodeFilter.FILTER_REJECT;
-      if (['SCRIPT','STYLE','CODE','PRE'].includes(p.tagName)) return NodeFilter.FILTER_REJECT;
+      let p = node.parentElement;
+      while(p && p !== container){
+        if(p.classList.contains('glossary-term')) return NodeFilter.FILTER_REJECT;
+        if(['SCRIPT','STYLE','CODE','PRE'].includes(p.tagName)) return NodeFilter.FILTER_REJECT;
+        p = p.parentElement;
+      }
       return NodeFilter.FILTER_ACCEPT;
     }
   });
@@ -3597,10 +3599,12 @@ function scanForUnknownTerms(container) {
 
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
-      const p = node.parentElement;
-      if (!p) return NodeFilter.FILTER_REJECT;
-      if (p.classList.contains('glossary-term')) return NodeFilter.FILTER_REJECT;
-      if (['SCRIPT','STYLE','CODE','PRE'].includes(p.tagName)) return NodeFilter.FILTER_REJECT;
+      let p = node.parentElement;
+      while(p && p !== container){
+        if(p.classList.contains('glossary-term')) return NodeFilter.FILTER_REJECT;
+        if(['SCRIPT','STYLE','CODE','PRE'].includes(p.tagName)) return NodeFilter.FILTER_REJECT;
+        p = p.parentElement;
+      }
       return NodeFilter.FILTER_ACCEPT;
     }
   });
