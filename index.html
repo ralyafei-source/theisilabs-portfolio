@@ -3116,8 +3116,7 @@ function buildPortfolioContext() {
     lines.push(`${s.sym}: ${s._shares ? s._shares.toFixed(2) : s.shares} سهم | تكلفة $${s.cost?.toFixed(2)} | الآن $${s.price?.toFixed(2)} | قيمة $${val.toLocaleString()} | ${gl}`);
   });
   lines.push(`الإجمالي: $${total.toLocaleString()}`);
-  return lines.join('
-');
+  return lines.join('\n');
 }
 
 function buildAnalysisContext(type) {
@@ -3125,8 +3124,7 @@ function buildAnalysisContext(type) {
   const content = analysisData[type].content;
   if (!content) return '';
   const text = typeof content === 'string' ? content :
-    Array.isArray(content) ? content.map(c => c.text || '').join('
-') : '';
+    Array.isArray(content) ? content.map(c => c.text || '').join('\n') : '';
   return text.slice(0, 2500);
 }
 
