@@ -1909,6 +1909,11 @@ function showFirm(id,btn){
   document.querySelectorAll('.firm-content').forEach(c=>c.classList.remove('active'));
   btn.classList.add('active',id);
   document.getElementById('firm-'+id).classList.add('active');
+  // Lazy glossary highlight on tab switch
+  setTimeout(()=>{
+    const body = document.querySelector('#firm-'+id+' .firm-body');
+    if(body && !body.dataset.glossaryDone){ highlightGlossaryTerms(body); body.dataset.glossaryDone='1'; }
+  }, 200);
 }
 
 function navigateDate(dir){
@@ -2249,8 +2254,8 @@ function copyPrompt(){
   const text=document.getElementById('promptBlock').textContent;
   navigator.clipboard.writeText(text).then(()=>alert(lang==='ar'?'✅ تم النسخ':'✅ Copied!'));
 }
-  // Apply glossary highlighting after render
-  setTimeout(applyGlossaryHighlighting, 100);
+  // Apply glossary highlighting after render (lazy — doesn't block)
+  setTimeout(applyGlossaryHighlighting, 800);
 
 
 // ===== LIVE PRICES — calls /api/prices (Vercel → Yahoo Finance) =====
@@ -3527,15 +3532,22 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Called after analysis renders — highlight terms in all firm bodies
+// Called after analysis renders — only highlight ACTIVE (visible) firm body
 function applyGlossaryHighlighting() {
-  document.querySelectorAll('.firm-body').forEach(el => {
-    highlightGlossaryTerms(el);
-  });
-  // Also apply to briefing box
-  const brief = document.querySelector('.briefing-box');
-  if (brief) highlightGlossaryTerms(brief);
+  // Only run if AI Advisor tab is currently visible
+  const advisorTab = document.getElementById('advisor');
+  if (!advisorTab || advisorTab.style.display === 'none') return;
+
+  // Only process the currently active firm body (not all 9)
+  const activeFirm = document.querySelector('.firm-content.active .firm-body');
+  if (activeFirm && !activeFirm.dataset.glossaryDone) {
+    highlightGlossaryTerms(activeFirm);
+    activeFirm.dataset.glossaryDone = '1';
+  }
 }
+
+// Also highlight when switching firm tabs
+const _origShowFirm = typeof showFirm === 'function' ? showFirm : null;
 
 // Init tooltip element
 document.addEventListener('DOMContentLoaded', () => glossaryTooltip.init());
