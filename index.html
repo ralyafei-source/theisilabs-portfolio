@@ -2249,6 +2249,9 @@ function copyPrompt(){
   const text=document.getElementById('promptBlock').textContent;
   navigator.clipboard.writeText(text).then(()=>alert(lang==='ar'?'✅ تم النسخ':'✅ Copied!'));
 }
+  // Apply glossary highlighting after render
+  setTimeout(applyGlossaryHighlighting, 100);
+
 
 // ===== LIVE PRICES — calls /api/prices (Vercel → Yahoo Finance) =====
 let pricesLoaded=false;
@@ -3204,6 +3207,262 @@ function clearChat() {
   msgs.appendChild(welcome);
   renderSuggestions();
 }
+</script>
+
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- FINANCIAL GLOSSARY TOOLTIP SYSTEM               -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<style>
+#glossaryTooltip {
+  position: fixed;
+  z-index: 9999;
+  max-width: 280px;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,212,255,0.1);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s ease;
+  font-size: 11px;
+  line-height: 1.6;
+  direction: rtl;
+  text-align: right;
+}
+#glossaryTooltip.visible { opacity: 1; }
+#glossaryTooltip .gt-term {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 5px;
+  font-family: 'IBM Plex Mono', monospace;
+  direction: ltr;
+  text-align: left;
+}
+#glossaryTooltip .gt-def { color: var(--text2); }
+#glossaryTooltip .gt-ar { color: var(--text); margin-top: 4px; font-family: 'Cairo', sans-serif; }
+.glossary-term {
+  border-bottom: 1px dotted var(--accent);
+  cursor: help;
+  color: inherit;
+  transition: color .1s;
+}
+.glossary-term:hover { color: var(--accent); }
+</style>
+
+<!-- Tooltip container -->
+<div id="glossaryTooltip">
+  <div class="gt-term" id="gtTerm"></div>
+  <div class="gt-def" id="gtDef"></div>
+  <div class="gt-ar" id="gtAr"></div>
+</div>
+
+<script>
+// ═══ FINANCIAL GLOSSARY ═══
+const GLOSSARY = {
+  // Valuation
+  'P/E':        {en:'Price-to-Earnings ratio. Stock price ÷ earnings per share. Lower = potentially cheaper vs peers.', ar:'نسبة السعر إلى الأرباح. انخفاضها يعني أن السهم أرخص نسبياً.'},
+  'P/S':        {en:'Price-to-Sales ratio. Valuation relative to revenue. Common for unprofitable growth companies.', ar:'نسبة السعر إلى المبيعات. تُستخدم لتقييم شركات النمو غير الرابحة.'},
+  'DCF':        {en:'Discounted Cash Flow. Values a company by estimating all future cash flows in today's dollars.', ar:'التدفق النقدي المخصوم. يقيّم الشركة بناءً على تدفقاتها النقدية المستقبلية.'},
+  'EPS':        {en:'Earnings Per Share. Net profit ÷ shares outstanding. Core profitability metric.', ar:'ربحية السهم. صافي الأرباح مقسوماً على عدد الأسهم المتداولة.'},
+  'EBITDA':     {en:'Earnings Before Interest, Taxes, Depreciation & Amortization. Measures core operating profitability.', ar:'الأرباح قبل الفوائد والضرائب والاستهلاك. مقياس الربحية التشغيلية.'},
+  'Free Cash Flow':{en:'Cash a company generates after capital expenditures. The real money available to shareholders.', ar:'النقد المتبقي بعد النفقات الرأسمالية. المال الحقيقي المتاح للمساهمين.'},
+  'Upside':     {en:'Potential percentage gain to a price target. +30% upside = target is 30% above current price.', ar:'نسبة الارتفاع المحتمل نحو السعر المستهدف.'},
+  'Downside':   {en:'Potential percentage loss if a thesis is wrong. Risk side of risk/reward analysis.', ar:'نسبة الانخفاض المحتمل. الجانب السلبي من تحليل المخاطر/العائد.'},
+  // Technical
+  'RSI':        {en:'Relative Strength Index (0-100). Above 70 = overbought (may fall). Below 30 = oversold (may rise).', ar:'مؤشر القوة النسبية. فوق 70 = ذروة شراء. تحت 30 = ذروة بيع.'},
+  'Stop-Loss':  {en:'A pre-set price to sell at if a stock falls, limiting your maximum loss.', ar:'سعر البيع التلقائي عند الانخفاض. يحدد الحد الأقصى للخسارة المقبولة.'},
+  'Stop Loss':  {en:'A pre-set price to sell at if a stock falls, limiting your maximum loss.', ar:'سعر البيع التلقائي عند الانخفاض. يحدد الحد الأقصى للخسارة المقبولة.'},
+  'Momentum':   {en:'A stock's tendency to continue moving in its current direction. Strong momentum = trend likely continues.', ar:'ميل السهم للاستمرار في اتجاهه الحالي. الزخم القوي يعني استمرار الاتجاه.'},
+  'Mean Reversion':{en:'Tendency for prices to return to their historical average after extreme moves.', ar:'ميل الأسعار للعودة إلى متوسطها التاريخي بعد التحركات المتطرفة.'},
+  'Beta':       {en:'A stock's volatility vs the market. Beta 1.5 = moves 1.5x more than the market in both directions.', ar:'تقلب السهم مقارنة بالسوق. بيتا 1.5 تعني تحركات أكبر من السوق بمقدار 1.5 مرة.'},
+  'Short Interest':{en:'Percentage of shares being bet against (short sold). High = many traders expect the price to fall.', ar:'نسبة الأسهم التي يراهن عليها المتداولون بالانخفاض. ارتفاعها يعني توقع مزيد من الهبوط.'},
+  'Short Squeeze':{en:'When a heavily shorted stock rises sharply, forcing short sellers to buy back at higher prices — accelerating the rise.', ar:'ارتفاع حاد يجبر المراهنين على الهبوط للشراء، مما يسرّع الصعود.'},
+  // Business metrics
+  'ARR':        {en:'Annual Recurring Revenue. Predictable yearly revenue from subscriptions. Key SaaS metric.', ar:'الإيرادات السنوية المتكررة. الإيرادات الثابتة من الاشتراكات. مقياس أساسي لشركات البرمجيات.'},
+  'NRR':        {en:'Net Revenue Retention. Above 100% means existing customers spend more each year. 120% = excellent.', ar:'صافي الاحتفاظ بالإيرادات. فوق 100% يعني أن العملاء الحاليين ينفقون أكثر سنوياً.'},
+  'SaaS':       {en:'Software as a Service. Cloud-based subscription software model (e.g., Salesforce, Okta).', ar:'البرمجيات كخدمة. نموذج البرمجيات السحابية بالاشتراك.'},
+  'Capex':      {en:'Capital Expenditure. Money spent on physical assets like factories, servers, or equipment.', ar:'النفقات الرأسمالية. الأموال المنفقة على الأصول الملموسة كالمصانع والخوادم.'},
+  'Moat':       {en:'Warren Buffett term for sustainable competitive advantage that protects a company from competition.', ar:'الخندق التنافسي. ميزة مستدامة تحمي الشركة من المنافسة (مصطلح بافيت).'},
+  'HBM':        {en:'High Bandwidth Memory. Advanced memory chips used in AI GPUs. Critical for NVIDIA & Micron.', ar:'ذاكرة النطاق العالي. رقائق ذاكرة متطورة مستخدمة في معالجات الذكاء الاصطناعي.'},
+  'CUDA':       {en:'NVIDIA's parallel computing platform. The industry standard for AI training — extremely hard to replace.', ar:'منصة NVIDIA للحوسبة المتوازية. المعيار الصناعي لتدريب الذكاء الاصطناعي.'},
+  'GPU':        {en:'Graphics Processing Unit. Now the primary chip for AI training and inference. NVIDIA dominates this market.', ar:'وحدة معالجة الرسوميات. أصبحت الرقاقة الرئيسية لتدريب الذكاء الاصطناعي.'},
+  // Strategies
+  'Conviction Buy':{en:'Goldman Sachs term for highest-confidence buy recommendation — strong upside, limited downside.', ar:'أعلى مستوى توصية شراء في Goldman Sachs — ثقة عالية باحتمالية الصعود.'},
+  'Strong Buy': {en:'Analyst's highest buy rating. Strong conviction the stock will significantly outperform.', ar:'أعلى توصية شراء من المحللين. قناعة قوية بأن السهم سيتفوق على السوق بشكل ملحوظ.'},
+  'Reduce':     {en:'Analyst recommendation to decrease your position size, but not fully exit.', ar:'توصية بتخفيض حجم المركز وليس البيع الكامل.'},
+  'Overweight': {en:'Hold more of this stock than the benchmark index. Similar to Buy.', ar:'الاحتفاظ بنسبة أكبر من المؤشر المرجعي. مشابه لتوصية الشراء.'},
+  'Halving':    {en:'Bitcoin event where mining rewards are cut in half, reducing new supply. Historically preceded price rises.', ar:'حدث البيتكوين حيث تُخفَّض مكافآت التعدين للنصف، مما يقلل العرض الجديد.'},
+  'All Weather': {en:'Ray Dalio's portfolio strategy designed to perform in any economic environment — stocks, bonds, gold, commodities.', ar:'استراتيجية Ray Dalio للمحفظة المصممة للأداء في أي بيئة اقتصادية.'},
+  // Market terms
+  'Bull Market': {en:'A market trending upward, typically 20%+ gain from recent lows. Investor optimism is high.', ar:'سوق صاعدة. ارتفاع السوق بأكثر من 20% من أدنى مستوياتها الأخيرة.'},
+  'Bear Market': {en:'A market in decline, typically 20%+ drop from recent highs. Investor pessimism dominates.', ar:'سوق هابطة. انخفاض السوق بأكثر من 20% من قممها الأخيرة.'},
+  'Correction':  {en:'A market decline of 10-20% from recent highs. Normal and healthy part of market cycles.', ar:'تصحيح سعري بين 10-20% من القمة. جزء طبيعي من دورات السوق.'},
+  'Risk-off':    {en:'Market environment where investors avoid risky assets and move to safety (bonds, gold, cash).', ar:'بيئة يبتعد فيها المستثمرون عن الأصول المخاطرة نحو الملاجئ الآمنة.'},
+  // Arabic terms
+  'ذروة شراء':  {en:'Overbought. RSI above 70 — stock may be overpriced and due for a pullback.', ar:'حالة يكون فيها السهم مرتفعاً أكثر من اللازم. RSI فوق 70.'},
+  'ذروة بيع':   {en:'Oversold. RSI below 30 — stock may be underpriced and due for a rebound.', ar:'حالة يكون فيها السهم منخفضاً أكثر من اللازم. RSI تحت 30.'},
+  'الخندق التنافسي': {en:'Competitive moat. A sustainable advantage that protects a company from competition.', ar:'الميزة التنافسية المستدامة التي تحمي الشركة من المنافسين.'},
+};
+
+// ═══ TOOLTIP ENGINE ═══
+const glossaryTooltip = {
+  el: null,
+  termEl: null,
+  defEl: null,
+  arEl: null,
+  timer: null,
+
+  init() {
+    this.el = document.getElementById('glossaryTooltip');
+    this.termEl = document.getElementById('gtTerm');
+    this.defEl = document.getElementById('gtDef');
+    this.arEl = document.getElementById('gtAr');
+  },
+
+  show(term, x, y) {
+    if (!this.el) this.init();
+    const entry = GLOSSARY[term];
+    if (!entry) return;
+    this.termEl.textContent = term;
+    this.defEl.textContent = entry.en;
+    this.arEl.textContent = entry.ar;
+    // Position tooltip — avoid edges
+    const tw = 290, th = 90;
+    let left = x + 12;
+    let top  = y - th - 8;
+    if (left + tw > window.innerWidth - 16) left = x - tw - 12;
+    if (top < 8) top = y + 16;
+    this.el.style.left = left + 'px';
+    this.el.style.top  = top  + 'px';
+    this.el.classList.add('visible');
+  },
+
+  hide() {
+    if (!this.el) return;
+    this.el.classList.remove('visible');
+  }
+};
+
+// ═══ TERM HIGHLIGHTER ═══
+function highlightGlossaryTerms(container) {
+  if (!container) return;
+  const terms = Object.keys(GLOSSARY).sort((a,b) => b.length - a.length);
+
+  // Walk text nodes only
+  const walker = document.createTreeWalker(
+    container,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode(node) {
+        // Skip nodes inside existing glossary spans or code elements
+        const parent = node.parentElement;
+        if (!parent) return NodeFilter.FILTER_REJECT;
+        if (parent.classList.contains('glossary-term')) return NodeFilter.FILTER_REJECT;
+        if (['SCRIPT','STYLE','CODE','PRE'].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    }
+  );
+
+  const textNodes = [];
+  let node;
+  while (node = walker.nextNode()) textNodes.push(node);
+
+  textNodes.forEach(textNode => {
+    let text = textNode.textContent;
+    let replaced = false;
+
+    for (const term of terms) {
+      // Escape special regex chars in term
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp('(?<![\u0600-\u06FF\w])' + escaped + '(?![\u0600-\u06FF\w])', 'g');
+      if (re.test(text)) {
+        replaced = true;
+        break;
+      }
+    }
+
+    if (!replaced) return;
+
+    const fragment = document.createDocumentFragment();
+    let lastIndex = 0;
+    let remaining = text;
+
+    // Build a combined regex for all terms
+    const allTermsRe = new RegExp(
+      terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
+      'g'
+    );
+
+    let match;
+    allTermsRe.lastIndex = 0;
+    while ((match = allTermsRe.exec(text)) !== null) {
+      const term = match[0];
+      if (!GLOSSARY[term]) continue;
+
+      // Add text before match
+      if (match.index > lastIndex) {
+        fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+      }
+
+      // Create highlighted span
+      const span = document.createElement('span');
+      span.className = 'glossary-term';
+      span.setAttribute('data-term', term);
+      span.textContent = term;
+
+      // Hover events
+      span.addEventListener('mouseenter', (e) => {
+        glossaryTooltip.show(term, e.clientX, e.clientY);
+      });
+      span.addEventListener('mousemove', (e) => {
+        glossaryTooltip.show(term, e.clientX, e.clientY);
+      });
+      span.addEventListener('mouseleave', () => {
+        glossaryTooltip.hide();
+      });
+      // Touch/click for mobile
+      span.addEventListener('click', (e) => {
+        e.stopPropagation();
+        glossaryTooltip.show(term, e.clientX || e.touches?.[0]?.clientX || 0, e.clientY || e.touches?.[0]?.clientY || 0);
+      });
+
+      fragment.appendChild(span);
+      lastIndex = match.index + term.length;
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+    }
+
+    textNode.parentNode.replaceChild(fragment, textNode);
+  });
+}
+
+// Hide tooltip when clicking elsewhere
+document.addEventListener('click', (e) => {
+  if (!e.target.classList.contains('glossary-term')) {
+    glossaryTooltip.hide();
+  }
+});
+
+// Called after analysis renders — highlight terms in all firm bodies
+function applyGlossaryHighlighting() {
+  document.querySelectorAll('.firm-body').forEach(el => {
+    highlightGlossaryTerms(el);
+  });
+  // Also apply to briefing box
+  const brief = document.querySelector('.briefing-box');
+  if (brief) highlightGlossaryTerms(brief);
+}
+
+// Init tooltip element
+document.addEventListener('DOMContentLoaded', () => glossaryTooltip.init());
 </script>
 
 </body>
