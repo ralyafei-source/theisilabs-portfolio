@@ -3138,7 +3138,18 @@ function appendMsg(role, text, time) {
   const bubble = document.createElement('div');
   bubble.className = `msg-bubble ${role}`;
   bubble.innerHTML = chatMdToHtml(text);
-  if(role==='ai'){const _b=bubble;const _a=()=>{if(!_b.dataset.glossaryDone&&typeof highlightGlossaryTerms==='function'){highlightGlossaryTerms(_b);_b.dataset.glossaryDone='1';}};if('requestIdleCallback'in window)requestIdleCallback(_a,{timeout:2000});else setTimeout(_a,800);}
+  if(role==='ai'){
+  const _b=bubble;
+  const _apply=()=>{
+    if(!_b.dataset.glossaryDone&&typeof highlightGlossaryTerms==='function'){
+      highlightGlossaryTerms(_b);
+      if(typeof scanForUnknownTerms==='function') scanForUnknownTerms(_b);
+      _b.dataset.glossaryDone='1';
+    }
+  };
+  if('requestIdleCallback' in window)requestIdleCallback(_apply,{timeout:2000});
+  else setTimeout(_apply,800);
+}
 
   const ts = document.createElement('div');
   ts.className = 'msg-time';
