@@ -25,7 +25,7 @@ module.exports = async (req, res) => {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001', // Fast + cheap for translation
+        model: 'claude-sonnet-4-6', // Fast + cheap for translation
         max_tokens: 4000,
         system: 'You are a financial translator. Translate the following Arabic investment analysis to clear, professional English. Keep all stock symbols, percentages, and numbers exactly as they are. Preserve the structure and section headers. Output ONLY the translated text, nothing else.',
         messages: [{ role: 'user', content: text }]
