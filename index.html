@@ -2951,6 +2951,7 @@ fetchLivePrices();
 // ═══════════════════════════════════════════════
 
 let chatOpen = false;
+const glossaryCache = {}; // dynamic term definitions cache
 let chatHistory = [];
 let chatLoading = false;
 
@@ -3323,22 +3324,90 @@ const glossaryTooltip = {
     this.arEl = document.getElementById('gtAr');
   },
 
-  show(term, x, y) {
-    if (!this.el) this.init();
-    const entry = GLOSSARY[term];
-    if (!entry) return;
-    this.termEl.textContent = term;
-    this.defEl.textContent = entry.en;
-    this.arEl.textContent = entry.ar;
-    // Position tooltip — avoid edges
-    const tw = 290, th = 90;
+  position(x, y) {
+    const tw = 290, th = 100;
     let left = x + 12;
     let top  = y - th - 8;
     if (left + tw > window.innerWidth - 16) left = x - tw - 12;
     if (top < 8) top = y + 16;
     this.el.style.left = left + 'px';
     this.el.style.top  = top  + 'px';
+  },
+
+  async show(term, x, y) {
+    if (!this.el) this.init();
+
+    // Check static dictionary first (instant)
+    const entry = GLOSSARY[term];
+    if (entry) {
+      this.termEl.textContent = term;
+      this.defEl.textContent = entry.en;
+      this.arEl.textContent = entry.ar;
+      this.position(x, y);
+      this.el.classList.add('visible');
+      return;
+    }
+
+    // Check dynamic cache
+    if (glossaryCache[term]) {
+      const cached = glossaryCache[term];
+      if (cached === '__loading__') return; // already fetching
+      this.termEl.textContent = term;
+      this.defEl.textContent = cached.en;
+      this.arEl.textContent = cached.ar;
+      this.position(x, y);
+      this.el.classList.add('visible');
+      return;
+    }
+
+    // Show loading state immediately
+    glossaryCache[term] = '__loading__';
+    this.termEl.textContent = term;
+    this.defEl.textContent = '⏳ جاري البحث...';
+    this.arEl.textContent = '';
+    this.position(x, y);
     this.el.classList.add('visible');
+    this._currentTerm = term;
+
+    // Fetch definition from Claude
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `Define the financial/business term "${term}" in exactly this format — no other text:
+EN: [one clear sentence definition in English, max 20 words]
+AR: [same definition in Arabic, max 20 words]`,
+          history: [],
+          portfolioContext: '',
+          dailyContext: '',
+          weeklyContext: '',
+          monthlyContext: ''
+        })
+      });
+      const data = await res.json();
+      const text = data.response || '';
+
+      // Parse EN: and AR: lines
+      const enMatch = text.match(/EN:\s*(.+)/);
+      const arMatch = text.match(/AR:\s*(.+)/);
+      const enDef = enMatch ? enMatch[1].trim() : text.trim();
+      const arDef = arMatch ? arMatch[1].trim() : '';
+
+      glossaryCache[term] = { en: enDef, ar: arDef };
+
+      // Only show if still hovering same term
+      if (this._currentTerm === term && this.el.classList.contains('visible')) {
+        this.defEl.textContent = enDef;
+        this.arEl.textContent = arDef;
+      }
+    } catch(e) {
+      glossaryCache[term] = { en: 'Definition unavailable.', ar: 'التعريف غير متاح.' };
+      if (this._currentTerm === term) {
+        this.defEl.textContent = 'Definition unavailable.';
+        this.arEl.textContent = '';
+      }
+    }
   },
 
   hide() {
@@ -3348,21 +3417,34 @@ const glossaryTooltip = {
 };
 
 // ═══ TERM HIGHLIGHTER ═══
+// Detect if a word looks like a financial/technical term worth defining
+function looksLikeTerm(word) {
+  if (word.length < 2) return false;
+  // All caps abbreviations: RSI, DCF, EPS, ARR, HBM, GPU, AI
+  if (/^[A-Z]{2,6}$/.test(word)) return true;
+  // Mixed case technical terms: Agentforce, Blackwell, CUDA, Copilot
+  if (/^[A-Z][a-z]+[A-Z]/.test(word)) return true;
+  // Known patterns: P/E, P/S, HBM3E
+  if (/^[A-Z]\/[A-Z]$/.test(word)) return true;
+  if (/^[A-Z]{2,4}[0-9]/.test(word)) return true;
+  return false;
+}
+
 function highlightGlossaryTerms(container) {
   if (!container) return;
-  const terms = Object.keys(GLOSSARY).sort((a,b) => b.length - a.length);
 
-  // Walk text nodes only
+  // Phase 1: known dictionary terms (exact match, any language)
+  const knownTerms = Object.keys(GLOSSARY).sort((a,b) => b.length - a.length);
+
   const walker = document.createTreeWalker(
     container,
     NodeFilter.SHOW_TEXT,
     {
       acceptNode(node) {
-        // Skip nodes inside existing glossary spans or code elements
         const parent = node.parentElement;
         if (!parent) return NodeFilter.FILTER_REJECT;
         if (parent.classList.contains('glossary-term')) return NodeFilter.FILTER_REJECT;
-        if (['SCRIPT','STYLE','CODE','PRE'].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
+        if (['SCRIPT','STYLE','CODE','PRE','B','I'].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       }
     }
@@ -3372,74 +3454,68 @@ function highlightGlossaryTerms(container) {
   let node;
   while (node = walker.nextNode()) textNodes.push(node);
 
-  textNodes.forEach(textNode => {
-    let text = textNode.textContent;
-    let replaced = false;
+  function makeSpan(term) {
+    const span = document.createElement('span');
+    span.className = 'glossary-term';
+    span.setAttribute('data-term', term);
+    span.textContent = term;
+    span.addEventListener('mouseenter', (e) => glossaryTooltip.show(term, e.clientX, e.clientY));
+    span.addEventListener('mousemove',  (e) => glossaryTooltip.show(term, e.clientX, e.clientY));
+    span.addEventListener('mouseleave', ()  => glossaryTooltip.hide());
+    span.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const tx = e.touches?.[0]?.clientX || e.clientX || 0;
+      const ty = e.touches?.[0]?.clientY || e.clientY || 0;
+      glossaryTooltip.show(term, tx, ty);
+    });
+    return span;
+  }
 
-    for (const term of terms) {
-      // Escape special regex chars in term
-      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const re = new RegExp('(?<![\u0600-\u06FF\w])' + escaped + '(?![\u0600-\u06FF\w])', 'g');
-      if (re.test(text)) {
-        replaced = true;
-        break;
-      }
+  textNodes.forEach(textNode => {
+    const text = textNode.textContent;
+
+    // Build regex from known terms + dynamic detection
+    // Known terms matched first (longer ones first)
+    const knownEscaped = knownTerms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+
+    // Dynamic: catch uppercase abbreviations and technical terms not in dictionary
+    const dynamicPattern = '\\b[A-Z]{2,6}\\b|\\b[A-Z][a-zA-Z]*[A-Z][a-zA-Z]*\\b|\\b[A-Z]{2,4}[0-9][a-zA-Z0-9]*\\b';
+
+    const allPattern = [...knownEscaped, dynamicPattern].join('|');
+    let allRe;
+    try {
+      allRe = new RegExp(allPattern, 'g');
+    } catch(e) {
+      return; // skip if regex fails
     }
 
-    if (!replaced) return;
-
-    const fragment = document.createDocumentFragment();
-    let lastIndex = 0;
-    let remaining = text;
-
-    // Build a combined regex for all terms
-    const allTermsRe = new RegExp(
-      terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
-      'g'
-    );
-
     let match;
-    allTermsRe.lastIndex = 0;
-    while ((match = allTermsRe.exec(text)) !== null) {
-      const term = match[0];
-      if (!GLOSSARY[term]) continue;
+    let lastIndex = 0;
+    const fragment = document.createDocumentFragment();
+    let hasMatch = false;
 
-      // Add text before match
+    allRe.lastIndex = 0;
+    while ((match = allRe.exec(text)) !== null) {
+      const term = match[0];
+      // Skip very common words that aren't financial terms
+      const skip = ['AI','IT','US','UK','EU','CEO','CFO','IPO','USD','AED','UAE','ETF','IS','DO','OR','AN','IN','AT','BE','BY','TO','IF','OF','ON','AS','NO'];
+      // Only skip short non-dictionary words
+      if (!GLOSSARY[term] && term.length <= 2) continue;
+      if (!GLOSSARY[term] && skip.includes(term)) continue;
+      if (!GLOSSARY[term] && !looksLikeTerm(term)) continue;
+
+      hasMatch = true;
       if (match.index > lastIndex) {
         fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
       }
-
-      // Create highlighted span
-      const span = document.createElement('span');
-      span.className = 'glossary-term';
-      span.setAttribute('data-term', term);
-      span.textContent = term;
-
-      // Hover events
-      span.addEventListener('mouseenter', (e) => {
-        glossaryTooltip.show(term, e.clientX, e.clientY);
-      });
-      span.addEventListener('mousemove', (e) => {
-        glossaryTooltip.show(term, e.clientX, e.clientY);
-      });
-      span.addEventListener('mouseleave', () => {
-        glossaryTooltip.hide();
-      });
-      // Touch/click for mobile
-      span.addEventListener('click', (e) => {
-        e.stopPropagation();
-        glossaryTooltip.show(term, e.clientX || e.touches?.[0]?.clientX || 0, e.clientY || e.touches?.[0]?.clientY || 0);
-      });
-
-      fragment.appendChild(span);
+      fragment.appendChild(makeSpan(term));
       lastIndex = match.index + term.length;
     }
 
-    // Add remaining text
+    if (!hasMatch) return;
     if (lastIndex < text.length) {
       fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
     }
-
     textNode.parentNode.replaceChild(fragment, textNode);
   });
 }
