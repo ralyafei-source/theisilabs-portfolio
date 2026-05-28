@@ -3564,17 +3564,104 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// Dynamic unknown term scanner — runs in background via requestIdleCallback
+function scanForUnknownTerms(container) {
+  if (!container) return;
+
+  // Simple patterns for financial/technical terms not in dictionary
+  // Only ALL_CAPS abbreviations 3-6 chars, and CamelCase product names
+  const dynamicRe = /([A-Z]{3,6}|[A-Z][a-z]{2,}[A-Z][a-zA-Z]*)/g;
+
+  // Common words to skip
+  const skipWords = new Set(['THE','AND','FOR','NOT','BUT','ARE','WAS','HAS','HAD',
+    'CAN','DID','GET','GOT','LET','SET','PUT','USE','TRY','MAY','NEW','OLD',
+    'ALL','ANY','FEW','TOO','YET','NOR','OWN','OFF','OUT','OUR','HIS','HER',
+    'ITS','WHO','HOW','WHY','NOW','HERE','THEN','THEM','THEY','WILL','WITH',
+    'FROM','THIS','THAT','THAN','WHEN','WHERE','WHICH','WHAT','HAVE','BEEN',
+    'WERE','INTO','OVER','ALSO','BOTH','EACH','EVEN','MORE','MOST','MUCH',
+    'ONLY','SUCH','VERY','YOUR','THEIR','THERE','THESE','THOSE','ABOUT',
+    'COULD','WOULD','SHOULD','AFTER','UNDER','WHILE','SINCE','UNTIL',
+    'Today','Today','There','Their','These','Those','Other','Every',
+    'After','Under','While','About','Could','Would','Should','Above']);
+
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const p = node.parentElement;
+      if (!p) return NodeFilter.FILTER_REJECT;
+      if (p.classList.contains('glossary-term')) return NodeFilter.FILTER_REJECT;
+      if (['SCRIPT','STYLE','CODE','PRE'].includes(p.tagName)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  const nodes = [];
+  let n;
+  while (n = walker.nextNode()) nodes.push(n);
+
+  nodes.forEach(textNode => {
+    const text = textNode.textContent;
+    dynamicRe.lastIndex = 0;
+    if (!dynamicRe.test(text)) return;
+
+    const fragment = document.createDocumentFragment();
+    let lastIndex = 0;
+    dynamicRe.lastIndex = 0;
+    let match;
+    let hasMatch = false;
+
+    while ((match = dynamicRe.exec(text)) !== null) {
+      const term = match[1];
+      // Skip if already in static dictionary or in skip list
+      if (GLOSSARY[term]) continue;
+      if (skipWords.has(term)) continue;
+      if (term.length < 3) continue;
+
+      hasMatch = true;
+      if (match.index > lastIndex) {
+        fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+      }
+      const span = document.createElement('span');
+      span.className = 'glossary-term dynamic';
+      span.setAttribute('data-term', term);
+      span.textContent = term;
+      span.style.borderBottomStyle = 'dotted';
+      span.style.borderBottomColor = 'var(--text3)'; // subtle — gray for unknown terms
+      span.addEventListener('mouseenter', (e) => glossaryTooltip.show(term, e.clientX, e.clientY));
+      span.addEventListener('mousemove',  (e) => glossaryTooltip.show(term, e.clientX, e.clientY));
+      span.addEventListener('mouseleave', ()  => glossaryTooltip.hide());
+      span.addEventListener('click', (e) => {
+        e.stopPropagation();
+        glossaryTooltip.show(term, e.clientX||0, e.clientY||0);
+      });
+      fragment.appendChild(span);
+      lastIndex = match.index + term.length;
+    }
+
+    if (!hasMatch) return;
+    if (lastIndex < text.length) fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+    textNode.parentNode.replaceChild(fragment, textNode);
+  });
+}
+
 // Called after analysis renders — only highlight ACTIVE (visible) firm body
 function applyGlossaryHighlighting() {
-  // Only run if AI Advisor tab is currently visible
   const advisorTab = document.getElementById('advisor');
   if (!advisorTab || advisorTab.style.display === 'none') return;
 
-  // Only process the currently active firm body (not all 9)
   const activeFirm = document.querySelector('.firm-content.active .firm-body');
-  if (activeFirm && !activeFirm.dataset.glossaryDone) {
+  if (!activeFirm) return;
+
+  if (!activeFirm.dataset.glossaryDone) {
+    // Phase 1: static dictionary terms — fast, runs immediately
     highlightGlossaryTerms(activeFirm);
     activeFirm.dataset.glossaryDone = '1';
+
+    // Phase 2: dynamic unknown terms — runs when browser is idle
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => scanForUnknownTerms(activeFirm), { timeout: 3000 });
+    } else {
+      setTimeout(() => scanForUnknownTerms(activeFirm), 2000);
+    }
   }
 }
 
