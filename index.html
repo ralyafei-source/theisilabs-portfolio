@@ -2971,6 +2971,89 @@ const chatSuggestions = [
   "ماذا يحدث لمحفظتي إذا انخفض السوق 20%؟"
 ];
 
+// ═══ DRAG TO MOVE CHAT PANEL ═══
+(function() {
+  let isDragging = false;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
+
+  function initDrag() {
+    const panel = document.getElementById('chatPanel');
+    const btn   = document.getElementById('chatBtn');
+    const header = panel.querySelector('.chat-header');
+    if (!header) return;
+
+    // Make header show drag cursor
+    header.style.cursor = 'grab';
+    header.style.userSelect = 'none';
+
+    // Mouse drag
+    header.addEventListener('mousedown', (e) => {
+      if (e.target.classList.contains('chat-close')) return;
+      isDragging = true;
+      const rect = panel.getBoundingClientRect();
+      dragOffsetX = e.clientX - rect.left;
+      dragOffsetY = e.clientY - rect.top;
+      header.style.cursor = 'grabbing';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      let newLeft = e.clientX - dragOffsetX;
+      let newTop  = e.clientY - dragOffsetY;
+      // Keep within viewport
+      newLeft = Math.max(8, Math.min(window.innerWidth  - panel.offsetWidth  - 8, newLeft));
+      newTop  = Math.max(8, Math.min(window.innerHeight - panel.offsetHeight - 8, newTop));
+      panel.style.right  = 'auto';
+      panel.style.bottom = 'auto';
+      panel.style.left   = newLeft + 'px';
+      panel.style.top    = newTop  + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        header.style.cursor = 'grab';
+      }
+    });
+
+    // Touch drag
+    header.addEventListener('touchstart', (e) => {
+      if (e.target.classList.contains('chat-close')) return;
+      const touch = e.touches[0];
+      isDragging = true;
+      const rect = panel.getBoundingClientRect();
+      dragOffsetX = touch.clientX - rect.left;
+      dragOffsetY = touch.clientY - rect.top;
+      e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      const touch = e.touches[0];
+      let newLeft = touch.clientX - dragOffsetX;
+      let newTop  = touch.clientY - dragOffsetY;
+      newLeft = Math.max(8, Math.min(window.innerWidth  - panel.offsetWidth  - 8, newLeft));
+      newTop  = Math.max(8, Math.min(window.innerHeight - panel.offsetHeight - 8, newTop));
+      panel.style.right  = 'auto';
+      panel.style.bottom = 'auto';
+      panel.style.left   = newLeft + 'px';
+      panel.style.top    = newTop  + 'px';
+      e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('touchend', () => { isDragging = false; });
+  }
+
+  // Init after DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDrag);
+  } else {
+    setTimeout(initDrag, 500);
+  }
+})();
+
 function toggleChat() {
   chatOpen = !chatOpen;
   const panel = document.getElementById('chatPanel');
