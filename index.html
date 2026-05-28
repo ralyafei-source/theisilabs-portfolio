@@ -2254,8 +2254,6 @@ function copyPrompt(){
   const text=document.getElementById('promptBlock').textContent;
   navigator.clipboard.writeText(text).then(()=>alert(lang==='ar'?'✅ تم النسخ':'✅ Copied!'));
 }
-  // Apply glossary highlighting after render (lazy — doesn't block)
-  setTimeout(applyGlossaryHighlighting, 800);
 
 
 // ===== LIVE PRICES — calls /api/prices (Vercel → Yahoo Finance) =====
@@ -2298,6 +2296,8 @@ async function fetchLivePrices(){
     console.error('fetchLivePrices error:', e);
     if(indicator) indicator.innerHTML=`<span style="color:var(--red)">⚠️ ${e.message}</span>`;
   }
+  // Lazy glossary highlighting on active tab
+  setTimeout(applyGlossaryHighlighting, 600);
 }
 
 function updateStatCards(){
@@ -3269,49 +3269,40 @@ function clearChat() {
 <script>
 // ═══ FINANCIAL GLOSSARY ═══
 const GLOSSARY = {
-  // Valuation
-  'P/E':        {en:'Price-to-Earnings ratio. Stock price ÷ earnings per share. Lower = potentially cheaper vs peers.', ar:'نسبة السعر إلى الأرباح. انخفاضها يعني أن السهم أرخص نسبياً.'},
-  'P/S':        {en:'Price-to-Sales ratio. Valuation relative to revenue. Common for unprofitable growth companies.', ar:'نسبة السعر إلى المبيعات. تُستخدم لتقييم شركات النمو غير الرابحة.'},
-  'DCF':        {en:'Discounted Cash Flow. Values a company by estimating all future cash flows in today's dollars.', ar:'التدفق النقدي المخصوم. يقيّم الشركة بناءً على تدفقاتها النقدية المستقبلية.'},
-  'EPS':        {en:'Earnings Per Share. Net profit ÷ shares outstanding. Core profitability metric.', ar:'ربحية السهم. صافي الأرباح مقسوماً على عدد الأسهم المتداولة.'},
-  'EBITDA':     {en:'Earnings Before Interest, Taxes, Depreciation & Amortization. Measures core operating profitability.', ar:'الأرباح قبل الفوائد والضرائب والاستهلاك. مقياس الربحية التشغيلية.'},
-  'Free Cash Flow':{en:'Cash a company generates after capital expenditures. The real money available to shareholders.', ar:'النقد المتبقي بعد النفقات الرأسمالية. المال الحقيقي المتاح للمساهمين.'},
-  'Upside':     {en:'Potential percentage gain to a price target. +30% upside = target is 30% above current price.', ar:'نسبة الارتفاع المحتمل نحو السعر المستهدف.'},
-  'Downside':   {en:'Potential percentage loss if a thesis is wrong. Risk side of risk/reward analysis.', ar:'نسبة الانخفاض المحتمل. الجانب السلبي من تحليل المخاطر/العائد.'},
-  // Technical
-  'RSI':        {en:'Relative Strength Index (0-100). Above 70 = overbought (may fall). Below 30 = oversold (may rise).', ar:'مؤشر القوة النسبية. فوق 70 = ذروة شراء. تحت 30 = ذروة بيع.'},
-  'Stop-Loss':  {en:'A pre-set price to sell at if a stock falls, limiting your maximum loss.', ar:'سعر البيع التلقائي عند الانخفاض. يحدد الحد الأقصى للخسارة المقبولة.'},
-  'Stop Loss':  {en:'A pre-set price to sell at if a stock falls, limiting your maximum loss.', ar:'سعر البيع التلقائي عند الانخفاض. يحدد الحد الأقصى للخسارة المقبولة.'},
-  'Momentum':   {en:'A stock's tendency to continue moving in its current direction. Strong momentum = trend likely continues.', ar:'ميل السهم للاستمرار في اتجاهه الحالي. الزخم القوي يعني استمرار الاتجاه.'},
-  'Mean Reversion':{en:'Tendency for prices to return to their historical average after extreme moves.', ar:'ميل الأسعار للعودة إلى متوسطها التاريخي بعد التحركات المتطرفة.'},
-  'Beta':       {en:'A stock's volatility vs the market. Beta 1.5 = moves 1.5x more than the market in both directions.', ar:'تقلب السهم مقارنة بالسوق. بيتا 1.5 تعني تحركات أكبر من السوق بمقدار 1.5 مرة.'},
-  'Short Interest':{en:'Percentage of shares being bet against (short sold). High = many traders expect the price to fall.', ar:'نسبة الأسهم التي يراهن عليها المتداولون بالانخفاض. ارتفاعها يعني توقع مزيد من الهبوط.'},
-  'Short Squeeze':{en:'When a heavily shorted stock rises sharply, forcing short sellers to buy back at higher prices — accelerating the rise.', ar:'ارتفاع حاد يجبر المراهنين على الهبوط للشراء، مما يسرّع الصعود.'},
-  // Business metrics
-  'ARR':        {en:'Annual Recurring Revenue. Predictable yearly revenue from subscriptions. Key SaaS metric.', ar:'الإيرادات السنوية المتكررة. الإيرادات الثابتة من الاشتراكات. مقياس أساسي لشركات البرمجيات.'},
-  'NRR':        {en:'Net Revenue Retention. Above 100% means existing customers spend more each year. 120% = excellent.', ar:'صافي الاحتفاظ بالإيرادات. فوق 100% يعني أن العملاء الحاليين ينفقون أكثر سنوياً.'},
-  'SaaS':       {en:'Software as a Service. Cloud-based subscription software model (e.g., Salesforce, Okta).', ar:'البرمجيات كخدمة. نموذج البرمجيات السحابية بالاشتراك.'},
-  'Capex':      {en:'Capital Expenditure. Money spent on physical assets like factories, servers, or equipment.', ar:'النفقات الرأسمالية. الأموال المنفقة على الأصول الملموسة كالمصانع والخوادم.'},
-  'Moat':       {en:'Warren Buffett term for sustainable competitive advantage that protects a company from competition.', ar:'الخندق التنافسي. ميزة مستدامة تحمي الشركة من المنافسة (مصطلح بافيت).'},
-  'HBM':        {en:'High Bandwidth Memory. Advanced memory chips used in AI GPUs. Critical for NVIDIA & Micron.', ar:'ذاكرة النطاق العالي. رقائق ذاكرة متطورة مستخدمة في معالجات الذكاء الاصطناعي.'},
-  'CUDA':       {en:'NVIDIA's parallel computing platform. The industry standard for AI training — extremely hard to replace.', ar:'منصة NVIDIA للحوسبة المتوازية. المعيار الصناعي لتدريب الذكاء الاصطناعي.'},
-  'GPU':        {en:'Graphics Processing Unit. Now the primary chip for AI training and inference. NVIDIA dominates this market.', ar:'وحدة معالجة الرسوميات. أصبحت الرقاقة الرئيسية لتدريب الذكاء الاصطناعي.'},
-  // Strategies
-  'Conviction Buy':{en:'Goldman Sachs term for highest-confidence buy recommendation — strong upside, limited downside.', ar:'أعلى مستوى توصية شراء في Goldman Sachs — ثقة عالية باحتمالية الصعود.'},
-  'Strong Buy': {en:'Analyst's highest buy rating. Strong conviction the stock will significantly outperform.', ar:'أعلى توصية شراء من المحللين. قناعة قوية بأن السهم سيتفوق على السوق بشكل ملحوظ.'},
-  'Reduce':     {en:'Analyst recommendation to decrease your position size, but not fully exit.', ar:'توصية بتخفيض حجم المركز وليس البيع الكامل.'},
-  'Overweight': {en:'Hold more of this stock than the benchmark index. Similar to Buy.', ar:'الاحتفاظ بنسبة أكبر من المؤشر المرجعي. مشابه لتوصية الشراء.'},
-  'Halving':    {en:'Bitcoin event where mining rewards are cut in half, reducing new supply. Historically preceded price rises.', ar:'حدث البيتكوين حيث تُخفَّض مكافآت التعدين للنصف، مما يقلل العرض الجديد.'},
-  'All Weather': {en:'Ray Dalio's portfolio strategy designed to perform in any economic environment — stocks, bonds, gold, commodities.', ar:'استراتيجية Ray Dalio للمحفظة المصممة للأداء في أي بيئة اقتصادية.'},
-  // Market terms
-  'Bull Market': {en:'A market trending upward, typically 20%+ gain from recent lows. Investor optimism is high.', ar:'سوق صاعدة. ارتفاع السوق بأكثر من 20% من أدنى مستوياتها الأخيرة.'},
-  'Bear Market': {en:'A market in decline, typically 20%+ drop from recent highs. Investor pessimism dominates.', ar:'سوق هابطة. انخفاض السوق بأكثر من 20% من قممها الأخيرة.'},
-  'Correction':  {en:'A market decline of 10-20% from recent highs. Normal and healthy part of market cycles.', ar:'تصحيح سعري بين 10-20% من القمة. جزء طبيعي من دورات السوق.'},
-  'Risk-off':    {en:'Market environment where investors avoid risky assets and move to safety (bonds, gold, cash).', ar:'بيئة يبتعد فيها المستثمرون عن الأصول المخاطرة نحو الملاجئ الآمنة.'},
-  // Arabic terms
-  'ذروة شراء':  {en:'Overbought. RSI above 70 — stock may be overpriced and due for a pullback.', ar:'حالة يكون فيها السهم مرتفعاً أكثر من اللازم. RSI فوق 70.'},
-  'ذروة بيع':   {en:'Oversold. RSI below 30 — stock may be underpriced and due for a rebound.', ar:'حالة يكون فيها السهم منخفضاً أكثر من اللازم. RSI تحت 30.'},
-  'الخندق التنافسي': {en:'Competitive moat. A sustainable advantage that protects a company from competition.', ar:'الميزة التنافسية المستدامة التي تحمي الشركة من المنافسين.'},
+  "P/E":         {en:"Price-to-Earnings ratio. Stock price divided by earnings per share. Lower may mean cheaper vs peers.", ar:"نسبة السعر إلى الأرباح. انخفاضها قد يعني أن السهم أرخص نسبياً."},
+  "P/S":         {en:"Price-to-Sales ratio. Valuation relative to revenue. Common for unprofitable growth companies.", ar:"نسبة السعر إلى المبيعات. تُستخدم لتقييم شركات النمو غير الرابحة."},
+  "DCF":         {en:"Discounted Cash Flow. Values a company by estimating future cash flows in present-day dollars.", ar:"التدفق النقدي المخصوم. يقيّم الشركة بناءً على تدفقاتها النقدية المستقبلية."},
+  "EPS":         {en:"Earnings Per Share. Net profit divided by shares outstanding. Core profitability metric.", ar:"ربحية السهم. صافي الأرباح مقسوماً على عدد الأسهم المتداولة."},
+  "EBITDA":      {en:"Earnings Before Interest, Taxes, Depreciation and Amortization. Measures core operating profitability.", ar:"الأرباح قبل الفوائد والضرائب والاستهلاك. مقياس الربحية التشغيلية."},
+  "Free Cash Flow":{en:"Cash generated after capital expenditures. The real money available to shareholders.", ar:"النقد المتبقي بعد النفقات الرأسمالية. المال الحقيقي المتاح للمساهمين."},
+  "Upside":      {en:"Potential percentage gain to a price target. 30% upside means target is 30% above current price.", ar:"نسبة الارتفاع المحتمل نحو السعر المستهدف."},
+  "Downside":    {en:"Potential percentage loss if the investment thesis is wrong. The risk side of risk/reward.", ar:"نسبة الانخفاض المحتمل. الجانب السلبي من تحليل المخاطر/العائد."},
+  "RSI":         {en:"Relative Strength Index (0-100). Above 70 = overbought, may fall. Below 30 = oversold, may rise.", ar:"مؤشر القوة النسبية. فوق 70 = ذروة شراء. تحت 30 = ذروة بيع."},
+  "Stop-Loss":   {en:"A pre-set price to automatically sell if a stock falls, limiting maximum loss.", ar:"سعر البيع التلقائي عند الانخفاض. يحدد الحد الأقصى للخسارة المقبولة."},
+  "Stop Loss":   {en:"A pre-set price to automatically sell if a stock falls, limiting maximum loss.", ar:"سعر البيع التلقائي عند الانخفاض. يحدد الحد الأقصى للخسارة المقبولة."},
+  "Momentum":    {en:"A stock tendency to continue in its current direction. Strong momentum means trend likely continues.", ar:"ميل السهم للاستمرار في اتجاهه الحالي. الزخم القوي يعني استمرار الاتجاه."},
+  "Mean Reversion":{en:"Tendency for prices to return to their historical average after extreme moves.", ar:"ميل الأسعار للعودة إلى متوسطها التاريخي بعد التحركات المتطرفة."},
+  "Beta":        {en:"Volatility vs the market. Beta 1.5 means the stock moves 1.5x more than the market.", ar:"تقلب السهم مقارنة بالسوق. بيتا 1.5 تعني تحركات أكبر بمقدار 1.5 مرة."},
+  "Short Interest":{en:"Percentage of shares being shorted. High short interest means many traders expect the price to fall.", ar:"نسبة الأسهم التي يراهن عليها المتداولون بالانخفاض."},
+  "Short Squeeze":{en:"When a heavily shorted stock rises sharply, forcing short sellers to buy back, accelerating the rise.", ar:"ارتفاع حاد يجبر المراهنين على الهبوط للشراء، مما يسرّع الصعود."},
+  "ARR":         {en:"Annual Recurring Revenue. Predictable yearly revenue from subscriptions. Key SaaS metric.", ar:"الإيرادات السنوية المتكررة. الإيرادات الثابتة من الاشتراكات."},
+  "NRR":         {en:"Net Revenue Retention. Above 100% means existing customers spend more each year. 120% is excellent.", ar:"صافي الاحتفاظ بالإيرادات. فوق 100% يعني أن العملاء الحاليين ينفقون أكثر سنوياً."},
+  "SaaS":        {en:"Software as a Service. Cloud-based subscription software model, like Salesforce or Okta.", ar:"البرمجيات كخدمة. نموذج البرمجيات السحابية بالاشتراك."},
+  "Capex":       {en:"Capital Expenditure. Money spent on physical assets like factories, servers, or equipment.", ar:"النفقات الرأسمالية. الأموال المنفقة على الأصول الملموسة."},
+  "Moat":        {en:"Sustainable competitive advantage that protects a company from competition. Warren Buffett term.", ar:"الخندق التنافسي. ميزة مستدامة تحمي الشركة من المنافسة."},
+  "HBM":         {en:"High Bandwidth Memory. Advanced memory chips used in AI GPUs. Critical for NVIDIA and Micron.", ar:"ذاكرة النطاق العالي. رقائق ذاكرة متطورة مستخدمة في معالجات الذكاء الاصطناعي."},
+  "CUDA":        {en:"NVIDIA parallel computing platform. Industry standard for AI training, extremely hard to replace.", ar:"منصة NVIDIA للحوسبة المتوازية. المعيار الصناعي لتدريب الذكاء الاصطناعي."},
+  "GPU":         {en:"Graphics Processing Unit. Now the primary chip for AI training. NVIDIA dominates this market.", ar:"وحدة معالجة الرسوميات. أصبحت الرقاقة الرئيسية لتدريب الذكاء الاصطناعي."},
+  "Conviction Buy":{en:"Goldman Sachs highest-confidence buy recommendation. Strong upside, limited downside.", ar:"أعلى مستوى توصية شراء في Goldman Sachs — ثقة عالية باحتمالية الصعود."},
+  "Strong Buy":  {en:"Analyst highest buy rating. Strong conviction the stock will significantly outperform.", ar:"أعلى توصية شراء من المحللين. قناعة قوية بأن السهم سيتفوق على السوق."},
+  "Reduce":      {en:"Analyst recommendation to decrease position size, but not fully exit.", ar:"توصية بتخفيض حجم المركز وليس البيع الكامل."},
+  "Halving":     {en:"Bitcoin event where mining rewards are cut in half, reducing new supply. Historically preceded price rises.", ar:"حدث البيتكوين حيث تُخفَّض مكافآت التعدين للنصف."},
+  "Bull Market": {en:"Market trending upward, typically 20% or more gain from recent lows. High investor optimism.", ar:"سوق صاعدة. ارتفاع السوق بأكثر من 20% من أدنى مستوياتها."},
+  "Bear Market": {en:"Market in decline, typically 20% or more drop from recent highs. Investor pessimism dominates.", ar:"سوق هابطة. انخفاض السوق بأكثر من 20% من قممها الأخيرة."},
+  "Correction":  {en:"Market decline of 10-20% from recent highs. Normal and healthy part of market cycles.", ar:"تصحيح سعري بين 10-20% من القمة. جزء طبيعي من دورات السوق."},
+  "ذروة شراء":  {en:"Overbought. RSI above 70 — stock may be overpriced and due for a pullback.", ar:"حالة يكون فيها السهم مرتفعاً أكثر من اللازم. RSI فوق 70."},
+  "ذروة بيع":   {en:"Oversold. RSI below 30 — stock may be underpriced and due for a rebound.", ar:"حالة يكون فيها السهم منخفضاً أكثر من اللازم. RSI تحت 30."},
+  "الخندق التنافسي":{en:"Competitive moat. A sustainable advantage that protects a company from competition.", ar:"الميزة التنافسية المستدامة التي تحمي الشركة من المنافسين."}
 };
 
 // ═══ TOOLTIP ENGINE ═══
