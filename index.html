@@ -2190,7 +2190,118 @@ function renderAnalysis(data){
     }
   });
 }
-function renderSignals(t){const rm={'Strong Buy':{c:'#00c864',b:'rgba(0,200,100,0.12)'},'Buy':{c:'#00d4ff',b:'rgba(0,212,255,0.12)'},'Hold':{c:'#ffd700',b:'rgba(255,215,0,0.12)'},'Reduce':{c:'#ff4444',b:'rgba(255,68,68,0.12)'},'Sell':{c:'#ff4444',b:'rgba(255,68,68,0.12)'}};let h='';t.split('\n').filter(l=>l.trim()).forEach(line=>{const x=line.trim();if(/^[\d١-٩][\.\-\)]/.test(x)||/^#{1,3}\s/.test(x)){h+=`<div style="font-size:13px;font-weight:700;color:var(--accent);margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);direction:rtl;text-align:right;">${x.replace(/^#+\s*/,'')}</div>`;return;}let ok=false;for(const[k,s]of Object.entries(rm)){if(x.includes(k)){const p=x.split(/\s*—\s*/);let sym='',desc='';p.forEach(q=>{if(Object.keys(rm).some(r=>q.trim().startsWith(r))){}else if(/^[A-Z]{1,5}$/.test(q.trim()))sym=q.trim();else if(q.trim())desc=q.trim();});h+=`<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;margin-bottom:6px;border-radius:9px;background:${s.b};border-left:3px solid ${s.c};direction:rtl;text-align:right;"><span style="min-width:82px;font-size:11px;font-weight:700;color:${s.c};font-family:'IBM Plex Mono',monospace;padding:3px 7px;background:${s.b};border-radius:5px;flex-shrink:0;">${k}</span>${sym?`<span style="min-width:52px;font-size:13px;font-weight:700;color:var(--text);font-family:'IBM Plex Mono',monospace;flex-shrink:0;">${sym}</span>`:''}<span style="font-size:13px;color:var(--text2);flex:1;line-height:1.6;">${desc}</span></div>`;ok=true;break;}}if(!ok)h+=`<div style="font-size:13px;color:var(--text2);padding:3px 8px;direction:rtl;text-align:right;line-height:1.7;">${x}</div>`;});return h;}
+function renderSignals(text){
+  const ratingMap={
+    'Strong Buy':{color:'#00c864',bg:'rgba(0,200,100,0.1)',border:'rgba(0,200,100,0.4)',emoji:'🚀'},
+    'Buy':       {color:'#00d4ff',bg:'rgba(0,212,255,0.1)',border:'rgba(0,212,255,0.4)',emoji:'📈'},
+    'Hold':      {color:'#ffd700',bg:'rgba(255,215,0,0.1)', border:'rgba(255,215,0,0.4)', emoji:'⏸'},
+    'Reduce':    {color:'#ff6b35',bg:'rgba(255,107,53,0.1)',border:'rgba(255,107,53,0.4)',emoji:'📉'},
+    'Sell':      {color:'#ff4444',bg:'rgba(255,68,68,0.1)', border:'rgba(255,68,68,0.4)', emoji:'🔴'},
+  };
+
+  const lines = text.split('\n');
+  let html = '';
+  let inTable = false;
+  let tableRows = [];
+
+  function flushSignalTable(){
+    if(!tableRows.length) return;
+    let t = '<table style="width:100%;border-collapse:collapse;margin:12px 0;">';
+    tableRows.forEach((row, i) => {
+      const cells = row.split('|').map(c=>c.trim()).filter(c=>c);
+      if(!cells.length) return;
+      if(cells.every(c=>/^[-:]+$/.test(c))) return;
+
+      if(i === 0){
+        // Header row
+        t += '<tr>' + cells.map(c=>{
+          const tip = HEADER_TOOLTIPS[c] || '';
+          return `<th style="padding:10px 14px;background:rgba(0,212,255,0.08);border:1px solid var(--border);text-align:center;font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap;">${c}${tip ? ` <span style="border-bottom:1px dotted var(--accent);cursor:help;" title="${tip}">ⓘ</span>` : ''}</th>`;
+        }).join('') + '</tr>';
+      } else {
+        // Data row — detect rating in second cell for color
+        const rating = cells[1] ? cells[1].trim() : '';
+        const style = Object.entries(ratingMap).find(([k])=>rating.includes(k));
+        const rowBg = style ? style[1].bg : 'transparent';
+        const rowBorder = style ? style[1].border : 'var(--border)';
+        const emoji = style ? style[1].emoji : '';
+
+        t += `<tr style="background:${rowBg};">` + cells.map((c, ci) => {
+          let content = c;
+          // Rating cell — add emoji + color
+          if(ci === 1 && style){
+            content = `<span style="color:${style[1].color};font-weight:700;">${emoji} ${c}</span>`;
+          }
+          // Percentage cells — colorize
+          else {
+            content = colorizePercent(c);
+          }
+          const align = ci === 0 ? 'center' : ci === 2 ? 'right' : 'center';
+          return `<td style="padding:10px 14px;border:1px solid ${rowBorder};text-align:${align};font-size:13px;vertical-align:middle;">${content}</td>`;
+        }).join('') + '</tr>';
+      }
+    });
+    t += '</table>';
+    html += t;
+    tableRows = [];
+    inTable = false;
+  }
+
+  lines.forEach(line => {
+    const t = line.trim();
+
+    // Table row
+    if(t.startsWith('|') && t.endsWith('|')){
+      inTable = true;
+      tableRows.push(t.slice(1,-1));
+      return;
+    }
+
+    // Flush table if we hit a non-table line
+    if(inTable) flushSignalTable();
+
+    // Section header
+    if(/^[\d١-٩][\.\-\)]/.test(t) || /^#{1,3}\s/.test(t) || t.includes('═══')){
+      html += `<div style="font-size:14px;font-weight:800;color:var(--accent);margin:20px 0 10px;padding:10px 14px;background:rgba(0,212,255,0.06);border-radius:8px;border-right:3px solid var(--accent);direction:rtl;text-align:right;">${t.replace(/^#+\s*/,'').replace(/═══/g,'').trim()}</div>`;
+      return;
+    }
+
+    // Signal line (non-table format fallback)
+    let matched = false;
+    for(const [key, style] of Object.entries(ratingMap)){
+      if(t.includes(key)){
+        const parts = t.split(/\s*—\s*|\s*\|\s*/);
+        let sym='', desc='';
+        parts.forEach(p=>{
+          if(Object.keys(ratingMap).some(r=>p.trim().startsWith(r))){}
+          else if(/^[A-Z]{1,5}$/.test(p.trim())) sym=p.trim();
+          else if(p.trim()) desc=p.trim();
+        });
+        html += `
+          <div style="display:flex;align-items:stretch;gap:0;margin-bottom:8px;border-radius:10px;overflow:hidden;border:1px solid ${style.border};background:var(--bg3);">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 12px;background:${style.bg};min-width:90px;flex-shrink:0;gap:4px;">
+              <div style="font-size:16px;">${style.emoji}</div>
+              <div style="font-size:10px;font-weight:800;color:${style.color};font-family:'IBM Plex Mono',monospace;text-align:center;">${key.toUpperCase()}</div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:center;padding:10px 14px;border-left:1px solid ${style.border};border-right:1px solid ${style.border};min-width:70px;flex-shrink:0;">
+              <div style="font-size:14px;font-weight:900;color:var(--accent);font-family:'IBM Plex Mono',monospace;">${sym||'—'}</div>
+            </div>
+            <div style="flex:1;padding:10px 14px;display:flex;align-items:center;direction:rtl;text-align:right;">
+              <div style="font-size:13px;color:var(--text);line-height:1.6;">${colorizePercent(desc)}</div>
+            </div>
+          </div>`;
+        matched = true; break;
+      }
+    }
+
+    if(!matched && t){
+      html += `<div style="font-size:13px;color:var(--text2);padding:4px 8px;direction:rtl;text-align:right;line-height:1.7;">${colorizePercent(t)}</div>`;
+    }
+  });
+
+  if(inTable) flushSignalTable();
+  return html;
+}
 function parseAnalysisSections(content, type){
   const sections={};
   // Map section markers by type
