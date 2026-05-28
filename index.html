@@ -1943,10 +1943,16 @@ async function loadAnalysis(){
   try{
     const r=await fetch(`/api/analysis?date=${advisorDate}`);
     const d=await r.json();
-    const hasData = d.daily||d.weekly||d.monthly;
+    let normalized=d;
+    if(d.content&&!d.daily&&!d.weekly&&!d.monthly){
+      const type=d.type||'daily';
+      normalized={};
+      normalized[type]={content:d.content,date:d.date,generated:d.generated};
+    }
+    const hasData=normalized.daily||normalized.weekly||normalized.monthly;
     if(hasData){
-      analysisData=d;
-      renderAnalysis(d);
+      analysisData=normalized;
+      renderAnalysis(normalized);
       document.getElementById('advisorLoading').style.display='none';
       document.getElementById('advisorContent').style.display='block';
     } else {
@@ -2190,6 +2196,14 @@ function renderAnalysis(data){
     }
   });
 }
+function colorizePercent(text){
+  return text.replace(/([+\-]?\d+\.?\d*%)/g,(match)=>{
+    const val=parseFloat(match);
+    if(val>0) return `<span style="color:#00c864;font-weight:700;font-family:'IBM Plex Mono',monospace;background:rgba(0,200,100,0.12);padding:1px 6px;border-radius:4px;">${match}</span>`;
+    else if(val<0) return `<span style="color:#ff4444;font-weight:700;font-family:'IBM Plex Mono',monospace;background:rgba(255,68,68,0.12);padding:1px 6px;border-radius:4px;">${match}</span>`;
+    return `<span style="color:#ffd700;font-weight:700;font-family:'IBM Plex Mono',monospace;">${match}</span>`;
+  });
+}
 function renderSignals(text){
   const ratingMap={
     'Strong Buy':{color:'#00c864',bg:'rgba(0,200,100,0.1)',border:'rgba(0,200,100,0.4)',emoji:'🚀'},
@@ -2309,7 +2323,7 @@ function parseAnalysisSections(content, type){
     daily: {
       signals:   ['DAILY SIGNALS','إشارات اليوم','القسم الأول','إشارات اليوم','الإشارات اليومية'],
       earnings:  ['EARNINGS & EVENTS','EARNINGS','الأرباح والأحداث','القسم الثاني','الأرباح والأحداث القادمة'],
-      macro:     ['MACRO TODAY','MACRO','ماكرو اليوم','القسم الثالث','الماكرو اليوم']
+      macro:     ['MACRO TODAY','MACRO','ماكرو اليوم','القسم الثالث','الماكرو اليوم','الاقتصاد العالمي اليوم']
     },
     weekly: {
       risk:      ['RISK RADAR','رادار المخاطر','القسم الأول'],
