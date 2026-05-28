@@ -3596,7 +3596,7 @@ function scanForUnknownTerms(container) {
     'COULD','WOULD','SHOULD','AFTER','UNDER','WHILE','SINCE','UNTIL',
     'Today','Today','There','Their','These','Those','Other','Every',
     'After','Under','While','About','Could','Would','Should','Above']);
-
+const neverSkip = new Set(['FCF','ROIC','WACC','PEG','EPS','ARR','NRR','SBC','TAM','CAC','LTV','YoY','QoQ','IPO','ROE','ROI','CAGR','EBIT','NAV','AUM','ETF']);
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
       let p = node.parentElement;
@@ -3628,8 +3628,8 @@ function scanForUnknownTerms(container) {
       const term = match[1];
       // Skip if already in static dictionary or in skip list
       if (GLOSSARY[term]) continue;
-      if (skipWords.has(term)) continue;
-      if (term.length < 3) continue;
+if (!neverSkip.has(term) && skipWords.has(term)) continue;
+if (term.length < 2) continue;
 
       hasMatch = true;
       if (match.index > lastIndex) {
