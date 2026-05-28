@@ -3422,105 +3422,65 @@ AR: [same definition in Arabic, max 20 words]`,
 };
 
 // ═══ TERM HIGHLIGHTER ═══
-// Detect if a word looks like a financial/technical term worth defining
-function looksLikeTerm(word) {
-  if (word.length < 2) return false;
-  // All caps abbreviations: RSI, DCF, EPS, ARR, HBM, GPU, AI
-  if (/^[A-Z]{2,6}$/.test(word)) return true;
-  // Mixed case technical terms: Agentforce, Blackwell, CUDA, Copilot
-  if (/^[A-Z][a-z]+[A-Z]/.test(word)) return true;
-  // Known patterns: P/E, P/S, HBM3E
-  if (/^[A-Z]\/[A-Z]$/.test(word)) return true;
-  if (/^[A-Z]{2,4}[0-9]/.test(word)) return true;
-  return false;
-}
-
 function highlightGlossaryTerms(container) {
   if (!container) return;
+  const terms = Object.keys(GLOSSARY).sort((a,b) => b.length - a.length);
+  if (!terms.length) return;
 
-  // Phase 1: known dictionary terms (exact match, any language)
-  const knownTerms = Object.keys(GLOSSARY).sort((a,b) => b.length - a.length);
+  // Build one combined regex from dictionary only (fast, no dynamic detection)
+  let allRe;
+  try {
+    allRe = new RegExp(
+      terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
+      'g'
+    );
+  } catch(e) { return; }
 
-  const walker = document.createTreeWalker(
-    container,
-    NodeFilter.SHOW_TEXT,
-    {
-      acceptNode(node) {
-        const parent = node.parentElement;
-        if (!parent) return NodeFilter.FILTER_REJECT;
-        if (parent.classList.contains('glossary-term')) return NodeFilter.FILTER_REJECT;
-        if (['SCRIPT','STYLE','CODE','PRE','B','I'].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
-        return NodeFilter.FILTER_ACCEPT;
-      }
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const p = node.parentElement;
+      if (!p) return NodeFilter.FILTER_REJECT;
+      if (p.classList.contains('glossary-term')) return NodeFilter.FILTER_REJECT;
+      if (['SCRIPT','STYLE','CODE','PRE'].includes(p.tagName)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
     }
-  );
+  });
 
-  const textNodes = [];
-  let node;
-  while (node = walker.nextNode()) textNodes.push(node);
+  const nodes = [];
+  let n;
+  while (n = walker.nextNode()) nodes.push(n);
 
-  function makeSpan(term) {
-    const span = document.createElement('span');
-    span.className = 'glossary-term';
-    span.setAttribute('data-term', term);
-    span.textContent = term;
-    span.addEventListener('mouseenter', (e) => glossaryTooltip.show(term, e.clientX, e.clientY));
-    span.addEventListener('mousemove',  (e) => glossaryTooltip.show(term, e.clientX, e.clientY));
-    span.addEventListener('mouseleave', ()  => glossaryTooltip.hide());
-    span.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const tx = e.touches?.[0]?.clientX || e.clientX || 0;
-      const ty = e.touches?.[0]?.clientY || e.clientY || 0;
-      glossaryTooltip.show(term, tx, ty);
-    });
-    return span;
-  }
-
-  textNodes.forEach(textNode => {
+  nodes.forEach(textNode => {
     const text = textNode.textContent;
-
-    // Build regex from known terms + dynamic detection
-    // Known terms matched first (longer ones first)
-    const knownEscaped = knownTerms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-
-    // Dynamic: catch uppercase abbreviations and technical terms not in dictionary
-    const dynamicPattern = '\\b[A-Z]{2,6}\\b|\\b[A-Z][a-zA-Z]*[A-Z][a-zA-Z]*\\b|\\b[A-Z]{2,4}[0-9][a-zA-Z0-9]*\\b';
-
-    const allPattern = [...knownEscaped, dynamicPattern].join('|');
-    let allRe;
-    try {
-      allRe = new RegExp(allPattern, 'g');
-    } catch(e) {
-      return; // skip if regex fails
-    }
-
-    let match;
-    let lastIndex = 0;
-    const fragment = document.createDocumentFragment();
-    let hasMatch = false;
-
     allRe.lastIndex = 0;
+    if (!allRe.test(text)) return;
+
+    const fragment = document.createDocumentFragment();
+    let lastIndex = 0;
+    allRe.lastIndex = 0;
+    let match;
+
     while ((match = allRe.exec(text)) !== null) {
       const term = match[0];
-      // Skip very common words that aren't financial terms
-      const skip = ['AI','IT','US','UK','EU','CEO','CFO','IPO','USD','AED','UAE','ETF','IS','DO','OR','AN','IN','AT','BE','BY','TO','IF','OF','ON','AS','NO'];
-      // Only skip short non-dictionary words
-      if (!GLOSSARY[term] && term.length <= 2) continue;
-      if (!GLOSSARY[term] && skip.includes(term)) continue;
-      if (!GLOSSARY[term] && !looksLikeTerm(term)) continue;
-
-      hasMatch = true;
       if (match.index > lastIndex) {
         fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
       }
-      fragment.appendChild(makeSpan(term));
+      const span = document.createElement('span');
+      span.className = 'glossary-term';
+      span.setAttribute('data-term', term);
+      span.textContent = term;
+      span.addEventListener('mouseenter', (e) => glossaryTooltip.show(term, e.clientX, e.clientY));
+      span.addEventListener('mousemove',  (e) => glossaryTooltip.show(term, e.clientX, e.clientY));
+      span.addEventListener('mouseleave', ()  => glossaryTooltip.hide());
+      span.addEventListener('click', (e) => {
+        e.stopPropagation();
+        glossaryTooltip.show(term, e.clientX||0, e.clientY||0);
+      });
+      fragment.appendChild(span);
       lastIndex = match.index + term.length;
     }
 
-    if (!hasMatch) return;
-    if (lastIndex < text.length) {
-      fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
-    }
+    if (lastIndex < text.length) fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
     textNode.parentNode.replaceChild(fragment, textNode);
   });
 }
