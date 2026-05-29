@@ -77,8 +77,11 @@ module.exports = async (req, res) => {
 
     // Try user-specific daily first, then generic
     let dailyData = null;
-    if (nick) dailyData = await readFile(`data/analysis-daily-${nick}-${today}.json`);
-    if (!dailyData) dailyData = await readFile(`data/analysis-daily-${today}.json`);
+if (nick) {
+  dailyData = await readFile(`data/analysis-daily-${nick}-${today}.json`);
+} else {
+  dailyData = await readFile(`data/analysis-daily-${today}.json`);
+}
 
     // Find most recent weekly
     let weeklyData = null;
