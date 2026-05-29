@@ -266,9 +266,230 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
 .advisor-empty{text-align:center;padding:40px;color:var(--text2);}
 .advisor-empty-icon{font-size:48px;margin-bottom:12px;}
 .advisor-ts{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:12px;direction:ltr;text-align:left;}
+
+/* ===== AUTH OVERLAY ===== */
+#authBlur{position:fixed;top:0;left:0;right:0;bottom:0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);background:rgba(10,14,26,0.75);z-index:7999;}
+#authOverlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;}
+#authCard{background:var(--bg2);border:1px solid var(--border);border-radius:22px;width:100%;max-width:360px;padding:32px 28px;position:relative;}
+.auth-logo{text-align:center;margin-bottom:24px;}
+.auth-logo-icon{width:56px;height:56px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 10px;}
+.auth-title{font-size:20px;font-weight:900;text-align:center;margin-bottom:4px;}
+.auth-sub{font-size:12px;color:var(--text2);text-align:center;margin-bottom:24px;}
+.auth-view{display:none;}
+.auth-view.active{display:block;}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:24px;}
+.auth-tab{padding:10px;text-align:center;font-size:13px;font-weight:700;cursor:pointer;background:transparent;border:none;color:var(--text2);font-family:'Cairo',sans-serif;transition:all .2s;}
+.auth-tab.active{background:var(--accent);color:#000;}
+.auth-input{width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:'Cairo',sans-serif;margin-bottom:12px;outline:none;transition:border .2s;}
+.auth-input:focus{border-color:var(--accent);}
+.auth-btn{width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:'Cairo',sans-serif;transition:all .2s;margin-top:4px;}
+.auth-btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;}
+.auth-btn-primary:hover{opacity:0.9;}
+.auth-btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2);margin-top:8px;}
+.auth-btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+.auth-error{background:rgba(255,68,68,.12);border:1px solid rgba(255,68,68,.3);color:var(--red);border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:12px;display:none;}
+.auth-error.show{display:block;}
+.pin-dots{display:flex;gap:14px;justify-content:center;margin:20px 0;}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:transparent;transition:all .2s;}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent);}
+.pin-dot.error{background:var(--red);border-color:var(--red);}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;}
+.numpad-btn{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 0;text-align:center;font-size:20px;font-weight:700;cursor:pointer;font-family:'IBM Plex Mono',monospace;color:var(--text);transition:all .15s;user-select:none;}
+.numpad-btn:hover{background:var(--border);border-color:var(--accent);}
+.numpad-btn:active{transform:scale(0.94);background:rgba(0,212,255,0.1);}
+.numpad-btn.del{font-size:16px;color:var(--text2);}
+.numpad-btn.empty{background:transparent;border-color:transparent;cursor:default;}
+.numpad-btn.empty:hover{background:transparent;border-color:transparent;}
+.lockout-msg{text-align:center;color:var(--accent3);font-size:13px;font-weight:600;padding:12px 0;}
+.auth-step-label{font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+.auth-progress{display:flex;gap:5px;justify-content:center;margin-bottom:20px;}
+.auth-pdot{width:6px;height:6px;border-radius:50%;background:var(--border);}
+.auth-pdot.active{background:var(--accent);}
+.auth-pdot.done{background:var(--accent2);}
+/* Admin panel */
+.admin-section{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
+.admin-section-title{font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;}
+.user-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(30,45,74,.4);}
+.user-row:last-child{border-bottom:none;}
+.user-nick{font-size:13px;font-weight:600;}
+.user-meta{font-size:10px;color:var(--text2);}
+.admin-action-btn{background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'Cairo',sans-serif;}
+.admin-action-btn:hover{border-color:var(--accent3);color:var(--accent3);}
+.invite-code-display{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--accent);text-align:center;letter-spacing:3px;padding:16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;margin:12px 0;}
+</style>
+.welcome-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);}
+.welcome-modal{background:var(--bg2);border:1px solid var(--border);border-radius:20px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;padding:32px;}
+.welcome-step{display:none;}
+.welcome-step.active{display:block;}
+.welcome-logo{text-align:center;margin-bottom:24px;}
+.welcome-logo-icon{width:64px;height:64px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 12px;}
+.welcome-title{font-size:22px;font-weight:900;margin-bottom:6px;}
+.welcome-sub{font-size:13px;color:var(--text2);line-height:1.6;}
+.lang-choice{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:24px 0;}
+.lang-card{border:2px solid var(--border);border-radius:14px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;}
+.lang-card:hover{border-color:var(--accent);background:rgba(0,212,255,0.05);}
+.lang-card.selected{border-color:var(--accent);background:rgba(0,212,255,0.08);}
+.lang-card-flag{font-size:32px;margin-bottom:8px;}
+.lang-card-name{font-size:16px;font-weight:700;}
+.lang-card-sub{font-size:11px;color:var(--text2);margin-top:3px;}
+.welcome-input{width:100%;padding:12px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:'Cairo',sans-serif;margin-bottom:16px;outline:none;transition:border .2s;}
+.welcome-input:focus{border-color:var(--accent);}
+.welcome-btn{width:100%;padding:14px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:'Cairo',sans-serif;transition:all .2s;}
+.welcome-btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;}
+.welcome-btn-primary:hover{opacity:0.9;}
+.welcome-btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2);margin-top:10px;}
+.welcome-btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+.stock-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center;}
+.stock-row-header{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin-bottom:6px;}
+.stock-row-header span{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.stock-remove{background:rgba(255,68,68,.15);border:1px solid rgba(255,68,68,.3);color:var(--red);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:14px;transition:all .2s;}
+.stock-remove:hover{background:rgba(255,68,68,.3);}
+.add-stock-btn{background:rgba(0,212,255,.1);border:1px solid var(--accent);color:var(--accent);border-radius:10px;padding:10px;width:100%;cursor:pointer;font-size:13px;font-weight:600;font-family:'Cairo',sans-serif;margin-bottom:16px;transition:all .2s;}
+.add-stock-btn:hover{background:rgba(0,212,255,.2);}
+.welcome-progress{display:flex;gap:6px;justify-content:center;margin-bottom:24px;}
+.progress-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:all .2s;}
+.progress-dot.active{background:var(--accent);transform:scale(1.2);}
+.progress-dot.done{background:var(--accent2);}
+.section-label{font-size:12px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;}
+/* ===== REMINDER BANNER ===== */
+.reminder-banner{background:linear-gradient(135deg,rgba(255,107,53,0.15),rgba(255,107,53,0.05));border:1px solid rgba(255,107,53,0.4);border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.reminder-text{font-size:13px;color:var(--text);}
+.reminder-btn{background:var(--accent3);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif;white-space:nowrap;transition:all .2s;}
+.reminder-btn:hover{opacity:0.85;}
 </style>
 </head>
 <body>
+
+<!-- ===== AUTH OVERLAY ===== -->
+<div id="authBlur" style="display:none;"></div>
+<div id="authOverlay" style="display:none;">
+  <div id="authCard">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">📊</div>
+      <div class="auth-title">Financial Intelligence</div>
+      <div class="auth-sub" id="auth-sub-text">Secure investment dashboard</div>
+    </div>
+
+    <!-- SIGN IN / SIGN UP TABS -->
+    <div class="auth-tabs" id="authTabs">
+      <button class="auth-tab active" id="tab-signin" onclick="showAuthView('signin')">Sign In</button>
+      <button class="auth-tab" id="tab-signup" onclick="showAuthView('signup-code')">Sign Up</button>
+    </div>
+
+    <!-- ERROR BOX -->
+    <div class="auth-error" id="authError"></div>
+
+    <!-- ── VIEW: SIGN IN ── -->
+    <div class="auth-view active" id="view-signin">
+      <div class="auth-step-label" id="si-nick-label">Your nickname</div>
+      <input class="auth-input" id="si-nickname" placeholder="e.g. ahmed" autocomplete="off" autocapitalize="none" />
+      <div class="auth-step-label" id="si-pin-label">Your 4-digit PIN</div>
+      <div class="pin-dots" id="si-dots">
+        <div class="pin-dot" id="si-d1"></div>
+        <div class="pin-dot" id="si-d2"></div>
+        <div class="pin-dot" id="si-d3"></div>
+        <div class="pin-dot" id="si-d4"></div>
+      </div>
+      <div class="numpad" id="si-numpad">
+        <div class="numpad-btn" onclick="pinPress('si',1)">1</div>
+        <div class="numpad-btn" onclick="pinPress('si',2)">2</div>
+        <div class="numpad-btn" onclick="pinPress('si',3)">3</div>
+        <div class="numpad-btn" onclick="pinPress('si',4)">4</div>
+        <div class="numpad-btn" onclick="pinPress('si',5)">5</div>
+        <div class="numpad-btn" onclick="pinPress('si',6)">6</div>
+        <div class="numpad-btn" onclick="pinPress('si',7)">7</div>
+        <div class="numpad-btn" onclick="pinPress('si',8)">8</div>
+        <div class="numpad-btn" onclick="pinPress('si',9)">9</div>
+        <div class="numpad-btn empty"></div>
+        <div class="numpad-btn" onclick="pinPress('si',0)">0</div>
+        <div class="numpad-btn del" onclick="pinBack('si')">⌫</div>
+      </div>
+      <div class="lockout-msg" id="si-lockout" style="display:none;"></div>
+    </div>
+
+    <!-- ── VIEW: SIGNUP STEP 1 — INVITE CODE ── -->
+    <div class="auth-view" id="view-signup-code">
+      <div class="auth-progress">
+        <div class="auth-pdot active" id="sp1"></div>
+        <div class="auth-pdot" id="sp2"></div>
+        <div class="auth-pdot" id="sp3"></div>
+      </div>
+      <div class="auth-step-label">Invite code</div>
+      <input class="auth-input" id="su-invite" placeholder="e.g. ABCD-EFGH" autocomplete="off" autocapitalize="characters" oninput="this.value=this.value.toUpperCase()" />
+      <button class="auth-btn auth-btn-primary" onclick="signupStep1()">Continue →</button>
+    </div>
+
+    <!-- ── VIEW: SIGNUP STEP 2 — NICKNAME ── -->
+    <div class="auth-view" id="view-signup-nick">
+      <div class="auth-progress">
+        <div class="auth-pdot done" id="sp1b"></div>
+        <div class="auth-pdot active" id="sp2b"></div>
+        <div class="auth-pdot" id="sp3b"></div>
+      </div>
+      <div class="auth-step-label">Choose a nickname</div>
+      <input class="auth-input" id="su-nickname" placeholder="e.g. ahmed (3-20 chars)" autocomplete="off" autocapitalize="none" />
+      <div style="font-size:11px;color:var(--text2);margin-bottom:12px;">Letters, numbers, underscores only. This is how you'll sign in.</div>
+      <button class="auth-btn auth-btn-primary" onclick="signupStep2()">Continue →</button>
+      <button class="auth-btn auth-btn-outline" onclick="showAuthView('signup-code')">← Back</button>
+    </div>
+
+    <!-- ── VIEW: SIGNUP STEP 3 — CREATE PIN ── -->
+    <div class="auth-view" id="view-signup-pin">
+      <div class="auth-progress">
+        <div class="auth-pdot done"></div>
+        <div class="auth-pdot done"></div>
+        <div class="auth-pdot active"></div>
+      </div>
+      <div class="auth-step-label" id="su-pin-label">Create your 4-digit PIN</div>
+      <div class="pin-dots" id="su-dots">
+        <div class="pin-dot" id="su-d1"></div>
+        <div class="pin-dot" id="su-d2"></div>
+        <div class="pin-dot" id="su-d3"></div>
+        <div class="pin-dot" id="su-d4"></div>
+      </div>
+      <div class="numpad">
+        <div class="numpad-btn" onclick="pinPress('su',1)">1</div>
+        <div class="numpad-btn" onclick="pinPress('su',2)">2</div>
+        <div class="numpad-btn" onclick="pinPress('su',3)">3</div>
+        <div class="numpad-btn" onclick="pinPress('su',4)">4</div>
+        <div class="numpad-btn" onclick="pinPress('su',5)">5</div>
+        <div class="numpad-btn" onclick="pinPress('su',6)">6</div>
+        <div class="numpad-btn" onclick="pinPress('su',7)">7</div>
+        <div class="numpad-btn" onclick="pinPress('su',8)">8</div>
+        <div class="numpad-btn" onclick="pinPress('su',9)">9</div>
+        <div class="numpad-btn empty"></div>
+        <div class="numpad-btn" onclick="pinPress('su',0)">0</div>
+        <div class="numpad-btn del" onclick="pinBack('su')">⌫</div>
+      </div>
+    </div>
+
+    <!-- ── VIEW: SIGNUP STEP 3b — CONFIRM PIN ── -->
+    <div class="auth-view" id="view-signup-confirm">
+      <div class="auth-step-label">Confirm your PIN</div>
+      <div class="pin-dots" id="sc-dots">
+        <div class="pin-dot" id="sc-d1"></div>
+        <div class="pin-dot" id="sc-d2"></div>
+        <div class="pin-dot" id="sc-d3"></div>
+        <div class="pin-dot" id="sc-d4"></div>
+      </div>
+      <div class="numpad">
+        <div class="numpad-btn" onclick="pinPress('sc',1)">1</div>
+        <div class="numpad-btn" onclick="pinPress('sc',2)">2</div>
+        <div class="numpad-btn" onclick="pinPress('sc',3)">3</div>
+        <div class="numpad-btn" onclick="pinPress('sc',4)">4</div>
+        <div class="numpad-btn" onclick="pinPress('sc',5)">5</div>
+        <div class="numpad-btn" onclick="pinPress('sc',6)">6</div>
+        <div class="numpad-btn" onclick="pinPress('sc',7)">7</div>
+        <div class="numpad-btn" onclick="pinPress('sc',8)">8</div>
+        <div class="numpad-btn" onclick="pinPress('sc',9)">9</div>
+        <div class="numpad-btn empty"></div>
+        <div class="numpad-btn" onclick="pinPress('sc',0)">0</div>
+        <div class="numpad-btn del" onclick="pinBack('sc')">⌫</div>
+      </div>
+    </div>
+
+  </div><!-- end authCard -->
+</div><!-- end authOverlay -->
 
 <header>
   <div class="container">
@@ -361,6 +582,11 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
 
 <!-- ===== PORTFOLIO TAB ===== -->
 <div id="tab-portfolio" class="tab-content active">
+  <!-- Reminder Banner (shown if setup incomplete) -->
+  <div class="reminder-banner" id="reminderBanner" style="display:none;">
+    <div class="reminder-text" id="reminder-text">⚠️ Your portfolio is empty. Add your stocks to see your full dashboard.</div>
+    <button class="reminder-btn" id="reminder-btn" onclick="openWelcomeModal()">Set Up Portfolio →</button>
+  </div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
     <div id="live-price-indicator" style="font-size:11px;color:var(--text2);font-family:'IBM Plex Mono',monospace;">
       ⏳ Loading live prices...
@@ -4360,8 +4586,588 @@ function applyGlossaryHighlighting() {
 // Also highlight when switching firm tabs
 const _origShowFirm = typeof showFirm === 'function' ? showFirm : null;
 
-// Init tooltip element
-document.addEventListener('DOMContentLoaded', () => glossaryTooltip.init());
+// ===== AUTH SYSTEM =====
+const AUTH_SESSION_KEY = 'theisilabs_session';
+const AUTH_NICK_KEY = 'theisilabs_nick';
+const AUTH_ADMIN_KEY = 'theisilabs_admin';
+const PIN_SALT = 'theisilabs2026salt';
+
+// PIN state per context (si=signin, su=signup, sc=confirm)
+const _pin = { si: '', su: '', sc: '' };
+let _lockoutTimer = null;
+let _signupInviteCode = '';
+
+// ── Hash PIN using SHA-256 ──
+async function hashPin(pin) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(pin + PIN_SALT);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ── Check session on load ──
+async function checkSession() {
+  const token = localStorage.getItem(AUTH_SESSION_KEY);
+  if (!token) { showAuth(); return; }
+  try {
+    const r = await fetch('/api/auth-me', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (r.ok) {
+      const data = await r.json();
+      onAuthSuccess(data.nickname, data.isAdmin, token, false);
+    } else {
+      localStorage.removeItem(AUTH_SESSION_KEY);
+      showAuth();
+    }
+  } catch(e) { showAuth(); }
+}
+
+// ── Show / hide auth ──
+function showAuth() {
+  document.getElementById('authBlur').style.display = 'block';
+  document.getElementById('authOverlay').style.display = 'flex';
+  showAuthView('signin');
+}
+
+function hideAuth() {
+  document.getElementById('authBlur').style.display = 'none';
+  document.getElementById('authOverlay').style.display = 'none';
+}
+
+function showAuthView(viewId) {
+  document.querySelectorAll('.auth-view').forEach(v => v.classList.remove('active'));
+  const el = document.getElementById('view-' + viewId);
+  if (el) el.classList.add('active');
+  // Update tabs
+  const isSignup = viewId.startsWith('signup');
+  document.getElementById('tab-signin').classList.toggle('active', !isSignup);
+  document.getElementById('tab-signup').classList.toggle('active', isSignup);
+  clearAuthError();
+  // Reset PIN state for that context
+  if (viewId === 'signin') { _pin.si = ''; updateDots('si'); }
+  if (viewId === 'signup-pin') { _pin.su = ''; updateDots('su'); }
+  if (viewId === 'signup-confirm') { _pin.sc = ''; updateDots('sc'); }
+}
+
+// ── PIN numpad ──
+function pinPress(ctx, digit) {
+  if (_pin[ctx].length >= 4) return;
+  _pin[ctx] += String(digit);
+  updateDots(ctx);
+  if (_pin[ctx].length === 4) {
+    setTimeout(() => handlePinComplete(ctx), 150);
+  }
+}
+
+function pinBack(ctx) {
+  _pin[ctx] = _pin[ctx].slice(0, -1);
+  updateDots(ctx);
+}
+
+function updateDots(ctx) {
+  const prefix = ctx === 'sc' ? 'sc' : ctx;
+  for (let i = 1; i <= 4; i++) {
+    const dot = document.getElementById(prefix + '-d' + i);
+    if (dot) dot.classList.toggle('filled', i <= _pin[ctx].length);
+  }
+}
+
+async function handlePinComplete(ctx) {
+  if (ctx === 'si') await doSignIn();
+  if (ctx === 'su') {
+    // Move to confirm step
+    showAuthView('signup-confirm');
+  }
+  if (ctx === 'sc') await doSignUp();
+}
+
+// ── Sign In ──
+async function doSignIn() {
+  const nickname = (document.getElementById('si-nickname').value || '').trim().toLowerCase();
+  if (!nickname) { showAuthError('Please enter your nickname'); _pin.si = ''; updateDots('si'); return; }
+  const pinHash = await hashPin(_pin.si);
+  try {
+    const r = await fetch('/api/auth-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickname, pinHash })
+    });
+    const data = await r.json();
+    if (r.ok) {
+      onAuthSuccess(data.nickname, data.isAdmin, data.token, data.firstLogin);
+    } else if (r.status === 429) {
+      startLockoutCountdown(data.remainingSeconds);
+    } else {
+      showAuthError(data.error || 'Invalid nickname or PIN');
+      // Shake dots
+      const dots = document.getElementById('si-dots');
+      if (dots) { dots.querySelectorAll('.pin-dot').forEach(d => { d.classList.add('error'); setTimeout(() => d.classList.remove('error'), 600); }); }
+      _pin.si = ''; updateDots('si');
+      // Show lockout info if any
+      if (data.lockoutMinutes > 0) {
+        showAuthError(`Wrong PIN. Locked for ${data.lockoutMinutes} minutes after next failure.`);
+      }
+    }
+  } catch(e) { showAuthError('Connection error. Please try again.'); _pin.si = ''; updateDots('si'); }
+}
+
+// ── Sign Up steps ──
+function signupStep1() {
+  const code = (document.getElementById('su-invite').value || '').trim().toUpperCase();
+  if (!code) { showAuthError('Please enter your invite code'); return; }
+  _signupInviteCode = code;
+  showAuthView('signup-nick');
+}
+
+function signupStep2() {
+  const nick = (document.getElementById('su-nickname').value || '').trim();
+  if (!nick) { showAuthError('Please choose a nickname'); return; }
+  if (!/^[a-zA-Z0-9_]{3,20}$/.test(nick)) { showAuthError('3-20 characters, letters/numbers/underscores only'); return; }
+  showAuthView('signup-pin');
+}
+
+async function doSignUp() {
+  // Check PINs match
+  if (_pin.su !== _pin.sc) {
+    showAuthError('PINs do not match — please try again');
+    const dots = document.getElementById('sc-dots');
+    if (dots) { dots.querySelectorAll('.pin-dot').forEach(d => { d.classList.add('error'); setTimeout(() => d.classList.remove('error'), 600); }); }
+    _pin.sc = ''; updateDots('sc');
+    setTimeout(() => { _pin.su = ''; updateDots('su'); showAuthView('signup-pin'); }, 700);
+    return;
+  }
+  const nickname = (document.getElementById('su-nickname').value || '').trim().toLowerCase();
+  const pinHash = await hashPin(_pin.su);
+  try {
+    const r = await fetch('/api/auth-signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inviteCode: _signupInviteCode, nickname, pinHash })
+    });
+    const data = await r.json();
+    if (r.ok) {
+      onAuthSuccess(data.nickname, data.isAdmin, data.token, false);
+    } else {
+      showAuthError(data.error || 'Signup failed');
+      _pin.su = ''; _pin.sc = ''; updateDots('su'); updateDots('sc');
+      showAuthView('signup-pin');
+    }
+  } catch(e) { showAuthError('Connection error. Please try again.'); }
+}
+
+// ── After successful auth ──
+function onAuthSuccess(nickname, isAdmin, token, firstLogin) {
+  localStorage.setItem(AUTH_SESSION_KEY, token);
+  localStorage.setItem(AUTH_NICK_KEY, nickname);
+  localStorage.setItem(AUTH_ADMIN_KEY, isAdmin ? '1' : '0');
+  hideAuth();
+  // Update header with nickname
+  const titleEl = document.getElementById('h-title');
+  if (titleEl) titleEl.textContent = 'Hi, ' + nickname.charAt(0).toUpperCase() + nickname.slice(1);
+  // Show admin panel button if admin
+  if (isAdmin) showAdminButton();
+}
+
+// ── Lockout countdown ──
+function startLockoutCountdown(seconds) {
+  const el = document.getElementById('si-lockout');
+  if (!el) return;
+  el.style.display = 'block';
+  // Disable numpad
+  document.querySelectorAll('#si-numpad .numpad-btn').forEach(b => b.style.opacity = '0.3');
+  let remaining = seconds;
+  const tick = () => {
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    el.textContent = `Too many attempts. Wait ${m > 0 ? m + 'm ' : ''}${s}s`;
+    if (remaining <= 0) {
+      el.style.display = 'none';
+      document.querySelectorAll('#si-numpad .numpad-btn').forEach(b => b.style.opacity = '1');
+      _pin.si = ''; updateDots('si');
+      return;
+    }
+    remaining--;
+    _lockoutTimer = setTimeout(tick, 1000);
+  };
+  tick();
+}
+
+// ── Error display ──
+function showAuthError(msg) {
+  const el = document.getElementById('authError');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function clearAuthError() {
+  const el = document.getElementById('authError');
+  if (el) el.classList.remove('show');
+}
+
+// ── Admin button ──
+function showAdminButton() {
+  const headerRight = document.querySelector('.header-right');
+  if (!headerRight || document.getElementById('adminBtn')) return;
+  const btn = document.createElement('button');
+  btn.id = 'adminBtn';
+  btn.textContent = '⚙ Admin';
+  btn.style.cssText = 'background:rgba(255,107,53,.15);border:1px solid rgba(255,107,53,.4);color:var(--accent3);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Cairo,sans-serif;';
+  btn.onclick = openAdminPanel;
+  headerRight.appendChild(btn);
+}
+
+// ── Admin panel ──
+async function openAdminPanel() {
+  const token = localStorage.getItem(AUTH_SESSION_KEY);
+  // Show admin overlay
+  let panel = document.getElementById('adminPanel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'adminPanel';
+    panel.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9000;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);';
+    panel.innerHTML = `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:28px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <div style="font-size:16px;font-weight:900;">⚙ Admin Panel</div>
+          <button onclick="document.getElementById('adminPanel').remove()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:5px 12px;cursor:pointer;font-family:Cairo,sans-serif;">✕ Close</button>
+        </div>
+        <div class="admin-section">
+          <div class="admin-section-title">Generate Invite Code</div>
+          <button onclick="generateInvite()" style="background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#000;border-radius:10px;padding:12px;width:100%;font-size:14px;font-weight:700;cursor:pointer;font-family:Cairo,sans-serif;">+ Generate New Code</button>
+          <div class="invite-code-display" id="newInviteCode" style="display:none;"></div>
+          <div style="font-size:11px;color:var(--text2);text-align:center;" id="inviteMsg"></div>
+        </div>
+        <div class="admin-section">
+          <div class="admin-section-title">Active Invite Codes</div>
+          <div id="codesList" style="font-size:12px;color:var(--text2);">Loading...</div>
+        </div>
+        <div class="admin-section">
+          <div class="admin-section-title">Users</div>
+          <div id="usersList" style="font-size:12px;color:var(--text2);">Loading...</div>
+        </div>
+      </div>`;
+    document.body.appendChild(panel);
+  }
+  panel.style.display = 'flex';
+  // Load data
+  loadAdminData(token);
+}
+
+async function loadAdminData(token) {
+  try {
+    const [usersR, codesR] = await Promise.all([
+      fetch('/api/admin?action=users', { headers: { 'Authorization': 'Bearer ' + token } }),
+      fetch('/api/admin?action=codes', { headers: { 'Authorization': 'Bearer ' + token } })
+    ]);
+    const { users } = await usersR.json();
+    const { codes } = await codesR.json();
+    // Render users
+    const ul = document.getElementById('usersList');
+    if (ul && users) {
+      ul.innerHTML = users.map(u => `
+        <div class="user-row">
+          <div>
+            <div class="user-nick">${u.nickname} ${u.isAdmin ? '👑' : ''}</div>
+            <div class="user-meta">Joined: ${u.createdAt ? u.createdAt.slice(0,10) : 'unknown'} · Failed: ${u.failedAttempts || 0}</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            ${u.lockoutUntil && new Date(u.lockoutUntil) > new Date() ? `<button class="admin-action-btn" onclick="unlockUser('${u.nickname}')">Unlock</button>` : ''}
+            ${!u.isAdmin ? `<button class="admin-action-btn" onclick="resetPin('${u.nickname}')">Reset PIN</button>` : ''}
+          </div>
+        </div>`).join('');
+    }
+    // Render codes
+    const cl = document.getElementById('codesList');
+    if (cl && codes) {
+      const unused = codes.filter(c => !c.used);
+      const used = codes.filter(c => c.used);
+      cl.innerHTML = (unused.length === 0 ? '<div style="color:var(--text3);">No unused codes</div>' :
+        unused.map(c => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(30,45,74,.4);">
+          <span style="font-family:monospace;color:var(--accent);font-size:13px;">${c.code}</span>
+          <span style="color:var(--accent2);font-size:11px;">Available</span></div>`).join('')) +
+        (used.length > 0 ? `<div style="margin-top:8px;color:var(--text3);font-size:11px;">${used.length} code(s) used</div>` : '');
+    }
+  } catch(e) {
+    console.error('Admin panel load error:', e);
+  }
+}
+
+async function generateInvite() {
+  const token = localStorage.getItem(AUTH_SESSION_KEY);
+  try {
+    const r = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ action: 'generate-invite' })
+    });
+    const data = await r.json();
+    if (r.ok) {
+      const el = document.getElementById('newInviteCode');
+      const msg = document.getElementById('inviteMsg');
+      if (el) { el.textContent = data.code; el.style.display = 'block'; }
+      if (msg) msg.textContent = 'Send this code privately — single use only';
+      loadAdminData(token);
+    }
+  } catch(e) { console.error(e); }
+}
+
+async function resetPin(nickname) {
+  const token = localStorage.getItem(AUTH_SESSION_KEY);
+  if (!confirm(`Reset PIN for ${nickname}?`)) return;
+  try {
+    const r = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ action: 'reset-pin', nickname })
+    });
+    const data = await r.json();
+    if (r.ok) {
+      alert(`Temporary PIN for ${nickname}: ${data.tempPin}\n\nSend this to them privately.`);
+      loadAdminData(token);
+    }
+  } catch(e) { console.error(e); }
+}
+
+async function unlockUser(nickname) {
+  const token = localStorage.getItem(AUTH_SESSION_KEY);
+  try {
+    await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ action: 'unlock-user', nickname })
+    });
+    loadAdminData(token);
+  } catch(e) { console.error(e); }
+}
+
+// ── Sign out ──
+function signOut() {
+  localStorage.removeItem(AUTH_SESSION_KEY);
+  localStorage.removeItem(AUTH_NICK_KEY);
+  localStorage.removeItem(AUTH_ADMIN_KEY);
+  location.reload();
+}
+
+// Run on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  glossaryTooltip.init();
+  checkSession();
+});
+
+</script>
+
+</body>
+</html>
+
+function saveUserProfile(profile) {
+  localStorage.setItem(USER_KEY, JSON.stringify(profile));
+}
+
+function checkFirstVisit() {
+  const profile = getUserProfile();
+  if (!profile) {
+    // Brand new user — show welcome modal after short delay
+    setTimeout(() => openWelcomeModal(), 600);
+  } else if (!profile.setupComplete) {
+    // Started but didn't finish — show reminder banner
+    showReminderBanner(profile.language || 'en');
+  } else {
+    // Returning user — apply their language
+    if (profile.language === 'ar') {
+      const arBtn = document.querySelector('.lang-btn[onclick*="ar"]');
+      if (arBtn) arBtn.click();
+    }
+    // Update header with their name
+    updateHeaderForUser(profile);
+    // Update stocks count
+    if (profile.stocks && profile.stocks.length > 0) {
+      document.querySelector('.hstat-val[style*="accent"]') &&
+        (document.querySelectorAll('.hstat-val')[1].textContent = profile.stocks.length);
+    }
+  }
+}
+
+function openWelcomeModal() {
+  document.getElementById('welcomeOverlay').style.display = 'flex';
+  goStep(1);
+  addStockRow(); // Start with one empty row
+}
+
+function closeWelcomeModal() {
+  document.getElementById('welcomeOverlay').style.display = 'none';
+}
+
+function selectLang(lang) {
+  _setupLang = lang;
+  document.getElementById('lang-en').classList.toggle('selected', lang === 'en');
+  document.getElementById('lang-ar').classList.toggle('selected', lang === 'ar');
+  // Update modal text
+  if (lang === 'ar') {
+    document.getElementById('w-title-1').textContent = 'مرحباً بك في منصة الذكاء المالي';
+    document.getElementById('w-sub-1').textContent = 'مستشارك الشخصي المدعوم بالذكاء الاصطناعي. اختر لغتك للبدء.';
+    document.getElementById('w-next-1').textContent = 'متابعة ←';
+    document.getElementById('w-title-2').textContent = 'ما اسمك؟';
+    document.getElementById('w-sub-2').textContent = 'سيتم تخصيص لوحة التحكم لك.';
+    document.getElementById('w-name-label').textContent = 'اسمك';
+    document.getElementById('w-name-input').placeholder = 'مثال: أحمد';
+    document.getElementById('w-next-2').textContent = 'متابعة ←';
+    document.getElementById('w-back-2').textContent = '→ رجوع';
+    document.getElementById('w-title-3').textContent = 'أضف محفظتك';
+    document.getElementById('w-sub-3').textContent = 'أدخل أسهمك أدناه. يمكنك تعديلها لاحقاً من الإعدادات.';
+    document.getElementById('w-col-sym').textContent = 'الرمز';
+    document.getElementById('w-col-shares').textContent = 'عدد الأسهم';
+    document.getElementById('w-col-cost').textContent = 'سعر الشراء $';
+    document.getElementById('w-add-stock').textContent = '+ إضافة سهم';
+    document.getElementById('w-finish').textContent = '🚀 انطلق إلى لوحتي';
+    document.getElementById('w-skip').textContent = 'تخطي الآن — سأضيف الأسهم لاحقاً';
+    document.getElementById('w-back-3').textContent = '→ رجوع';
+  } else {
+    document.getElementById('w-title-1').textContent = 'Welcome to Financial Intelligence';
+    document.getElementById('w-sub-1').textContent = 'Your personal AI-powered investment advisor. Choose your language to get started.';
+    document.getElementById('w-next-1').textContent = 'Continue →';
+    document.getElementById('w-title-2').textContent = "What's your name?";
+    document.getElementById('w-sub-2').textContent = 'Your dashboard will be personalized for you.';
+    document.getElementById('w-name-label').textContent = 'Your Name';
+    document.getElementById('w-name-input').placeholder = 'e.g. Ahmed';
+    document.getElementById('w-next-2').textContent = 'Continue →';
+    document.getElementById('w-back-2').textContent = '← Back';
+    document.getElementById('w-title-3').textContent = 'Add Your Portfolio';
+    document.getElementById('w-sub-3').textContent = 'Enter your stocks below. You can always edit them later from Settings.';
+    document.getElementById('w-col-sym').textContent = 'Symbol';
+    document.getElementById('w-col-shares').textContent = 'Shares';
+    document.getElementById('w-col-cost').textContent = 'Cost/Share $';
+    document.getElementById('w-add-stock').textContent = '+ Add Stock';
+    document.getElementById('w-finish').textContent = '🚀 Launch My Dashboard';
+    document.getElementById('w-skip').textContent = 'Skip for now — I\'ll add stocks later';
+    document.getElementById('w-back-3').textContent = '← Back';
+  }
+}
+
+function goStep(n) {
+  [1,2,3].forEach(i => {
+    document.getElementById('step-'+i).classList.toggle('active', i === n);
+    const dot = document.getElementById('dot-'+i);
+    if (i < n) { dot.classList.add('done'); dot.classList.remove('active'); }
+    else if (i === n) { dot.classList.add('active'); dot.classList.remove('done'); }
+    else { dot.classList.remove('active','done'); }
+  });
+  if (n === 2) {
+    // Pre-fill name if returning
+    const profile = getUserProfile();
+    if (profile && profile.name) document.getElementById('w-name-input').value = profile.name;
+  }
+}
+
+let _stockRowCount = 0;
+function addStockRow() {
+  _stockRowCount++;
+  const id = _stockRowCount;
+  const row = document.createElement('div');
+  row.className = 'stock-row';
+  row.id = 'srow-' + id;
+  row.innerHTML = `
+    <input class="welcome-input" style="margin:0;" placeholder="NVDA" id="sym-${id}" maxlength="6" oninput="this.value=this.value.toUpperCase()"/>
+    <input class="welcome-input" style="margin:0;" placeholder="100" type="number" id="shares-${id}" min="0.01" step="any"/>
+    <input class="welcome-input" style="margin:0;" placeholder="150.00" type="number" id="cost-${id}" min="0.01" step="any"/>
+    <button class="stock-remove" onclick="removeStockRow(${id})">✕</button>
+  `;
+  document.getElementById('stockRows').appendChild(row);
+}
+
+function removeStockRow(id) {
+  const row = document.getElementById('srow-' + id);
+  if (row) row.remove();
+}
+
+function collectStocks() {
+  const rows = document.querySelectorAll('#stockRows .stock-row');
+  const result = [];
+  rows.forEach(row => {
+    const id = row.id.replace('srow-','');
+    const sym = (document.getElementById('sym-'+id)?.value || '').trim().toUpperCase();
+    const shares = parseFloat(document.getElementById('shares-'+id)?.value || 0);
+    const cost = parseFloat(document.getElementById('cost-'+id)?.value || 0);
+    if (sym && shares > 0 && cost > 0) {
+      result.push({sym, en: sym, ar: sym, shares, cost, price: cost, mv: shares * cost, gl: 0, sec: 'tech'});
+    }
+  });
+  return result;
+}
+
+function finishSetup() {
+  const name = (document.getElementById('w-name-input').value || '').trim();
+  if (!name) {
+    alert(_setupLang === 'ar' ? 'الرجاء إدخال اسمك أولاً' : 'Please enter your name first');
+    goStep(2);
+    return;
+  }
+  const userStocks = collectStocks();
+  const profile = {
+    name,
+    language: _setupLang,
+    setupComplete: true,
+    stocks: userStocks,
+    createdAt: new Date().toISOString()
+  };
+  saveUserProfile(profile);
+  closeWelcomeModal();
+  applyUserProfile(profile);
+  // Reload to show their data
+  setTimeout(() => location.reload(), 300);
+}
+
+function skipSetup() {
+  const name = (document.getElementById('w-name-input').value || '').trim() || 'Investor';
+  const profile = {
+    name,
+    language: _setupLang,
+    setupComplete: false,
+    stocks: [],
+    createdAt: new Date().toISOString()
+  };
+  saveUserProfile(profile);
+  closeWelcomeModal();
+  showReminderBanner(_setupLang);
+}
+
+function showReminderBanner(lang) {
+  const banner = document.getElementById('reminderBanner');
+  if (!banner) return;
+  if (lang === 'ar') {
+    document.getElementById('reminder-text').textContent = '⚠️ محفظتك فارغة. أضف أسهمك لرؤية لوحة التحكم الكاملة.';
+    document.getElementById('reminder-btn').textContent = 'إعداد المحفظة →';
+  }
+  banner.style.display = 'flex';
+}
+
+function applyUserProfile(profile) {
+  if (!profile) return;
+  // Update header name
+  updateHeaderForUser(profile);
+  // Apply language
+  if (profile.language === 'ar') {
+    const arBtn = document.querySelector('.lang-btn[onclick*="ar"]');
+    if (arBtn) arBtn.click();
+  }
+}
+
+function updateHeaderForUser(profile) {
+  if (!profile || !profile.name) return;
+  const titleEl = document.getElementById('h-title');
+  if (titleEl) titleEl.textContent = profile.language === 'ar'
+    ? `مرحباً ${profile.name}`
+    : `Hi, ${profile.name}`;
+}
+
+// Override the stocks array if user has their own portfolio
+(function applyUserStocks() {
+  const profile = getUserProfile();
+  if (profile && profile.setupComplete && profile.stocks && profile.stocks.length > 0) {
+    // Replace stocks array with user's stocks
+    while (stocks.length > 0) stocks.pop();
+    profile.stocks.forEach(s => stocks.push(s));
+  }
+})();
+
 </script>
 
 </body>
