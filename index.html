@@ -2204,9 +2204,16 @@ function renderAnalysis(data){
     let text = sectionsToUse[f] || (isAr ? 'لا توجد بيانات — سيتم التحديث في الموعد المجدول' : 'No data yet — updates on schedule');
 
     body.innerHTML = f==='signals' ? renderSignals(text) : f==='scoring' ? renderScoring(text) : mdToHtml(text);
-    body.style.direction = isAr ? 'rtl' : 'ltr';
-    body.style.textAlign = isAr ? 'right' : 'left';
-    body.className = 'firm-body' + (isAr ? '' : ' en');
+body.style.direction = isAr ? 'rtl' : 'ltr';
+body.style.textAlign = isAr ? 'right' : 'left';
+body.className = 'firm-body' + (isAr ? '' : ' en');
+if(f==='scoring'){
+  body.style.lineHeight='1.3';
+  body.style.fontSize='13px';
+}else{
+  body.style.lineHeight='';
+  body.style.fontSize='';
+}
 
     if(tsEl && srcData?.generated){
       const d = new Date(srcData.generated);
