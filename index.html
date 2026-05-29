@@ -2828,7 +2828,7 @@ function scoringSectionHeader(label, dotColor) {
 function parseScoreBlocks(text) {
   if (!text) return [];
   const blocks = [];
-  const headerRe = /\b([A-Z]{1,6})\s*\|\s*Score\s*([\d.]+)\/10\s*\|\s*([^\n]+)/g;
+  const headerRe = /(?:^|>|\n)([A-Z]{1,6})\s*\|\s*Score\s*([\d.]+)\/10\s*\|\s*([^\n<]+)/gm;
   let match;
   const positions = [];
 
