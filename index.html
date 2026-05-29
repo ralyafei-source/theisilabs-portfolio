@@ -4600,7 +4600,7 @@ async function checkSession() {
   const token = localStorage.getItem(AUTH_SESSION_KEY);
   if (!token) { showAuth(); return; }
   try {
-    const r = await fetch('/api/auth-me', { headers: { 'Authorization': 'Bearer ' + token } });
+    const r = await fetch('/api/auth?action=me', { headers: { 'Authorization': 'Bearer ' + token } });
     if (r.ok) {
       const data = await r.json();
       // Apply name/title without hiding auth (already hidden)
@@ -4687,7 +4687,7 @@ async function doSignIn() {
   if (!nickname) { showAuthError('Please enter your nickname'); _pin.si = ''; updateDots('si'); return; }
   const pinHash = await hashPin(_pin.si);
   try {
-    const r = await fetch('/api/auth-login', {
+    const r = await fetch('/api/auth?action=login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nickname, pinHash })
@@ -4761,7 +4761,7 @@ async function doSignUp() {
   const pinHash = await hashPin(_pin.su);
 
   try {
-    const r = await fetch('/api/auth-signup', {
+    const r = await fetch('/api/auth?action=signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ inviteCode: _signupInviteCode, nickname, pinHash })
