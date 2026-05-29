@@ -802,28 +802,7 @@ WOLF remains at critical lows<br><br>
         <div class="advisor-ts" id="fairvalue-ts"></div>
       </div>
 
-      <div class="firm-content" id="firm-momentum">
-        <div class="firm-header">
-          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:#00ff88;font-size:11px;">MO</div>
-          <div>
-            <div class="firm-title">Momentum</div>
-            <div class="firm-subtitle">Momentum signals · Mean reversion · Seasonal patterns · Short interest</div>
-          </div>
-        </div>
-        <div class="firm-body" id="momentum-body"></div>
-        <div class="advisor-ts" id="momentum-ts"></div>
-      </div>
-<div class="firm-content" id="firm-momentum">
-        <div class="firm-header">
-          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:#00ff88;font-size:11px;">MO</div>
-          <div>
-            <div class="firm-title">Momentum</div>
-            <div class="firm-subtitle">Momentum signals · Mean reversion · Seasonal patterns · Short interest</div>
-          </div>
-        </div>
-        <div class="firm-body" id="momentum-body"></div>
-        <div class="advisor-ts" id="momentum-ts"></div>
-      </div>
+      
 
       <div class="firm-content" id="firm-scoring">
         <div class="firm-header">
@@ -2210,9 +2189,11 @@ body.className = 'firm-body' + (isAr ? '' : ' en');
 if(f==='scoring'){
   body.style.lineHeight='1.3';
   body.style.fontSize='13px';
+  body.style.whiteSpace='normal';
 }else{
   body.style.lineHeight='';
   body.style.fontSize='';
+  body.style.whiteSpace='';
 }
 
     if(tsEl && srcData?.generated){
