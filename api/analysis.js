@@ -9,9 +9,8 @@ const TOKEN = process.env.GITHUB_TOKEN;
 const API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
 
 function getFilePath(type, date, week, month, nickname) {
-  // nickname prefix: analysis-daily-[nickname]-DATE.json
-  // no nickname:     analysis-daily-DATE.json (backward compatible)
   const nick = nickname ? `-${nickname}` : '';
+  if (type === 'market-data') return `data/market-data-${date}.json`;
   if (type === 'weekly')  return `data/analysis-weekly${nick}-${week || date?.slice(0,7)}.json`;
   if (type === 'monthly') return `data/analysis-monthly${nick}-${month || date?.slice(0,7)}.json`;
   return `data/analysis-daily${nick}-${date}.json`;
