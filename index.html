@@ -2164,8 +2164,11 @@ async function loadAnalysis(){
   document.getElementById('advisorEmpty').style.display='none';
   document.getElementById('advisorContent').style.display='none';
   document.getElementById('advisorDateDisplay').textContent=advisorDate;
+  // Pass logged-in nickname so each user gets their own analysis
+  const nickname = localStorage.getItem(AUTH_NICK_KEY) || '';
+  const nickParam = nickname ? `&nickname=${encodeURIComponent(nickname)}` : '';
   try{
-    const r=await fetch(`/api/analysis?date=${advisorDate}`);
+    const r=await fetch(`/api/analysis?date=${advisorDate}${nickParam}`);
     const d=await r.json();
     let normalized=d;
     if(d.content&&!d.daily&&!d.weekly&&!d.monthly){
