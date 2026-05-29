@@ -3138,7 +3138,7 @@ function buildScoreCard(stock, type, idx) {
     onmouseenter="showScoringPopup(event,'${uid}')"
     onmouseleave="hideScoringPopup()"
     onmousemove="moveScoringPopup(event)"
-    onclick="if(_isTouchDevice()){showScoringSheet('${uid}')}else{lockScoringPopup('${uid}')}">
+    onclick="if(_isTouchDevice()){showScoringSheet('${uid}')}else{lockScoringPopup(event,'${uid}')}"
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
       <div>
         <div style="font-size:15px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text);">${stock.sym}</div>
@@ -3260,7 +3260,8 @@ function hideScoringPopup() {
   const popup = document.getElementById('scoringPopup');
   if (popup) popup.style.display = 'none';
 }
-function lockScoringPopup(uid) {
+function lockScoringPopup(e, uid) {
+  e.stopPropagation();
   _popupLocked = true;
   const popup = document.getElementById('scoringPopup');
   if (!popup) return;
@@ -3271,9 +3272,8 @@ function lockScoringPopup(uid) {
     </div>` + buildScoringPopupHTML(uid);
   popup.style.overflowY = 'auto';
   popup.style.overscrollBehavior = 'contain';
-  setTimeout(() => {
-    document.addEventListener('click', _outsideClickHandler);
-  }, 100);
+  document.addEventListener('click', _outsideClickHandler);
+}, 100);
 }
 
 function unlockScoringPopup() {
