@@ -1443,9 +1443,10 @@ function renderPortfolio(){
   const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const dateStr=`${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
   const subEl=document.getElementById('p-sub');
+  const count = stocks.length;
   if(subEl) subEl.textContent=lang==='ar'
-    ?`52 ورقة مالية — ${dateStr}`
-    :`52 securities — as of ${dateStr}`;
+    ?`${count} ورقة مالية — ${dateStr}`
+    :count===0 ? 'No stocks yet — add your portfolio above' : `${count} securities — as of ${dateStr}`;
 
   let list=[...stocks];
   if(pFilter==='gain') list=list.filter(s=>s.gl>0);
@@ -2737,7 +2738,16 @@ async function fetchLivePrices(){
 }
 
 function updateStatCards(){
-  if(!stocks.length) return;
+  if(!stocks.length){
+    // Empty portfolio — clear all stat cards
+    const els = ['stat-total','stat-best','stat-worst','stat-largest'];
+    els.forEach(id => { const el=document.getElementById(id); if(el) el.textContent='—'; });
+    const pv=document.getElementById('portfolio-val');
+    if(pv) pv.textContent='$0';
+    const hStocks=document.querySelectorAll('.hstat-val')[1];
+    if(hStocks) hStocks.textContent='0';
+    return;
+  }
 
   // Total portfolio
   const total = stocks.reduce((a,s)=>a+s.mv,0);
@@ -5230,221 +5240,6 @@ document.addEventListener('DOMContentLoaded', () => {
   glossaryTooltip.init();
   checkSession();
 });
-
-</script>
-
-</body>
-</html>
-
-function saveUserProfile(profile) {
-  localStorage.setItem(USER_KEY, JSON.stringify(profile));
-}
-
-function checkFirstVisit() {
-  const profile = getUserProfile();
-  if (!profile) {
-    // Brand new user — show welcome modal after short delay
-    setTimeout(() => openWelcomeModal(), 600);
-  } else if (!profile.setupComplete) {
-    // Started but didn't finish — show reminder banner
-    showReminderBanner(profile.language || 'en');
-  } else {
-    // Returning user — apply their language
-    if (profile.language === 'ar') {
-      const arBtn = document.querySelector('.lang-btn[onclick*="ar"]');
-      if (arBtn) arBtn.click();
-    }
-    // Update header with their name
-    updateHeaderForUser(profile);
-    // Update stocks count
-    if (profile.stocks && profile.stocks.length > 0) {
-      document.querySelector('.hstat-val[style*="accent"]') &&
-        (document.querySelectorAll('.hstat-val')[1].textContent = profile.stocks.length);
-    }
-  }
-}
-
-function openWelcomeModal() {
-  document.getElementById('welcomeOverlay').style.display = 'flex';
-  goStep(1);
-  addStockRow(); // Start with one empty row
-}
-
-function closeWelcomeModal() {
-  document.getElementById('welcomeOverlay').style.display = 'none';
-}
-
-function selectLang(lang) {
-  _setupLang = lang;
-  document.getElementById('lang-en').classList.toggle('selected', lang === 'en');
-  document.getElementById('lang-ar').classList.toggle('selected', lang === 'ar');
-  // Update modal text
-  if (lang === 'ar') {
-    document.getElementById('w-title-1').textContent = 'مرحباً بك في منصة الذكاء المالي';
-    document.getElementById('w-sub-1').textContent = 'مستشارك الشخصي المدعوم بالذكاء الاصطناعي. اختر لغتك للبدء.';
-    document.getElementById('w-next-1').textContent = 'متابعة ←';
-    document.getElementById('w-title-2').textContent = 'ما اسمك؟';
-    document.getElementById('w-sub-2').textContent = 'سيتم تخصيص لوحة التحكم لك.';
-    document.getElementById('w-name-label').textContent = 'اسمك';
-    document.getElementById('w-name-input').placeholder = 'مثال: أحمد';
-    document.getElementById('w-next-2').textContent = 'متابعة ←';
-    document.getElementById('w-back-2').textContent = '→ رجوع';
-    document.getElementById('w-title-3').textContent = 'أضف محفظتك';
-    document.getElementById('w-sub-3').textContent = 'أدخل أسهمك أدناه. يمكنك تعديلها لاحقاً من الإعدادات.';
-    document.getElementById('w-col-sym').textContent = 'الرمز';
-    document.getElementById('w-col-shares').textContent = 'عدد الأسهم';
-    document.getElementById('w-col-cost').textContent = 'سعر الشراء $';
-    document.getElementById('w-add-stock').textContent = '+ إضافة سهم';
-    document.getElementById('w-finish').textContent = '🚀 انطلق إلى لوحتي';
-    document.getElementById('w-skip').textContent = 'تخطي الآن — سأضيف الأسهم لاحقاً';
-    document.getElementById('w-back-3').textContent = '→ رجوع';
-  } else {
-    document.getElementById('w-title-1').textContent = 'Welcome to Financial Intelligence';
-    document.getElementById('w-sub-1').textContent = 'Your personal AI-powered investment advisor. Choose your language to get started.';
-    document.getElementById('w-next-1').textContent = 'Continue →';
-    document.getElementById('w-title-2').textContent = "What's your name?";
-    document.getElementById('w-sub-2').textContent = 'Your dashboard will be personalized for you.';
-    document.getElementById('w-name-label').textContent = 'Your Name';
-    document.getElementById('w-name-input').placeholder = 'e.g. Ahmed';
-    document.getElementById('w-next-2').textContent = 'Continue →';
-    document.getElementById('w-back-2').textContent = '← Back';
-    document.getElementById('w-title-3').textContent = 'Add Your Portfolio';
-    document.getElementById('w-sub-3').textContent = 'Enter your stocks below. You can always edit them later from Settings.';
-    document.getElementById('w-col-sym').textContent = 'Symbol';
-    document.getElementById('w-col-shares').textContent = 'Shares';
-    document.getElementById('w-col-cost').textContent = 'Cost/Share $';
-    document.getElementById('w-add-stock').textContent = '+ Add Stock';
-    document.getElementById('w-finish').textContent = '🚀 Launch My Dashboard';
-    document.getElementById('w-skip').textContent = 'Skip for now — I\'ll add stocks later';
-    document.getElementById('w-back-3').textContent = '← Back';
-  }
-}
-
-function goStep(n) {
-  [1,2,3].forEach(i => {
-    document.getElementById('step-'+i).classList.toggle('active', i === n);
-    const dot = document.getElementById('dot-'+i);
-    if (i < n) { dot.classList.add('done'); dot.classList.remove('active'); }
-    else if (i === n) { dot.classList.add('active'); dot.classList.remove('done'); }
-    else { dot.classList.remove('active','done'); }
-  });
-  if (n === 2) {
-    // Pre-fill name if returning
-    const profile = getUserProfile();
-    if (profile && profile.name) document.getElementById('w-name-input').value = profile.name;
-  }
-}
-
-let _stockRowCount = 0;
-function addStockRow() {
-  _stockRowCount++;
-  const id = _stockRowCount;
-  const row = document.createElement('div');
-  row.className = 'stock-row';
-  row.id = 'srow-' + id;
-  row.innerHTML = `
-    <input class="welcome-input" style="margin:0;" placeholder="NVDA" id="sym-${id}" maxlength="6" oninput="this.value=this.value.toUpperCase()"/>
-    <input class="welcome-input" style="margin:0;" placeholder="100" type="number" id="shares-${id}" min="0.01" step="any"/>
-    <input class="welcome-input" style="margin:0;" placeholder="150.00" type="number" id="cost-${id}" min="0.01" step="any"/>
-    <button class="stock-remove" onclick="removeStockRow(${id})">✕</button>
-  `;
-  document.getElementById('stockRows').appendChild(row);
-}
-
-function removeStockRow(id) {
-  const row = document.getElementById('srow-' + id);
-  if (row) row.remove();
-}
-
-function collectStocks() {
-  const rows = document.querySelectorAll('#stockRows .stock-row');
-  const result = [];
-  rows.forEach(row => {
-    const id = row.id.replace('srow-','');
-    const sym = (document.getElementById('sym-'+id)?.value || '').trim().toUpperCase();
-    const shares = parseFloat(document.getElementById('shares-'+id)?.value || 0);
-    const cost = parseFloat(document.getElementById('cost-'+id)?.value || 0);
-    if (sym && shares > 0 && cost > 0) {
-      result.push({sym, en: sym, ar: sym, shares, cost, price: cost, mv: shares * cost, gl: 0, sec: 'tech'});
-    }
-  });
-  return result;
-}
-
-function finishSetup() {
-  const name = (document.getElementById('w-name-input').value || '').trim();
-  if (!name) {
-    alert(_setupLang === 'ar' ? 'الرجاء إدخال اسمك أولاً' : 'Please enter your name first');
-    goStep(2);
-    return;
-  }
-  const userStocks = collectStocks();
-  const profile = {
-    name,
-    language: _setupLang,
-    setupComplete: true,
-    stocks: userStocks,
-    createdAt: new Date().toISOString()
-  };
-  saveUserProfile(profile);
-  closeWelcomeModal();
-  applyUserProfile(profile);
-  // Reload to show their data
-  setTimeout(() => location.reload(), 300);
-}
-
-function skipSetup() {
-  const name = (document.getElementById('w-name-input').value || '').trim() || 'Investor';
-  const profile = {
-    name,
-    language: _setupLang,
-    setupComplete: false,
-    stocks: [],
-    createdAt: new Date().toISOString()
-  };
-  saveUserProfile(profile);
-  closeWelcomeModal();
-  showReminderBanner(_setupLang);
-}
-
-function showReminderBanner(lang) {
-  const banner = document.getElementById('reminderBanner');
-  if (!banner) return;
-  if (lang === 'ar') {
-    document.getElementById('reminder-text').textContent = '⚠️ محفظتك فارغة. أضف أسهمك لرؤية لوحة التحكم الكاملة.';
-    document.getElementById('reminder-btn').textContent = 'إعداد المحفظة →';
-  }
-  banner.style.display = 'flex';
-}
-
-function applyUserProfile(profile) {
-  if (!profile) return;
-  // Update header name
-  updateHeaderForUser(profile);
-  // Apply language
-  if (profile.language === 'ar') {
-    const arBtn = document.querySelector('.lang-btn[onclick*="ar"]');
-    if (arBtn) arBtn.click();
-  }
-}
-
-function updateHeaderForUser(profile) {
-  if (!profile || !profile.name) return;
-  const titleEl = document.getElementById('h-title');
-  if (titleEl) titleEl.textContent = profile.language === 'ar'
-    ? `مرحباً ${profile.name}`
-    : `Hi, ${profile.name}`;
-}
-
-// Override the stocks array if user has their own portfolio
-(function applyUserStocks() {
-  const profile = getUserProfile();
-  if (profile && profile.setupComplete && profile.stocks && profile.stocks.length > 0) {
-    // Replace stocks array with user's stocks
-    while (stocks.length > 0) stocks.pop();
-    profile.stocks.forEach(s => stocks.push(s));
-  }
-})();
 
 </script>
 
