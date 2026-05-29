@@ -4867,11 +4867,15 @@ function onAuthSuccess(nickname, isAdmin, token, firstLogin) {
 }
 
 // ── Load portfolio for logged-in user ──
+let _portfolioLoading = false;
 async function loadUserPortfolio(token, isAdmin, nickname) {
+  if (_portfolioLoading) return;
+  _portfolioLoading = true;
   try {
-    // Admin gets hardcoded stocks instantly, then live prices
-    if (isAdmin && nickname === 'rashed') {
+    if (isAdmin) {
+      stocks.length = 0;
       _rashedStocks.forEach(s => stocks.push(s));
+      stocks.forEach(s => { s._origPrice = s.price; s._shares = s.mv / s.price; });
       renderPortfolio();
       fetchLivePrices();
       return;
@@ -4899,8 +4903,9 @@ async function loadUserPortfolio(token, isAdmin, nickname) {
 
   } catch(e) {
     console.error('loadUserPortfolio error:', e);
-    // Fallback — show empty state
     showEmptyPortfolioState(nickname);
+  } finally {
+    _portfolioLoading = false;
   }
 }
 
