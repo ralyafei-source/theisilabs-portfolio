@@ -3138,7 +3138,7 @@ function buildScoreCard(stock, type, idx) {
     onmouseenter="showScoringPopup(event,'${uid}')"
     onmouseleave="hideScoringPopup()"
     onmousemove="moveScoringPopup(event)"
-    onclick="if(_isTouchDevice()){showScoringSheet('${uid}')}else{lockScoringPopup(event,'${uid}')}"
+    onclick="if(_isTouchDevice()){showScoringSheet('${uid}')}else{lockScoringPopup(event,'${uid}')}">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
       <div>
         <div style="font-size:15px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text);">${stock.sym}</div>
@@ -3273,8 +3273,7 @@ function lockScoringPopup(e, uid) {
   popup.style.overflowY = 'auto';
   popup.style.overscrollBehavior = 'contain';
   document.addEventListener('click', _outsideClickHandler);
-}, 100);
-}
+}, 
 
 function unlockScoringPopup() {
   _popupLocked = false;
