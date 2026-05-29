@@ -740,7 +740,7 @@ WOLF remains at critical lows<br><br>
 
     <!-- Analysis Content Panels -->
     <div id="advisorContent" style="display:none;">
-      <div id="scoringPopup" style="display:none;position:fixed;z-index:9999;width:340px;max-height:70vh;overflow-y:auto;background:var(--bg2);border:1px solid var(--border);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,0.5);padding:16px;pointer-events:auto;"></div>
+      <div id="scoringPopup" style="display:none;position:fixed;z-index:9999;width:340px;max-height:70vh;overflow-y:auto;overscroll-behavior:contain;background:var(--bg2);border:1px solid var(--border);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,0.5);padding:16px;pointer-events:auto;"></div>
 
 <!-- Bottom sheet for touch devices -->
 <div id="scoringSheet" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:var(--bg2);border-top:1px solid var(--border);border-radius:20px 20px 0 0;padding:0;max-height:75vh;overflow-y:auto;box-shadow:0 -8px 32px rgba(0,0,0,0.5);">
@@ -3005,13 +3005,7 @@ function moveScoringPopup(e) {
   positionScoringPopup(e);
 }
 // Lock page scroll when hovering popup on PC
-setTimeout(() => {
-  const popup = document.getElementById('scoringPopup');
-  if (popup) {
-    popup.addEventListener('mouseenter', () => { document.body.style.overflow = 'hidden'; });
-    popup.addEventListener('mouseleave', () => { document.body.style.overflow = ''; });
-  }
-}, 1000);
+
   
 function positionScoringPopup(e) {
   const popup = document.getElementById('scoringPopup');
