@@ -83,6 +83,7 @@ if (nick) {
   dailyData = await readFile(`data/analysis-daily-${today}.json`);
 }
 
+   
     // Find most recent weekly
     let weeklyData = null;
     for (let i = 0; i <= 7; i++) {
@@ -90,17 +91,16 @@ if (nick) {
       d.setDate(d.getDate() - i);
       const ds = d.toISOString().slice(0, 10);
       const w = ds.slice(0, 7);
-      // Try user-specific first
       if (nick) {
         const data = await readFile(`data/analysis-weekly-${nick}-${w}.json`);
         if (data) { weeklyData = data; break; }
+      } else {
+        const data = await readFile(`data/analysis-weekly-${w}.json`);
+        if (data) { weeklyData = data; break; }
       }
-      // Fallback to generic
-      const data = await readFile(`data/analysis-weekly-${w}.json`);
-      if (data) { weeklyData = data; break; }
     }
 
-    // Find most recent monthly
+   // Find most recent monthly
     let monthlyData = null;
     for (let i = 0; i <= 2; i++) {
       const d = new Date(today);
@@ -109,13 +109,11 @@ if (nick) {
       if (nick) {
         const data = await readFile(`data/analysis-monthly-${nick}-${m}.json`);
         if (data) { monthlyData = data; break; }
+      } else {
+        const data = await readFile(`data/analysis-monthly-${m}.json`);
+        if (data) { monthlyData = data; break; }
       }
-      const data = await readFile(`data/analysis-monthly-${m}.json`);
-      if (data) { monthlyData = data; break; }
     }
-
-    return res.json({ daily: dailyData, weekly: weeklyData, monthly: monthlyData, date: today });
-  }
 
   // ── POST: save analysis ──
   if (req.method === 'POST') {
