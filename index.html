@@ -1652,6 +1652,7 @@ function drawChart(stock,cid,height){
 
 // ===== TRENDS =====
 function renderTrends(){
+  if (tOrder.length === 0 && stocks.length > 0) tOrder = stocks.map((_, i) => i);
   const t=T[lang];
   const grid=document.getElementById('trendGrid');
   grid.className='trend-grid tg-'+tSize;
