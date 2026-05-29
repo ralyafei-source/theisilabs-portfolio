@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Financial Intelligence | راشد</title>
+<title>Financial Intelligence Dashboard</title>
 <meta name="description" content="Arabic Finance Intelligence System — Personal Portfolio Advisor">
 <meta name="theme-color" content="#0d1117">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzBkMTExNyIvPgogIDxyZWN0IHg9IjMiIHk9IjIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI4IiByeD0iMSIgZmlsbD0iIzAwZDRmZiIgb3BhY2l0eT0iMC45Ii8+CiAgPHJlY3QgeD0iOSIgeT0iMTQiIHdpZHRoPSI0IiBoZWlnaHQ9IjE0IiByeD0iMSIgZmlsbD0iIzAwZmY4OCIgb3BhY2l0eT0iMC45Ii8+CiAgPHJlY3QgeD0iMTUiIHk9IjkiIHdpZHRoPSI0IiBoZWlnaHQ9IjE5IiByeD0iMSIgZmlsbD0iIzAwZDRmZiIvPgogIDxyZWN0IHg9IjIxIiB5PSI0IiB3aWR0aD0iNCIgaGVpZ2h0PSIyNCIgcng9IjEiIGZpbGw9IiMwMGZmODgiLz4KICA8cG9seWxpbmUgcG9pbnRzPSI1LDIwIDExLDE0IDE3LDkgMjMsNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjEuMiIgc3Ryb2tlLW9wYWNpdHk9IjAuMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iNSIgY3k9IjIwIiByPSIxLjIiIGZpbGw9IiMwMGQ0ZmYiLz4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjE0IiByPSIxLjIiIGZpbGw9IiMwMGZmODgiLz4KICA8Y2lyY2xlIGN4PSIxNyIgY3k9IjkiIHI9IjEuMiIgZmlsbD0iIzAwZDRmZiIvPgogIDxjaXJjbGUgY3g9IjIzIiBjeT0iNCIgcj0iMS4yIiBmaWxsPSIjMDBmZjg4Ii8+Cjwvc3ZnPg==">
@@ -463,7 +463,7 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
       </div>
       <div class="header-right">
         <div class="hstat" style="cursor:pointer;" onclick="togglePrivacy()" title="Click to hide/show values">
-          <div class="hstat-val up" id="portfolio-val">$694,171</div>
+          <div class="hstat-val up" id="portfolio-val">$0</div>
           <div class="hstat-label" id="h-portfolio">Portfolio 👁</div>
         </div>
         <div class="hstat">
@@ -603,7 +603,7 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
     <div class="section-hdr">
       <div>
         <div class="section-title" id="p-all-stocks">All Holdings</div>
-        <div class="section-sub" id="p-sub">52 securities — as of April 2026</div>
+        <div class="section-sub" id="p-sub">Loading securities...</div>
       </div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-outline" onclick="filterP('all')" id="btn-all" style="font-size:12px;padding:7px 12px;">All</button>
@@ -720,12 +720,10 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
           </div>
           <div class="tg-msg" id="tgMsg">
 🌅 <strong>Morning Portfolio Brief</strong><br>
-Wed, 21 May 2026 | 7:00 AM<br><br>
-💼 <strong>Portfolio: $694,171</strong><br><br>
+Daily | 7:00 AM UAE<br><br>
+💼 <strong>Portfolio: —</strong><br><br>
 📈 <strong>Top Moves:</strong><br>
-• NVDA ▲ 2.1% | $60,031<br>
-• MU ▲ 1.8% | $38,787<br>
-• DUOL ▼ 3.2% ⚠️<br><br>
+• Loaded from Make.com each morning<br><br>
 🌍 <strong>Key News Today:</strong><br>
 • Fed decision at 8:30pm UAE<br>
 • PCE inflation data out today<br><br>
@@ -1261,7 +1259,7 @@ const T={
     navPortfolio:'Portfolio',navAdvisor:'AI Advisor',navTrends:'Trends',navIndicators:'Indicators',navAlerts:'Alerts',navTransactions:'Transactions',navSetup:'Setup',
     pTotalLabel:'Total Portfolio',pBestLabel:'Best Performer',pReviewLabel:'Needs Review',pLargestLabel:'Largest Position',
     pMonthChange:'▲ $68,431 this month',pWolfDesc:'Wolfspeed $41 remaining',
-    pAllStocks:'All Holdings',pSub:'52 securities — as of April 2026',
+    pAllStocks:'All Holdings',pSub:'Loading securities...',
     btnAll:'All',btnGain:'Gainers',btnLoss:'Losers',
     thSym:'Symbol',thName:'Name',thSector:'Sector',thValue:'Market Value',thGL:'Gain / Loss',thStatus:'Status',
     statusReview:'⚠️ Review',statusStrong:'✅ Strong',
@@ -2594,7 +2592,8 @@ function togglePrivacy(){
 
   // Header portfolio value & monthly %
   const pv=document.getElementById('portfolio-val');
-  if(pv) pv.textContent=privacyOn?'$ ••••••':'$694,171';
+  const liveTotal = stocks.reduce((a,s)=>a+(s.mv||0),0);
+  if(pv) pv.textContent=privacyOn?'$ ••••••':('$'+Math.round(liveTotal).toLocaleString());
   const mp=document.getElementById('header-month-pct');
   if(mp) mp.textContent=privacyOn?'••••':'+ 12.4%';
 
@@ -2692,7 +2691,14 @@ async function fetchLivePrices(){
 
     const total=stocks.reduce((a,s)=>a+s.mv,0);
     const pv=document.getElementById('portfolio-val');
-    if(pv && !privacyOn) pv.textContent='$'+total.toLocaleString();
+    if(pv && !privacyOn) pv.textContent='$'+Math.round(total).toLocaleString();
+    // Update securities count in header and table subtitle
+    const secCount = stocks.length;
+    const hStocks = document.querySelector('.hstat-val[style*="accent"]');
+    if(hStocks) hStocks.textContent = secCount;
+    const pSub = document.getElementById('p-sub');
+    const today = new Date().toLocaleDateString('en-GB',{month:'short',year:'numeric'});
+    if(pSub) pSub.textContent = secCount + ' securities — as of ' + today;
 
     updateStatCards();
     renderPortfolio();
@@ -3645,7 +3651,7 @@ fetchLivePrices();
 </style>
 
 <!-- Floating Chat Button -->
-<button id="chatBtn" onclick="toggleChat()" title="مستشار راشد الذكي" aria-label="Open AI Chat">
+<button id="chatBtn" onclick="toggleChat()" title="المستشار الذكي" aria-label="Open AI Chat">
   <span id="chatBtnIcon">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -3662,7 +3668,7 @@ fetchLivePrices();
     <div style="display:flex;align-items:center;gap:10px;">
       <div class="chat-avatar">🤖</div>
       <div>
-        <div class="chat-title">مستشار راشد</div>
+        <div class="chat-title" id="chatTitle">المستشار الذكي</div>
         <div class="chat-status">● متصل — يعلم كل شيء عن محفظتك</div>
       </div>
     </div>
@@ -4721,8 +4727,16 @@ function onAuthSuccess(nickname, isAdmin, token, firstLogin) {
   localStorage.setItem(AUTH_ADMIN_KEY, isAdmin ? '1' : '0');
   hideAuth();
   // Update header with nickname
+  const displayName = nickname.charAt(0).toUpperCase() + nickname.slice(1);
   const titleEl = document.getElementById('h-title');
-  if (titleEl) titleEl.textContent = 'Hi, ' + nickname.charAt(0).toUpperCase() + nickname.slice(1);
+  if (titleEl) titleEl.textContent = 'Hi, ' + displayName;
+  // Update browser tab title
+  document.title = 'Financial Intelligence | ' + displayName;
+  // Update chat title
+  const chatTitle = document.getElementById('chatTitle');
+  if (chatTitle) chatTitle.textContent = 'مستشار ' + displayName;
+  const chatBtn = document.getElementById('chatBtn');
+  if (chatBtn) chatBtn.title = 'مستشار ' + displayName + ' الذكي';
   // Show admin panel button if admin
   if (isAdmin) showAdminButton();
 }
