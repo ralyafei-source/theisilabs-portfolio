@@ -2853,7 +2853,7 @@ function parseScoreBlocks(text) {
     const blockText = text.slice(p.pos, end).trim();
 
     // Extract layer scores
-    const layerScoreRe = /درجة هذه الطبقة[^:]*:\s*<b>[\s\S]*?([\d.]+)\/10|درجة هذه الطبقة[^:]*:\s*([\d.]+)\/10/g;
+    const layerScoreRe = /درجة هذه الطبقة[^:]*:(?:<b>)?\s*([\d.]+)\/10|درجة هذه الطبقة[^:]*:\s*<b>([\d.]+)/g;
     const layerScores = [];
     let lm;
     while ((lm = layerScoreRe.exec(blockText)) !== null) {
@@ -2899,7 +2899,7 @@ function buildScoreCard(stock, type, idx) {
     const s = stock.layerScores[i];
     const val = s !== undefined ? s + '/10' : '—';
     const col = s !== undefined ? lColor(s) : 'var(--text3)';
-    return `<div style="background:var(--bg3);border-radius:7px;padding:5px 8px;min-height:44px;">
+    return `<div style="background:var(--bg3);border-radius:7px;padding:8px 10px;">
       <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">${name}</div>
       <div style="font-size:13px;font-weight:700;color:${col};font-family:'IBM Plex Mono',monospace;">${val}</div>
     </div>`;
@@ -2921,7 +2921,7 @@ function buildScoreCard(stock, type, idx) {
         <div style="font-size:9px;color:var(--text3);">/ 10</div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px;">${layersHtml}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px;min-height:unset;">${layersHtml}</div>
     ${stock.action
       ? `<div style="font-size:11px;padding:6px 10px;border-radius:7px;text-align:center;font-weight:600;background:${bgAccent};color:${scoreColor};direction:rtl;">${stock.action}</div>`
       : ''}
