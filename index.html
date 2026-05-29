@@ -487,7 +487,7 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
           <div class="hstat-label" id="h-portfolio">Portfolio 👁</div>
         </div>
         <div class="hstat">
-          <div class="hstat-val" style="color:var(--accent)">52</div>
+          <div class="hstat-val" id="header-stocks-count" style="color:var(--accent)">—</div>
           <div class="hstat-label" id="h-stocks">Stocks</div>
         </div>
         <div class="hstat">
@@ -2723,8 +2723,8 @@ async function fetchLivePrices(){
     if(pv && !privacyOn) pv.textContent='$'+Math.round(total).toLocaleString();
     // Update securities count in header and table subtitle
     const secCount = stocks.length;
-    const hStocks = document.querySelector('.hstat-val[style*="accent"]');
-    if(hStocks) hStocks.textContent = secCount;
+const hStocks = document.getElementById('header-stocks-count');
+if(hStocks) hStocks.textContent = secCount;
     const pSub = document.getElementById('p-sub');
     const today = new Date().toLocaleDateString('en-GB',{month:'short',year:'numeric'});
     if(pSub) pSub.textContent = secCount + ' securities — as of ' + today;
@@ -2748,8 +2748,8 @@ function updateStatCards(){
     els.forEach(id => { const el=document.getElementById(id); if(el) el.textContent='—'; });
     const pv=document.getElementById('portfolio-val');
     if(pv) pv.textContent='$0';
-    const hStocks=document.querySelectorAll('.hstat-val')[1];
-    if(hStocks) hStocks.textContent='0';
+    const hStocks=document.getElementById('header-stocks-count');
+if(hStocks) hStocks.textContent='0';
     return;
   }
 
