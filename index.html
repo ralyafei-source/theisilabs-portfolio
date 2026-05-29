@@ -268,7 +268,7 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
 .advisor-ts{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:12px;direction:ltr;text-align:left;}
 
 /* ===== AUTH OVERLAY ===== */
-#authBlur{position:fixed;top:0;left:0;right:0;bottom:0;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);background:rgba(10,14,26,0.45);z-index:7999;}
+#authBlur{position:fixed;top:0;left:0;right:0;bottom:0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);background:rgba(10,14,26,0.75);z-index:7999;}
 #authOverlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;}
 #authCard{background:var(--bg2);border:1px solid var(--border);border-radius:22px;width:100%;max-width:360px;padding:32px 28px;position:relative;}
 .auth-logo{text-align:center;margin-bottom:24px;}
@@ -446,6 +446,26 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
         <div class="numpad-btn" onclick="pinPress('sc',0)">0</div>
         <div class="numpad-btn del" onclick="pinBack('sc')">⌫</div>
       </div>
+    </div>
+
+    <!-- ── VIEW: SIGNUP STEP 4 — ADD STOCKS ── -->
+    <div class="auth-view" id="view-signup-stocks">
+      <div style="text-align:center;margin-bottom:16px;">
+        <div style="font-size:32px;margin-bottom:8px;">✅</div>
+        <div style="font-size:16px;font-weight:900;margin-bottom:4px;" id="su-welcome-name">Welcome!</div>
+        <div style="font-size:12px;color:var(--text2);">Account created. Now add your portfolio.</div>
+      </div>
+      <div class="auth-step-label">Your stocks</div>
+      <div id="su-stock-row-header" style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;margin-bottom:6px;">
+        <span style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;">Symbol</span>
+        <span style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;">Shares</span>
+        <span style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;">Cost $</span>
+        <span></span>
+      </div>
+      <div id="su-stock-rows" style="max-height:220px;overflow-y:auto;"></div>
+      <button onclick="addSignupStockRow()" style="background:rgba(0,212,255,.1);border:1px solid var(--accent);color:var(--accent);border-radius:10px;padding:10px;width:100%;cursor:pointer;font-size:13px;font-weight:600;font-family:'Cairo',sans-serif;margin-bottom:12px;transition:all .2s;">+ Add Stock</button>
+      <button class="auth-btn auth-btn-primary" onclick="saveSignupPortfolio()">🚀 Launch My Dashboard</button>
+      <button class="auth-btn auth-btn-outline" onclick="skipPortfolioSetup()" style="margin-top:8px;">Skip — I'll add stocks later</button>
     </div>
 
   </div><!-- end authCard -->
@@ -1137,9 +1157,10 @@ WOLF remains at critical lows<br><br>
 </main>
 
 <script>
-// ── Portfolio verified from Wio Invest app — May 27, 2026 ──
-// price/mv/gl are placeholders — live prices overwrite on load
-const stocks=[
+// ── Portfolio data — loaded dynamically per logged-in user ──
+// Rashed (admin) uses hardcoded stocks as fallback until API loads
+// All other users get their portfolio from /api/user-portfolio
+const _rashedStocks=[
   // TECH
   {sym:'NVDA',en:'NVIDIA',ar:'انفيديا',cost:81.14,price:214.86,mv:64630,gl:164.79,sec:'tech'},
   {sym:'AMZN',en:'Amazon',ar:'أمازون',cost:205.64,price:265.29,mv:40474,gl:28.99,sec:'tech'},
@@ -1198,6 +1219,9 @@ const stocks=[
   {sym:'QQQM',en:'NASDAQ ETF',ar:'صندوق ناسداك',cost:220.64,price:300.68,mv:1844,gl:36.28,sec:'etf'},
   {sym:'IBIT',en:'Bitcoin ETF',ar:'صندوق بيتكوين',cost:35.43,price:42.99,mv:2427,gl:21.34,sec:'etf'},
 ];
+
+// Active stocks array — populated after login
+let stocks = [];
 
 const sectors={
   tech:{en:'Technology',ar:'تكنولوجيا',cls:'sec-tech'},
@@ -4579,7 +4603,18 @@ async function checkSession() {
     const r = await fetch('/api/auth-me', { headers: { 'Authorization': 'Bearer ' + token } });
     if (r.ok) {
       const data = await r.json();
-      onAuthSuccess(data.nickname, data.isAdmin, token, false);
+      // Apply name/title without hiding auth (already hidden)
+      const displayName = data.nickname.charAt(0).toUpperCase() + data.nickname.slice(1);
+      const titleEl = document.getElementById('h-title');
+      if (titleEl) titleEl.textContent = 'Hi, ' + displayName;
+      document.title = 'Financial Intelligence | ' + displayName;
+      const chatTitle = document.getElementById('chatTitle');
+      if (chatTitle) chatTitle.textContent = 'مستشار ' + displayName;
+      const chatBtn = document.getElementById('chatBtn');
+      if (chatBtn) chatBtn.title = 'مستشار ' + displayName + ' الذكي';
+      if (data.isAdmin) showAdminButton();
+      // Load their portfolio
+      loadUserPortfolio(token, data.isAdmin, data.nickname);
     } else {
       localStorage.removeItem(AUTH_SESSION_KEY);
       showAuth();
@@ -4734,7 +4769,20 @@ async function doSignUp() {
     const data = await r.json();
 
     if (r.ok) {
-      onAuthSuccess(data.nickname, data.isAdmin, data.token, false);
+      // Store session but don't hide auth yet — show stock entry step
+      localStorage.setItem(AUTH_SESSION_KEY, data.token);
+      localStorage.setItem(AUTH_NICK_KEY, data.nickname);
+      localStorage.setItem(AUTH_ADMIN_KEY, '0');
+      const displayName = data.nickname.charAt(0).toUpperCase() + data.nickname.slice(1);
+      const welcomeEl = document.getElementById('su-welcome-name');
+      if (welcomeEl) welcomeEl.textContent = 'Welcome, ' + displayName + '! 🎉';
+      // Reset numpad
+      numpadBtns.forEach(b => { b.style.opacity = '1'; b.style.pointerEvents = ''; });
+      document.getElementById('authError').style.color = '';
+      document.getElementById('authError').style.borderColor = '';
+      document.getElementById('authError').style.background = '';
+      // Show stock entry step
+      showSignupStockEntry(data.nickname, data.token, true);
     } else {
       // Reset error box style
       document.getElementById('authError').style.color = '';
@@ -4775,6 +4823,102 @@ function onAuthSuccess(nickname, isAdmin, token, firstLogin) {
   if (chatBtn) chatBtn.title = 'مستشار ' + displayName + ' الذكي';
   // Show admin panel button if admin
   if (isAdmin) showAdminButton();
+  // Load portfolio for this user
+  loadUserPortfolio(token, isAdmin, nickname);
+}
+
+// ── Load portfolio for logged-in user ──
+async function loadUserPortfolio(token, isAdmin, nickname) {
+  try {
+    // Admin gets hardcoded stocks instantly, then live prices
+    if (isAdmin && nickname === 'rashed') {
+      _rashedStocks.forEach(s => stocks.push(s));
+      renderPortfolio();
+      fetchLivePrices();
+      return;
+    }
+
+    // Regular user — fetch from API
+    const r = await fetch('/api/user-portfolio', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    if (!r.ok) throw new Error('Could not load portfolio');
+    const data = await r.json();
+    const userStocks = data.portfolio?.stocks || [];
+
+    if (userStocks.length === 0) {
+      // Empty portfolio — show add stocks prompt
+      showEmptyPortfolioState(nickname);
+      return;
+    }
+
+    // Load their stocks
+    userStocks.forEach(s => stocks.push(s));
+    renderPortfolio();
+    fetchLivePricesForUser(token, userStocks.map(s => s.sym));
+
+  } catch(e) {
+    console.error('loadUserPortfolio error:', e);
+    // Fallback — show empty state
+    showEmptyPortfolioState(nickname);
+  }
+}
+
+// ── Fetch live prices for a specific set of symbols ──
+async function fetchLivePricesForUser(token, symbols) {
+  if (!symbols || symbols.length === 0) return;
+  const indicator = document.getElementById('live-price-indicator');
+  if (indicator) indicator.textContent = '⏳ Loading live prices...';
+  try {
+    const symsParam = symbols.join(',');
+    const r = await fetch(`/api/prices?symbols=${encodeURIComponent(symsParam)}&t=${Date.now()}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    if (!d.prices) throw new Error('No prices');
+    let updated = 0;
+    stocks.forEach(s => {
+      const q = d.prices[s.sym];
+      if (q && q.price) {
+        s.price = q.price;
+        s.gl = ((q.price - s.cost) / s.cost) * 100;
+        s.mv = Math.round(s.shares * q.price);
+        updated++;
+      }
+    });
+    const ts = new Date(d.updated || Date.now()).toLocaleTimeString();
+    if (indicator) indicator.innerHTML = `<span style="color:var(--green)">✅ Live prices — ${updated} stocks — ${ts}</span>`;
+    const total = stocks.reduce((a, s) => a + (s.mv || 0), 0);
+    const pv = document.getElementById('portfolio-val');
+    if (pv && !privacyOn) pv.textContent = '$' + Math.round(total).toLocaleString();
+    updateStatCards();
+    renderPortfolio();
+  } catch(e) {
+    if (indicator) indicator.innerHTML = `<span style="color:var(--red)">⚠️ ${e.message}</span>`;
+  }
+}
+
+// ── Empty portfolio state ──
+function showEmptyPortfolioState(nickname) {
+  const displayName = nickname.charAt(0).toUpperCase() + nickname.slice(1);
+  const pSub = document.getElementById('p-sub');
+  if (pSub) pSub.textContent = 'No stocks yet';
+  const indicator = document.getElementById('live-price-indicator');
+  if (indicator) indicator.innerHTML = `<span style="color:var(--text2)">Portfolio empty — add your stocks below</span>`;
+  // Show add stocks banner
+  const reminderBanner = document.getElementById('reminderBanner');
+  if (reminderBanner) {
+    reminderBanner.style.display = 'flex';
+    document.getElementById('reminder-text').textContent = `👋 Welcome ${displayName}! Your portfolio is empty. Add your stocks to get started.`;
+    document.getElementById('reminder-btn').textContent = 'Add Stocks →';
+    document.getElementById('reminder-btn').onclick = () => openAddStocksModal(nickname);
+  }
+  renderPortfolio(); // renders empty table
+}
+
+// ── Add Stocks Modal for existing users ──
+function openAddStocksModal(nickname) {
+  showSignupStockEntry(nickname, localStorage.getItem(AUTH_SESSION_KEY), false);
 }
 
 // ── Lockout countdown ──
@@ -4947,6 +5091,130 @@ async function unlockUser(nickname) {
     });
     loadAdminData(token);
   } catch(e) { console.error(e); }
+}
+
+// ── Stock Entry during Signup ──
+let _suStockCount = 0;
+let _suToken = '';
+let _suNickname = '';
+let _suIsNewSignup = false;
+
+function showSignupStockEntry(nickname, token, isNewSignup) {
+  _suToken = token;
+  _suNickname = nickname;
+  _suIsNewSignup = isNewSignup;
+  _suStockCount = 0;
+  document.getElementById('su-stock-rows').innerHTML = '';
+  // If opening for existing user (not new signup), show auth overlay again
+  if (!isNewSignup) {
+    document.getElementById('authBlur').style.display = 'block';
+    document.getElementById('authOverlay').style.display = 'flex';
+    // Hide auth tabs
+    document.getElementById('authTabs').style.display = 'none';
+    const displayName = nickname.charAt(0).toUpperCase() + nickname.slice(1);
+    const welcomeEl = document.getElementById('su-welcome-name');
+    if (welcomeEl) welcomeEl.textContent = 'Add Your Stocks, ' + displayName;
+  } else {
+    document.getElementById('authTabs').style.display = 'none';
+  }
+  clearAuthError();
+  showAuthView('signup-stocks');
+  addSignupStockRow(); // Start with one empty row
+}
+
+function addSignupStockRow() {
+  _suStockCount++;
+  const id = _suStockCount;
+  const row = document.createElement('div');
+  row.id = 'su-srow-' + id;
+  row.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;margin-bottom:6px;';
+  row.innerHTML = `
+    <input class="auth-input" style="margin:0;padding:8px 10px;font-size:12px;" placeholder="NVDA" id="su-sym-${id}" maxlength="6" oninput="this.value=this.value.toUpperCase()"/>
+    <input class="auth-input" style="margin:0;padding:8px 10px;font-size:12px;" placeholder="100" type="number" id="su-sh-${id}" min="0.01" step="any"/>
+    <input class="auth-input" style="margin:0;padding:8px 10px;font-size:12px;" placeholder="150" type="number" id="su-cost-${id}" min="0.01" step="any"/>
+    <button onclick="removeSuRow(${id})" style="background:rgba(255,68,68,.15);border:1px solid rgba(255,68,68,.3);color:var(--red);border-radius:8px;padding:0 10px;cursor:pointer;font-size:14px;">✕</button>
+  `;
+  document.getElementById('su-stock-rows').appendChild(row);
+}
+
+function removeSuRow(id) {
+  const row = document.getElementById('su-srow-' + id);
+  if (row) row.remove();
+}
+
+function collectSignupStocks() {
+  const rows = document.querySelectorAll('#su-stock-rows > div');
+  const result = [];
+  rows.forEach(row => {
+    const id = row.id.replace('su-srow-', '');
+    const sym = (document.getElementById('su-sym-' + id)?.value || '').trim().toUpperCase();
+    const shares = parseFloat(document.getElementById('su-sh-' + id)?.value || 0);
+    const cost = parseFloat(document.getElementById('su-cost-' + id)?.value || 0);
+    if (sym && shares > 0 && cost > 0) {
+      result.push({ sym, en: sym, ar: sym, shares, cost, price: cost, mv: Math.round(shares * cost), gl: 0, sec: 'tech' });
+    }
+  });
+  return result;
+}
+
+async function saveSignupPortfolio() {
+  const userStocks = collectSignupStocks();
+  if (userStocks.length === 0) {
+    skipPortfolioSetup();
+    return;
+  }
+  // Save via API
+  try {
+    const r = await fetch('/api/user-portfolio', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _suToken },
+      body: JSON.stringify({ stocks: userStocks })
+    });
+    if (r.ok) {
+      finishOnboarding(userStocks);
+    } else {
+      const d = await r.json();
+      showAuthError(d.error || 'Could not save portfolio — entering dashboard anyway');
+      setTimeout(() => finishOnboarding(userStocks), 1500);
+    }
+  } catch(e) {
+    showAuthError('Connection error — entering dashboard with your stocks');
+    setTimeout(() => finishOnboarding(userStocks), 1500);
+  }
+}
+
+function skipPortfolioSetup() {
+  finishOnboarding([]);
+}
+
+function finishOnboarding(userStocks) {
+  // Restore auth tabs visibility
+  const tabs = document.getElementById('authTabs');
+  if (tabs) tabs.style.display = '';
+  hideAuth();
+  // Apply session info
+  const nickname = _suNickname;
+  const isAdmin = localStorage.getItem(AUTH_ADMIN_KEY) === '1';
+  const token = _suToken;
+  const displayName = nickname.charAt(0).toUpperCase() + nickname.slice(1);
+  // Update header
+  const titleEl = document.getElementById('h-title');
+  if (titleEl) titleEl.textContent = 'Hi, ' + displayName;
+  document.title = 'Financial Intelligence | ' + displayName;
+  const chatTitle = document.getElementById('chatTitle');
+  if (chatTitle) chatTitle.textContent = 'مستشار ' + displayName;
+  if (isAdmin) showAdminButton();
+  // Load stocks
+  if (userStocks.length > 0) {
+    userStocks.forEach(s => stocks.push(s));
+    renderPortfolio();
+    fetchLivePricesForUser(token, userStocks.map(s => s.sym));
+    // Hide reminder banner if shown
+    const banner = document.getElementById('reminderBanner');
+    if (banner) banner.style.display = 'none';
+  } else {
+    showEmptyPortfolioState(nickname);
+  }
 }
 
 // ── Sign out ──
