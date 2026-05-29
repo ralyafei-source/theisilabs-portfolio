@@ -740,7 +740,17 @@ WOLF remains at critical lows<br><br>
 
     <!-- Analysis Content Panels -->
     <div id="advisorContent" style="display:none;">
-      <div id="scoringPopup" style="display:none;position:fixed;z-index:9999;width:340px;max-height:75vh;overflow-y:auto;background:var(--bg2);border:1px solid var(--border);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,0.5);padding:16px;pointer-events:none;"></div>
+      <div id="scoringPopup" style="display:none;position:fixed;z-index:9999;width:340px;max-height:70vh;overflow-y:auto;background:var(--bg2);border:1px solid var(--border);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,0.5);padding:16px;pointer-events:auto;"></div>
+
+<!-- Bottom sheet for touch devices -->
+<div id="scoringSheet" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:var(--bg2);border-top:1px solid var(--border);border-radius:20px 20px 0 0;padding:0;max-height:75vh;overflow-y:auto;box-shadow:0 -8px 32px rgba(0,0,0,0.5);">
+  <div style="width:40px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0;"></div>
+  <div id="scoringSheetContent" style="padding:16px;"></div>
+  <div style="padding:0 16px 24px;">
+    <button onclick="closeScoringSheet()" style="width:100%;padding:12px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:10px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px;">إغلاق</button>
+  </div>
+</div>
+<div id="scoringSheetBackdrop" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9998;background:rgba(0,0,0,0.5);" onclick="closeScoringSheet()"></div>
 
       <div class="firm-content active" id="firm-signals">
         <div class="firm-header">
@@ -2898,7 +2908,8 @@ function buildScoreCard(stock, type, idx) {
     style="background:var(--bg2);border:1px solid var(--border);border-top:3px solid ${borderTop};border-radius:12px;padding:14px;cursor:pointer;transition:border-color .15s;"
     onmouseenter="showScoringPopup(event,'${uid}')"
     onmouseleave="hideScoringPopup()"
-    onmousemove="moveScoringPopup(event)">
+    onmousemove="moveScoringPopup(event)"
+    onclick="if(_isTouchDevice())showScoringSheet('${uid}')">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
       <div>
         <div style="font-size:15px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text);">${stock.sym}</div>
@@ -2917,15 +2928,12 @@ function buildScoreCard(stock, type, idx) {
   </div>`;
 }
 
-function showScoringPopup(e, uid) {
+const _isTouchDevice = () => !window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+function buildScoringPopupHTML(uid) {
   const data = window._scoreCards[uid];
-  if (!data) return;
-  const popup = document.getElementById('scoringPopup');
-  if (!popup) return;
-
+  if (!data) return '';
   const scoreColor = data.isBuy ? '#00c864' : '#ff6b35';
-
-  // Build popup layers content from block text
   const layerNames = ['الطبقة 1 — مركزك الشخصي','الطبقة 2 — التقييم','الطبقة 3 — التقني','الطبقة 4 — الأساسيات','الطبقة 5 — الخارجي'];
   let layersHtml = '';
   layerNames.forEach((ln, i) => {
@@ -2933,48 +2941,98 @@ function showScoringPopup(e, uid) {
     const m = data.blockText.match(re);
     if (m) layersHtml += `<div style="margin-bottom:8px;">${mdToHtml(m[0])}</div>`;
   });
-
-  // Framework
   const fwHtml = data.framework
     ? `<div style="background:rgba(0,212,255,0.06);border-radius:8px;padding:8px 10px;margin:8px 0;font-size:11px;direction:rtl;">${data.framework}</div>`
     : '';
-
-  // Not considered
   const notHtml = data.notConsidered
     ? `<div style="background:rgba(255,180,0,0.08);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:11px;color:var(--gold);direction:rtl;">⚠ ما لم يُؤخذ بعين الاعتبار<br><span style="color:var(--text2);">${data.notConsidered}</span></div>`
     : '';
-
-  popup.innerHTML = `
+  return `
     <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--border);">
       <div style="font-size:15px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--accent);">${data.sym}</div>
       <div style="font-size:20px;font-weight:900;font-family:'IBM Plex Mono',monospace;color:${scoreColor};">${data.score}<span style="font-size:11px;color:var(--text3);">/10</span></div>
     </div>
     <div style="font-size:12px;direction:rtl;text-align:right;">${layersHtml || mdToHtml(data.blockText)}</div>
-    ${fwHtml}
-    ${notHtml}`;
+    ${fwHtml}${notHtml}`;
+}
 
+function showScoringPopup(e, uid) {
+  const data = window._scoreCards[uid];
+  if (!data) return;
+  if (_isTouchDevice()) return; // touch devices use tap instead
+  const popup = document.getElementById('scoringPopup');
+  if (!popup) return;
+  popup.innerHTML = buildScoringPopupHTML(uid);
   positionScoringPopup(e);
   popup.style.display = 'block';
 }
 
-function moveScoringPopup(e) {
-  positionScoringPopup(e);
+function showScoringSheet(uid) {
+  const data = window._scoreCards[uid];
+  if (!data) return;
+  const sheet = document.getElementById('scoringSheet');
+  const content = document.getElementById('scoringSheetContent');
+  const backdrop = document.getElementById('scoringSheetBackdrop');
+  if (!sheet || !content || !backdrop) return;
+  content.innerHTML = buildScoringPopupHTML(uid);
+  backdrop.style.display = 'block';
+  sheet.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  // Animate in
+  sheet.style.transform = 'translateY(100%)';
+  sheet.style.transition = 'transform 0.3s ease';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      sheet.style.transform = 'translateY(0)';
+    });
+  });
 }
 
+function closeScoringSheet() {
+  const sheet = document.getElementById('scoringSheet');
+  const backdrop = document.getElementById('scoringSheetBackdrop');
+  if (!sheet || !backdrop) return;
+  sheet.style.transform = 'translateY(100%)';
+  setTimeout(() => {
+    sheet.style.display = 'none';
+    backdrop.style.display = 'none';
+    document.body.style.overflow = '';
+  }, 300);
+}
+
+function moveScoringPopup(e) {
+  if (_isTouchDevice()) return;
+  positionScoringPopup(e);
+}
+// Lock page scroll when hovering popup on PC
+document.addEventListener('DOMContentLoaded', () => {
+  const popup = document.getElementById('scoringPopup');
+  if (popup) {
+    popup.addEventListener('mouseenter', () => { document.body.style.overflow = 'hidden'; });
+    popup.addEventListener('mouseleave', () => { document.body.style.overflow = ''; });
+  }
+});
+  
 function positionScoringPopup(e) {
   const popup = document.getElementById('scoringPopup');
   if (!popup || popup.style.display === 'none') return;
-  const pw = 350, ph = 450;
+  const pw = 350;
+  const ph = Math.min(500, window.innerHeight * 0.7);
+  popup.style.maxHeight = ph + 'px';
   let left = e.clientX + 16;
-  let top  = e.clientY - 40;
+  let top = e.clientY - 40;
   if (left + pw > window.innerWidth - 10) left = e.clientX - pw - 16;
-  if (top + ph > window.innerHeight - 10) top  = window.innerHeight - ph - 10;
+  if (top + ph > window.innerHeight - 10) top = window.innerHeight - ph - 10;
   if (top < 10) top = 10;
   popup.style.left = left + 'px';
-  popup.style.top  = top  + 'px';
+  popup.style.top = top + 'px';
 }
 
 function hideScoringPopup() {
+  if (_isTouchDevice()) return;
+  const popup = document.getElementById('scoringPopup');
+  if (popup) popup.style.display = 'none';
+} {
   const popup = document.getElementById('scoringPopup');
   if (popup) popup.style.display = 'none';
 }
