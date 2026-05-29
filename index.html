@@ -812,7 +812,30 @@ WOLF remains at critical lows<br><br>
         <div class="firm-body" id="momentum-body"></div>
         <div class="advisor-ts" id="momentum-ts"></div>
       </div>
+<div class="firm-content" id="firm-momentum">
+        <div class="firm-header">
+          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:#00ff88;font-size:11px;">MO</div>
+          <div>
+            <div class="firm-title">Momentum</div>
+            <div class="firm-subtitle">Momentum signals · Mean reversion · Seasonal patterns · Short interest</div>
+          </div>
+        </div>
+        <div class="firm-body" id="momentum-body"></div>
+        <div class="advisor-ts" id="momentum-ts"></div>
+      </div>
 
+      <div class="firm-content" id="firm-scoring">
+        <div class="firm-header">
+          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:#ffd700;font-size:11px;">SE</div>
+          <div>
+            <div class="firm-title">Scoring Engine</div>
+            <div class="firm-subtitle">5-layer institutional scoring · Buy & reduce signals · Capital reallocation</div>
+          </div>
+        </div>
+        <div class="firm-body" id="scoring-body"></div>
+        <div class="advisor-ts" id="scoring-ts"></div>
+      </div>
+      
       <div class="firm-content" id="firm-competitive">
         <div class="firm-header">
           <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:#ff6b35;font-size:11px;">CE</div>
@@ -1817,7 +1840,7 @@ function loadTxFromStorage(){
 }
 
 // ===== AI ADVISOR =====
-const firms=['signals','earnings','macro','risk','fairvalue','momentum','competitive','longview','health'];
+const firms=['signals','earnings','macro','risk','fairvalue','momentum','scoring','competitive','longview','health'];
 const firmNames={
   en:{gs:'Goldman Sachs',bw:'Bridgewater',br:'BlackRock',ms:'Morgan Stanley',jp:'JPMorgan',ba:'Bain',he:'Harvard',rt:'Renaissance',mk:'McKinsey'},
   ar:{gs:'غولدمان ساكس',bw:'برجووتر',br:'بلاك روك',ms:'مورغان ستانلي',jp:'جي بي مورغان',ba:'باين',he:'هارفارد',rt:'رينيسانس',mk:'ماكنزي'}
@@ -2146,6 +2169,7 @@ function renderAnalysis(data){
     risk:        {src:'weekly',  label:'RISK RADAR'},
     fairvalue:   {src:'weekly',  label:'FAIR VALUE'},
     momentum:    {src:'weekly',  label:'MOMENTUM'},
+    scoring:     {src:'weekly',  label:'SCORING ENGINE'},
     competitive: {src:'monthly', label:'COMPETITIVE EDGE'},
     longview:    {src:'monthly', label:'LONG VIEW'},
     health:      {src:'monthly', label:'PORTFOLIO HEALTH'}
