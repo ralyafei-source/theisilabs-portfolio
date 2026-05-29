@@ -740,6 +740,7 @@ WOLF remains at critical lows<br><br>
 
     <!-- Analysis Content Panels -->
     <div id="advisorContent" style="display:none;">
+      <div id="scoringPopup" style="display:none;position:fixed;z-index:9999;width:340px;max-height:75vh;overflow-y:auto;background:var(--bg2);border:1px solid var(--border);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,0.5);padding:16px;pointer-events:none;"></div>
 
       <div class="firm-content active" id="firm-signals">
         <div class="firm-header">
@@ -2202,7 +2203,7 @@ function renderAnalysis(data){
 
     let text = sectionsToUse[f] || (isAr ? 'لا توجد بيانات — سيتم التحديث في الموعد المجدول' : 'No data yet — updates on schedule');
 
-    body.innerHTML = f==='signals' ? renderSignals(text) : mdToHtml(text);
+    body.innerHTML = f==='signals' ? renderSignals(text) : f==='scoring' ? renderScoring(text) : mdToHtml(text);
     body.style.direction = isAr ? 'rtl' : 'ltr';
     body.style.textAlign = isAr ? 'right' : 'left';
     body.className = 'firm-body' + (isAr ? '' : ' en');
@@ -2761,6 +2762,283 @@ if(_modal) _modal.addEventListener('click', function(e){
   if(e.target===this) closeTradeModal();
 });
 
+  // ===== SCORING ENGINE RENDERER =====
+window._scoreCards = {};
+
+function renderScoring(text) {
+  if (!text || text.trim().length < 100) {
+    return `<div style="text-align:center;padding:40px;color:var(--text2);">
+      <div style="font-size:32px;margin-bottom:12px;">🎯</div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:6px;">محرك القرار الأسبوعي</div>
+      <div style="font-size:12px;">يتم التحديث كل سبت صباحاً مع اكتمال التحليل الأسبوعي</div>
+    </div>`;
+  }
+
+  window._scoreCards = {};
+
+  // Find section boundaries
+  const p1s = text.indexOf('الجزء الأول');
+  const p2s = text.indexOf('الجزء الثاني');
+  const p3s = text.indexOf('الجزء الثالث');
+  const p4s = text.indexOf('الجزء الرابع');
+
+  const part1 = p1s >= 0 ? text.slice(p1s, p2s > 0 ? p2s : text.length) : text;
+  const part2 = p2s >= 0 ? text.slice(p2s, p3s > 0 ? p3s : text.length) : '';
+  const part3 = p3s >= 0 ? text.slice(p3s, p4s > 0 ? p4s : text.length) : '';
+  const part4 = p4s >= 0 ? text.slice(p4s) : '';
+
+  const buyStocks    = parseScoreBlocks(part1);
+  const reduceStocks = parseScoreBlocks(part2);
+
+  let html = '<div style="padding:4px 0;">';
+
+  // ── Tier 1 Buy ──
+  if (buyStocks.length > 0) {
+    html += scoringSectionHeader('أفضل فرص الشراء هذا الأسبوع', 'var(--accent2)');
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px;">';
+    buyStocks.forEach((s, i) => { html += buildScoreCard(s, 'buy', i); });
+    html += '</div>';
+  }
+
+  // ── Tier 1 Reduce ──
+  if (reduceStocks.length > 0) {
+    html += scoringSectionHeader('مراكز تحتاج مراجعة هذا الأسبوع', 'var(--accent3)');
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px;">';
+    reduceStocks.forEach((s, i) => { html += buildScoreCard(s, 'reduce', i); });
+    html += '</div>';
+  }
+
+  // ── Tier 2 Score Table ──
+  if (part3.trim().length > 50) {
+    html += scoringSectionHeader('جدول الدرجات الكامل', 'var(--text2)');
+    html += '<div style="margin-bottom:28px;">' + renderScoreTable(part3) + '</div>';
+  }
+
+  // ── Tier 3 Portfolio Summary ──
+  if (part4.trim().length > 50) {
+    html += scoringSectionHeader('ملخص صحة المحفظة', 'var(--gold)');
+    html += '<div style="margin-bottom:16px;">' + renderPortfolioHealthSummary(part4) + '</div>';
+  }
+
+  // Fallback if parsing found nothing
+  if (buyStocks.length === 0 && reduceStocks.length === 0 && !part3 && !part4) {
+    html += mdToHtml(text);
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function scoringSectionHeader(label, dotColor) {
+  return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+    <span style="width:7px;height:7px;border-radius:50%;background:${dotColor};flex-shrink:0;"></span>
+    <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);">${label}</span>
+    <span style="flex:1;height:1px;background:var(--border);"></span>
+  </div>`;
+}
+
+function parseScoreBlocks(text) {
+  if (!text) return [];
+  const blocks = [];
+  const headerRe = /\b([A-Z]{1,6})\s*\|\s*Score\s*([\d.]+)\/10\s*\|\s*([^\n]+)/g;
+  let match;
+  const positions = [];
+
+  while ((match = headerRe.exec(text)) !== null) {
+    positions.push({ sym: match[1].trim(), score: parseFloat(match[2]), label: match[3].trim(), pos: match.index });
+  }
+
+  positions.forEach((p, i) => {
+    const end = i < positions.length - 1 ? positions[i + 1].pos : text.length;
+    const blockText = text.slice(p.pos, end).trim();
+
+    // Extract layer scores
+    const layerScoreRe = /درجة هذه الطبقة:\s*([\d.]+)\/10/g;
+    const layerScores = [];
+    let lm;
+    while ((lm = layerScoreRe.exec(blockText)) !== null) {
+      layerScores.push(parseFloat(lm[1]));
+    }
+
+    // Extract action line
+    const actionMatch = blockText.match(/الإجراء:\s*([^\n]+)/);
+    const action = actionMatch ? actionMatch[1].trim() : '';
+
+    // Extract "not considered"
+    const notMatch = blockText.match(/ما لم يُؤخذ[^:]*:([\s\S]+?)(?:─{3,}|$)/);
+    const notConsidered = notMatch ? notMatch[1].trim().slice(0, 200) : '';
+
+    // Extract framework
+    const fwMatch = blockText.match(/الإطار المستخدم[^:]*:([\s\S]+?)(?:القرار|✅|$)/);
+    const framework = fwMatch ? fwMatch[1].trim().slice(0, 200) : '';
+
+    blocks.push({ sym: p.sym, score: p.score, label: p.label, layerScores, action, notConsidered, framework, blockText });
+  });
+
+  return blocks;
+}
+
+function buildScoreCard(stock, type, idx) {
+  const isBuy       = type === 'buy';
+  const scoreColor  = isBuy ? '#00c864'  : '#ff6b35';
+  const bgAccent    = isBuy ? 'rgba(0,200,100,0.08)' : 'rgba(255,107,53,0.08)';
+  const borderTop   = isBuy ? '#00c864'  : '#ff6b35';
+  const uid         = `scard_${stock.sym}_${idx}`;
+
+  // Store data globally for popup
+  window._scoreCards[uid] = { ...stock, isBuy };
+
+  const defaultLayerNames = ['الشخصي', 'التقييم', 'التقني', 'الأساسيات'];
+  function lColor(s) {
+    if (s >= 7) return '#00c864';
+    if (s >= 5) return '#ffd700';
+    return '#ff6b35';
+  }
+
+  const layersHtml = defaultLayerNames.map((name, i) => {
+    const s = stock.layerScores[i];
+    const val = s !== undefined ? s + '/10' : '—';
+    const col = s !== undefined ? lColor(s) : 'var(--text3)';
+    return `<div style="background:var(--bg3);border-radius:7px;padding:5px 8px;">
+      <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">${name}</div>
+      <div style="font-size:13px;font-weight:700;color:${col};font-family:'IBM Plex Mono',monospace;">${val}</div>
+    </div>`;
+  }).join('');
+
+  return `<div
+    id="${uid}"
+    style="background:var(--bg2);border:1px solid var(--border);border-top:3px solid ${borderTop};border-radius:12px;padding:14px;cursor:pointer;transition:border-color .15s;"
+    onmouseenter="showScoringPopup(event,'${uid}')"
+    onmouseleave="hideScoringPopup()"
+    onmousemove="moveScoringPopup(event)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+      <div>
+        <div style="font-size:15px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text);">${stock.sym}</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px;">${stock.label}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:22px;font-weight:900;font-family:'IBM Plex Mono',monospace;color:${scoreColor};">${stock.score}</div>
+        <div style="font-size:9px;color:var(--text3);">/ 10</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px;">${layersHtml}</div>
+    ${stock.action
+      ? `<div style="font-size:11px;padding:6px 10px;border-radius:7px;text-align:center;font-weight:600;background:${bgAccent};color:${scoreColor};direction:rtl;">${stock.action}</div>`
+      : ''}
+    <div style="font-size:9px;color:var(--text3);text-align:center;margin-top:5px;opacity:0.6;">hover للتفاصيل الكاملة ⓘ</div>
+  </div>`;
+}
+
+function showScoringPopup(e, uid) {
+  const data = window._scoreCards[uid];
+  if (!data) return;
+  const popup = document.getElementById('scoringPopup');
+  if (!popup) return;
+
+  const scoreColor = data.isBuy ? '#00c864' : '#ff6b35';
+
+  // Build popup layers content from block text
+  const layerNames = ['الطبقة 1 — مركزك الشخصي','الطبقة 2 — التقييم','الطبقة 3 — التقني','الطبقة 4 — الأساسيات','الطبقة 5 — الخارجي'];
+  let layersHtml = '';
+  layerNames.forEach((ln, i) => {
+    const re = new RegExp(ln.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '[\\s\\S]+?(?=الطبقة\\s+' + (i+2) + '|📊|$)');
+    const m = data.blockText.match(re);
+    if (m) layersHtml += `<div style="margin-bottom:8px;">${mdToHtml(m[0])}</div>`;
+  });
+
+  // Framework
+  const fwHtml = data.framework
+    ? `<div style="background:rgba(0,212,255,0.06);border-radius:8px;padding:8px 10px;margin:8px 0;font-size:11px;direction:rtl;">${data.framework}</div>`
+    : '';
+
+  // Not considered
+  const notHtml = data.notConsidered
+    ? `<div style="background:rgba(255,180,0,0.08);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:11px;color:var(--gold);direction:rtl;">⚠ ما لم يُؤخذ بعين الاعتبار<br><span style="color:var(--text2);">${data.notConsidered}</span></div>`
+    : '';
+
+  popup.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--border);">
+      <div style="font-size:15px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--accent);">${data.sym}</div>
+      <div style="font-size:20px;font-weight:900;font-family:'IBM Plex Mono',monospace;color:${scoreColor};">${data.score}<span style="font-size:11px;color:var(--text3);">/10</span></div>
+    </div>
+    <div style="font-size:12px;direction:rtl;text-align:right;">${layersHtml || mdToHtml(data.blockText)}</div>
+    ${fwHtml}
+    ${notHtml}`;
+
+  positionScoringPopup(e);
+  popup.style.display = 'block';
+}
+
+function moveScoringPopup(e) {
+  positionScoringPopup(e);
+}
+
+function positionScoringPopup(e) {
+  const popup = document.getElementById('scoringPopup');
+  if (!popup || popup.style.display === 'none') return;
+  const pw = 350, ph = 450;
+  let left = e.clientX + 16;
+  let top  = e.clientY - 40;
+  if (left + pw > window.innerWidth - 10) left = e.clientX - pw - 16;
+  if (top + ph > window.innerHeight - 10) top  = window.innerHeight - ph - 10;
+  if (top < 10) top = 10;
+  popup.style.left = left + 'px';
+  popup.style.top  = top  + 'px';
+}
+
+function hideScoringPopup() {
+  const popup = document.getElementById('scoringPopup');
+  if (popup) popup.style.display = 'none';
+}
+
+function renderScoreTable(text) {
+  const lines = text.split('\n').filter(l => l.includes('|'));
+  if (!lines.length) return mdToHtml(text);
+  let html = '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
+  let first = true;
+  lines.forEach(line => {
+    const cells = line.split('|').map(c => c.trim()).filter(c => c && !/^[-:]+$/.test(c));
+    if (cells.length < 2) return;
+    if (first) {
+      html += '<thead><tr>' + cells.map(c => `<th style="padding:8px 12px;background:var(--bg3);border:1px solid var(--border);text-align:right;font-size:10px;color:var(--text2);white-space:nowrap;">${c}</th>`).join('') + '</tr></thead><tbody>';
+      first = false; return;
+    }
+    const scoreNum = parseFloat(cells[1]);
+    let sc = 'var(--text2)';
+    if (scoreNum >= 7) sc = '#00c864';
+    else if (scoreNum >= 5) sc = '#ffd700';
+    else if (scoreNum > 0) sc = '#ff6b35';
+    html += '<tr>' + cells.map((c, ci) => {
+      if (ci === 0) return `<td style="padding:7px 12px;border:1px solid rgba(30,45,74,0.5);"><span style="background:var(--bg3);border:1px solid var(--border);padding:2px 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">${c}</span></td>`;
+      if (ci === 1) return `<td style="padding:7px 12px;border:1px solid rgba(30,45,74,0.5);font-family:'IBM Plex Mono',monospace;font-weight:700;color:${sc};">${c}</td>`;
+      return `<td style="padding:7px 12px;border:1px solid rgba(30,45,74,0.5);font-size:11px;color:var(--text2);direction:rtl;">${c}</td>`;
+    }).join('') + '</tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function renderPortfolioHealthSummary(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  let statsHtml = '';
+  let bodyLines = [];
+  lines.forEach(l => {
+    const m = l.match(/(.+?):\s*(.+)/);
+    if (m && m[2].match(/\d/) && bodyLines.length < 4) {
+      statsHtml += `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;flex:1;min-width:140px;">
+        <div style="font-size:10px;color:var(--text2);margin-bottom:4px;">${m[1].trim()}</div>
+        <div style="font-size:15px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--accent);">${m[2].trim()}</div>
+      </div>`;
+    } else {
+      bodyLines.push(l);
+    }
+  });
+  let html = '';
+  if (statsHtml) html += `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;">${statsHtml}</div>`;
+  if (bodyLines.length) html += `<div style="font-size:13px;line-height:1.9;direction:rtl;text-align:right;">${mdToHtml(bodyLines.join('\n'))}</div>`;
+  return html;
+}
+  
 // ===== INIT =====
 applyTranslations();
 renderPortfolio();
