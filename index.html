@@ -375,7 +375,7 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
         <div class="auth-pdot" id="sp3"></div>
       </div>
       <div class="auth-step-label">Invite code</div>
-      <input class="auth-input" id="su-invite" placeholder="e.g. ABCD-EFGH" autocomplete="off" autocapitalize="characters" oninput="this.value=this.value.toUpperCase()" />
+      <input class="auth-input" id="su-invite" placeholder="XXXX-XXXX" autocomplete="off" autocapitalize="characters" maxlength="9" oninput="formatInviteInput(this)" />
       <button class="auth-btn auth-btn-primary" onclick="signupStep1()">Continue →</button>
     </div>
 
@@ -4691,6 +4691,12 @@ function signupStep2() {
   showAuthView('signup-pin');
 }
 
+function formatInviteInput(el) {
+  let val = el.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (val.length > 4) val = val.slice(0, 4) + '-' + val.slice(4, 8);
+  el.value = val;
+}
+
 async function doSignUp() {
   // Check PINs match
   if (_pin.su !== _pin.sc) {
@@ -4701,8 +4707,24 @@ async function doSignUp() {
     setTimeout(() => { _pin.su = ''; updateDots('su'); showAuthView('signup-pin'); }, 700);
     return;
   }
+
   const nickname = (document.getElementById('su-nickname').value || '').trim().toLowerCase();
+  if (!nickname) {
+    showAuthError('Nickname missing — please go back and enter it');
+    _pin.sc = ''; updateDots('sc');
+    return;
+  }
+
+  // Show loading — disable numpad
+  const numpadBtns = document.querySelectorAll('#view-signup-confirm .numpad-btn');
+  numpadBtns.forEach(b => { b.style.opacity = '0.3'; b.style.pointerEvents = 'none'; });
+  showAuthError('Creating your account...');
+  document.getElementById('authError').style.color = 'var(--accent)';
+  document.getElementById('authError').style.borderColor = 'rgba(0,212,255,.3)';
+  document.getElementById('authError').style.background = 'rgba(0,212,255,.08)';
+
   const pinHash = await hashPin(_pin.su);
+
   try {
     const r = await fetch('/api/auth-signup', {
       method: 'POST',
@@ -4710,14 +4732,28 @@ async function doSignUp() {
       body: JSON.stringify({ inviteCode: _signupInviteCode, nickname, pinHash })
     });
     const data = await r.json();
+
     if (r.ok) {
       onAuthSuccess(data.nickname, data.isAdmin, data.token, false);
     } else {
-      showAuthError(data.error || 'Signup failed');
-      _pin.su = ''; _pin.sc = ''; updateDots('su'); updateDots('sc');
-      showAuthView('signup-pin');
+      // Reset error box style
+      document.getElementById('authError').style.color = '';
+      document.getElementById('authError').style.borderColor = '';
+      document.getElementById('authError').style.background = '';
+      // Re-enable numpad
+      numpadBtns.forEach(b => { b.style.opacity = '1'; b.style.pointerEvents = ''; });
+      showAuthError(data.error || 'Signup failed — please try again');
+      _pin.sc = ''; updateDots('sc');
+      // Stay on confirm screen so user can retry — don't redirect
     }
-  } catch(e) { showAuthError('Connection error. Please try again.'); }
+  } catch(e) {
+    document.getElementById('authError').style.color = '';
+    document.getElementById('authError').style.borderColor = '';
+    document.getElementById('authError').style.background = '';
+    numpadBtns.forEach(b => { b.style.opacity = '1'; b.style.pointerEvents = ''; });
+    showAuthError('Connection error — check your internet and try again');
+    _pin.sc = ''; updateDots('sc');
+  }
 }
 
 // ── After successful auth ──
