@@ -1,16 +1,20 @@
 // api/analysis.js
 // Supports 3 analysis types: daily, weekly, monthly
-// GET: reads appropriate file based on type + date params
-// POST: writes to appropriate file
+// Supports per-user analysis via optional nickname param
+// GET: reads appropriate file based on type + date + nickname params
+// POST: writes to appropriate file (with nickname prefix if provided)
 
 const REPO  = 'ralyafei-source/theisilabs-portfolio';
 const TOKEN = process.env.GITHUB_TOKEN;
 const API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
 
-function getFilePath(type, date, week, month) {
-  if (type === 'weekly')  return `data/analysis-weekly-${week || date?.slice(0,7)}.json`;
-  if (type === 'monthly') return `data/analysis-monthly-${month || date?.slice(0,7)}.json`;
-  return `data/analysis-daily-${date}.json`;
+function getFilePath(type, date, week, month, nickname) {
+  // nickname prefix: analysis-daily-[nickname]-DATE.json
+  // no nickname:     analysis-daily-DATE.json (backward compatible)
+  const nick = nickname ? `-${nickname}` : '';
+  if (type === 'weekly')  return `data/analysis-weekly${nick}-${week || date?.slice(0,7)}.json`;
+  if (type === 'monthly') return `data/analysis-monthly${nick}-${month || date?.slice(0,7)}.json`;
+  return `data/analysis-daily${nick}-${date}.json`;
 }
 
 async function readFile(path) {
@@ -22,7 +26,6 @@ async function readFile(path) {
 }
 
 async function writeFile(path, data) {
-  // Get current sha
   const check = await fetch(
     `https://api.github.com/repos/${REPO}/contents/${path}`,
     { headers: { Authorization: `token ${TOKEN}` } }
@@ -32,22 +35,13 @@ async function writeFile(path, data) {
     const existing = await check.json();
     sha = existing.sha;
   }
-
   const content = Buffer.from(JSON.stringify(data, null, 2)).toString('base64');
-  const body = {
-    message: `Update ${path}`,
-    content,
-    ...(sha && { sha })
-  };
-
+  const body = { message: `Update ${path}`, content, ...(sha && { sha }) };
   const r = await fetch(
     `https://api.github.com/repos/${REPO}/contents/${path}`,
     {
       method: 'PUT',
-      headers: {
-        Authorization: `token ${TOKEN}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { Authorization: `token ${TOKEN}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     }
   );
@@ -62,31 +56,44 @@ module.exports = async (req, res) => {
 
   // ── GET: read analysis ──
   if (req.method === 'GET') {
-    const { date, type, week, month } = req.query;
+    const { date, type, week, month, nickname } = req.query;
+    const nick = nickname || null;
 
-    // If specific type requested
+    // Specific type requested
     if (type) {
-      const path = getFilePath(type, date, week, month);
+      const path = getFilePath(type, date, week, month, nick);
       const data = await readFile(path);
       if (data) return res.json(data);
+      // Fallback to generic (no nickname) if user-specific not found
+      if (nick) {
+        const fallbackPath = getFilePath(type, date, week, month, null);
+        const fallback = await readFile(fallbackPath);
+        if (fallback) return res.json(fallback);
+      }
       return res.json({ error: 'Not found' });
     }
 
     // Default: return all 3 types for dashboard
     const today = date || new Date().toISOString().slice(0, 10);
-    const thisWeek = today.slice(0, 7); // approximate
-    const thisMonth = today.slice(0, 7);
 
-    // Try to find most recent daily file
-    const dailyData  = await readFile(`data/analysis-daily-${today}.json`);
+    // Try user-specific daily first, then generic
+    let dailyData = null;
+    if (nick) dailyData = await readFile(`data/analysis-daily-${nick}-${today}.json`);
+    if (!dailyData) dailyData = await readFile(`data/analysis-daily-${today}.json`);
 
-    // Find most recent weekly (try last 7 days)
+    // Find most recent weekly
     let weeklyData = null;
     for (let i = 0; i <= 7; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
       const ds = d.toISOString().slice(0, 10);
       const w = ds.slice(0, 7);
+      // Try user-specific first
+      if (nick) {
+        const data = await readFile(`data/analysis-weekly-${nick}-${w}.json`);
+        if (data) { weeklyData = data; break; }
+      }
+      // Fallback to generic
       const data = await readFile(`data/analysis-weekly-${w}.json`);
       if (data) { weeklyData = data; break; }
     }
@@ -97,16 +104,15 @@ module.exports = async (req, res) => {
       const d = new Date(today);
       d.setMonth(d.getMonth() - i);
       const m = d.toISOString().slice(0, 7);
+      if (nick) {
+        const data = await readFile(`data/analysis-monthly-${nick}-${m}.json`);
+        if (data) { monthlyData = data; break; }
+      }
       const data = await readFile(`data/analysis-monthly-${m}.json`);
       if (data) { monthlyData = data; break; }
     }
 
-    return res.json({
-      daily:   dailyData,
-      weekly:  weeklyData,
-      monthly: monthlyData,
-      date:    today
-    });
+    return res.json({ daily: dailyData, weekly: weeklyData, monthly: monthlyData, date: today });
   }
 
   // ── POST: save analysis ──
@@ -115,10 +121,10 @@ module.exports = async (req, res) => {
     const key = authHeader?.replace('Bearer ', '') || req.body?.api_key;
     if (key !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
 
-    let { type, date, week, month, content, generated } = req.body;
+    let { type, date, week, month, content, generated, nickname } = req.body;
     if (!content) return res.status(400).json({ error: 'No content' });
 
-    // Sanitize content — extract text if Claude returned JSON object
+    // Sanitize content
     if (typeof content === 'string' && content.trim().startsWith('{')) {
       try {
         const parsed = JSON.parse(content);
@@ -126,15 +132,16 @@ module.exports = async (req, res) => {
         else if (parsed.content) content = parsed.content;
       } catch(e) { /* keep as is */ }
     }
-    // Also handle array format
     if (Array.isArray(content)) {
       content = content.map(c => c.text || c).join('');
     }
 
-    const path = getFilePath(type || 'daily', date, week, month);
+    const nick = nickname || null;
+    const path = getFilePath(type || 'daily', date, week, month, nick);
     const data = {
       type:      type || 'daily',
       date:      date || new Date().toISOString().slice(0, 10),
+      nickname:  nick || null,
       content,
       generated: generated || new Date().toISOString()
     };
