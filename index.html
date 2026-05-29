@@ -5262,6 +5262,12 @@ function finishOnboarding(userStocks) {
   if (isAdmin) showAdminButton();
   // Load stocks
   if (userStocks.length > 0) {
+    // Save to GitHub first
+    fetch('/api/user-portfolio', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ stocks: userStocks })
+    }).catch(e => console.error('Portfolio save error:', e));
     userStocks.forEach(s => stocks.push(s));
     renderPortfolio();
     fetchLivePricesForUser(token, userStocks.map(s => s.sym));
