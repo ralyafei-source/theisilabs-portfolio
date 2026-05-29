@@ -4616,6 +4616,7 @@ async function checkSession() {
     const r = await fetch('/api/auth?action=me', { headers: { 'Authorization': 'Bearer ' + token } });
     if (r.ok) {
       const data = await r.json();
+      localStorage.setItem(AUTH_NICK_KEY, data.nickname);
       // Apply name/title without hiding auth (already hidden)
       const displayName = data.nickname.charAt(0).toUpperCase() + data.nickname.slice(1);
       const titleEl = document.getElementById('h-title');
