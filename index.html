@@ -1639,7 +1639,11 @@ function renderAlerts(){
   document.getElementById('alertList').innerHTML=alerts.map(a=>`
     <div class="alert-item ${a.level}">
       <div style="font-size:18px;flex-shrink:0">${a.icon}</div>
-      <div><div class="alert-title">${
+      <div><div class="alert-title">${a.title}</div><div class="alert-desc">${a.desc}</div><div class="alert-time">${a.time}</div></div>
+    </div>`).join('');
+}
+
+// ===== CHART HELPERS =====
 // ===== CHART HELPERS =====
 function generateData(stock,cfg){
   let price=stock.cost;
