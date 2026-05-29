@@ -1282,7 +1282,7 @@ const T={
     hPortfolio:'Portfolio',hStocks:'Stocks',hMonth:'This Month',hActive:'Active',hSystem:'System',
     navPortfolio:'Portfolio',navAdvisor:'AI Advisor',navTrends:'Trends',navIndicators:'Indicators',navAlerts:'Alerts',navTransactions:'Transactions',navSetup:'Setup',
     pTotalLabel:'Total Portfolio',pBestLabel:'Best Performer',pReviewLabel:'Needs Review',pLargestLabel:'Largest Position',
-    pMonthChange:'',pWolfDesc:'Wolfspeed $41 remaining',
+    pMonthChange:'',pWolfDesc:'',
     pAllStocks:'All Holdings',pSub:'Loading securities...',
     btnAll:'All',btnGain:'Gainers',btnLoss:'Losers',
     thSym:'Symbol',thName:'Name',thSector:'Sector',thValue:'Market Value',thGL:'Gain / Loss',thStatus:'Status',
@@ -1313,8 +1313,8 @@ const T={
     hPortfolio:'المحفظة',hStocks:'سهم',hMonth:'هذا الشهر',hActive:'نشط',hSystem:'النظام',
     navPortfolio:'المحفظة',navAdvisor:'المستشار الذكي',navTrends:'الاتجاهات',navIndicators:'المؤشرات',navAlerts:'التنبيهات',navTransactions:'المعاملات',navSetup:'الإعداد',
     pTotalLabel:'إجمالي المحفظة',pBestLabel:'أفضل أداء',pReviewLabel:'يحتاج مراجعة',pLargestLabel:'أكبر مركز',
-    pMonthChange:'',pWolfDesc:'وولفسبيد $41 متبقي',
-    pAllStocks:'جميع الأسهم',pSub:'52 ورقة مالية — أبريل 2026',
+    pMonthChange:'',pWolfDesc:'',
+    pAllStocks:'جميع الأسهم',pSub:'',
     btnAll:'الكل',btnGain:'رابحة',btnLoss:'خاسرة',
     thSym:'الرمز',thName:'الاسم',thSector:'القطاع',thValue:'القيمة السوقية',thGL:'الربح / الخسارة',thStatus:'الحالة',
     statusReview:'⚠️ مراجعة',statusStrong:'✅ قوي',
@@ -1581,20 +1581,65 @@ function resetW(){
 // ===== ALERTS =====
 function renderAlerts(){
   const t=T[lang];const isAr=lang==='ar';
-  const alerts=[
-    {level:'high',icon:'🔴',title:isAr?'WOLF — خسارة حرجة -97.19%':'WOLF — Critical loss -97.19%',desc:isAr?'وولفسبيد متبقي منها $41 فقط':'Wolfspeed only $41 remaining from $1,486 invested',time:isAr?'تنبيه يومي — 7:00 صباحاً':'Daily alert — 7:00 AM'},
-    {level:'high',icon:'🔴',title:isAr?'DUOL — خسارة كبيرة -65.26%':'DUOL — Large loss -65.26%',desc:isAr?'دولينغو كانت $60,304 وانخفضت إلى $20,950':'Duolingo was $60,304, now $20,950',time:isAr?'تنبيه فوري عند تحرك ±3%':'Instant alert on ±3% move'},
-    {level:'high',icon:'🔴',title:isAr?'ATYR — خسارة -64.37%':'ATYR — Loss -64.37%',desc:isAr?'استثمار $30,591 وانخفض إلى $10,900':'Investment of $30,591 down to $10,900',time:isAr?'تنبيه فوري عند تحرك ±3%':'Instant alert on ±3% move'},
-    {level:'med',icon:'🟡',title:isAr?'تركز عالي في التكنولوجيا':'High tech sector concentration',desc:isAr?'أكثر من 60% من المحفظة في قطاع التكنولوجيا':'Over 60% of portfolio in tech.',time:isAr?'تنبيه أسبوعي':'Weekly alert'},
-    {level:'low',icon:'🟢',title:isAr?'NVDA — أداء ممتاز +145.94%':'NVDA — Strong performance +145.94%',desc:isAr?'NVIDIA تحقق أداءً قوياً':'NVIDIA performing well. Monitor RSI.',time:isAr?'تنبيه عند RSI > 75':'Alert when RSI > 75'},
-  ];
+  const alerts=[];
+
+  if(stocks.length === 0){
+    document.getElementById('alertList').innerHTML=`<div style="color:var(--text2);font-size:12px;padding:16px 0;">${isAr?'لا توجد تنبيهات — أضف أسهمك أولاً':'No alerts — add your stocks first'}</div>`;
+    return;
+  }
+
+  // Critical losses (below -50%)
+  stocks.filter(s=>s.gl<=-50).forEach(s=>{
+    alerts.push({level:'high',icon:'🔴',
+      title:`${s.sym} — ${isAr?'خسارة حرجة':'Critical loss'} ${s.gl.toFixed(1)}%`,
+      desc:isAr?`${s.ar} — القيمة المتبقية $${s.mv.toLocaleString()}`:`${s.en} — $${s.mv.toLocaleString()} remaining`,
+      time:isAr?'تنبيه يومي — 7:00 صباحاً':'Daily alert — 7:00 AM'
+    });
+  });
+
+  // Large losses (-20% to -50%)
+  stocks.filter(s=>s.gl<-20 && s.gl>-50).forEach(s=>{
+    alerts.push({level:'high',icon:'🔴',
+      title:`${s.sym} — ${isAr?'خسارة كبيرة':'Large loss'} ${s.gl.toFixed(1)}%`,
+      desc:isAr?`${s.ar} — القيمة الحالية $${s.mv.toLocaleString()}`:`${s.en} — Current value $${s.mv.toLocaleString()}`,
+      time:isAr?'تنبيه فوري عند تحرك ±3%':'Instant alert on ±3% move'
+    });
+  });
+
+  // Sector concentration
+  const total = stocks.reduce((a,s)=>a+s.mv,0);
+  const sectorTotals = {};
+  stocks.forEach(s=>{ sectorTotals[s.sec]=(sectorTotals[s.sec]||0)+s.mv; });
+  Object.entries(sectorTotals).forEach(([sec, val])=>{
+    const pct = (val/total*100).toFixed(0);
+    if(pct>=50){
+      const secName = sectors[sec]?.[isAr?'ar':'en'] || sec;
+      alerts.push({level:'med',icon:'🟡',
+        title:isAr?`تركز عالي في ${secName}`:`High ${secName} concentration`,
+        desc:isAr?`${pct}% من المحفظة في قطاع واحد`:`${pct}% of portfolio in one sector`,
+        time:isAr?'تنبيه أسبوعي':'Weekly alert'
+      });
+    }
+  });
+
+  // Strong performers (above +50%)
+  stocks.filter(s=>s.gl>=50).slice(0,2).forEach(s=>{
+    alerts.push({level:'low',icon:'🟢',
+      title:`${s.sym} — ${isAr?'أداء ممتاز':'Strong performance'} +${s.gl.toFixed(1)}%`,
+      desc:isAr?`${s.ar} تحقق أداءً قوياً`:`${s.en} performing well. Monitor RSI.`,
+      time:isAr?'تنبيه عند RSI > 75':'Alert when RSI > 75'
+    });
+  });
+
+  if(alerts.length === 0){
+    document.getElementById('alertList').innerHTML=`<div style="color:var(--text2);font-size:12px;padding:16px 0;">${isAr?'لا توجد تنبيهات نشطة حالياً':'No active alerts right now'}</div>`;
+    return;
+  }
+
   document.getElementById('alertList').innerHTML=alerts.map(a=>`
     <div class="alert-item ${a.level}">
       <div style="font-size:18px;flex-shrink:0">${a.icon}</div>
-      <div><div class="alert-title">${a.title}</div><div class="alert-desc">${a.desc}</div><div class="alert-time">${a.time}</div></div>
-    </div>`).join('');
-}
-
+      <div><div class="alert-title">${
 // ===== CHART HELPERS =====
 function generateData(stock,cfg){
   let price=stock.cost;
@@ -1743,7 +1788,7 @@ function openModal(stockIdx){
   const pct=((s.price-s.cost)/s.cost*100);
   const up=pct>=0;
   const pl=((s.price-s.cost)*Math.round(s.mv/s.price));
-  const portfolioPct=(s.mv/612774*100).toFixed(1);
+  const portfolioPct=stocks.length?(s.mv/stocks.reduce((a,s)=>a+s.mv,0)*100).toFixed(1):'0';
   document.getElementById('modalStats').innerHTML=`
     <div class="modal-stat">
       <div class="modal-stat-label">Current Price</div>
@@ -2624,7 +2669,7 @@ function togglePrivacy(){
   const liveTotal = stocks.reduce((a,s)=>a+(s.mv||0),0);
   if(pv) pv.textContent=privacyOn?'$ ••••••':('$'+Math.round(liveTotal).toLocaleString());
   const mp=document.getElementById('header-month-pct');
-  if(mp) mp.textContent=privacyOn?'••••':'+ 12.4%';
+  if(mp) mp.textContent=privacyOn?'••••':'—';
 
   // Stat cards (portfolio overview)
   document.querySelectorAll('.stat-value,.stat-change').forEach(el=>{
