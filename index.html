@@ -529,7 +529,7 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
   <div class="modal-inner">
     <div class="modal-header">
       <div>
-        <div class="modal-sym" id="modalSym">NVDA</div>
+        <div class="modal-sym" id="modalSym">—</div>
         <div class="modal-name" id="modalName">NVIDIA Corporation</div>
       </div>
       <div style="display:flex;gap:10px;align-items:center;">
@@ -3273,7 +3273,7 @@ function lockScoringPopup(e, uid) {
   popup.style.overflowY = 'auto';
   popup.style.overscrollBehavior = 'contain';
   document.addEventListener('click', _outsideClickHandler);
-}, 
+}
 
 function unlockScoringPopup() {
   _popupLocked = false;
@@ -4613,7 +4613,7 @@ async function checkSession() {
     const r = await fetch('/api/auth?action=me', { headers: { 'Authorization': 'Bearer ' + token } });
     if (r.ok) {
       const data = await r.json();
-      // Apply name/title without hiding auth (already hidden)
+      localStorage.setItem(AUTH_NICK_KEY, data.nickname);
       const displayName = data.nickname.charAt(0).toUpperCase() + data.nickname.slice(1);
       const titleEl = document.getElementById('h-title');
       if (titleEl) titleEl.textContent = 'Hi, ' + displayName;
