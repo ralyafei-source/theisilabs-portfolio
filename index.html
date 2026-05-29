@@ -42,7 +42,7 @@ header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 
 .lang-btn{padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text2);font-family:'Cairo',sans-serif;transition:all .15s;}
 .lang-btn.active{background:var(--accent);color:#000;}
 
-nav{background:var(--bg2);border-bottom:1px solid var(--border);}
+nav{background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:67px;z-index:99;}
 .nav-inner{display:flex;overflow-x:auto;}
 .nav-tab{padding:12px 20px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text2);border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:7px;}
 .nav-tab:hover{color:var(--text);background:var(--bg3);}
@@ -321,8 +321,8 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
 <body>
 
 <!-- ===== AUTH OVERLAY ===== -->
-<div id="authBlur" style="display:none;"></div>
-<div id="authOverlay" style="display:none;">
+<div id="authBlur" style="display:block;"></div>
+<div id="authOverlay" style="display:block;">
   <div id="authCard">
     <div class="auth-logo">
       <div class="auth-logo-icon">📊</div>
@@ -491,7 +491,7 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
           <div class="hstat-label" id="h-stocks">Stocks</div>
         </div>
         <div class="hstat">
-          <div class="hstat-val up" id="header-month-pct">+12.4%</div>
+          <div class="hstat-val up" id="header-month-pct">—</div>
           <div class="hstat-label" id="h-month">This Month</div>
         </div>
         <div class="hstat">
@@ -584,18 +584,18 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
     </div>
     <div class="stat-card green">
       <div class="stat-label" id="p-best-label">Best Performer</div>
-      <div class="stat-value sensitive" id="stat-best" style="color:var(--green);font-size:18px">CLS +810%</div>
-      <div class="stat-change up sensitive" id="stat-best-name">Celestica Inc.</div>
+      <div class="stat-value sensitive" id="stat-best" style="color:var(--green);font-size:18px">—</div>
+      <div class="stat-change up sensitive" id="stat-best-name">—</div>
     </div>
     <div class="stat-card orange">
       <div class="stat-label" id="p-review-label">Needs Review</div>
-      <div class="stat-value sensitive" id="stat-worst" style="color:var(--red);font-size:18px">WOLF -97%</div>
+      <div class="stat-value sensitive" id="stat-worst" style="color:var(--red);font-size:18px">—</div>
       <div class="stat-change dn sensitive" id="p-wolf-desc">Wolfspeed $41 remaining</div>
     </div>
     <div class="stat-card gold">
       <div class="stat-label" id="p-largest-label">Largest Position</div>
-      <div class="stat-value sensitive" id="stat-largest" style="color:var(--gold);font-size:20px">NVDA</div>
-      <div class="stat-change up sensitive" id="stat-largest-detail">$60,031 | +145.94%</div>
+      <div class="stat-value sensitive" id="stat-largest" style="color:var(--gold);font-size:20px">—</div>
+      <div class="stat-change up sensitive" id="stat-largest-detail">—</div>
     </div>
   </div>
 
