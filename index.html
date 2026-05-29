@@ -3264,15 +3264,13 @@ function lockScoringPopup(uid) {
   _popupLocked = true;
   const popup = document.getElementById('scoringPopup');
   if (!popup) return;
-  // Add close button and scroll indicator
   popup.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;position:sticky;top:0;background:var(--bg2);padding-bottom:8px;border-bottom:1px solid var(--border);z-index:1;">
       <span style="font-size:10px;color:var(--text3);">scroll to read more ↕</span>
       <button onclick="unlockScoringPopup()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✕</button>
     </div>` + buildScoringPopupHTML(uid);
+  popup.style.overflowY = 'auto';
   popup.style.overscrollBehavior = 'contain';
-  document.body.style.overflow = 'hidden';
-  // Close on outside click
   setTimeout(() => {
     document.addEventListener('click', _outsideClickHandler);
   }, 100);
@@ -3280,7 +3278,6 @@ function lockScoringPopup(uid) {
 
 function unlockScoringPopup() {
   _popupLocked = false;
-  document.body.style.overflow = '';
   document.removeEventListener('click', _outsideClickHandler);
   const popup = document.getElementById('scoringPopup');
   if (popup) popup.style.display = 'none';
