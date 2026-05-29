@@ -2853,11 +2853,11 @@ function parseScoreBlocks(text) {
     const blockText = text.slice(p.pos, end).trim();
 
     // Extract layer scores
-    const layerScoreRe = /درجة هذه الطبقة:\s*([\d.]+)\/10/g;
+    const layerScoreRe = /درجة هذه الطبقة[^:]*:\s*<b>[\s\S]*?([\d.]+)\/10|درجة هذه الطبقة[^:]*:\s*([\d.]+)\/10/g;
     const layerScores = [];
     let lm;
     while ((lm = layerScoreRe.exec(blockText)) !== null) {
-      layerScores.push(parseFloat(lm[1]));
+      layerScores.push(parseFloat(lm[1] || lm[2]));
     }
 
     // Extract action line
@@ -2899,7 +2899,7 @@ function buildScoreCard(stock, type, idx) {
     const s = stock.layerScores[i];
     const val = s !== undefined ? s + '/10' : '—';
     const col = s !== undefined ? lColor(s) : 'var(--text3)';
-    return `<div style="background:var(--bg3);border-radius:7px;padding:5px 8px;">
+    return `<div style="background:var(--bg3);border-radius:7px;padding:5px 8px;min-height:44px;">
       <div style="font-size:9px;color:var(--text3);margin-bottom:2px;">${name}</div>
       <div style="font-size:13px;font-weight:700;color:${col};font-family:'IBM Plex Mono',monospace;">${val}</div>
     </div>`;
