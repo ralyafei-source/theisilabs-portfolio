@@ -3005,13 +3005,13 @@ function moveScoringPopup(e) {
   positionScoringPopup(e);
 }
 // Lock page scroll when hovering popup on PC
-document.addEventListener('DOMContentLoaded', () => {
+setTimeout(() => {
   const popup = document.getElementById('scoringPopup');
   if (popup) {
     popup.addEventListener('mouseenter', () => { document.body.style.overflow = 'hidden'; });
     popup.addEventListener('mouseleave', () => { document.body.style.overflow = ''; });
   }
-});
+}, 1000);
   
 function positionScoringPopup(e) {
   const popup = document.getElementById('scoringPopup');
