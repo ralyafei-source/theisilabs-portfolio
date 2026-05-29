@@ -1056,7 +1056,7 @@ const T={
   en:{
     hTitle:'Financial Intelligence',hSub:'Arabic Market Analysis System',
     hPortfolio:'Portfolio',hStocks:'Stocks',hMonth:'This Month',hActive:'Active',hSystem:'System',
-    navPortfolio:'Portfolio',navTrends:'Trends',navIndicators:'Indicators',navAlerts:'Alerts',navTransactions:'Transactions',navAdvisor:'AI Advisor',navSetup:'Setup',navPrompt:'Claude Prompt',
+    navPortfolio:'Portfolio',navAdvisor:'AI Advisor',navTrends:'Trends',navIndicators:'Indicators',navAlerts:'Alerts',navTransactions:'Transactions',navSetup:'Setup',
     pTotalLabel:'Total Portfolio',pBestLabel:'Best Performer',pReviewLabel:'Needs Review',pLargestLabel:'Largest Position',
     pMonthChange:'▲ $68,431 this month',pWolfDesc:'Wolfspeed $41 remaining',
     pAllStocks:'All Holdings',pSub:'52 securities — as of April 2026',
@@ -1087,7 +1087,7 @@ const T={
   ar:{
     hTitle:'المحلل المالي الذكي',hSub:'نظام تحليل السوق الأمريكي',
     hPortfolio:'المحفظة',hStocks:'سهم',hMonth:'هذا الشهر',hActive:'نشط',hSystem:'النظام',
-    navPortfolio:'المحفظة',navTrends:'الاتجاهات',navIndicators:'المؤشرات',navAlerts:'التنبيهات',navTransactions:'المعاملات',navAdvisor:'المستشار الذكي',navSetup:'الإعداد',navPrompt:'نص Claude',
+    navPortfolio:'المحفظة',navAdvisor:'المستشار الذكي',navTrends:'الاتجاهات',navIndicators:'المؤشرات',navAlerts:'التنبيهات',navTransactions:'المعاملات',navSetup:'الإعداد',
     pTotalLabel:'إجمالي المحفظة',pBestLabel:'أفضل أداء',pReviewLabel:'يحتاج مراجعة',pLargestLabel:'أكبر مركز',
     pMonthChange:'▲ $68,431 هذا الشهر',pWolfDesc:'وولفسبيد $41 متبقي',
     pAllStocks:'جميع الأسهم',pSub:'52 ورقة مالية — أبريل 2026',
@@ -1165,7 +1165,7 @@ function applyTranslations(){
     const el=document.getElementById(id);
     if(el&&t[key]!==undefined) el.innerHTML=t[key];
   });
-  const navKeys=['navPortfolio','navTrends','navIndicators','navAlerts','navTransactions','navAdvisor','navSetup','navPrompt'];
+  const navKeys=['navPortfolio','navAdvisor','navTrends','navIndicators','navAlerts','navTransactions','navSetup'];
   document.querySelectorAll('.nt').forEach((el,i)=>{if(t[navKeys[i]]) el.textContent=t[navKeys[i]];});
   document.querySelectorAll('[data-en][data-ar]').forEach(btn=>{
     btn.textContent=lang==='ar'?btn.dataset.ar:btn.dataset.en;
@@ -3647,6 +3647,53 @@ const GLOSSARY = {
 "Analyst Rating":   {en:"Professional recommendation: Buy, Hold, or Sell based on research.", ar:"توصية المحلل المالي: شراء أو احتفاظ أو بيع بناءً على البحث."},
 "Sector Rotation":  {en:"Investors moving money from one sector to another based on economic cycle.", ar:"تحريك المستثمرين أموالهم بين القطاعات بناءً على الدورة الاقتصادية."},
 "Risk/Reward":      {en:"Ratio comparing potential profit to potential loss. 3:1 means $3 gain per $1 risk.", ar:"نسبة الربح المحتمل إلى الخسارة المحتملة."},
+// MACRO & ECONOMIC
+  "GDP":              {en:"Gross Domestic Product. Total value of all goods and services produced. Measures economic growth.", ar:"الناتج المحلي الإجمالي. إجمالي قيمة السلع والخدمات. يقيس النمو الاقتصادي."},
+  "PCE":              {en:"Personal Consumption Expenditures. Measures prices paid by consumers. The Fed preferred inflation gauge.", ar:"نفقات الاستهلاك الشخصي. مقياس التضخم المفضل لدى الاحتياطي الفيدرالي."},
+  "Core PCE":         {en:"PCE excluding food and energy. The Fed main inflation target. Goal is 2% annual.", ar:"مقياس التضخم الأساسي باستثناء الغذاء والطاقة. هدف الفيدرالي 2٪ سنوياً."},
+  "CPI":              {en:"Consumer Price Index. Measures inflation by tracking price changes of a basket of goods.", ar:"مؤشر أسعار المستهلكين. يقيس التضخم بتتبع تغيرات أسعار السلع الاستهلاكية."},
+  "Fed":              {en:"The Federal Reserve. US central bank that sets interest rates. Rate decisions move markets significantly.", ar:"الاحتياطي الفيدرالي. البنك المركزي الأمريكي الذي يحدد أسعار الفائدة."},
+  "Federal Reserve":  {en:"The US central bank. Controls interest rates and money supply. Critical for all stock markets.", ar:"البنك المركزي الأمريكي. يتحكم في أسعار الفائدة وعرض النقود."},
+  "Rate Hike":        {en:"When the Fed raises interest rates. Usually hurts growth stocks but helps banks.", ar:"رفع الفيدرالي لأسعار الفائدة. يضر بأسهم النمو عادةً ويفيد البنوك."},
+  "Rate Cut":         {en:"When the Fed lowers interest rates. Generally positive for stocks especially growth.", ar:"خفض الفيدرالي لأسعار الفائدة. إيجابي عموماً للأسهم خاصة أسهم النمو."},
+  "Yield Curve":      {en:"Chart of bond yields across maturities. Inverted curve often predicts recession.", ar:"منحنى عوائد السندات. انعكاسه يُنذر بالركود الاقتصادي."},
+  "10Y Treasury":     {en:"10-Year US Treasury yield. Benchmark rate affecting all stock valuations. Rising = pressure on stocks.", ar:"عائد سندات الخزانة الأمريكية 10 سنوات. المعيار الأساسي للتقييم."},
+  "QE":               {en:"Quantitative Easing. Fed buying bonds to inject liquidity. Usually bullish for stocks.", ar:"التيسير الكمي. شراء الفيدرالي للسندات لضخ السيولة. إيجابي للأسهم."},
+  "QT":               {en:"Quantitative Tightening. Fed selling bonds to reduce money supply. Usually bearish for stocks.", ar:"التشديد الكمي. بيع الفيدرالي للسندات لتقليص السيولة. سلبي للأسهم."},
+  "NFP":              {en:"Non-Farm Payrolls. Monthly US jobs report. Strong jobs may keep Fed rates high longer.", ar:"بيانات الرواتب غير الزراعية. تقرير الوظائف الأمريكي الشهري."},
+  "PMI":              {en:"Purchasing Managers Index. Above 50 = expansion, below 50 = contraction. Key economic indicator.", ar:"مؤشر مديري المشتريات. فوق 50 = توسع، تحت 50 = انكماش."},
+  "Recession":        {en:"Two consecutive quarters of negative GDP growth. Markets typically fall during recessions.", ar:"ربعان متتاليان من النمو السلبي. الأسواق تنخفض عادةً خلال الركود."},
+  "Stagflation":      {en:"High inflation plus slow growth simultaneously. Worst economic scenario for portfolios.", ar:"التضخم مع الركود. ارتفاع التضخم مع بطء النمو. أسوأ سيناريو اقتصادي."},
+// TECHNICAL ANALYSIS
+  "Golden Cross":     {en:"50-day MA crosses above 200-day MA. Strong bullish signal often starting major uptrends.", ar:"تقاطع ذهبي: المتوسط 50 يتجاوز المتوسط 200 يوماً. إشارة صعودية قوية."},
+  "Death Cross":      {en:"50-day MA crosses below 200-day MA. Strong bearish signal often signaling extended downtrend.", ar:"التقاطع الميت: المتوسط 50 يهبط تحت 200 يوماً. إشارة هبوطية قوية."},
+  "ATR":              {en:"Average True Range. Measures price volatility. Higher ATR means bigger expected daily moves.", ar:"متوسط المدى الحقيقي. يقيس التقلب. ارتفاعه يعني تحركات أكبر."},
+  "OBV":              {en:"On Balance Volume. Tracks buying and selling pressure using volume. Rising OBV signals accumulation.", ar:"الحجم المتوازن. يتتبع ضغط الشراء والبيع. ارتفاعه إشارة تراكم."},
+  "Fibonacci":        {en:"Retracement levels 23.6% 38.2% 61.8% used to identify support and resistance after moves.", ar:"مستويات فيبوناتشي. تُستخدم لتحديد الدعم والمقاومة بعد التحركات."},
+  "Stochastic":       {en:"Momentum oscillator 0-100. Above 80 = overbought. Below 20 = oversold.", ar:"مذبذب الزخم. فوق 80 = ذروة شراء. تحت 20 = ذروة بيع."},
+// RISK METRICS
+  "Sharpe Ratio":     {en:"Return divided by volatility. Higher = better risk-adjusted return. Above 1.0 is good.", ar:"العائد مقسوماً على التقلب. كلما ارتفع كان العائد أفضل."},
+  "Max Drawdown":     {en:"Largest peak-to-trough portfolio decline. Measures worst-case historical loss.", ar:"أكبر انخفاض من القمة إلى القاع. يقيس أسوأ خسارة تاريخية."},
+  "VaR":              {en:"Value at Risk. Maximum expected loss over a period at a given confidence level.", ar:"القيمة المعرضة للخطر. أقصى خسارة متوقعة خلال فترة بمستوى ثقة معين."},
+  "Concentration Risk":{en:"Too much portfolio weight in one stock or sector. Amplifies losses if that area falls.", ar:"تركز كبير في سهم أو قطاع واحد. يضخّم الخسائر عند انخفاضه."},
+// PORTFOLIO STRATEGY
+  "DCA":              {en:"Dollar Cost Averaging. Investing fixed amounts regularly regardless of price. Reduces timing risk.", ar:"متوسط تكلفة الدولار. استثمار مبالغ ثابتة بانتظام. يقلل مخاطر التوقيت."},
+  "Rebalancing":      {en:"Adjusting portfolio back to target allocations. Sell winners buy laggards to restore balance.", ar:"إعادة توازن المحفظة. بيع من الرابحين وشراء من المتأخرين."},
+  "Market Cap":       {en:"Total market value. Share price times shares outstanding. Determines company size category.", ar:"القيمة السوقية الإجمالية. تحدد فئة حجم الشركة."},
+  "Large Cap":        {en:"Company with market cap above $10 billion. More stable and liquid than smaller companies.", ar:"شركة بقيمة سوقية فوق 10 مليار دولار. أكثر استقراراً."},
+  "Small Cap":        {en:"Company with market cap $300M-$2B. Higher growth potential but more volatile.", ar:"شركة بقيمة 300 مليون-2 مليار دولار. نمو أعلى ولكن تقلب أكبر."},
+// EARNINGS
+  "Revenue Beat":     {en:"Company reported revenue above analyst estimates. Usually positive for stock price.", ar:"تجاوز الشركة لتوقعات الإيرادات. إيجابي لسعر السهم."},
+  "EPS Beat":         {en:"Company earned more per share than analysts expected. Key driver of post-earnings moves.", ar:"تجاوز ربحية السهم المتوقعة. محرك تحركات ما بعد الأرباح."},
+  "Earnings Whisper": {en:"Unofficial market expectation for earnings, often higher than official analyst consensus.", ar:"التوقع غير الرسمي للسوق عن الأرباح. غالباً أعلى من التقديرات الرسمية."},
+  "Pre-market":       {en:"Trading before regular hours 4am-9:30am ET. Lower volume but big moves possible on news.", ar:"التداول قبل ساعات السوق الرسمية. حجم منخفض وتقلب أعلى."},
+  "After-hours":      {en:"Trading after market close 4pm-8pm ET. Earnings often released here, big price gaps possible.", ar:"التداول بعد إغلاق السوق. تُعلن الأرباح غالباً هنا."},
+// COMPANY AND SECTOR SPECIFIC
+  "Blackwell":        {en:"NVIDIA latest GPU architecture. Powers next-gen AI data centers. Massive demand from hyperscalers.", ar:"أحدث معمارية GPU من NVIDIA. تشغّل مراكز بيانات الذكاء الاصطناعي."},
+  "Hopper":           {en:"NVIDIA H100 GPU architecture. Previous generation still widely used in AI training.", ar:"معمارية H100 السابقة من NVIDIA. لا تزال مستخدمة على نطاق واسع."},
+  "Data Center":      {en:"Facility housing servers for cloud and AI computing. Key revenue driver for NVDA AMZN MSFT GOOGL.", ar:"مركز بيانات يضم خوادم الحوسبة السحابية والذكاء الاصطناعي."},
+  "Semiconductor":    {en:"Computer chips. Foundation of all digital technology. Heavy portfolio exposure via NVDA MU CRDO SMH.", ar:"رقائق الحاسوب. أساس كل التقنية الرقمية. تعرض كبير في محفظتك."},
+  "Cybersecurity":    {en:"Protection of systems from cyber attacks. Growing sector. PANW and CRWD are your main positions.", ar:"حماية الأنظمة من الهجمات الإلكترونية. PANW وCRWD هما مركزاك الرئيسيان."},
 };
 
 // ═══ TOOLTIP ENGINE ═══
