@@ -456,10 +456,11 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
         <div style="font-size:12px;color:var(--text2);">Account created. Now add your portfolio.</div>
       </div>
       <div class="auth-step-label">Your stocks</div>
-      <div id="su-stock-row-header" style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;margin-bottom:6px;">
+      <div id="su-stock-row-header" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:6px;margin-bottom:6px;">
         <span style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;">Symbol</span>
         <span style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;">Shares</span>
-        <span style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;">Cost $</span>
+        <span style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;">Price Per Share ($)</span>
+        <span style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;">Purchase Date</span>
         <span></span>
       </div>
       <div id="su-stock-rows" style="max-height:220px;overflow-y:auto;"></div>
@@ -640,6 +641,8 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
           <th id="th-value" class="num sortable sort-active" onclick="sortP('mv')">Market Value <span class="sort-arrow">↓</span></th>
           <th id="th-gl" class="num sortable" onclick="sortP('gl')">Gain / Loss <span class="sort-arrow">↕</span></th>
           <th id="th-status" class="num sortable" onclick="sortP('status')">Status <span class="sort-arrow">↕</span></th>
+          <th id="th-date" class="num sortable" onclick="sortP('date')">Purchased <span class="sort-arrow">↕</span></th>
+          <th class="num">Actions</th>
         </tr></thead>
         <tbody id="pBody"></tbody>
       </table>
@@ -1437,7 +1440,7 @@ function sortP(col){
     th.classList.remove('sort-active');
     th.querySelector('.sort-arrow').textContent='↕';
   });
-  const colMap={sym:'th-sym',name:'th-name',sec:'th-sector',mv:'th-value',gl:'th-gl',status:'th-status'};
+  const colMap={sym:'th-sym',name:'th-name',sec:'th-sector',mv:'th-value',gl:'th-gl',status:'th-status',date:'th-date'};
   const activeEl=document.getElementById(colMap[col]);
   if(activeEl){
     activeEl.classList.add('sort-active');
@@ -1472,6 +1475,7 @@ function renderPortfolio(){
     if(pSortCol==='mv')     { return pSortDir===1?b.mv-a.mv:a.mv-b.mv; }
     if(pSortCol==='gl')     { return pSortDir===1?b.gl-a.gl:a.gl-b.gl; }
     if(pSortCol==='status') { return pSortDir===1?b.gl-a.gl:a.gl-b.gl; }
+    if(pSortCol==='date') { const da=a.purchaseDate||''; const db=b.purchaseDate||''; return pSortDir===1?(db<da?1:-1):(da<db?1:-1); }
     return b.mv-a.mv;
   });
 
@@ -1492,6 +1496,8 @@ function renderPortfolio(){
       status=`<span style="background:rgba(255,68,68,.12);color:var(--red);padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;">⚠️ Review</span>`;
     }
 
+    const purchaseDateStr = s.purchaseDate ? s.purchaseDate.slice(0,10) : '—';
+    const symEncoded = encodeURIComponent(s.sym);
     return `<tr>
       <td><span class="sym-badge">${s.sym}</span></td>
       <td style="color:var(--text2);font-size:11px">${name}</td>
@@ -1499,6 +1505,11 @@ function renderPortfolio(){
       <td class="num" style="font-family:'IBM Plex Mono';font-weight:600">$${s.mv.toLocaleString()}</td>
       <td class="num ${up?'up':'dn'}" style="font-family:'IBM Plex Mono';font-weight:600">${up?'▲':'▼'} ${Math.abs(s.gl).toFixed(2)}%</td>
       <td class="num">${status}</td>
+      <td class="num" style="font-family:'IBM Plex Mono';font-size:11px;color:var(--text3)">${purchaseDateStr}</td>
+      <td class="num" style="white-space:nowrap;">
+        <button onclick="openEditStockModal('${s.sym}')" style="background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);color:var(--accent);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:'Cairo',sans-serif;margin-right:4px;">✏️ Edit</button>
+        <button onclick="deleteStock('${s.sym}')" style="background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);color:var(--red);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:'Cairo',sans-serif;">🗑</button>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -2972,7 +2983,9 @@ async function submitTrade(){
   const btn = document.getElementById('tradeSubmitBtn');
 
   if(!sym){ status.innerHTML='<span style="color:var(--red)">Please select or enter a stock symbol</span>'; return; }
-  if(tradeAction!=='REMOVE' && (!shares||!price||isNaN(shares)||isNaN(price))){
+  if(tradeAction==='REMOVE'){
+    // For REMOVE: just need the symbol, no shares/price needed
+  } else if(!shares||!price||isNaN(shares)||isNaN(price)){
     status.innerHTML='<span style="color:var(--red)">Please enter shares and price</span>'; return;
   }
 
@@ -3397,6 +3410,141 @@ function renderPortfolioHealthSummary(text) {
   return html;
 }
   
+// ===== EDIT STOCK MODAL =====
+function openEditStockModal(sym) {
+  const s = stocks.find(s => s.sym === sym);
+  if (!s) return;
+
+  // Remove existing modal if any
+  const existing = document.getElementById('editStockModal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'editStockModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  const today = new Date().toISOString().slice(0,10);
+  const purchaseDate = s.purchaseDate || today;
+  const sectorOptions = Object.entries(sectors).map(([k,v]) =>
+    `<option value="${k}" ${s.sec===k?'selected':''}>${v.en}</option>`
+  ).join('');
+
+  modal.innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;width:380px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div style="font-size:16px;font-weight:900;">✏️ Edit ${sym}</div>
+        <button onclick="document.getElementById('editStockModal').remove()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;">✕</button>
+      </div>
+      <div style="display:grid;gap:12px;">
+        <div>
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">SHARES</label>
+          <input id="edit-shares" type="number" step="0.0001" value="${s._shares||s.shares||''}" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">PRICE PER SHARE ($) — COST BASIS</label>
+          <input id="edit-cost" type="number" step="0.01" value="${s.cost||''}" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">PURCHASE DATE</label>
+          <input id="edit-date" type="date" value="${purchaseDate}" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">SECTOR</label>
+          <select id="edit-sector" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;">${sectorOptions}</select>
+        </div>
+      </div>
+      <div id="edit-status" style="margin-top:12px;font-size:12px;text-align:center;"></div>
+      <div style="display:flex;gap:10px;margin-top:18px;">
+        <button onclick="saveEditStock('${sym}')" style="flex:1;padding:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#000;border-radius:10px;font-weight:900;font-size:14px;cursor:pointer;font-family:'Cairo',sans-serif;">💾 Save Changes</button>
+        <button onclick="document.getElementById('editStockModal').remove()" style="padding:12px 18px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:10px;cursor:pointer;font-family:'Cairo',sans-serif;">Cancel</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+async function saveEditStock(sym) {
+  const s = stocks.find(s => s.sym === sym);
+  if (!s) return;
+
+  const newShares = parseFloat(document.getElementById('edit-shares').value);
+  const newCost = parseFloat(document.getElementById('edit-cost').value);
+  const newDate = document.getElementById('edit-date').value;
+  const newSec = document.getElementById('edit-sector').value;
+  const statusEl = document.getElementById('edit-status');
+
+  if (!newShares || !newCost || isNaN(newShares) || isNaN(newCost)) {
+    statusEl.innerHTML = '<span style="color:var(--red)">Please enter valid shares and price</span>';
+    return;
+  }
+
+  statusEl.innerHTML = '<span style="color:var(--text2)">⏳ Saving...</span>';
+
+  // Update local stock object
+  s._shares = newShares;
+  s.shares = newShares;
+  s.cost = newCost;
+  s.purchaseDate = newDate;
+  s.sec = newSec;
+  s.mv = Math.round(newShares * s.price);
+  s.gl = ((s.price - newCost) / newCost) * 100;
+
+  // Save to API
+  const token = localStorage.getItem(AUTH_SESSION_KEY);
+  try {
+    const r = await fetch('/api/user-portfolio', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ stocks: stocks.map(st => ({
+        sym: st.sym, en: st.en, ar: st.ar,
+        shares: st._shares || st.shares,
+        cost: st.cost, price: st.price,
+        mv: st.mv, gl: st.gl, sec: st.sec,
+        purchaseDate: st.purchaseDate || ''
+      }))})
+    });
+    if (r.ok) {
+      statusEl.innerHTML = '<span style="color:var(--green)">✅ Saved!</span>';
+      renderPortfolio();
+      setTimeout(() => document.getElementById('editStockModal')?.remove(), 1000);
+    } else {
+      statusEl.innerHTML = '<span style="color:var(--red)">❌ Save failed</span>';
+    }
+  } catch(e) {
+    statusEl.innerHTML = `<span style="color:var(--red)">❌ ${e.message}</span>`;
+  }
+}
+
+async function deleteStock(sym) {
+  if (!confirm(`Remove ${sym} from your portfolio? This cannot be undone.`)) return;
+
+  const idx = stocks.findIndex(s => s.sym === sym);
+  if (idx < 0) return;
+  stocks.splice(idx, 1);
+
+  const token = localStorage.getItem(AUTH_SESSION_KEY);
+  try {
+    const r = await fetch('/api/user-portfolio', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ stocks: stocks.map(st => ({
+        sym: st.sym, en: st.en, ar: st.ar,
+        shares: st._shares || st.shares,
+        cost: st.cost, price: st.price,
+        mv: st.mv, gl: st.gl, sec: st.sec,
+        purchaseDate: st.purchaseDate || ''
+      }))})
+    });
+    if (r.ok) {
+      renderPortfolio();
+      updateStatCards();
+    }
+  } catch(e) {
+    console.error('deleteStock error:', e);
+  }
+}
+
 // ===== INIT =====
 applyTranslations();
 renderPortfolio();
@@ -5243,11 +5391,13 @@ function addSignupStockRow() {
   const id = _suStockCount;
   const row = document.createElement('div');
   row.id = 'su-srow-' + id;
-  row.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;margin-bottom:6px;';
+  row.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:6px;margin-bottom:6px;';
+  const today = new Date().toISOString().slice(0,10);
   row.innerHTML = `
     <input class="auth-input" style="margin:0;padding:8px 10px;font-size:12px;" placeholder="NVDA" id="su-sym-${id}" maxlength="6" oninput="this.value=this.value.toUpperCase()"/>
     <input class="auth-input" style="margin:0;padding:8px 10px;font-size:12px;" placeholder="100" type="number" id="su-sh-${id}" min="0.01" step="any"/>
     <input class="auth-input" style="margin:0;padding:8px 10px;font-size:12px;" placeholder="150" type="number" id="su-cost-${id}" min="0.01" step="any"/>
+    <input class="auth-input" style="margin:0;padding:8px 10px;font-size:12px;" type="date" id="su-date-${id}" value="${today}"/>
     <button onclick="removeSuRow(${id})" style="background:rgba(255,68,68,.15);border:1px solid rgba(255,68,68,.3);color:var(--red);border-radius:8px;padding:0 10px;cursor:pointer;font-size:14px;">✕</button>
   `;
   document.getElementById('su-stock-rows').appendChild(row);
@@ -5266,8 +5416,9 @@ function collectSignupStocks() {
     const sym = (document.getElementById('su-sym-' + id)?.value || '').trim().toUpperCase();
     const shares = parseFloat(document.getElementById('su-sh-' + id)?.value || 0);
     const cost = parseFloat(document.getElementById('su-cost-' + id)?.value || 0);
+    const purchaseDate = document.getElementById('su-date-' + id)?.value || new Date().toISOString().slice(0,10);
     if (sym && shares > 0 && cost > 0) {
-      result.push({ sym, en: sym, ar: sym, shares, cost, price: cost, mv: Math.round(shares * cost), gl: 0, sec: 'tech' });
+      result.push({ sym, en: sym, ar: sym, shares, cost, price: cost, mv: Math.round(shares * cost), gl: 0, sec: 'tech', purchaseDate });
     }
   });
   return result;
@@ -5322,11 +5473,11 @@ function finishOnboarding(userStocks) {
   if (isAdmin) showAdminButton();
   // Load stocks
   if (userStocks.length > 0) {
-    // Save to GitHub first
+    // Save to GitHub first (with purchaseDate)
     fetch('/api/user-portfolio', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ stocks: userStocks })
+      body: JSON.stringify({ stocks: userStocks.map(s => ({...s, purchaseDate: s.purchaseDate || new Date().toISOString().slice(0,10)})) })
     }).catch(e => console.error('Portfolio save error:', e));
     userStocks.forEach(s => stocks.push(s));
     renderPortfolio();
