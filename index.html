@@ -3258,6 +3258,12 @@ const _isTouchDevice = () => !window.matchMedia('(hover: hover) and (pointer: fi
 function buildScoringPopupHTML(uid) {
   const data = window._scoreCards[uid];
   if (!data) return '';
+  // Clean ASCII art from Claude's output
+  data.blockText = data.blockText
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/[█░▓▒╔╗╚╝║═┌┐└┘├┤┬┴┼━─│╠╣╦╩╪╫▀▄]/g, '')
+    .replace(/━+/g, '—')
+    .replace(/\n{3,}/g, '\n\n');
   const scoreColor = data.isBuy ? '#00c864' : '#ff6b35';
   const layerNames = ['الطبقة 1 — مركزك الشخصي','الطبقة 2 — التقييم','الطبقة 3 — التقني','الطبقة 4 — الأساسيات','الطبقة 5 — الخارجي'];
   let layersHtml = '';
@@ -3412,6 +3418,12 @@ function renderScoreTable(text) {
 }
 
 function renderPortfolioHealthSummary(text) {
+  // Strip ASCII art, code blocks, box drawing
+  text = text
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/[█░▓▒╔╗╚╝║═┌┐└┘├┤┬┴┼━─│╠╣╦╩╪╫▀▄]/g, '')
+    .replace(/━+/g, '—')
+    .replace(/\n{3,}/g, '\n\n');
   const lines = text.split('\n').filter(l => l.trim());
   let statsHtml = '';
   let bodyLines = [];
