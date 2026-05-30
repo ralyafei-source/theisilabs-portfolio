@@ -4927,6 +4927,11 @@ async function doSignIn() {
     });
     const data = await r.json();
     if (r.ok) {
+      if (data.isBlocked) {
+        showAuthError(data.blockReason || 'Your account has been suspended. Please contact support.');
+        _pin.si = ''; updateDots('si');
+        return;
+      }
       onAuthSuccess(data.nickname, data.isAdmin, data.token, data.firstLogin);
     } else if (r.status === 429) {
       startLockoutCountdown(data.remainingSeconds);
@@ -5282,15 +5287,32 @@ async function loadAdminData(token) {
     const ul = document.getElementById('usersList');
     if (ul && users) {
       ul.innerHTML = users.map(u => `
-        <div class="user-row">
-          <div>
-            <div class="user-nick">${u.nickname} ${u.isAdmin ? '👑' : ''}</div>
-            <div class="user-meta">Joined: ${u.createdAt ? u.createdAt.slice(0,10) : 'unknown'} · Failed: ${u.failedAttempts || 0}</div>
+        <div class="user-row" style="flex-direction:column;align-items:flex-start;gap:8px;padding:12px 0;">
+          <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+            <div>
+              <div class="user-nick">${u.nickname} ${u.isAdmin ? '👑' : ''} ${u.isBlocked ? '<span style="color:var(--red);font-size:10px;">🚫 Blocked</span>' : ''}</div>
+              <div class="user-meta">Joined: ${u.createdAt ? u.createdAt.slice(0,10) : 'unknown'} · Failed: ${u.failedAttempts || 0}</div>
+              ${u.isBlocked && u.blockReason ? `<div style="font-size:10px;color:var(--red);margin-top:2px;">Reason: ${u.blockReason}</div>` : ''}
+            </div>
           </div>
-          <div style="display:flex;gap:6px;">
-            ${u.lockoutUntil && new Date(u.lockoutUntil) > new Date() ? `<button class="admin-action-btn" onclick="unlockUser('${u.nickname}')">Unlock</button>` : ''}
-            ${!u.isAdmin ? `<button class="admin-action-btn" onclick="resetPin('${u.nickname}')">Reset PIN</button>` : ''}
-          </div>
+          ${!u.isAdmin ? `
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${u.lockoutUntil && new Date(u.lockoutUntil) > new Date() ? `<button class="admin-action-btn" onclick="unlockUser('${u.nickname}')">🔓 Unlock</button>` : ''}
+            <button class="admin-action-btn" onclick="resetPin('${u.nickname}')">🔑 Reset PIN</button>
+            ${u.isBlocked
+              ? `<button class="admin-action-btn" onclick="unblockUser('${u.nickname}')" style="border-color:var(--accent2);color:var(--accent2);">✅ Unblock</button>`
+              : `<button class="admin-action-btn" onclick="blockUser('${u.nickname}')" style="border-color:var(--gold);color:var(--gold);">🚫 Block</button>`
+            }
+            <button class="admin-action-btn" onclick="deleteUser('${u.nickname}')" style="border-color:var(--red);color:var(--red);">🗑 Delete</button>
+            <div style="display:flex;gap:4px;align-items:center;">
+              <select id="gen-type-${u.nickname}" style="background:var(--bg);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:3px 6px;font-size:11px;font-family:'Cairo',sans-serif;">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+              <button class="admin-action-btn" onclick="generateUserAnalysis('${u.nickname}')" style="border-color:var(--accent);color:var(--accent);">⚡ Generate</button>
+            </div>
+          </div>` : ''}
         </div>`).join('');
     }
     // Render codes
@@ -5478,6 +5500,18 @@ function finishOnboarding(userStocks) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
       body: JSON.stringify({ stocks: userStocks.map(s => ({...s, purchaseDate: s.purchaseDate || new Date().toISOString().slice(0,10)})) })
+    }).then(() => {
+      // Auto-generate daily analysis for new user
+      const nick = localStorage.getItem(AUTH_NICK_KEY);
+      if (nick) {
+        fetch('/api/generate-analysis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ nickname: nick, type: 'daily' })
+        }).then(r => r.json()).then(d => {
+          if (d.success) console.log('✅ Daily analysis generated for', nick);
+        }).catch(e => console.error('Auto-analysis error:', e));
+      }
     }).catch(e => console.error('Portfolio save error:', e));
     userStocks.forEach(s => stocks.push(s));
     renderPortfolio();
@@ -5487,6 +5521,87 @@ function finishOnboarding(userStocks) {
     if (banner) banner.style.display = 'none';
   } else {
     showEmptyPortfolioState(nickname);
+  }
+}
+
+// ── Block user ──
+async function blockUser(nickname) {
+  const reason = prompt(`Reason for blocking ${nickname} (optional):`);
+  if (reason === null) return; // cancelled
+  const token = localStorage.getItem(AUTH_SESSION_KEY);
+  try {
+    const r = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ action: 'block-user', nickname, reason: reason || 'Blocked by admin' })
+    });
+    if (r.ok) { alert(`✅ ${nickname} has been blocked`); loadAdminData(token); }
+    else { const d = await r.json(); alert('Error: ' + d.error); }
+  } catch(e) { console.error(e); }
+}
+
+// ── Unblock user ──
+async function unblockUser(nickname) {
+  const token = localStorage.getItem(AUTH_SESSION_KEY);
+  try {
+    const r = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ action: 'unblock-user', nickname })
+    });
+    if (r.ok) { alert(`✅ ${nickname} has been unblocked`); loadAdminData(token); }
+    else { const d = await r.json(); alert('Error: ' + d.error); }
+  } catch(e) { console.error(e); }
+}
+
+// ── Delete user ──
+async function deleteUser(nickname) {
+  if (!confirm(`⚠️ Permanently delete ${nickname}?\n\nThis will:\n• Remove their account\n• Delete their portfolio\n• Cannot be undone`)) return;
+  const token = localStorage.getItem(AUTH_SESSION_KEY);
+  try {
+    const r = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ action: 'delete-user', nickname })
+    });
+    if (r.ok) { alert(`✅ ${nickname} has been deleted`); loadAdminData(token); }
+    else { const d = await r.json(); alert('Error: ' + d.error); }
+  } catch(e) { console.error(e); }
+}
+
+// ── Generate analysis for user ──
+async function generateUserAnalysis(nickname) {
+  const typeEl = document.getElementById('gen-type-' + nickname);
+  const type = typeEl ? typeEl.value : 'daily';
+  const token = localStorage.getItem(AUTH_SESSION_KEY);
+
+  // Show generating state
+  const btn = event.target;
+  const origText = btn.textContent;
+  btn.textContent = '⏳...';
+  btn.disabled = true;
+
+  try {
+    const r = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ action: 'generate-analysis', nickname, type })
+    });
+    const data = await r.json();
+    if (r.ok && data.success) {
+      btn.textContent = '✅ Done!';
+      btn.style.color = 'var(--green)';
+      btn.style.borderColor = 'var(--green)';
+      setTimeout(() => { btn.textContent = origText; btn.style.color = ''; btn.style.borderColor = ''; btn.disabled = false; }, 3000);
+    } else {
+      btn.textContent = '❌ Failed';
+      btn.style.color = 'var(--red)';
+      setTimeout(() => { btn.textContent = origText; btn.style.color = ''; btn.disabled = false; }, 3000);
+      alert('Error: ' + (data.error || 'Unknown error'));
+    }
+  } catch(e) {
+    btn.textContent = origText; btn.disabled = false;
+    alert('Error: ' + e.message);
   }
 }
 
