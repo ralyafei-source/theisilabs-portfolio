@@ -19,7 +19,8 @@ module.exports = async (req, res) => {
     weeklyContext = '',
     monthlyContext = '',
     currentTab = '',
-    lang = 'ar'
+    lang = 'ar',
+    nickname = 'المستخدم'
   } = req.body;
 
   if (!message?.trim()) return res.status(400).json({ error: 'No message' });
@@ -41,23 +42,24 @@ module.exports = async (req, res) => {
     health:      'صحة المحفظة (BlackRock)'
   };
 
-  const systemPrompt = `أنت المستشار المالي الشخصي لراشد — مستثمر إماراتي محترف في أبوظبي.
+  const displayName = nickname.charAt(0).toUpperCase() + nickname.slice(1);
+  const systemPrompt = `أنت المستشار المالي الشخصي لـ${displayName} — مستثمر محترف.
 لديك وصول كامل لمحفظته الحالية بأسعار السوق اللحظية وتحليلات اليوم من 9 أطر مؤسسية عالمية.
 
 ═══ قواعد الإجابة ═══
-- أجب بالعربية دائماً ما لم يكتب راشد بالإنجليزية
+- أجب بالعربية دائماً ما لم يكتب ${displayName} بالإنجليزية
 - كن محدداً — استخدم الأرقام الفعلية من محفظته ومن التحليلات
 - لا تعيد تكرار معلومات واضحة — اذهب مباشرة للتحليل والتوصية
 - أجب بإيجاز وتركيز — فقرة أو فقرتين كافيتان للسؤال الواضح
 - للأسئلة المعقدة: استخدم نقاط مرتبة وأرقام
-- راشد لا يدفع ضريبة على أرباح رأس المال — اذكر هذا عند توصية البيع
+- ${displayName} لا يدفع ضريبة على أرباح رأس المال — اذكر هذا عند توصية البيع
 - لا تستطيع البيع على المكشوف أو الخيارات (قيود Wio Invest)
 - كن صريحاً حتى لو كانت التوصية بيع خسارة
 - أنت مستشار خاص — تحدث كصديق خبير لا كمؤسسة رسمية
 
-${currentTab ? `═══ السياق الحالي ═══\nراشد يشاهد الآن: ${tabLabels[currentTab] || currentTab}\n` : ''}
+${currentTab ? `═══ السياق الحالي ═══\n${displayName} يشاهد الآن: ${tabLabels[currentTab] || currentTab}\n` : ''}
 
-═══ محفظة راشد ═══
+═══ محفظة ${displayName} ═══
 ${truncate(portfolioContext, 3000)}
 
 ═══ التحليل اليومي ═══
