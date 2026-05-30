@@ -3141,12 +3141,14 @@ function scoringSectionHeader(label, dotColor) {
 function parseScoreBlocks(text) {
   if (!text) return [];
   const blocks = [];
-  const headerRe = /(?:^|>|\n)([A-Z]{1,6})\s*\|\s*Score\s*([\d.]+)\/10\s*\|\s*([^\n<]+)/gm;
+  const headerRe = /(?:^|>|\n)\*{0,2}([A-Z]{1,6})\*{0,2}\s*\|\s*Score\s*([\d.]+)\/(?:10|100)\s*\|\s*([^\n<]+)/gm;
   let match;
   const positions = [];
 
   while ((match = headerRe.exec(text)) !== null) {
-    positions.push({ sym: match[1].trim(), score: parseFloat(match[2]), label: match[3].trim(), pos: match.index });
+    let score = parseFloat(match[2]);
+if (score > 10) score = score / 10; // normalize /100 to /10
+positions.push({ sym: match[1].trim(), score, label: match[3].trim(), pos: match.index });
   }
 
   positions.forEach((p, i) => {
