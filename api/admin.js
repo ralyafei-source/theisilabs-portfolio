@@ -49,10 +49,7 @@ async function ghPut(path, content, sha, token) {
 
 async function ghDelete(path, sha, token) {
   return new Promise((resolve, reject) => {
-    const body = JSON.stringify({
-      message: `Delete ${path}`,
-      sha
-    });
+    const body = JSON.stringify({ message: `Delete ${path}`, sha });
     const options = {
       hostname: 'api.github.com',
       path: `/repos/${REPO}/contents/${path}`,
@@ -75,7 +72,19 @@ async function ghDelete(path, sha, token) {
   });
 }
 
-// Verify session is admin
+async function ghReadRaw(path) {
+  return new Promise((resolve) => {
+    const url = `https://raw.githubusercontent.com/${REPO}/main/${path}?t=${Date.now()}`;
+    https.get(url, res => {
+      let data = '';
+      res.on('data', d => data += d);
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); } catch(e) { resolve(null); }
+      });
+    }).on('error', () => resolve(null));
+  });
+}
+
 async function verifyAdmin(sessionToken, githubToken) {
   const usersFile = await ghGet('data/users.json', githubToken);
   const users = JSON.parse(Buffer.from(usersFile.content, 'base64').toString());
@@ -104,6 +113,183 @@ async function hashPin(pin) {
   return hash.digest('hex');
 }
 
+function buildPrompt(type, portfolioText, marketText) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  if (type === 'daily') return `أنت محلل مالي متخصص في السوق الأمريكي. قدم التحليل كمعلومات فقط وليس توصيات مالية.
+
+بيانات السوق اليوم:
+${marketText || 'بيانات السوق غير متاحة'}
+
+محفظة المستثمر:
+${portfolioText}
+
+التاريخ: ${today}
+
+قدم تحليلاً يومياً شاملاً بالعربية يتضمن:
+
+═══ DAILY SIGNALS ═══
+تقييم كل مركز (شراء قوي / شراء / احتفظ / خفف / بيع) مع السبب
+FORMAT: SYMBOL | التوصية | السبب
+
+═══ EARNINGS ═══
+الأرباح والأحداث القادمة خلال 2 أسبوع
+
+═══ MACRO ═══
+أبرز المؤثرات الاقتصادية الكلية على هذه المحفظة اليوم`;
+
+  if (type === 'weekly') return `أنت محلل مالي متخصص في السوق الأمريكي. قدم التحليل كمعلومات فقط وليس توصيات مالية.
+
+محفظة المستثمر:
+${portfolioText}
+
+التاريخ: ${today}
+
+قدم تحليلاً أسبوعياً شاملاً بالعربية يتضمن:
+
+═══ RISK RADAR ═══
+تقييم المخاطر لكل مركز
+
+═══ FAIR VALUE ═══
+القيمة العادلة لكل سهم
+
+═══ MOMENTUM ═══
+تحليل الزخم والاتجاه
+
+═══ SCORING ENGINE ═══
+الجزء الأول — أفضل 5 فرص
+الجزء الثاني — أعلى 5 مراكز تحتاج مراجعة
+الجزء الثالث — جدول الدرجات
+الجزء الرابع — ملخص صحة المحفظة`;
+
+  if (type === 'monthly') return `أنت محلل مالي متخصص في السوق الأمريكي. قدم التحليل كمعلومات فقط وليس توصيات مالية.
+
+محفظة المستثمر:
+${portfolioText}
+
+التاريخ: ${today}
+
+قدم تحليلاً شهرياً شاملاً بالعربية يتضمن:
+
+═══ COMPETITIVE EDGE ═══
+الميزة التنافسية لكل شركة
+
+═══ LONG VIEW ═══
+النظرة طويلة المدى 5-10 سنوات
+
+═══ PORTFOLIO HEALTH ═══
+صحة المحفظة الشاملة`;
+
+  return '';
+}
+
+async function generateAnalysis(nickname, type, githubToken, anthropicKey) {
+  // Load portfolio
+  const portfolioData = await ghReadRaw(`data/portfolio-${nickname}.json`);
+  if (!portfolioData || !portfolioData.stocks || portfolioData.stocks.length === 0) {
+    throw new Error(`No portfolio found for ${nickname}`);
+  }
+
+  // Format portfolio text
+  const lines = portfolioData.stocks.map(s => {
+    const val = s.mv || Math.round((s.shares || 0) * (s.price || s.cost || 0));
+    const gl = s.gl ? (s.gl >= 0 ? '+' : '') + s.gl.toFixed(1) + '%' : '0%';
+    const date = s.purchaseDate ? ` | تاريخ الشراء: ${s.purchaseDate}` : '';
+    return `${s.sym}: ${s.shares || 0} سهم | تكلفة $${s.cost || 0} | قيمة $${val.toLocaleString()} | ${gl}${date}`;
+  });
+  const total = portfolioData.stocks.reduce((a, s) => a + (s.mv || 0), 0);
+  lines.push(`الإجمالي: $${total.toLocaleString()}`);
+  const portfolioText = lines.join('\n');
+
+  // Load market data (optional)
+  const today = new Date().toISOString().slice(0, 10);
+  const marketData = await ghReadRaw(`data/market-data-${today}.json`);
+  const marketText = marketData ? JSON.stringify(marketData).slice(0, 3000) : '';
+
+  // Build prompt
+  const prompt = buildPrompt(type, portfolioText, marketText);
+
+  // Call Claude API
+  const claudeBody = JSON.stringify({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 8000,
+    messages: [{ role: 'user', content: prompt }]
+  });
+
+  const analysisText = await new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'api.anthropic.com',
+      path: '/v1/messages',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicKey,
+        'anthropic-version': '2023-06-01',
+        'Content-Length': Buffer.byteLength(claudeBody)
+      }
+    };
+    const req = https.request(options, res => {
+      let data = '';
+      res.on('data', d => data += d);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          const text = parsed.content?.[0]?.text || '';
+          if (!text) reject(new Error('Empty response from Claude'));
+          else resolve(text);
+        } catch(e) { reject(e); }
+      });
+    });
+    req.on('error', reject);
+    req.write(claudeBody);
+    req.end();
+  });
+
+  // Save analysis file
+  const dateKey = (type === 'weekly' || type === 'monthly') ? today.slice(0, 7) : today;
+  const filePath = `data/analysis-${type}-${nickname}-${dateKey}.json`;
+  const analysisDoc = {
+    type, date: today, nickname,
+    content: analysisText,
+    generated: new Date().toISOString()
+  };
+
+  // Check if exists for SHA
+  let sha = null;
+  try {
+    const existing = await ghGet(filePath, githubToken);
+    if (existing && existing.sha) sha = existing.sha;
+  } catch(e) {}
+
+  const content = Buffer.from(JSON.stringify(analysisDoc, null, 2)).toString('base64');
+  const body = { message: `Generate ${type} analysis for ${nickname}`, content, ...(sha && { sha }) };
+
+  await new Promise((resolve, reject) => {
+    const bodyStr = JSON.stringify(body);
+    const options = {
+      hostname: 'api.github.com',
+      path: `/repos/${REPO}/contents/${filePath}`,
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${githubToken}`,
+        'User-Agent': 'theisilabs-app',
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(bodyStr)
+      }
+    };
+    const req = https.request(options, res => {
+      let d = '';
+      res.on('data', chunk => d += chunk);
+      res.on('end', () => resolve(JSON.parse(d)));
+    });
+    req.on('error', reject);
+    req.write(bodyStr);
+    req.end();
+  });
+
+  return filePath;
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -115,16 +301,17 @@ module.exports = async function handler(req, res) {
   if (!sessionToken) return res.status(401).json({ error: 'Unauthorized' });
 
   const githubToken = process.env.GITHUB_TOKEN;
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
   try {
     const adminData = await verifyAdmin(sessionToken, githubToken);
     if (!adminData) return res.status(403).json({ error: 'Admin access required' });
 
     const { users, usersFile } = adminData;
-    const action = req.query.action;
 
     // ── GET ──
     if (req.method === 'GET') {
+      const action = req.query.action;
       if (action === 'codes') {
         const codesFile = await ghGet('data/invite-codes.json', githubToken);
         const codes = JSON.parse(Buffer.from(codesFile.content, 'base64').toString());
@@ -139,8 +326,7 @@ module.exports = async function handler(req, res) {
           lockoutUntil: u.lockoutUntil || null,
           isBlocked: u.isBlocked || false,
           blockReason: u.blockReason || null,
-          lastLogin: u.sessionExpiry || null,
-          portfolioFile: u.portfolioFile || `portfolio-${u.nickname}.json`
+          lastLogin: u.sessionExpiry || null
         }));
         return res.status(200).json({ users: safeUsers });
       }
@@ -150,120 +336,92 @@ module.exports = async function handler(req, res) {
     if (req.method === 'POST') {
       const { action: bodyAction, nickname, reason, type } = req.body || {};
 
-      // Generate invite code
       if (bodyAction === 'generate-invite') {
         const codesFile = await ghGet('data/invite-codes.json', githubToken);
         const codes = JSON.parse(Buffer.from(codesFile.content, 'base64').toString());
-        const newCode = {
-          code: generateInviteCode(),
-          used: false, usedBy: null, usedAt: null,
-          createdAt: new Date().toISOString()
-        };
+        const newCode = { code: generateInviteCode(), used: false, usedBy: null, usedAt: null, createdAt: new Date().toISOString() };
         codes.push(newCode);
         await ghPut('data/invite-codes.json', codes, codesFile.sha, githubToken);
         return res.status(200).json({ code: newCode.code });
       }
 
-      // Reset user PIN
       if (bodyAction === 'reset-pin') {
         if (!nickname) return res.status(400).json({ error: 'Nickname required' });
-        const userIdx = users.findIndex(u => u.nickname.toLowerCase() === nickname.toLowerCase());
-        if (userIdx === -1) return res.status(404).json({ error: 'User not found' });
+        const idx = users.findIndex(u => u.nickname.toLowerCase() === nickname.toLowerCase());
+        if (idx === -1) return res.status(404).json({ error: 'User not found' });
         const tempPin = generateTempPin();
-        const tempPinHash = await hashPin(tempPin);
-        users[userIdx].pinHash = tempPinHash;
-        users[userIdx].failedAttempts = 0;
-        users[userIdx].lockoutUntil = null;
-        users[userIdx].sessionToken = null;
-        users[userIdx].needsPinSetup = true;
+        users[idx].pinHash = await hashPin(tempPin);
+        users[idx].failedAttempts = 0;
+        users[idx].lockoutUntil = null;
+        users[idx].sessionToken = null;
+        users[idx].needsPinSetup = true;
         await ghPut('data/users.json', users, usersFile.sha, githubToken);
         return res.status(200).json({ success: true, tempPin });
       }
 
-      // Unlock user
       if (bodyAction === 'unlock-user') {
         if (!nickname) return res.status(400).json({ error: 'Nickname required' });
-        const userIdx = users.findIndex(u => u.nickname.toLowerCase() === nickname.toLowerCase());
-        if (userIdx === -1) return res.status(404).json({ error: 'User not found' });
-        users[userIdx].failedAttempts = 0;
-        users[userIdx].lockoutUntil = null;
+        const idx = users.findIndex(u => u.nickname.toLowerCase() === nickname.toLowerCase());
+        if (idx === -1) return res.status(404).json({ error: 'User not found' });
+        users[idx].failedAttempts = 0;
+        users[idx].lockoutUntil = null;
         await ghPut('data/users.json', users, usersFile.sha, githubToken);
         return res.status(200).json({ success: true });
       }
 
-      // Block user (temporary or permanent)
       if (bodyAction === 'block-user') {
         if (!nickname) return res.status(400).json({ error: 'Nickname required' });
-        const userIdx = users.findIndex(u => u.nickname.toLowerCase() === nickname.toLowerCase());
-        if (userIdx === -1) return res.status(404).json({ error: 'User not found' });
-        if (users[userIdx].isAdmin) return res.status(400).json({ error: 'Cannot block admin' });
-        users[userIdx].isBlocked = true;
-        users[userIdx].blockReason = reason || 'Blocked by admin';
-        users[userIdx].sessionToken = null; // Force logout immediately
+        const idx = users.findIndex(u => u.nickname.toLowerCase() === nickname.toLowerCase());
+        if (idx === -1) return res.status(404).json({ error: 'User not found' });
+        if (users[idx].isAdmin) return res.status(400).json({ error: 'Cannot block admin' });
+        users[idx].isBlocked = true;
+        users[idx].blockReason = reason || 'Blocked by admin';
+        users[idx].sessionToken = null;
         await ghPut('data/users.json', users, usersFile.sha, githubToken);
         return res.status(200).json({ success: true });
       }
 
-      // Unblock user
       if (bodyAction === 'unblock-user') {
         if (!nickname) return res.status(400).json({ error: 'Nickname required' });
-        const userIdx = users.findIndex(u => u.nickname.toLowerCase() === nickname.toLowerCase());
-        if (userIdx === -1) return res.status(404).json({ error: 'User not found' });
-        users[userIdx].isBlocked = false;
-        users[userIdx].blockReason = null;
+        const idx = users.findIndex(u => u.nickname.toLowerCase() === nickname.toLowerCase());
+        if (idx === -1) return res.status(404).json({ error: 'User not found' });
+        users[idx].isBlocked = false;
+        users[idx].blockReason = null;
         await ghPut('data/users.json', users, usersFile.sha, githubToken);
         return res.status(200).json({ success: true });
       }
 
-      // Delete user account
       if (bodyAction === 'delete-user') {
         if (!nickname) return res.status(400).json({ error: 'Nickname required' });
-        const userIdx = users.findIndex(u => u.nickname.toLowerCase() === nickname.toLowerCase());
-        if (userIdx === -1) return res.status(404).json({ error: 'User not found' });
-        if (users[userIdx].isAdmin) return res.status(400).json({ error: 'Cannot delete admin' });
-
-        // Delete portfolio file if exists
-        const portfolioPath = `data/portfolio-${nickname}.json`;
+        const idx = users.findIndex(u => u.nickname.toLowerCase() === nickname.toLowerCase());
+        if (idx === -1) return res.status(404).json({ error: 'User not found' });
+        if (users[idx].isAdmin) return res.status(400).json({ error: 'Cannot delete admin' });
         try {
-          const pf = await ghGet(portfolioPath, githubToken);
-          if (pf && pf.sha) await ghDelete(portfolioPath, pf.sha, githubToken);
-        } catch(e) { /* Portfolio file may not exist — ok */ }
-
-        // Remove user from users array
-        users.splice(userIdx, 1);
+          const pf = await ghGet(`data/portfolio-${nickname}.json`, githubToken);
+          if (pf && pf.sha) await ghDelete(`data/portfolio-${nickname}.json`, pf.sha, githubToken);
+        } catch(e) {}
+        users.splice(idx, 1);
         await ghPut('data/users.json', users, usersFile.sha, githubToken);
         return res.status(200).json({ success: true });
       }
 
-      // Generate analysis for a user (triggers generate-analysis API)
       if (bodyAction === 'generate-analysis') {
         if (!nickname) return res.status(400).json({ error: 'Nickname required' });
+        if (!anthropicKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set in Vercel environment' });
         const analysisType = type || 'daily';
-
-        // Call the generate-analysis endpoint
-        const baseUrl = process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}`
-          : 'https://theisilabs.vercel.app';
-
-        const r = await fetch(`${baseUrl}/api/generate-analysis`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nickname,
-            type: analysisType,
-            api_key: process.env.BRIEFING_API_KEY || 'theisilabs2026'
-          })
-        });
-        const data = await r.json();
-        if (!r.ok) return res.status(500).json({ error: data.error || 'Failed to generate' });
-        return res.status(200).json({ success: true, type: analysisType, nickname });
+        try {
+          const filePath = await generateAnalysis(nickname, analysisType, githubToken, anthropicKey);
+          return res.status(200).json({ success: true, type: analysisType, nickname, path: filePath });
+        } catch(e) {
+          return res.status(500).json({ error: e.message });
+        }
       }
     }
 
     return res.status(400).json({ error: 'Unknown action' });
 
-  } catch (e) {
+  } catch(e) {
     console.error('admin error:', e);
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: e.message });
   }
 };
