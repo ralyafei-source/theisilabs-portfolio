@@ -3141,38 +3141,59 @@ function scoringSectionHeader(label, dotColor) {
 function parseScoreBlocks(text) {
   if (!text) return [];
   const blocks = [];
-  const headerRe = /(?:^|>|\n)\*{0,2}([A-Z]{1,6})\*{0,2}\s*\|\s*Score\s*([\d.]+)\/(?:10|100)\s*\|\s*([^\n<]+)/gm;
-  let match;
   const positions = [];
 
-  while ((match = headerRe.exec(text)) !== null) {
+  // Try original format: SYMBOL | Score X.X/10 | label
+  const origRe = /(?:^|>|\n)\*{0,2}([A-Z]{1,6})\*{0,2}\s*\|\s*Score\s*([\d.]+)\/(?:10|100)\s*\|\s*([^\n<]+)/gm;
+  let match;
+  while ((match = origRe.exec(text)) !== null) {
     let score = parseFloat(match[2]);
-if (score > 10) score = score / 10; // normalize /100 to /10
-positions.push({ sym: match[1].trim(), score, label: match[3].trim(), pos: match.index });
+    if (score > 10) score = score / 10;
+    positions.push({ sym: match[1].trim(), score, label: match[3].trim(), pos: match.index });
+  }
+
+  // If no matches, try Claude's actual format: #### ... — SYMBOL (name)
+  if (positions.length === 0) {
+    const headerRe = /#{2,4}[^\n]*?—\s*([A-Z]{1,6})\s*[\(（]([^\)\n]+)[\)）]/gm;
+    while ((match = headerRe.exec(text)) !== null) {
+      const sym = match[1].trim();
+      const label = match[2].trim();
+      const pos = match.index;
+      const blockEnd = text.indexOf('\n---', pos + 10);
+      const blockText = text.slice(pos, blockEnd > 0 ? blockEnd : pos + 3000);
+      const scoreMatch = blockText.match(/(?:الدرجة الإجمالية|درجة المخاطرة|درجة الضغط)[:\s]*(?:\*{0,2})(\d+)\/100/);
+      if (scoreMatch) {
+        let score = parseFloat(scoreMatch[1]) / 10;
+        positions.push({ sym, score, label, pos });
+      }
+    }
   }
 
   positions.forEach((p, i) => {
     const end = i < positions.length - 1 ? positions[i + 1].pos : text.length;
     const blockText = text.slice(p.pos, end).trim();
-
-    // Extract layer scores
-    const layerScoreRe = /درجة هذه الطبقة[^:]*:(?:<b>)?\s*([\d.]+)\/10|درجة هذه الطبقة[^:]*:\s*<b>([\d.]+)/g;
     const layerScores = [];
+
+    // Try درجة هذه الطبقة format
+    const layerRe = /درجة هذه الطبقة[^:]*:\s*(\d+)\/10/g;
     let lm;
-    while ((lm = layerScoreRe.exec(blockText)) !== null) {
-      layerScores.push(parseFloat(lm[1] || lm[2]));
+    while ((lm = layerRe.exec(blockText)) !== null) {
+      layerScores.push(parseFloat(lm[1]));
     }
 
-    // Extract action line
-    const actionMatch = blockText.match(/الإجراء:\s*([^\n]+)/);
-    const action = actionMatch ? actionMatch[1].trim() : '';
+    // Fallback: extract /100 scores from code block lines
+    if (layerScores.length === 0) {
+      const scoreLineRe = /(?:التقييم|الزخم|الجودة|المخاطرة|النمو)[^:]*:\s*(?:█+░*\s+)?(\d+)\/100/g;
+      while ((lm = scoreLineRe.exec(blockText)) !== null) {
+        layerScores.push(parseFloat(lm[1]) / 10);
+      }
+    }
 
-    // Extract "not considered"
+    const actionMatch = blockText.match(/الإجراء:\s*([^\n]+)/);
+    const action = actionMatch ? actionMatch[1].trim() : p.label;
     const notMatch = blockText.match(/ما لم يُؤخذ[^:]*:([\s\S]+?)(?:─{3,}|$)/);
     const notConsidered = notMatch ? notMatch[1].trim().slice(0, 200) : '';
-
-    // Extract framework
-    const fwMatch = blockText.match(/الإطار المستخدم[^:]*:([\s\S]+?)(?:القرار|✅|$)/);
+    const fwMatch = blockText.match(/الإطار المستخدم[^:]*:([\s\S]+?)(?:الإجراء|✅|$)/);
     const framework = fwMatch ? fwMatch[1].trim().slice(0, 200) : '';
 
     blocks.push({ sym: p.sym, score: p.score, label: p.label, layerScores, action, notConsidered, framework, blockText });
@@ -3180,7 +3201,6 @@ positions.push({ sym: match[1].trim(), score, label: match[3].trim(), pos: match
 
   return blocks;
 }
-
 function buildScoreCard(stock, type, idx) {
   const isBuy       = type === 'buy';
   const scoreColor  = isBuy ? '#00c864'  : '#ff6b35';
