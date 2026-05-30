@@ -63,7 +63,6 @@ module.exports = async (req, res) => {
       const path = getFilePath(type, date, week, month, nick);
       const data = await readFile(path);
       if (data) return res.json(data);
-      // Fallback to generic (no nickname) if user-specific not found
       if (nick) {
         const fallbackPath = getFilePath(type, date, week, month, null);
         const fallback = await readFile(fallbackPath);
@@ -75,22 +74,20 @@ module.exports = async (req, res) => {
     // Default: return all 3 types for dashboard
     const today = date || new Date().toISOString().slice(0, 10);
 
-    // Try user-specific daily first, then generic
+    // Daily — no fallback between users
     let dailyData = null;
-if (nick) {
-  dailyData = await readFile(`data/analysis-daily-${nick}-${today}.json`);
-} else {
-  dailyData = await readFile(`data/analysis-daily-${today}.json`);
-}
+    if (nick) {
+      dailyData = await readFile(`data/analysis-daily-${nick}-${today}.json`);
+    } else {
+      dailyData = await readFile(`data/analysis-daily-${today}.json`);
+    }
 
-   
-    // Find most recent weekly
+    // Weekly — no fallback between users
     let weeklyData = null;
     for (let i = 0; i <= 7; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const ds = d.toISOString().slice(0, 10);
-      const w = ds.slice(0, 7);
+      const w = d.toISOString().slice(0, 7);
       if (nick) {
         const data = await readFile(`data/analysis-weekly-${nick}-${w}.json`);
         if (data) { weeklyData = data; break; }
@@ -100,7 +97,7 @@ if (nick) {
       }
     }
 
-   // Find most recent monthly
+    // Monthly — no fallback between users
     let monthlyData = null;
     for (let i = 0; i <= 2; i++) {
       const d = new Date(today);
@@ -114,6 +111,9 @@ if (nick) {
         if (data) { monthlyData = data; break; }
       }
     }
+
+    return res.json({ daily: dailyData, weekly: weeklyData, monthly: monthlyData, date: today });
+  }
 
   // ── POST: save analysis ──
   if (req.method === 'POST') {
