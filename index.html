@@ -3380,8 +3380,8 @@ function renderScoreTable(text) {
     else if (scoreNum >= 5) sc = '#ffd700';
     else if (scoreNum > 0) sc = '#ff6b35';
     html += '<tr>' + cells.map((c, ci) => {
-      if (ci === 0) return `<td style="padding:7px 12px;border:1px solid rgba(30,45,74,0.5);"><span style="background:var(--bg3);border:1px solid var(--border);padding:2px 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">${c}</span></td>`;
-      if (ci === 1) return `<td style="padding:7px 12px;border:1px solid rgba(30,45,74,0.5);font-family:'IBM Plex Mono',monospace;font-weight:700;color:${sc};">${c}</td>`;
+      if (ci === 0) return `<td style="padding:7px 12px;border:1px solid rgba(30,45,74,0.5);"><span style="background:var(--bg3);border:1px solid var(--border);padding:2px 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">${c.replace(/\*\*/g,'')}</span></td>`;
+      if (ci === 1) return `<td style="padding:7px 12px;border:1px solid rgba(30,45,74,0.5);font-family:'IBM Plex Mono',monospace;font-weight:700;color:${sc};">${c.replace(/\*\*/g,'')}</td>`;
       return `<td style="padding:7px 12px;border:1px solid rgba(30,45,74,0.5);font-size:11px;color:var(--text2);direction:rtl;">${c}</td>`;
     }).join('') + '</tr>';
   });
