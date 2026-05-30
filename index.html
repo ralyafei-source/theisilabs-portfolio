@@ -4306,8 +4306,13 @@ async function sendChatMsg() {
       dailyContext,
       weeklyContext,
       monthlyContext,
-      currentTab
+      currentTab,
+      nickname: localStorage.getItem(AUTH_NICK_KEY) || 'المستخدم'
     };
+Upload both files → test with Asma's account → the chatbot will now address her by name with her own portfolio context.
+
+
+
 
     const res = await fetch('/api/chat', {
       method: 'POST',
