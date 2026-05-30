@@ -2329,6 +2329,7 @@ function applyHeaderTooltips(text){
   
 function mdToHtml(text){
   if(!text) return '';
+  text = text.replace(/[\u25C6\u25C7\u2666\u2665\u2663\u2660\uFFFD\u25A0\u25A1]/g, '');
   const lines = text.split('\n');
   let html = '';
   let inTable = false;
@@ -2514,6 +2515,10 @@ function colorizePercent(text){
   });
 }
 function renderSignals(text){
+  // Strip corrupted characters
+  text = text
+    .replace(/[\u25C6\u25C7\u2666\u2665\u2663\u2660\uFFFD\u25A0\u25A1]/g, '')
+    .replace(/#{1,6}\s+/g, '');
   const ratingMap={
     'Strong Buy':{color:'#00c864',bg:'rgba(0,200,100,0.1)',border:'rgba(0,200,100,0.4)',emoji:'🚀'},
     'Buy':       {color:'#00d4ff',bg:'rgba(0,212,255,0.1)',border:'rgba(0,212,255,0.4)',emoji:'📈'},
@@ -3264,6 +3269,7 @@ function buildScoringPopupHTML(uid) {
     .replace(/[█░▓▒╔╗╚╝║═┌┐└┘├┤┬┴┼━─│╠╣╦╩╪╫▀▄]/g, '')
     .replace(/━+/g, '—')
     .replace(/#{1,6}\s*/g, '')
+    .replace(/[\u25C6\u25C7\u2666\u2665\u2663\u2660\uFFFD\u25A0\u25A1]/g, '')
     .replace(/\n{3,}/g, '\n\n');
   const scoreColor = data.isBuy ? '#00c864' : '#ff6b35';
   const layerNames = ['الطبقة 1 — مركزك الشخصي','الطبقة 2 — التقييم','الطبقة 3 — التقني','الطبقة 4 — الأساسيات','الطبقة 5 — الخارجي'];
