@@ -2560,7 +2560,7 @@ function renderSignals(text){
             content = colorizePercent(c);
           }
           const align = ci === 0 ? 'center' : ci === 2 ? 'right' : 'center';
-          return `<td style="padding:10px 14px;border:1px solid ${rowBorder};text-align:${align};font-size:13px;vertical-align:middle;">${content}</td>`;
+          return `<td style="padding:10px 14px;border:1px solid ${rowBorder};text-align:${align};font-size:13px;vertical-align:middle;">${ci===0?content.replace(/\*\*/g,''):content}</td>`;
         }).join('') + '</tr>';
       }
     });
@@ -3263,6 +3263,7 @@ function buildScoringPopupHTML(uid) {
     .replace(/```[\s\S]*?```/g, '')
     .replace(/[█░▓▒╔╗╚╝║═┌┐└┘├┤┬┴┼━─│╠╣╦╩╪╫▀▄]/g, '')
     .replace(/━+/g, '—')
+    .replace(/#{1,6}\s*/g, '')
     .replace(/\n{3,}/g, '\n\n');
   const scoreColor = data.isBuy ? '#00c864' : '#ff6b35';
   const layerNames = ['الطبقة 1 — مركزك الشخصي','الطبقة 2 — التقييم','الطبقة 3 — التقني','الطبقة 4 — الأساسيات','الطبقة 5 — الخارجي'];
@@ -3423,6 +3424,7 @@ function renderPortfolioHealthSummary(text) {
     .replace(/```[\s\S]*?```/g, '')
     .replace(/[█░▓▒╔╗╚╝║═┌┐└┘├┤┬┴┼━─│╠╣╦╩╪╫▀▄]/g, '')
     .replace(/━+/g, '—')
+    .replace(/#{1,6}\s*/g, '')
     .replace(/\n{3,}/g, '\n\n');
   const lines = text.split('\n').filter(l => l.trim());
   let statsHtml = '';
