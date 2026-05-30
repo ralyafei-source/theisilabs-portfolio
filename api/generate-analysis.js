@@ -1,8 +1,4 @@
 // api/generate-analysis.js
-// Generates AI analysis for a specific user on demand
-// Called from: signup flow (auto) + admin panel (manual)
-// POST: { nickname, type, token } → generates and saves analysis
-
 const REPO = 'ralyafei-source/theisilabs-portfolio';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -79,7 +75,7 @@ ${portfolioText}
 
 التاريخ: ${today}
 
-قدم تحليلاً أسبوعياً شاملاً بالعربية يتضمن:
+قدم تحليلاً أسبوعياً شاملاً بالعربية يتضمن الأقسام التالية بالترتيب والتنسيق الدقيق:
 
 ═══ RISK RADAR ═══
 تقييم المخاطر لكل مركز — مستوى الخطر، الخسارة المحتملة، نسبة المحفظة
@@ -91,16 +87,40 @@ ${portfolioText}
 تحليل الزخم والاتجاه لكل سهم — RSI، المتوسطات المتحركة
 
 ═══ SCORING ENGINE ═══
-الجزء الأول — أفضل 5 فرص شراء
-SYMBOL | Score X.X/10 | التوصية
 
-الجزء الثاني — أعلى 5 مراكز تحتاج مراجعة  
+الجزء الأول — أفضل 5 فرص شراء هذا الأسبوع
+
+لكل سهم من الأفضل 5، استخدم هذا التنسيق الدقيق:
+
 SYMBOL | Score X.X/10 | التوصية
+الطبقة 1 — مركزك الشخصي: [التحليل]
+درجة هذه الطبقة: X/10
+الطبقة 2 — التقييم: [التحليل]
+درجة هذه الطبقة: X/10
+الطبقة 3 — التقني: [التحليل]
+درجة هذه الطبقة: X/10
+الطبقة 4 — الأساسيات: [التحليل]
+درجة هذه الطبقة: X/10
+الإطار المستخدم: [اسم الإطار]
+الإجراء: [توصية محددة]
+ما لم يُؤخذ بعين الاعتبار: [ملاحظة]
+───────────────────────────────
+
+الجزء الثاني — أعلى 5 مراكز تحتاج مراجعة هذا الأسبوع
+
+نفس التنسيق أعلاه لكل سهم من الأسوأ 5
 
 الجزء الثالث — جدول الدرجات الكامل
-| الرمز | الأساسيات | الزخم | التقييم | المخاطر | النقاط الخلية | التصنيف |
+
+| الرمز | الأساسيات | الزخم | التقييم | المخاطر | النقاط | التصنيف |
+|-------|-----------|-------|---------|---------|--------|---------|
+[صف لكل سهم في المحفظة]
 
 الجزء الرابع — ملخص صحة المحفظة
+
+درجة الصحة الإجمالية: X/10
+التنويع: [تقييم]
+التوصية الشهرية: [ملخص]`;
   }
 
   if (type === 'monthly') {
@@ -137,12 +157,11 @@ module.exports = async function handler(req, res) {
   const sessionToken = authHeader.replace('Bearer ', '').trim();
   const apiKey = req.body?.api_key;
 
-  // Allow either valid session OR API key (for admin triggered calls)
   let authorized = false;
   let requestingUser = null;
 
   if (apiKey === API_KEY) {
-    authorized = true; // Admin API key
+    authorized = true;
   } else if (sessionToken) {
     requestingUser = await verifyAccess(sessionToken);
     if (requestingUser) authorized = true;
@@ -153,19 +172,16 @@ module.exports = async function handler(req, res) {
   const { nickname, type = 'daily' } = req.body || {};
   if (!nickname) return res.status(400).json({ error: 'nickname required' });
 
-  // Non-admin users can only generate for themselves
   if (requestingUser && !requestingUser.isAdmin && requestingUser.nickname !== nickname) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
   try {
-    // 1. Load user portfolio
     const portfolioData = await ghRead(`data/portfolio-${nickname}.json`);
     if (!portfolioData || !portfolioData.stocks || portfolioData.stocks.length === 0) {
       return res.status(400).json({ error: 'No portfolio found for this user' });
     }
 
-    // Format portfolio as text for Claude
     const portfolioLines = portfolioData.stocks.map(s => {
       const val = s.mv || Math.round((s.shares || 0) * (s.price || s.cost || 0));
       const gl = s.gl ? (s.gl >= 0 ? '+' : '') + s.gl.toFixed(1) + '%' : '0%';
@@ -176,16 +192,13 @@ module.exports = async function handler(req, res) {
     portfolioLines.push(`الإجمالي: $${totalVal.toLocaleString()}`);
     const portfolioText = portfolioLines.join('\n');
 
-    // 2. Load latest market data (optional)
     const today = new Date().toISOString().slice(0, 10);
     const marketData = await ghRead(`data/market-data-${today}.json`);
     const marketText = marketData ? JSON.stringify(marketData).slice(0, 3000) : '';
 
-    // 3. Build prompt
     const prompt = buildPrompt(type, portfolioText, marketText);
     if (!prompt) return res.status(400).json({ error: 'Invalid type' });
 
-    // 4. Call Claude
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -194,8 +207,8 @@ module.exports = async function handler(req, res) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 8000,
+        model: 'claude-sonnet-4-6',
+        max_tokens: 16000,
         messages: [{ role: 'user', content: prompt }]
       })
     });
@@ -207,18 +220,13 @@ module.exports = async function handler(req, res) {
 
     const claudeData = await claudeRes.json();
     const analysisText = claudeData.content?.[0]?.text || '';
-
     if (!analysisText) return res.status(500).json({ error: 'Empty response from Claude' });
 
-    // 5. Save analysis file
-    const dateKey = type === 'weekly' ? today.slice(0, 7) :
-                    type === 'monthly' ? today.slice(0, 7) : today;
+    const dateKey = (type === 'weekly' || type === 'monthly') ? today.slice(0, 7) : today;
     const filePath = `data/analysis-${type}-${nickname}-${dateKey}.json`;
 
     const analysisDoc = {
-      type,
-      date: today,
-      nickname,
+      type, date: today, nickname,
       content: analysisText,
       generated: new Date().toISOString()
     };
@@ -227,10 +235,7 @@ module.exports = async function handler(req, res) {
     if (!saved) return res.status(500).json({ error: 'Failed to save analysis' });
 
     return res.status(200).json({
-      success: true,
-      type,
-      nickname,
-      path: filePath,
+      success: true, type, nickname, path: filePath,
       preview: analysisText.slice(0, 200) + '...'
     });
 
