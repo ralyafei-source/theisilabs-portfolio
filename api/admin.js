@@ -211,7 +211,7 @@ async function generateAnalysis(nickname, type, githubToken, anthropicKey) {
 
   // Call Claude API
   const claudeBody = JSON.stringify({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 8000,
     messages: [{ role: 'user', content: prompt }]
   });
@@ -235,7 +235,7 @@ async function generateAnalysis(nickname, type, githubToken, anthropicKey) {
         try {
           const parsed = JSON.parse(data);
           const text = parsed.content?.[0]?.text || '';
-          if (!text) reject(new Error('Empty response from Claude'));
+          if (!text) reject(new Error('Claude error: ' + JSON.stringify(parsed)));
           else resolve(text);
         } catch(e) { reject(e); }
       });
