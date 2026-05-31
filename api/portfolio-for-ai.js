@@ -194,14 +194,21 @@ module.exports = async (req, res) => {
 
       // Combined symbol list: portfolio first, then movers
       const allSyms = [...new Set([...symbols, ...moverSyms])];
-      const symList = allSyms.join(',');
+
+      // For earnings: use full list (small response due to date filter)
+      const earningsSymList = allSyms.join(",");
+
+      // For analyst data: top 25 non-ETF holdings only (FMP URL length limit)
+      const ETF_LIST = new Set(["QQQ","SPY","VGT","SPUS","VOO","XLP","IVV","SMH","IBIT","QQQM"]);
+      const top25 = enriched.filter(h => !ETF_LIST.has(h.sym)).slice(0, 25).map(h => h.sym);
+      const analystSymList = [...new Set([...top25, ...moverSyms])].join(",");
 
       // Fetch all FMP intelligence in parallel
       const [earnings, targets, grades, metrics] = await Promise.all([
-        fmpGet(`/earnings-calendar?from=${todayUAE()}&to=${daysAheadUAE(60)}&symbol=${symList}`),
-        fmpGet(`/price-target-consensus?symbol=${symList}`),
-        fmpGet(`/grades?symbol=${symList}&limit=5`),
-        fmpGet(`/key-metrics-ttm?symbol=${symList}`)
+        fmpGet(`/earnings-calendar?from=${todayUAE()}&to=${daysAheadUAE(60)}&symbol=${earningsSymList}`),
+        fmpGet(`/price-target-consensus?symbol=${analystSymList}`),
+        fmpGet(`/grades?symbol=${analystSymList}&limit=5`),
+        fmpGet(`/key-metrics-ttm?symbol=${analystSymList}`)
       ]);
 
       // Tag each item — is it in the portfolio or just a mover?
