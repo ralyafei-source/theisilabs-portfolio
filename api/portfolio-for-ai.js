@@ -319,13 +319,13 @@ module.exports = async (req, res) => {
       // Key metrics: strip out null/zero fields to reduce token size
       const metrics = metricResults.flat().filter(Boolean).map(i => {
         const clean = { symbol: i.symbol, inPortfolio: ownedSet.has(i.symbol) };
-        Object.keys(i).forEach(f => {
-  if (f !== 'symbol' && f !== 'inPortfolio' && i[f] != null && i[f] !== 0 && typeof i[f] === 'number') {
-    clean[f] = +i[f].toFixed(3);
-  }
-});
-        return clean;
-      });
+        const keepFields = [
+  'evToEBITDATTM','evToSalesTTM','returnOnEquityTTM',
+  'returnOnInvestedCapitalTTM','returnOnAssetsTTM',
+  'currentRatioTTM','earningsYieldTTM','freeCashFlowYieldTTM',
+  'netDebtToEBITDATTM','stockBasedCompensationToRevenueTTM'
+];
+keepFields.forEach(f => { if (i[f] != null) clean[f] = +i[f].toFixed(3); });
 
       const earningsSorted = earnings.map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}))
         .sort((a, b) => {
