@@ -5012,6 +5012,8 @@ async function checkSession() {
       if (chatBtn) chatBtn.title = 'مستشار ' + displayName + ' الذكي';
       if (data.isAdmin) showAdminButton();
       initSetupTab(data.isAdmin, data.nickname);
+      // Load their portfolio
+      loadUserPortfolio(token, data.isAdmin, data.nickname);
     } else {
       localStorage.removeItem(AUTH_SESSION_KEY);
       showAuth();
