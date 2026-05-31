@@ -31,7 +31,6 @@ function daysAheadUAE(n) {
   return new Date(Date.now() + 4 * 3600 * 1000 + n * 86400000).toISOString().slice(0, 10);
 }
 
-// Returns date N days AGO in UAE timezone
 function daysAgoUAE(n) {
   return new Date(Date.now() + 4 * 3600 * 1000 - n * 86400000).toISOString().slice(0, 10);
 }
@@ -43,7 +42,6 @@ function latest(arr, field) {
 
 // ─── Fetch latest available market data file (today or most recent past day) ─
 async function fetchLatestMarketData() {
-  // Try today first, then walk back up to 7 days
   for (let i = 0; i <= 7; i++) {
     const date = new Date(Date.now() + 4 * 3600 * 1000 - i * 86400000).toISOString().slice(0, 10);
     try {
@@ -64,7 +62,7 @@ async function fetchLatestMarketData() {
   return { date: null, syms: [] };
 }
 
-// ─── Fetch technicals for one symbol — all 5 indicators in parallel ──────────
+// ─── Fetch technicals for one symbol ─────────────────────────────────────────
 async function fetchTechnicals(sym) {
   const [rsiRaw, macdRaw, sma50Raw, sma200Raw, ema20Raw, bbRaw] = await Promise.all([
     fmpGet(`/technical-indicators/rsi?symbol=${sym}&periodLength=14&timeframe=1day&limit=1`),
@@ -77,9 +75,9 @@ async function fetchTechnicals(sym) {
   return {
     sym,
     rsi:       latest(rsiRaw,   'rsi'),
-    macd:      latest(macdRaw,  'macd'),
-    signal:    latest(macdRaw,  'signal'),
-    histogram: latest(macdRaw,  'histogram'),
+    macd:      latest(macdRaw,  'macd') ?? latest(macdRaw, 'macdLine'),
+    signal:    latest(macdRaw,  'signal') ?? latest(macdRaw, 'signalLine'),
+    histogram: latest(macdRaw,  'histogram') ?? latest(macdRaw, 'macdHistogram'),
     sma50:     latest(sma50Raw,  'sma'),
     sma200:    latest(sma200Raw, 'sma'),
     ema20:     latest(ema20Raw,  'ema'),
@@ -227,18 +225,15 @@ module.exports = async (req, res) => {
     // ── Intelligence block ───────────────────────────────────────────────────
     if (wantIntelligence) {
 
-      // ── Fetch latest available market data (today or most recent past day) ─
       const { date: marketDataDate, syms: moverSyms } = await fetchLatestMarketData();
 
-      // Top 10 non-ETF for analyst calls
-      const top20 = enriched.filter(h => h.sector !== 'etf').slice(0, 20).map(h => h.sym);
-
-      // Top 20 non-ETF for technicals
+      // Top 20 non-ETF for all analyst calls + technicals
+      const top20     = enriched.filter(h => h.sector !== 'etf').slice(0, 20).map(h => h.sym);
       const top20tech = enriched.filter(h => h.sector !== 'etf').slice(0, 20).map(h => h.sym);
 
       const allSyms = [...new Set([...symbols, ...moverSyms])];
 
-      // Grades: last 60 days only to avoid returning years of history
+      // Grades: last 60 days only
       const gradesFrom = daysAgoUAE(60);
 
       // ── All FMP calls in parallel ─────────────────────────────────────────
@@ -251,8 +246,7 @@ module.exports = async (req, res) => {
       ] = await Promise.all([
         fmpGet(`/earnings-calendar?from=${todayUAE()}&to=${daysAheadUAE(60)}&symbol=${allSyms.join(',')}`),
         Promise.all(top20.map(sym => fmpGet(`/price-target-consensus?symbol=${sym}`))),
-        // Grades: limit to last 60 days + max 5 per stock to prevent token bloat
-        Promise.all(top20.map(sym => fmpGet(`/grades?symbol=${sym}&from=${gradesFrom}&limit=5`))),
+        Promise.all(top20.map(sym => fmpGet(`/grades?symbol=${sym}&limit=50`))),
         Promise.all(top20.map(sym => fmpGet(`/key-metrics-ttm?symbol=${sym}`))),
         Promise.allSettled(top20tech.map(sym => fetchTechnicals(sym)))
       ]);
@@ -311,16 +305,24 @@ module.exports = async (req, res) => {
 
       // ── Flatten analyst data ──────────────────────────────────────────────
       const earnings = earningsRaw || [];
-      const targets  = targetResults.flat().filter(Boolean).map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
-      const grades   = gradeResults.flat().filter(Boolean).map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
+      const targets  = targetResults.flat().filter(Boolean)
+        .map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
 
-      // Key metrics: strip out null/zero fields to reduce token size
+      // Grades: filter to last 60 days in JS (FMP ignores from param)
+      const grades = gradeResults.flat().filter(Boolean)
+        .filter(i => i.date >= gradesFrom)
+        .map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
+
+      // Key metrics: keep only 10 useful fields
       const metrics = metricResults.flat().filter(Boolean).map(i => {
         const clean = { symbol: i.symbol, inPortfolio: ownedSet.has(i.symbol) };
-        const keepFields = ['peRatioTTM','priceToSalesRatioTTM','pbRatioTTM','evToEbitdaTTM',
-                            'roeTTM','roicTTM','netProfitMarginTTM','revenueGrowthTTM',
-                            'debtToEquityTTM','freeCashFlowPerShareTTM'];
-        keepFields.forEach(f => { if (i[f] != null && i[f] !== 0) clean[f] = +i[f].toFixed(3); });
+        const keepFields = [
+          'evToEBITDATTM','evToSalesTTM','returnOnEquityTTM',
+          'returnOnInvestedCapitalTTM','returnOnAssetsTTM',
+          'currentRatioTTM','earningsYieldTTM','freeCashFlowYieldTTM',
+          'netDebtToEBITDATTM','stockBasedCompensationToRevenueTTM'
+        ];
+        keepFields.forEach(f => { if (i[f] != null) clean[f] = +i[f].toFixed(3); });
         return clean;
       });
 
