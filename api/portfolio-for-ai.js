@@ -77,9 +77,9 @@ async function fetchTechnicals(sym) {
   return {
     sym,
     rsi:       latest(rsiRaw,   'rsi'),
-    macd:      latest(macdRaw,  'macd') ?? latest(macdRaw, 'macdLine'),
-signal:    latest(macdRaw,  'signal') ?? latest(macdRaw, 'signalLine'),
-histogram: latest(macdRaw,  'histogram') ?? latest(macdRaw, 'macdHistogram'),
+    macd:      latest(macdRaw,  'macd'),
+    signal:    latest(macdRaw,  'signal'),
+    histogram: latest(macdRaw,  'histogram'),
     sma50:     latest(sma50Raw,  'sma'),
     sma200:    latest(sma200Raw, 'sma'),
     ema20:     latest(ema20Raw,  'ema'),
@@ -230,8 +230,8 @@ module.exports = async (req, res) => {
       // ── Fetch latest available market data (today or most recent past day) ─
       const { date: marketDataDate, syms: moverSyms } = await fetchLatestMarketData();
 
-      // Top 20 non-ETF for analyst calls
-const top20 = enriched.filter(h => h.sector !== 'etf').slice(0, 20).map(h => h.sym);
+      // Top 10 non-ETF for analyst calls
+      const top20 = enriched.filter(h => h.sector !== 'etf').slice(0, 20).map(h => h.sym);
 
       // Top 20 non-ETF for technicals
       const top20tech = enriched.filter(h => h.sector !== 'etf').slice(0, 20).map(h => h.sym);
@@ -252,7 +252,7 @@ const top20 = enriched.filter(h => h.sector !== 'etf').slice(0, 20).map(h => h.s
         fmpGet(`/earnings-calendar?from=${todayUAE()}&to=${daysAheadUAE(60)}&symbol=${allSyms.join(',')}`),
         Promise.all(top20.map(sym => fmpGet(`/price-target-consensus?symbol=${sym}`))),
         // Grades: limit to last 60 days + max 5 per stock to prevent token bloat
-        Promise.all(top20.map(sym => fmpGet(`/grades?symbol=${sym}&limit=50`))),
+        Promise.all(top20.map(sym => fmpGet(`/grades?symbol=${sym}&from=${gradesFrom}&limit=5`))),
         Promise.all(top20.map(sym => fmpGet(`/key-metrics-ttm?symbol=${sym}`))),
         Promise.allSettled(top20tech.map(sym => fetchTechnicals(sym)))
       ]);
@@ -312,20 +312,15 @@ const top20 = enriched.filter(h => h.sector !== 'etf').slice(0, 20).map(h => h.s
       // ── Flatten analyst data ──────────────────────────────────────────────
       const earnings = earningsRaw || [];
       const targets  = targetResults.flat().filter(Boolean).map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
-      const grades   = gradeResults.flat().filter(Boolean)
-  .filter(i => i.date >= gradesFrom)
-  .map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
+      const grades   = gradeResults.flat().filter(Boolean).map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
 
       // Key metrics: strip out null/zero fields to reduce token size
       const metrics = metricResults.flat().filter(Boolean).map(i => {
         const clean = { symbol: i.symbol, inPortfolio: ownedSet.has(i.symbol) };
-        const keepFields = [
-  'evToEBITDATTM','evToSalesTTM','returnOnEquityTTM',
-  'returnOnInvestedCapitalTTM','returnOnAssetsTTM',
-  'currentRatioTTM','earningsYieldTTM','freeCashFlowYieldTTM',
-  'netDebtToEBITDATTM','stockBasedCompensationToRevenueTTM'
-];
-keepFields.forEach(f => { if (i[f] != null) clean[f] = +i[f].toFixed(3); });
+        const keepFields = ['peRatioTTM','priceToSalesRatioTTM','pbRatioTTM','evToEbitdaTTM',
+                            'roeTTM','roicTTM','netProfitMarginTTM','revenueGrowthTTM',
+                            'debtToEquityTTM','freeCashFlowPerShareTTM'];
+        keepFields.forEach(f => { if (i[f] != null && i[f] !== 0) clean[f] = +i[f].toFixed(3); });
         return clean;
       });
 
