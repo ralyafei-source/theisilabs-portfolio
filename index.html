@@ -705,17 +705,31 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 
 <!-- ===== ALERTS TAB ===== -->
 <div id="tab-alerts" class="tab-content">
-  <div class="grid-2">
-    <div>
-      <div class="card">
-        <div class="section-hdr">
-          <div class="section-title" id="a-title">Active Alerts</div>
-          <button class="btn btn-primary" style="font-size:11px;padding:7px 12px;" id="a-add">+ Add Alert</button>
-        </div>
-        <div id="alertList"></div>
-        <hr class="divider">
-        <div class="card-title" id="a-settings-title">Alert Settings</div>
-        <div class="form-group">
+
+  <!-- Filter + action bar -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="t-btn active" id="af-all" onclick="filterAlerts('all',this)" id="a-filter-all">الكل</button>
+      <button class="t-btn" onclick="filterAlerts('critical',this)" id="a-filter-crit">🔴 خسارة حادة</button>
+      <button class="t-btn" onclick="filterAlerts('warning',this)" id="a-filter-warn">🟡 تحذير</button>
+      <button class="t-btn" onclick="filterAlerts('positive',this)" id="a-filter-pos">🟢 إيجابي</button>
+    </div>
+    <button class="btn btn-primary" style="font-size:11px;padding:7px 14px;" id="a-add">+ إضافة تنبيه</button>
+  </div>
+
+  <!-- Alerts list — full width -->
+  <div class="card" style="margin-bottom:16px;">
+    <div id="alertList"></div>
+  </div>
+
+  <!-- Settings — collapsible at bottom -->
+  <details style="margin-bottom:8px;">
+    <summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--text2);padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;list-style:none;display:flex;align-items:center;gap:8px;">
+      ⚙️ <span id="a-settings-title">إعدادات التنبيهات</span>
+    </summary>
+    <div class="card" style="border-top:none;border-radius:0 0 10px 10px;margin-top:0;">
+      <div class="grid-3" style="margin-bottom:0;">
+        <div class="form-group" style="margin-bottom:0;">
           <label class="form-label" id="a-sens">Alert Sensitivity</label>
           <select class="form-input" id="sensSelect">
             <option id="sens1">Big moves only (±3%)</option>
@@ -723,42 +737,17 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
             <option id="sens3">All moves (±0.5%)</option>
           </select>
         </div>
-        <div class="form-group">
+        <div class="form-group" style="margin-bottom:0;">
           <label class="form-label" id="a-time">Morning Brief Time</label>
           <input class="form-input" type="time" value="07:00">
         </div>
-        <button class="btn btn-success" id="a-save">💾 Save Settings</button>
-      </div>
-    </div>
-    <div>
-      <div class="card">
-        <div class="card-title" id="a-tg-title">Telegram Preview</div>
-        <div class="tg-box">
-          <div class="tg-hdr">
-            <div class="tg-av">📊</div>
-            <div>
-              <div class="tg-name" id="tg-bot-name">Market Intelligence Bot</div>
-              <div class="tg-status" id="tg-bot-status">Bot · Active now</div>
-            </div>
-          </div>
-          <div class="tg-msg" id="tgMsg">
-🌅 <strong>Morning Portfolio Brief</strong><br>
-Daily | 7:00 AM UAE<br><br>
-💼 <strong>Portfolio: —</strong><br><br>
-📈 <strong>Top Moves:</strong><br>
-• Loaded from Make.com each morning<br><br>
-🌍 <strong>Key News Today:</strong><br>
-• Fed decision at 8:30pm UAE<br>
-• PCE inflation data out today<br><br>
-⚠️ <strong>Watch:</strong><br>
-WOLF remains at critical lows<br><br>
-<em style="color:#6b8b9e;font-size:10px">This is informational analysis, not financial advice</em>
-          </div>
-          <div class="tg-time">07:00 ✓✓</div>
+        <div style="display:flex;align-items:flex-end;">
+          <button class="btn btn-success" id="a-save" style="width:100%;">💾 حفظ الإعدادات</button>
         </div>
       </div>
     </div>
-  </div>
+  </details>
+
 </div>
 
 <!-- ===== TRANSACTIONS TAB ===== -->
@@ -1602,6 +1591,20 @@ function resetW(){
 }
 
 // ===== ALERTS =====
+// ── Filter alerts by type ──
+let _allAlerts = [];
+function filterAlerts(type, btn) {
+  document.querySelectorAll('#tab-alerts .t-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const items = document.querySelectorAll('#alertList .alert-item');
+  items.forEach(item => {
+    if(type === 'all') { item.style.display = ''; return; }
+    if(type === 'critical') { item.style.display = item.classList.contains('high') ? '' : 'none'; return; }
+    if(type === 'warning')  { item.style.display = item.classList.contains('med')  ? '' : 'none'; return; }
+    if(type === 'positive') { item.style.display = item.classList.contains('low')  ? '' : 'none'; return; }
+  });
+}
+
 function renderAlerts(){
   const t=T[lang];const isAr=lang==='ar';
   const alerts=[];
