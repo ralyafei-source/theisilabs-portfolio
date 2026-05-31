@@ -8,7 +8,7 @@ const UA      = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537
 const API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
 const FMP_KEY = process.env.FMP_API_KEY;
 const FMP     = 'https://financialmodelingprep.com/stable';
-const ETF_LIST = h.sector !== 'etf';
+
 
 // ─── FMP helper with 5s timeout ──────────────────────────────────────────────
 async function fmpGet(path) {
