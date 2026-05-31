@@ -2361,11 +2361,26 @@ async function loadAnalysis(){
 }
 
   const HEADER_TOOLTIPS = {
-  // Daily Signals
+  // Daily Signals columns
   'مركزك الحالي':                    'نسبة ربحك أو خسارتك الفعلية في هذا المركز حتى اليوم',
   'توقعات المحللين خلال 12 شهر':     'متوسط توقعات المحللين: إلى أي مستوى يتوقعون أن يصل السعر خلال 12 شهر',
+  'توقعات المحللين 12 شهر':          'متوسط توقعات المحللين: إلى أي مستوى يتوقعون أن يصل السعر خلال 12 شهر',
+  'السعر الحالي':                    'آخر سعر تداول للسهم في السوق',
   'التوصية':                         'توصية المحلل بناءً على تحليل السهم: شراء، احتفاظ، أو تخفيض',
   'السبب':                           'الأسباب الرئيسية وراء هذه التوصية اليوم',
+
+  // Technical terms used in cells
+  'Golden Cross':                    'المتوسط 50 يتجاوز المتوسط 200 يوماً — إشارة صعودية قوية تدل على بداية اتجاه صاعد',
+  'Death Cross':                     'المتوسط 50 يهبط تحت المتوسط 200 يوماً — إشارة هبوطية تدل على ضعف الزخم',
+  'RSI':                             'مؤشر القوة النسبية (0-100): فوق 70 = ذروة شراء وقد يتصحح، تحت 30 = ذروة بيع وقد يرتد',
+  'MACD':                            'مؤشر تقارب وتباعد المتوسطات — يُظهر زخم الاتجاه: صاعد أو هابط',
+  'EMA20':                           'المتوسط المتحرك الأسي لـ20 يوماً — السعر فوقه = زخم إيجابي، تحته = ضعف قصير المدى',
+  'SMA50':                           'المتوسط البسيط لـ50 يوماً — مؤشر الاتجاه المتوسط',
+  'SMA200':                          'المتوسط البسيط لـ200 يوماً — مؤشر الاتجاه طويل المدى',
+  'BB':                              'نطاقات بولينجر — يقيس مدى توسع أو ضيق التقلب حول المتوسط المتحرك',
+  'توافق':                           'متوسط توقعات جميع المحللين المتابعين للسهم — الأكثر موضوعية لأنه لا يعتمد على محلل واحد',
+  'ذروة شراء':                       'RSI فوق 70 — السهم ارتفع بسرعة وقد يحتاج إلى تصحيح قبل الاستمرار',
+  'ذروة بيع':                        'RSI تحت 30 — السهم انخفض بسرعة وقد يرتد قريباً',
 
   // Risk Radar
   'مستوى الخطر':                     'تقييم مستوى المخاطرة في هذا المركز من 1 إلى 10',
@@ -2380,7 +2395,6 @@ async function loadAnalysis(){
 
   // Momentum
   'الزخم':                           'قوة واتجاه حركة السعر — هل السهم في اتجاه صاعد أم هابط؟',
-  'RSI':                             'مؤشر القوة النسبية: فوق 70 = ذروة شراء، تحت 30 = ذروة بيع',
   'المتوسط المتحرك':                  'متوسط السعر خلال فترة معينة — يُستخدم لتحديد الاتجاه العام',
 
   // Competitive Edge
@@ -2574,6 +2588,7 @@ function renderAnalysis(data){
     let text = sectionsToUse[f] || (isAr ? 'لا توجد بيانات — سيتم التحديث في الموعد المجدول' : 'No data yet — updates on schedule');
 
     body.innerHTML = f==='signals' ? renderSignals(text) : f==='scoring' ? renderScoring(text) : mdToHtml(text);
+    if (f === 'signals') injectCurrentPrices(body);
 body.style.direction = isAr ? 'rtl' : 'ltr';
 body.style.textAlign = isAr ? 'right' : 'left';
 body.className = 'firm-body' + (isAr ? '' : ' en');
@@ -2762,6 +2777,42 @@ function renderSignals(text){
   if(inConviction) html += '</div>';
   return html;
 }
+// ── Inject current price into signals table ───────────────────────────────
+function injectCurrentPrices(bodyEl) {
+  if (!bodyEl) return;
+  const table = bodyEl.querySelector('table');
+  if (!table) return;
+  const rows = table.querySelectorAll('tr');
+  rows.forEach((row, idx) => {
+    const cells = row.querySelectorAll('th, td');
+    if (!cells.length) return;
+    const firstCell = cells[0];
+    const sym = firstCell.textContent.replace(/\*+/g,'').trim();
+    if (idx === 0) {
+      // Header row — add "السعر الحالي" th
+      const th = document.createElement('th');
+      th.style.cssText = 'padding:10px 14px;background:rgba(0,212,255,0.08);border:1px solid var(--border);text-align:center;font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap;';
+      const tip = 'آخر سعر تداول للسهم في السوق';
+      th.innerHTML = `السعر الحالي <span style="border-bottom:1px dotted var(--accent);cursor:help;" title="${tip}">ⓘ</span>`;
+      // Insert before last column (analyst targets)
+      const lastTh = cells[cells.length - 1];
+      row.insertBefore(th, lastTh);
+      return;
+    }
+    // Data row — look up price
+    const stock = stocks.find(s => s.sym === sym);
+    const td = document.createElement('td');
+    td.style.cssText = 'padding:10px 14px;border:1px solid var(--border);text-align:center;font-size:13px;font-family:"IBM Plex Mono",monospace;vertical-align:middle;';
+    if (stock && stock.price) {
+      td.innerHTML = `<span style="color:var(--accent);font-weight:600;">$${stock.price.toFixed(2)}</span>`;
+    } else {
+      td.innerHTML = `<span style="color:var(--text3);">—</span>`;
+    }
+    const lastTd = cells[cells.length - 1];
+    row.insertBefore(td, lastTd);
+  });
+}
+
 function parseAnalysisSections(content, type){
   const sections={};
   // Map section markers by type
