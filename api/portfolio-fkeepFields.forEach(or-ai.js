@@ -326,6 +326,8 @@ module.exports = async (req, res) => {
   'netDebtToEBITDATTM','stockBasedCompensationToRevenueTTM'
 ];
 keepFields.forEach(f => { if (i[f] != null) clean[f] = +i[f].toFixed(3); });
+        return clean;
+      });
 
       const earningsSorted = earnings.map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}))
         .sort((a, b) => {
