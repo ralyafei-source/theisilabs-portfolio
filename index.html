@@ -2589,6 +2589,9 @@ function renderAnalysis(data){
 
     body.innerHTML = f==='signals' ? renderSignals(text) : f==='scoring' ? renderScoring(text) : mdToHtml(text);
     if (f === 'signals') injectCurrentPrices(body);
+    // Apply glossary dotted underlines to newly rendered content
+    body.dataset.glossaryDone = '';
+    if (typeof highlightGlossaryTerms === 'function') highlightGlossaryTerms(body);
 body.style.direction = isAr ? 'rtl' : 'ltr';
 body.style.textAlign = isAr ? 'right' : 'left';
 body.className = 'firm-body' + (isAr ? '' : ' en');
