@@ -230,8 +230,8 @@ module.exports = async (req, res) => {
       // ── Fetch latest available market data (today or most recent past day) ─
       const { date: marketDataDate, syms: moverSyms } = await fetchLatestMarketData();
 
-      // Top 10 non-ETF for analyst calls
-      const top10 = enriched.filter(h => h.sector !== 'etf').slice(0, 10).map(h => h.sym);
+      // Top 20 non-ETF for analyst calls
+const top20 = enriched.filter(h => h.sector !== 'etf').slice(0, 20).map(h => h.sym);
 
       // Top 20 non-ETF for technicals
       const top20tech = enriched.filter(h => h.sector !== 'etf').slice(0, 20).map(h => h.sym);
@@ -250,10 +250,10 @@ module.exports = async (req, res) => {
         techResults
       ] = await Promise.all([
         fmpGet(`/earnings-calendar?from=${todayUAE()}&to=${daysAheadUAE(60)}&symbol=${allSyms.join(',')}`),
-        Promise.all(top10.map(sym => fmpGet(`/price-target-consensus?symbol=${sym}`))),
+        Promise.all(top20.map(sym => fmpGet(`/price-target-consensus?symbol=${sym}`))),
         // Grades: limit to last 60 days + max 5 per stock to prevent token bloat
-        Promise.all(top10.map(sym => fmpGet(`/grades?symbol=${sym}&limit=50`))),
-        Promise.all(top10.map(sym => fmpGet(`/key-metrics-ttm?symbol=${sym}`))),
+        Promise.all(top20.map(sym => fmpGet(`/grades?symbol=${sym}&limit=50`))),
+        Promise.all(top20.map(sym => fmpGet(`/key-metrics-ttm?symbol=${sym}`))),
         Promise.allSettled(top20tech.map(sym => fetchTechnicals(sym)))
       ]);
 
