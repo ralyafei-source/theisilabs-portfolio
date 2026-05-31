@@ -192,31 +192,29 @@ module.exports = async (req, res) => {
         }
       } catch { /* market data not yet available — skip */ }
 
-      // Combined symbol list: portfolio first, then movers
+      // Top 10 non-ETF holdings for per-symbol analyst calls
+      const ETF_LIST = new Set(["QQQ","SPY","VGT","SPUS","VOO","XLP","IVV","SMH","IBIT","QQQM"]);
+      const top10 = enriched.filter(h => !ETF_LIST.has(h.sym)).slice(0, 10).map(h => h.sym);
       const allSyms = [...new Set([...symbols, ...moverSyms])];
 
-      // For earnings: use full list (small response due to date filter)
-      const earningsSymList = allSyms.join(",");
-
-      // For analyst data: top 25 non-ETF holdings only (FMP URL length limit)
-      const ETF_LIST = new Set(["QQQ","SPY","VGT","SPUS","VOO","XLP","IVV","SMH","IBIT","QQQM"]);
-      const top25 = enriched.filter(h => !ETF_LIST.has(h.sym)).slice(0, 25).map(h => h.sym);
-      const analystSymList = [...new Set([...top25, ...moverSyms])].join(",");
-
       // Fetch all FMP intelligence in parallel
-      const [earnings, targets, grades, metrics] = await Promise.all([
-        fmpGet(`/earnings-calendar?from=${todayUAE()}&to=${daysAheadUAE(60)}&symbol=${earningsSymList}`),
-        fmpGet(`/price-target-consensus?symbol=${analystSymList}`),
-        fmpGet(`/grades?symbol=${analystSymList}&limit=5`),
-        fmpGet(`/key-metrics-ttm?symbol=${analystSymList}`)
+      // Earnings supports multi-symbol; targets/grades/metrics require one symbol at a time
+      const [earningsRaw, targetResults, gradeResults, metricResults] = await Promise.all([
+        fmpGet(`/earnings-calendar?from=${todayUAE()}&to=${daysAheadUAE(60)}&symbol=${allSyms.join(',')}`),
+        Promise.all(top10.map(sym => fmpGet(`/price-target-consensus?symbol=${sym}`))),
+        Promise.all(top10.map(sym => fmpGet(`/grades?symbol=${sym}&limit=3`))),
+        Promise.all(top10.map(sym => fmpGet(`/key-metrics-ttm?symbol=${sym}`)))
       ]);
 
-      // Tag each item — is it in the portfolio or just a mover?
-      const tag = (arr, f = 'symbol') =>
-        (arr || []).map(i => ({ ...i, inPortfolio: ownedSet.has(i[f]) }));
+      // Flatten and tag results
+      const earnings = earningsRaw || [];
+      const targets  = targetResults.flat().filter(Boolean).map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
+      const grades   = gradeResults.flat().filter(Boolean).map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
+      const metrics  = metricResults.flat().filter(Boolean).map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
+      const tag = (arr) => arr;
 
       // Sort earnings — portfolio stocks first, then by date
-      const earningsSorted = tag(earnings || [])
+      const earningsSorted = (earnings || []).map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}))
         .sort((a, b) => {
           if (a.inPortfolio && !b.inPortfolio) return -1;
           if (!a.inPortfolio && b.inPortfolio) return 1;
