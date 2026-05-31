@@ -8,7 +8,7 @@ const UA      = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537
 const API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
 const FMP_KEY = 'pSwvmzs4KUzvmePFIbSF0ulu5KnxcrHj';
 const FMP     = 'https://financialmodelingprep.com/stable';
-const ETF_LIST = new Set(["QQQ","SPY","VGT","SPUS","VOO","XLP","IVV","SMH","IBIT","QQQM"]);
+h.sector !== 'etf'
 
 // ─── FMP helper with 5s timeout ──────────────────────────────────────────────
 async function fmpGet(path) {
@@ -217,10 +217,10 @@ module.exports = async (req, res) => {
       } catch { /* skip */ }
 
       // Top 10 non-ETF for analyst calls
-      const top10 = enriched.filter(h => !ETF_LIST.has(h.sym)).slice(0, 10).map(h => h.sym);
+      const top10 = enriched.filter(h => h.sector !== 'etf').slice(0, 10).map(h => h.sym);
 
       // Top 20 non-ETF for technicals (avoids timeout — 20 stocks × 6 calls = 120 calls)
-      const top20tech = enriched.filter(h => !ETF_LIST.has(h.sym)).slice(0, 20).map(h => h.sym);
+      const top20tech = enriched.filter(h => h.sector !== 'etf').slice(0, 20).map(h => h.sym);
 
       const allSyms = [...new Set([...symbols, ...moverSyms])];
 
