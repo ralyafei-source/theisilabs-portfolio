@@ -9,7 +9,6 @@ const API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
 const FMP_KEY = process.env.FMP_API_KEY;
 const FMP     = 'https://financialmodelingprep.com/stable';
 
-
 // ─── FMP helper with 5s timeout ──────────────────────────────────────────────
 async function fmpGet(path) {
   try {
@@ -32,9 +31,37 @@ function daysAheadUAE(n) {
   return new Date(Date.now() + 4 * 3600 * 1000 + n * 86400000).toISOString().slice(0, 10);
 }
 
+// Returns date N days AGO in UAE timezone
+function daysAgoUAE(n) {
+  return new Date(Date.now() + 4 * 3600 * 1000 - n * 86400000).toISOString().slice(0, 10);
+}
+
 function latest(arr, field) {
   if (!Array.isArray(arr) || arr.length === 0) return null;
   return arr[0]?.[field] ?? null;
+}
+
+// ─── Fetch latest available market data file (today or most recent past day) ─
+async function fetchLatestMarketData() {
+  // Try today first, then walk back up to 7 days
+  for (let i = 0; i <= 7; i++) {
+    const date = new Date(Date.now() + 4 * 3600 * 1000 - i * 86400000).toISOString().slice(0, 10);
+    try {
+      const r = await fetch(
+        `https://raw.githubusercontent.com/${REPO}/main/data/market-data-${date}.json?t=${Date.now()}`
+      );
+      if (r.ok) {
+        const md  = await r.json();
+        const str = typeof md === 'string' ? md : JSON.stringify(md);
+        const matches = str.match(/"ticker"\s*:\s*"([A-Z]{1,6})"/g) || [];
+        const syms = [...new Set(
+          matches.map(m => m.match(/"([A-Z]{1,6})"/)?.[1]).filter(Boolean)
+        )].slice(0, 20);
+        return { date, syms };
+      }
+    } catch { /* try next day */ }
+  }
+  return { date: null, syms: [] };
 }
 
 // ─── Fetch technicals for one symbol — all 5 indicators in parallel ──────────
@@ -49,14 +76,14 @@ async function fetchTechnicals(sym) {
   ]);
   return {
     sym,
-    rsi:    latest(rsiRaw,   'rsi'),
-    macd:   latest(macdRaw,  'macd'),
-    signal: latest(macdRaw,  'signal'),
-    histogram: latest(macdRaw, 'histogram'),
-    sma50:  latest(sma50Raw,  'sma'),
-    sma200: latest(sma200Raw, 'sma'),
-    ema20:  latest(ema20Raw,  'ema'),
-    stddev: latest(bbRaw,     'standardDeviation')
+    rsi:       latest(rsiRaw,   'rsi'),
+    macd:      latest(macdRaw,  'macd'),
+    signal:    latest(macdRaw,  'signal'),
+    histogram: latest(macdRaw,  'histogram'),
+    sma50:     latest(sma50Raw,  'sma'),
+    sma200:    latest(sma200Raw, 'sma'),
+    ema20:     latest(ema20Raw,  'ema'),
+    stddev:    latest(bbRaw,     'standardDeviation')
   };
 }
 
@@ -200,32 +227,21 @@ module.exports = async (req, res) => {
     // ── Intelligence block ───────────────────────────────────────────────────
     if (wantIntelligence) {
 
-      // Market movers from saved file
-      let moverSyms = [];
-      try {
-        const mdr = await fetch(
-          `https://raw.githubusercontent.com/${REPO}/main/data/market-data-${todayUAE()}.json?t=${Date.now()}`
-        );
-        if (mdr.ok) {
-          const md  = await mdr.json();
-          const str = typeof md === 'string' ? md : JSON.stringify(md);
-          const matches = str.match(/"ticker"\s*:\s*"([A-Z]{1,6})"/g) || [];
-          moverSyms = [...new Set(
-            matches.map(m => m.match(/"([A-Z]{1,6})"/)?.[1]).filter(Boolean)
-          )].slice(0, 20);
-        }
-      } catch { /* skip */ }
+      // ── Fetch latest available market data (today or most recent past day) ─
+      const { date: marketDataDate, syms: moverSyms } = await fetchLatestMarketData();
 
       // Top 10 non-ETF for analyst calls
       const top10 = enriched.filter(h => h.sector !== 'etf').slice(0, 10).map(h => h.sym);
 
-      // Top 20 non-ETF for technicals (avoids timeout — 20 stocks × 6 calls = 120 calls)
+      // Top 20 non-ETF for technicals
       const top20tech = enriched.filter(h => h.sector !== 'etf').slice(0, 20).map(h => h.sym);
 
       const allSyms = [...new Set([...symbols, ...moverSyms])];
 
-      // ── All FMP calls in parallel ──────────────────────────────────────────
-      // Analyst data + technicals for top 20 run simultaneously
+      // Grades: last 60 days only to avoid returning years of history
+      const gradesFrom = daysAgoUAE(60);
+
+      // ── All FMP calls in parallel ─────────────────────────────────────────
       const [
         earningsRaw,
         targetResults,
@@ -235,33 +251,31 @@ module.exports = async (req, res) => {
       ] = await Promise.all([
         fmpGet(`/earnings-calendar?from=${todayUAE()}&to=${daysAheadUAE(60)}&symbol=${allSyms.join(',')}`),
         Promise.all(top10.map(sym => fmpGet(`/price-target-consensus?symbol=${sym}`))),
-        Promise.all(top10.map(sym => fmpGet(`/grades?symbol=${sym}&limit=3`))),
+        // Grades: limit to last 60 days + max 5 per stock to prevent token bloat
+        Promise.all(top10.map(sym => fmpGet(`/grades?symbol=${sym}&from=${gradesFrom}&limit=5`))),
         Promise.all(top10.map(sym => fmpGet(`/key-metrics-ttm?symbol=${sym}`))),
-        // Technicals: top 20 non-ETF stocks, each stock's 6 indicators run in parallel
         Promise.allSettled(top20tech.map(sym => fetchTechnicals(sym)))
       ]);
 
-      // ── Build tech map ─────────────────────────────────────────────────────
+      // ── Build tech map ────────────────────────────────────────────────────
       const techMap = {};
       techResults.forEach(result => {
         if (result.status === 'fulfilled' && result.value) {
           const t = result.value;
           const price = priceMap[t.sym];
           const entry = {
-            rsi:    t.rsi    !== null ? +t.rsi.toFixed(2)    : null,
-            macd:   t.macd   !== null ? +t.macd.toFixed(4)   : null,
-            signal: t.signal !== null ? +t.signal.toFixed(4) : null,
+            rsi:       t.rsi    !== null ? +t.rsi.toFixed(2)    : null,
+            macd:      t.macd   !== null ? +t.macd.toFixed(4)   : null,
+            signal:    t.signal !== null ? +t.signal.toFixed(4) : null,
             histogram: t.histogram !== null ? +t.histogram.toFixed(4) : null,
-            sma50:  t.sma50  !== null ? +t.sma50.toFixed(2)  : null,
-            sma200: t.sma200 !== null ? +t.sma200.toFixed(2) : null,
-            ema20:  t.ema20  !== null ? +t.ema20.toFixed(2)  : null,
+            sma50:     t.sma50  !== null ? +t.sma50.toFixed(2)  : null,
+            sma200:    t.sma200 !== null ? +t.sma200.toFixed(2) : null,
+            ema20:     t.ema20  !== null ? +t.ema20.toFixed(2)  : null,
           };
-          // Bollinger Bands from stddev
           if (t.stddev !== null && price) {
             entry.bb_upper = +(price + 2 * t.stddev).toFixed(2);
             entry.bb_lower = +(price - 2 * t.stddev).toFixed(2);
           }
-          // Plain-language signals
           const signals = [];
           if (entry.rsi !== null) {
             if (entry.rsi > 70)      signals.push(`RSI ${entry.rsi} — OVERBOUGHT`);
@@ -269,9 +283,9 @@ module.exports = async (req, res) => {
             else                     signals.push(`RSI ${entry.rsi} — neutral`);
           }
           if (entry.macd !== null && entry.signal !== null) {
-            if (entry.macd > entry.signal && entry.histogram > 0) signals.push('MACD bullish ↑');
-            else if (entry.macd < entry.signal && entry.histogram < 0) signals.push('MACD bearish ↓');
-            else signals.push('MACD neutral');
+            if (entry.macd > entry.signal && entry.histogram > 0)       signals.push('MACD bullish ↑');
+            else if (entry.macd < entry.signal && entry.histogram < 0)  signals.push('MACD bearish ↓');
+            else                                                          signals.push('MACD neutral');
           }
           if (entry.sma50 !== null && entry.sma200 !== null) {
             signals.push(entry.sma50 > entry.sma200 ? 'Golden Cross ✅' : 'Death Cross ⚠️');
@@ -295,11 +309,21 @@ module.exports = async (req, res) => {
         }
       });
 
-      // ── Flatten analyst data ───────────────────────────────────────────────
+      // ── Flatten analyst data ──────────────────────────────────────────────
       const earnings = earningsRaw || [];
       const targets  = targetResults.flat().filter(Boolean).map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
       const grades   = gradeResults.flat().filter(Boolean).map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
-      const metrics  = metricResults.flat().filter(Boolean).map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
+
+      // Key metrics: strip out null/zero fields to reduce token size
+      const metrics = metricResults.flat().filter(Boolean).map(i => {
+        const clean = { symbol: i.symbol, inPortfolio: ownedSet.has(i.symbol) };
+        const keepFields = ['peRatioTTM','priceToSalesRatioTTM','pbRatioTTM','evToEbitdaTTM',
+                            'roeTTM','roicTTM','netProfitMarginTTM','revenueGrowthTTM',
+                            'debtToEquityTTM','freeCashFlowPerShareTTM'];
+        keepFields.forEach(f => { if (i[f] != null && i[f] !== 0) clean[f] = +i[f].toFixed(3); });
+        return clean;
+      });
+
       const earningsSorted = earnings.map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}))
         .sort((a, b) => {
           if (a.inPortfolio && !b.inPortfolio) return -1;
@@ -307,11 +331,11 @@ module.exports = async (req, res) => {
           return new Date(a.date) - new Date(b.date);
         });
 
-      // ── Append to text ─────────────────────────────────────────────────────
+      // ── Append to text ────────────────────────────────────────────────────
       text += `\n═══════════════════════════════════════════════════════\n`;
       text += `MARKET INTELLIGENCE — ${todayUAE()}\n`;
       text += `Portfolio: ${symbols.join(', ')}\n`;
-      text += `Movers tracked: ${moverSyms.join(', ') || 'none yet'}\n`;
+      text += `Movers data: ${marketDataDate ? `from ${marketDataDate}` : 'unavailable'} — ${moverSyms.join(', ') || 'none'}\n`;
       text += `═══════════════════════════════════════════════════════\n\n`;
 
       text += `TECHNICAL INDICATORS (top 20 non-ETF stocks):\n`;
@@ -338,13 +362,13 @@ module.exports = async (req, res) => {
       text += `EARNINGS CALENDAR (next 60 days):\n`;
       text += JSON.stringify({
         portfolio: earningsSorted.filter(e => e.inPortfolio),
-        movers:    earningsSorted.filter(e => !e.inPortfolio).slice(0, 10)
+        movers:    earningsSorted.filter(e => !e.inPortfolio).slice(0, 5)
       }, null, 2) + '\n\n';
 
       text += `ANALYST PRICE TARGETS:\n`;
       text += JSON.stringify(targets, null, 2) + '\n\n';
 
-      text += `ANALYST GRADES (recent):\n`;
+      text += `ANALYST GRADES (last 60 days):\n`;
       text += JSON.stringify(grades, null, 2) + '\n\n';
 
       text += `KEY METRICS TTM:\n`;
