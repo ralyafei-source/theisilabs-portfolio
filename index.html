@@ -520,7 +520,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
       <div class="nav-tab" onclick="showTab('weights',this)">⚖️ <span class="nt">Indicators</span></div>
       <div class="nav-tab" onclick="showTab('alerts',this)">🔔 <span class="nt">Alerts</span></div>
       <div class="nav-tab" onclick="showTab('transactions',this)">💳 <span class="nt">Transactions</span></div>
-      <div class="nav-tab" onclick="showTab('setup',this)">⚙️ <span class="nt">Setup</span></div>
+      <div class="nav-tab" onclick="showTab('setup',this)" id="nav-setup-tab">⚙️ <span class="nt" id="nav-setup-label">Setup</span></div>
     </div>
   </div>
 </nav>
@@ -1076,85 +1076,99 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 
 <!-- ===== SETUP TAB ===== -->
 <div id="tab-setup" class="tab-content">
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-title" id="s-keys-title">API Keys</div>
-      <div class="form-group">
-        <label class="form-label">Claude API Key</label>
-        <input class="form-input" type="password" placeholder="sk-ant-api03-...">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Telegram Bot Token</label>
-        <input class="form-input" type="password" placeholder="123456:AAF...">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Telegram Chat ID</label>
-        <input class="form-input" type="text" placeholder="-100123456...">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Alpha Vantage Key</label>
-        <input class="form-input" type="password" placeholder="ABCDEF123...">
-      </div>
-      <div class="form-group">
-        <label class="form-label">NewsAPI Key</label>
-        <input class="form-input" type="password" placeholder="abc123...">
-      </div>
-      <button class="btn btn-primary" id="s-save">💾 Save Config</button>
-    </div>
-    <div class="card">
-      <div class="card-title" id="s-steps-title">Make.com Setup Steps</div>
-      <div class="step-item">
-        <div class="step-num">1</div>
-        <div>
-          <div class="step-title" id="st1-title">Create new scenario</div>
-          <div class="step-desc" id="st1-desc">In Make.com click "Create a new scenario" then press the "+" button in the center</div>
-        </div>
-      </div>
-      <div class="step-item">
-        <div class="step-num">2</div>
-        <div>
-          <div class="step-title" id="st2-title">Add Schedule trigger</div>
-          <div class="step-desc" id="st2-desc">Search "Schedule" → Every day → Set time to 03:00 UTC (= 7:00am UAE)</div>
-        </div>
-      </div>
-      <div class="step-item">
-        <div class="step-num">3</div>
-        <div>
-          <div class="step-title" id="st3-title">Add HTTP module for market data</div>
-          <div class="step-desc" id="st3-desc">Search "HTTP" → Make a request → Enter this URL:</div>
-          <div class="code-block" style="margin-top:8px;font-size:10px;">https://www.alphavantage.co/query?function=BATCH_STOCK_QUOTES&symbols=NVDA,AMZN,MSFT,AAPL,GOOGL,MU&apikey=YOUR_KEY</div>
-        </div>
-      </div>
-      <div class="step-item">
-        <div class="step-num">4</div>
-        <div>
-          <div class="step-title" id="st4-title">Add Claude AI module</div>
-          <div class="step-desc" id="st4-desc">Add another HTTP module → POST to https://api.anthropic.com/v1/messages → Copy prompt from Claude Prompt tab</div>
-        </div>
-      </div>
-      <div class="step-item">
-        <div class="step-num">5</div>
-        <div>
-          <div class="step-title" id="st5-title">Add Telegram module</div>
-          <div class="step-desc" id="st5-desc">Search "Telegram Bot" → Send a Message → Enter your Chat ID → Map Claude's response as message</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- ===== PROMPT TAB ===== -->
-<div id="tab-prompt" class="tab-content">
-  <div class="card">
-    <div class="section-hdr">
-      <div>
-        <div class="section-title" id="pr-title">Claude API Prompt</div>
-        <div class="section-sub" id="pr-sub">Copy this into Make.com → HTTP Module → Body</div>
+  <!-- ADMIN VIEW — shown only to rashed -->
+  <div id="setup-admin-view" style="display:none;">
+    <div class="card">
+      <div class="section-hdr">
+        <div>
+          <div class="section-title" id="pr-title">Claude API Prompt</div>
+          <div class="section-sub" id="pr-sub">Copy this into Make.com → HTTP Module → Body</div>
+        </div>
+        <button class="btn btn-primary" onclick="copyPrompt()" id="pr-copy">📋 Copy All</button>
       </div>
-      <button class="btn btn-primary" onclick="copyPrompt()" id="pr-copy">📋 Copy All</button>
+      <div class="code-block" id="promptBlock"></div>
     </div>
-    <div class="code-block" id="promptBlock"></div>
   </div>
+
+  <!-- USER VIEW — shown to all non-admin users -->
+  <div id="setup-user-view" style="display:none;">
+    <div class="grid-2">
+
+      <!-- Account Info -->
+      <div>
+        <div class="card">
+          <div class="card-title" id="su-account-title">حسابي</div>
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding:14px;background:var(--bg3);border-radius:10px;border:1px solid var(--border);">
+            <div style="width:48px;height:48px;background:linear-gradient(135deg,var(--pink),var(--accent));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;" id="su-avatar">—</div>
+            <div>
+              <div style="font-size:16px;font-weight:800;" id="su-display-name">—</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px;" id="su-member-label">عضو نشط · Theisi Labs</div>
+            </div>
+          </div>
+
+          <!-- Language preference -->
+          <div class="form-group">
+            <label class="form-label" id="su-lang-label">اللغة المفضلة</label>
+            <div style="display:flex;gap:8px;">
+              <button class="t-btn active" id="su-lang-ar" onclick="setLang('ar',document.querySelector('.lang-btn'));document.getElementById('su-lang-ar').classList.add('active');document.getElementById('su-lang-en').classList.remove('active');">العربية</button>
+              <button class="t-btn" id="su-lang-en" onclick="setLang('en',document.querySelector('.lang-btn'));document.getElementById('su-lang-en').classList.add('active');document.getElementById('su-lang-ar').classList.remove('active');">English</button>
+            </div>
+          </div>
+
+          <hr class="divider">
+
+          <!-- Sign out -->
+          <button onclick="signOut()" class="btn btn-danger" style="width:100%;" id="su-signout">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-left:6px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            تسجيل الخروج
+          </button>
+        </div>
+      </div>
+
+      <!-- Change PIN -->
+      <div>
+        <div class="card">
+          <div class="card-title" id="su-pin-title">تغيير رمز PIN</div>
+          <div class="form-group">
+            <label class="form-label" id="su-current-pin-label">الرمز الحالي</label>
+            <div class="pin-dots" id="cp-dots" style="justify-content:flex-start;gap:10px;">
+              <div class="pin-dot" id="cp-d1"></div>
+              <div class="pin-dot" id="cp-d2"></div>
+              <div class="pin-dot" id="cp-d3"></div>
+              <div class="pin-dot" id="cp-d4"></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" id="su-new-pin-label">الرمز الجديد</label>
+            <div class="pin-dots" id="np-dots" style="justify-content:flex-start;gap:10px;">
+              <div class="pin-dot" id="np-d1"></div>
+              <div class="pin-dot" id="np-d2"></div>
+              <div class="pin-dot" id="np-d3"></div>
+              <div class="pin-dot" id="np-d4"></div>
+            </div>
+          </div>
+          <div class="numpad" style="max-width:240px;">
+            <div class="numpad-btn" onclick="changePinPress(1)">1</div>
+            <div class="numpad-btn" onclick="changePinPress(2)">2</div>
+            <div class="numpad-btn" onclick="changePinPress(3)">3</div>
+            <div class="numpad-btn" onclick="changePinPress(4)">4</div>
+            <div class="numpad-btn" onclick="changePinPress(5)">5</div>
+            <div class="numpad-btn" onclick="changePinPress(6)">6</div>
+            <div class="numpad-btn" onclick="changePinPress(7)">7</div>
+            <div class="numpad-btn" onclick="changePinPress(8)">8</div>
+            <div class="numpad-btn" onclick="changePinPress(9)">9</div>
+            <div class="numpad-btn empty"></div>
+            <div class="numpad-btn" onclick="changePinPress(0)">0</div>
+            <div class="numpad-btn del" onclick="changePinBack()">⌫</div>
+          </div>
+          <div id="cp-msg" style="font-size:12px;margin-top:10px;min-height:20px;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 
 </div>
@@ -1591,7 +1605,86 @@ function resetW(){
 }
 
 // ===== ALERTS =====
-// ── Filter alerts by type ──
+// ── Setup tab — show correct view based on admin status ──
+function initSetupTab(isAdmin, nickname) {
+  if (isAdmin) {
+    document.getElementById('setup-admin-view').style.display = 'block';
+    document.getElementById('setup-user-view').style.display = 'none';
+    document.getElementById('nav-setup-label').textContent = 'Setup';
+  } else {
+    document.getElementById('setup-admin-view').style.display = 'none';
+    document.getElementById('setup-user-view').style.display = 'block';
+    document.getElementById('nav-setup-label').textContent = 'حسابي';
+    // Populate account info
+    const initial = (nickname || '?').charAt(0).toUpperCase();
+    const avatarEl = document.getElementById('su-avatar');
+    const nameEl = document.getElementById('su-display-name');
+    if (avatarEl) avatarEl.textContent = initial;
+    if (nameEl) nameEl.textContent = nickname || '—';
+  }
+}
+
+// ── Change PIN logic ──
+let _cpState = 'current'; // 'current' or 'new'
+let _cpCurrent = '';
+let _cpNew = '';
+
+function changePinPress(digit) {
+  if (_cpState === 'current' && _cpCurrent.length < 4) {
+    _cpCurrent += digit;
+    updateChangePinDots('cp', _cpCurrent.length);
+    if (_cpCurrent.length === 4) { _cpState = 'new'; }
+  } else if (_cpState === 'new' && _cpNew.length < 4) {
+    _cpNew += digit;
+    updateChangePinDots('np', _cpNew.length);
+    if (_cpNew.length === 4) { submitChangePin(); }
+  }
+}
+
+function changePinBack() {
+  if (_cpState === 'new' && _cpNew.length > 0) {
+    _cpNew = _cpNew.slice(0,-1);
+    updateChangePinDots('np', _cpNew.length);
+  } else if (_cpState === 'current' && _cpCurrent.length > 0) {
+    _cpCurrent = _cpCurrent.slice(0,-1);
+    updateChangePinDots('cp', _cpCurrent.length);
+  }
+}
+
+function updateChangePinDots(prefix, count) {
+  for (let i = 1; i <= 4; i++) {
+    const d = document.getElementById(`${prefix}-d${i}`);
+    if (d) d.classList.toggle('filled', i <= count);
+  }
+}
+
+async function submitChangePin() {
+  const msg = document.getElementById('cp-msg');
+  const token = localStorage.getItem(AUTH_SESSION_KEY);
+  const nickname = localStorage.getItem(AUTH_NICK_KEY);
+  try {
+    const r = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'change-pin', nickname, currentPin: _cpCurrent, newPin: _cpNew, token })
+    });
+    const d = await r.json();
+    if (r.ok && d.success) {
+      if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '✅ تم تغيير رمز PIN بنجاح'; }
+    } else {
+      if (msg) { msg.style.color = 'var(--red)'; msg.textContent = '❌ ' + (d.error || 'رمز PIN الحالي غير صحيح'); }
+    }
+  } catch(e) {
+    if (msg) { msg.style.color = 'var(--red)'; msg.textContent = '❌ خطأ في الاتصال'; }
+  }
+  // Reset state
+  _cpState = 'current'; _cpCurrent = ''; _cpNew = '';
+  updateChangePinDots('cp', 0);
+  updateChangePinDots('np', 0);
+  setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
+}
+
+
 let _allAlerts = [];
 function filterAlerts(type, btn) {
   document.querySelectorAll('#tab-alerts .t-btn').forEach(b=>b.classList.remove('active'));
@@ -2578,8 +2671,16 @@ function renderSignals(text){
     inTable = false;
   }
 
+  let inConviction = false;
   lines.forEach(line => {
     const t = line.trim();
+
+    // Close conviction card on empty line after content
+    if(inConviction && t === '') {
+      html += '</div>';
+      inConviction = false;
+      return;
+    }
 
     // Table row
     if(t.startsWith('|') && t.endsWith('|')){
@@ -2593,6 +2694,13 @@ function renderSignals(text){
 
     // Section header
     if(/^[\d١-٩][\.\-\)]/.test(t) || /^#{1,3}\s/.test(t) || t.includes('═══')){
+      const isConviction = /أعلى صفقة|best conviction|conviction trade/i.test(t);
+      if (isConviction) {
+        inConviction = true;
+        html += `<div style="font-size:13px;font-weight:800;color:var(--pink);margin:20px 0 6px;padding:8px 14px;background:rgba(255,10,120,0.08);border-radius:8px;border-right:3px solid var(--pink);direction:rtl;text-align:right;">🎯 ${t.replace(/^[\d١-٩][\.\-\)]\s*/,'').replace(/\*\*/g,'').trim()}</div>
+        <div style="background:linear-gradient(135deg,rgba(255,10,120,0.08),rgba(53,214,255,0.05));border:1px solid rgba(255,10,120,0.3);border-radius:14px;padding:16px 18px;margin-bottom:12px;direction:rtl;text-align:right;">`;
+        return;
+      }
       html += `<div style="font-size:14px;font-weight:800;color:var(--accent);margin:20px 0 10px;padding:10px 14px;background:rgba(0,212,255,0.06);border-radius:8px;border-right:3px solid var(--accent);direction:rtl;text-align:right;">${t.replace(/^#+\s*/,'').replace(/═══/g,'').trim()}</div>`;
       return;
     }
@@ -2626,11 +2734,32 @@ function renderSignals(text){
     }
 
     if(!matched && t){
+      // Conviction trade card detection
+      if(/أعلى صفقة|best conviction|conviction trade/i.test(t)) {
+        return;
+      }
+      // Dash-prefixed detail lines — style as conviction card rows
+      if(t.startsWith('- ') || t.startsWith('– ')) {
+        const content = t.replace(/^[-–]\s*/, '');
+        const isTarget = /الهدف|target/i.test(content);
+        const isReason = /السبب|reason/i.test(content);
+        const isQty = /الكمية|quantity/i.test(content);
+        const color = isTarget ? 'var(--accent)' : isReason ? 'var(--text)' : isQty ? 'var(--pink)' : 'var(--text2)';
+        const weight = isTarget || isQty ? '700' : '400';
+        html += `<div style="font-size:13px;color:${color};font-weight:${weight};padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);line-height:1.7;">${colorizePercent(content)}</div>`;
+        return;
+      }
+      // Stock ticker line inside conviction (🎯 ONTO — ...)
+      if(t.includes('🎯') || /^[A-Z]{2,5}\s*—/.test(t)) {
+        html += `<div style="font-size:15px;font-weight:800;color:var(--pink);padding:6px 0 10px;border-bottom:1px solid rgba(255,10,120,0.2);margin-bottom:8px;">${colorizePercent(t)}</div>`;
+        return;
+      }
       html += `<div style="font-size:13px;color:var(--text2);padding:4px 8px;direction:rtl;text-align:right;line-height:1.7;">${colorizePercent(t)}</div>`;
     }
   });
 
   if(inTable) flushSignalTable();
+  if(inConviction) html += '</div>';
   return html;
 }
 function parseAnalysisSections(content, type){
@@ -4882,22 +5011,7 @@ async function checkSession() {
       const chatBtn = document.getElementById('chatBtn');
       if (chatBtn) chatBtn.title = 'مستشار ' + displayName + ' الذكي';
       if (data.isAdmin) showAdminButton();
-      else if (!document.getElementById('signOutBtn')) {
-        const headerRight = document.querySelector('.header-right');
-        if (headerRight) {
-          const soBtn = document.createElement('button');
-          soBtn.id = 'signOutBtn';
-          soBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Out';
-    soBtn.title = 'Sign Out';
-    soBtn.style.cssText = 'background:rgba(255,68,68,0.12);border:1px solid rgba(255,68,68,0.4);color:var(--red);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;font-family:Almarai,sans-serif;display:flex;align-items:center;';
-    soBtn.onclick = signOut;
-    soBtn.onmouseover = () => { soBtn.style.background='rgba(255,68,68,0.25)'; soBtn.style.borderColor='var(--red)'; };
-    soBtn.onmouseout = () => { soBtn.style.background='rgba(255,68,68,0.12)'; soBtn.style.borderColor='rgba(255,68,68,0.4)'; };
-          headerRight.appendChild(soBtn);
-        }
-      }
-      // Load their portfolio
-      loadUserPortfolio(token, data.isAdmin, data.nickname);
+      initSetupTab(data.isAdmin, data.nickname);
     } else {
       localStorage.removeItem(AUTH_SESSION_KEY);
       showAuth();
@@ -5111,6 +5225,7 @@ function onAuthSuccess(nickname, isAdmin, token, firstLogin) {
   if (chatBtn) chatBtn.title = 'مستشار ' + displayName + ' الذكي';
   // Show admin panel button if admin
   if (isAdmin) showAdminButton();
+  initSetupTab(isAdmin, nickname);
   else if (!document.getElementById('signOutBtn')) {
     const headerRight = document.querySelector('.header-right');
     if (headerRight) {
