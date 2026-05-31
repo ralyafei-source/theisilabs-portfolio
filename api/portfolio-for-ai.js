@@ -77,9 +77,9 @@ async function fetchTechnicals(sym) {
   return {
     sym,
     rsi:       latest(rsiRaw,   'rsi'),
-    macd:      latest(macdRaw,  'macd'),
-    signal:    latest(macdRaw,  'signal'),
-    histogram: latest(macdRaw,  'histogram'),
+    macd:      latest(macdRaw,  'macd') ?? latest(macdRaw, 'macdLine'),
+signal:    latest(macdRaw,  'signal') ?? latest(macdRaw, 'signalLine'),
+histogram: latest(macdRaw,  'histogram') ?? latest(macdRaw, 'macdHistogram'),
     sma50:     latest(sma50Raw,  'sma'),
     sma200:    latest(sma200Raw, 'sma'),
     ema20:     latest(ema20Raw,  'ema'),
@@ -252,7 +252,7 @@ module.exports = async (req, res) => {
         fmpGet(`/earnings-calendar?from=${todayUAE()}&to=${daysAheadUAE(60)}&symbol=${allSyms.join(',')}`),
         Promise.all(top10.map(sym => fmpGet(`/price-target-consensus?symbol=${sym}`))),
         // Grades: limit to last 60 days + max 5 per stock to prevent token bloat
-        Promise.all(top10.map(sym => fmpGet(`/grades?symbol=${sym}&from=${gradesFrom}&limit=5`))),
+        Promise.all(top10.map(sym => fmpGet(`/grades?symbol=${sym}&limit=50`))),
         Promise.all(top10.map(sym => fmpGet(`/key-metrics-ttm?symbol=${sym}`))),
         Promise.allSettled(top20tech.map(sym => fetchTechnicals(sym)))
       ]);
@@ -312,7 +312,9 @@ module.exports = async (req, res) => {
       // ── Flatten analyst data ──────────────────────────────────────────────
       const earnings = earningsRaw || [];
       const targets  = targetResults.flat().filter(Boolean).map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
-      const grades   = gradeResults.flat().filter(Boolean).map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
+      const grades   = gradeResults.flat().filter(Boolean)
+  .filter(i => i.date >= gradesFrom)
+  .map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
 
       // Key metrics: strip out null/zero fields to reduce token size
       const metrics = metricResults.flat().filter(Boolean).map(i => {
