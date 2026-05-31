@@ -4441,10 +4441,7 @@ async function sendChatMsg() {
       currentTab,
       nickname: localStorage.getItem(AUTH_NICK_KEY) || 'المستخدم'
     };
-Upload both files → test with Asma's account → the chatbot will now address her by name with her own portfolio context.
-
-
-
+// Upload both files → test with Asma's account → the chatbot will now address her by name with her own portfolio context.
 
     const res = await fetch('/api/chat', {
       method: 'POST',
@@ -5227,7 +5224,6 @@ function onAuthSuccess(nickname, isAdmin, token, firstLogin) {
   if (chatBtn) chatBtn.title = 'مستشار ' + displayName + ' الذكي';
   // Show admin panel button if admin
   if (isAdmin) showAdminButton();
-  initSetupTab(isAdmin, nickname);
   else if (!document.getElementById('signOutBtn')) {
     const headerRight = document.querySelector('.header-right');
     if (headerRight) {
@@ -5242,6 +5238,7 @@ function onAuthSuccess(nickname, isAdmin, token, firstLogin) {
       headerRight.appendChild(soBtn);
     }
   }
+  initSetupTab(isAdmin, nickname);
   // Load portfolio for this user
   loadUserPortfolio(token, isAdmin, nickname);
 }
