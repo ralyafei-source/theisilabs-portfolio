@@ -256,7 +256,8 @@ module.exports = async (req, res) => {
         dcfResults,
         priceChangeResults,
         shortInterestResults,
-        annualMetricResults
+        annualMetricResults,
+        ratiosResults
       ] = await Promise.all([
         // Existing calls
         fmpGet(`/earnings-calendar?from=${todayUAE()}&to=${daysAheadUAE(60)}&symbol=${allSyms.join(',')}`),
@@ -265,11 +266,12 @@ module.exports = async (req, res) => {
         Promise.all(top20.map(sym => fmpGet(`/key-metrics-ttm?symbol=${sym}`))),
         Promise.allSettled(top20tech.map(sym => fetchTechnicals(sym))),
         // New calls
-        Promise.all(top20.map(sym => fmpGet(`/earnings-surprises?symbol=${sym}&limit=4`))),
+        Promise.all(top20.map(sym => fmpGet(`/earnings-surprises/${sym}?limit=4`))),
         Promise.all(top20.map(sym => fmpGet(`/discounted-cash-flow?symbol=${sym}`))),
         Promise.all(top20.map(sym => fmpGet(`/stock-price-change?symbol=${sym}`))),
-        Promise.all(top20.map(sym => fmpGet(`/stock-short-interest?symbol=${sym}`))),
-        Promise.all(top20.map(sym => fmpGet(`/key-metrics?symbol=${sym}&period=annual&limit=5`)))
+        Promise.all(top20.map(sym => fmpGet(`/historical/shares_float?symbol=${sym}`))),
+        Promise.all(top20.map(sym => fmpGet(`/key-metrics-annual?symbol=${sym}&limit=5`))),
+        Promise.all(top20.map(sym => fmpGet(`/ratios-ttm?symbol=${sym}`)))
       ]);
 
       // ── Build tech map ────────────────────────────────────────────────────
@@ -433,21 +435,35 @@ module.exports = async (req, res) => {
         weeklyChangeMap[sym] = item?.['5D'] != null ? +item['5D'].toFixed(2) : null;
       });
 
-      // Short interest
+      // Short interest — from shares_float endpoint
+      // Fields: floatShares, outstandingShares, freeFloat (% as decimal)
       const shortInterestMap = {};
       shortInterestResults.forEach((data, idx) => {
         const sym = top20[idx];
         if (!Array.isArray(data) || !data.length) { shortInterestMap[sym] = null; return; }
         const item = data[0];
-        const pct  = item.shortPercentOfFloat != null
-          ? +(item.shortPercentOfFloat * 100).toFixed(2)
-          : item.shortPercent != null
-            ? +(item.shortPercent).toFixed(2)
-            : null;
+        // Try multiple field names across FMP endpoint variations
+        const pct = item.shortInterestPercent != null ? +(item.shortInterestPercent).toFixed(2)
+                  : item.shortPercentOfFloat  != null ? +(item.shortPercentOfFloat * 100).toFixed(2)
+                  : item.shortPercent         != null ? +(item.shortPercent).toFixed(2)
+                  : null;
         const ratio = item.daysToCover != null ? +item.daysToCover.toFixed(1)
                     : item.shortRatio  != null ? +item.shortRatio.toFixed(1)
                     : null;
-        shortInterestMap[sym] = { shortPct: pct, shortRatio: ratio };
+        const floatPct = item.freeFloat != null ? +(item.freeFloat * 100).toFixed(1) : null;
+        shortInterestMap[sym] = pct != null ? { shortPct: pct, shortRatio: ratio }
+                              : floatPct != null ? { floatPct, note: 'float data only — short % unavailable' }
+                              : null;
+      });
+
+      // PEG ratio — from ratios-ttm endpoint
+      const pegMap = {};
+      ratiosResults.forEach((data, idx) => {
+        const sym  = top20[idx];
+        const item = Array.isArray(data) ? data[0] : data;
+        if (!item) { pegMap[sym] = null; return; }
+        const peg = item.priceEarningsToGrowthRatioTTM ?? item.pegRatioTTM ?? null;
+        pegMap[sym] = peg != null && peg > 0 && peg < 100 ? +peg.toFixed(2) : null;
       });
 
       // Historical P/E — 5Y annual average
@@ -531,7 +547,8 @@ module.exports = async (req, res) => {
       text += `SHORT INTEREST (% of float — higher % = more bearish bets):\n`;
       top20.forEach(sym => {
         const s = shortInterestMap[sym];
-        if (!s || s.shortPct == null) { text += `${sym.padEnd(7)} N/A\n`; return; }
+        if (!s) { text += `${sym.padEnd(7)} N/A\n`; return; }
+        if (s.note) { text += `${sym.padEnd(7)} float=${s.floatPct}%  [short % not available via this endpoint]\n`; return; }
         const flag = s.shortPct > 10 ? ' ⚠️ HIGH SHORT INTEREST'
                    : s.shortPct > 5  ? ' notable'
                    : '';
@@ -539,20 +556,26 @@ module.exports = async (req, res) => {
       });
       text += `\n`;
 
-      // Historical P/E comparison
-      text += `HISTORICAL P/E COMPARISON (5Y annual average vs current TTM):\n`;
+      // Historical P/E comparison + PEG ratio
+      text += `HISTORICAL P/E + PEG RATIO (5Y annual avg vs current TTM):\n`;
       top20.forEach(sym => {
         const hist      = historicalPeMap[sym];
         const currentPE = metricsLookup[sym]?.peRatioTTM != null
           ? +metricsLookup[sym].peRatioTTM.toFixed(1) : null;
-        if (!hist && !currentPE) { text += `${sym.padEnd(7)} N/A (negative earnings or no history)\n`; return; }
+        const peg = pegMap[sym];
+        if (!hist && !currentPE && !peg) {
+          text += `${sym.padEnd(7)} N/A (negative earnings or no history)\n`; return;
+        }
         let note = '';
         if (hist && currentPE) {
-          if (currentPE < hist * 0.85)      note = ' → BELOW historical avg — potential value';
-          else if (currentPE > hist * 1.15) note = ' → ABOVE historical avg — premium valuation';
+          if (currentPE < hist * 0.85)      note = ' → BELOW historical avg';
+          else if (currentPE > hist * 1.15) note = ' → ABOVE historical avg';
           else                               note = ' → near historical avg';
         }
-        text += `${sym.padEnd(7)} hist5Y=${hist || 'N/A'}x  currentPE=${currentPE || 'N/A'}x${note}\n`;
+        const pegStr = peg != null
+          ? `  peg=${peg}x${peg < 1 ? ' (undervalued)' : peg > 2 ? ' (expensive)' : ''}`
+          : '';
+        text += `${sym.padEnd(7)} hist5Y=${hist || 'N/A'}x  currentPE=${currentPE || 'N/A'}x${pegStr}${note}\n`;
       });
       text += `\n`;
 
