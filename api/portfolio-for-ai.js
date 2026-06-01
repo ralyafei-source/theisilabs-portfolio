@@ -33,6 +33,35 @@ async function fmpGet(path) {
   } catch { return null; }
 }
 
+const FMP_V3 = 'https://financialmodelingprep.com/api/v3';
+const FMP_V4 = 'https://financialmodelingprep.com/api/v4';
+
+async function fmpGetV3(path) {
+  try {
+    const sep = path.includes('?') ? '&' : '?';
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const r = await fetch(`${FMP_V3}${path}${sep}apikey=${FMP_KEY}`, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!r.ok) return null;
+    const d = await r.json();
+    return Array.isArray(d) ? d : (d?.Error ? null : d);
+  } catch { return null; }
+}
+
+async function fmpGetV4(path) {
+  try {
+    const sep = path.includes('?') ? '&' : '?';
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const r = await fetch(`${FMP_V4}${path}${sep}apikey=${FMP_KEY}`, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!r.ok) return null;
+    const d = await r.json();
+    return Array.isArray(d) ? d : (d?.Error ? null : d);
+  } catch { return null; }
+}
+
 function todayUAE() {
   return new Date(Date.now() + 4 * 3600 * 1000).toISOString().slice(0, 10);
 }
@@ -266,12 +295,12 @@ module.exports = async (req, res) => {
         Promise.all(top20.map(sym => fmpGet(`/key-metrics-ttm?symbol=${sym}`))),
         Promise.allSettled(top20tech.map(sym => fetchTechnicals(sym))),
         // New calls
-        Promise.all(top20.map(sym => fmpGet(`/earnings-surprises/${sym}?limit=4`))),
+        Promise.all(top20.map(sym => fmpGetV3(`/earnings-surprises/${sym}`))),
         Promise.all(top20.map(sym => fmpGet(`/discounted-cash-flow?symbol=${sym}`))),
         Promise.all(top20.map(sym => fmpGet(`/stock-price-change?symbol=${sym}`))),
-        Promise.all(top20.map(sym => fmpGet(`/historical/shares_float?symbol=${sym}`))),
-        Promise.all(top20.map(sym => fmpGet(`/key-metrics-annual?symbol=${sym}&limit=5`))),
-        Promise.all(top20.map(sym => fmpGet(`/ratios-ttm?symbol=${sym}`)))
+        Promise.all(top20.map(sym => fmpGetV4(`/short-interest?symbol=${sym}&date=${daysAgoUAE(14)}`))),
+        Promise.all(top20.map(sym => fmpGetV3(`/key-metrics/${sym}?period=annual&limit=5`))),
+        Promise.all(top20.map(sym => fmpGetV3(`/ratios-ttm/${sym}`)))
       ]);
 
       // ── Build tech map ────────────────────────────────────────────────────
@@ -392,22 +421,29 @@ module.exports = async (req, res) => {
       // ── Process new data ──────────────────────────────────────────────────
 
       // Earnings surprises — B/B/B/M pattern per stock
+      // FMP v3 returns actualEarningResult + estimatedEarning — calculate % ourselves
       const surpriseMap = {};
       surpriseResults.forEach((data, idx) => {
         const sym = top20[idx];
         if (!Array.isArray(data) || !data.length) { surpriseMap[sym] = null; return; }
         const recent = data.slice(0, 4);
+        const getSurprisePct = q => {
+          if (q.surprisePercent != null) return q.surprisePercent;
+          if (q.estimatedEarning != null && q.estimatedEarning !== 0 && q.actualEarningResult != null)
+            return ((q.actualEarningResult - q.estimatedEarning) / Math.abs(q.estimatedEarning)) * 100;
+          return null;
+        };
         const pattern = recent.map(q => {
-          if (q.surprisePercent == null) return '?';
-          if (q.surprisePercent > 0.5)  return 'B';
-          if (q.surprisePercent < -0.5) return 'W';
+          const pct = getSurprisePct(q);
+          if (pct == null) return '?';
+          if (pct > 0.5)  return 'B';
+          if (pct < -0.5) return 'W';
           return 'M';
         }).join('/');
-        const beats = recent.filter(q => q.surprisePercent > 0.5).length;
-        const valid = recent.filter(q => q.surprisePercent != null);
-        const avgSurprise = valid.length
-          ? valid.reduce((s, q) => s + q.surprisePercent, 0) / valid.length
-          : 0;
+        const validPcts = recent.map(getSurprisePct).filter(p => p != null);
+        const beats = validPcts.filter(p => p > 0.5).length;
+        const avgSurprise = validPcts.length
+          ? validPcts.reduce((s, p) => s + p, 0) / validPcts.length : 0;
         surpriseMap[sym] = {
           pattern,
           beatRate: `${beats}/${recent.length}`,
