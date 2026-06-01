@@ -284,7 +284,6 @@ module.exports = async (req, res) => {
         surpriseResults,
         dcfResults,
         priceChangeResults,
-        shortInterestResults,
         annualMetricResults,
         ratiosResults
       ] = await Promise.all([
@@ -298,7 +297,6 @@ module.exports = async (req, res) => {
         Promise.all(top20.map(sym => fmpGet(`/earnings?symbol=${sym}&limit=8`))),
         Promise.all(top20.map(sym => fmpGet(`/discounted-cash-flow?symbol=${sym}`))),
         Promise.all(top20.map(sym => fmpGet(`/stock-price-change?symbol=${sym}`))),
-        Promise.all(top20.map(sym => fmpGet(`/short-interest?symbol=${sym}`))),
         Promise.all(top20.map(sym => fmpGet(`/key-metrics?symbol=${sym}&period=annual&limit=5`))),
         Promise.all(top20.map(sym => fmpGet(`/ratios-ttm?symbol=${sym}`)))
       ]);
@@ -421,17 +419,17 @@ module.exports = async (req, res) => {
       // ── Process new data ──────────────────────────────────────────────────
 
       // Earnings surprises — B/B/B/M pattern per stock
-      // FMP v3 returns actualEarningResult + estimatedEarning — calculate % ourselves
+      // stable /earnings returns epsActual (null for future), epsEstimated
+      // Must filter to PAST earnings only (epsActual != null)
       const surpriseMap = {};
       surpriseResults.forEach((data, idx) => {
         const sym = top20[idx];
         if (!Array.isArray(data) || !data.length) { surpriseMap[sym] = null; return; }
-        const recent = data.slice(0, 4);
+        // Filter to reported quarters only
+        const recent = data.filter(q => (q.epsActual ?? q.eps ?? q.actualEarningResult) != null).slice(0, 4);
+        if (!recent.length) { surpriseMap[sym] = null; return; }
         const getSurprisePct = q => {
-          // stable /earnings endpoint uses: eps, epsEstimated
-          // v3 /earnings-surprises uses: actualEarningResult, estimatedEarning, surprisePercent
-          if (q.surprisePercent != null) return q.surprisePercent;
-          const actual   = q.eps ?? q.actualEarningResult;
+          const actual   = q.epsActual ?? q.eps ?? q.actualEarningResult;
           const estimate = q.epsEstimated ?? q.estimatedEarning;
           if (actual != null && estimate != null && estimate !== 0)
             return ((actual - estimate) / Math.abs(estimate)) * 100;
@@ -475,78 +473,50 @@ module.exports = async (req, res) => {
         weeklyChangeMap[sym] = item?.['5D'] != null ? +item['5D'].toFixed(2) : null;
       });
 
-      // Short interest — from shares_float endpoint
-      // Fields: floatShares, outstandingShares, freeFloat (% as decimal)
-      const shortInterestMap = {};
-      shortInterestResults.forEach((data, idx) => {
-        const sym = top20[idx];
-        if (!Array.isArray(data) || !data.length) { shortInterestMap[sym] = null; return; }
-        const item = data[0];
-        // Try multiple field names across FMP endpoint variations
-        const pct = item.shortInterestPercent != null ? +(item.shortInterestPercent).toFixed(2)
-                  : item.shortPercentOfFloat  != null ? +(item.shortPercentOfFloat * 100).toFixed(2)
-                  : item.shortPercent         != null ? +(item.shortPercent).toFixed(2)
-                  : null;
-        const ratio = item.daysToCover != null ? +item.daysToCover.toFixed(1)
-                    : item.shortRatio  != null ? +item.shortRatio.toFixed(1)
-                    : null;
-        const floatPct = item.freeFloat != null ? +(item.freeFloat * 100).toFixed(1) : null;
-        shortInterestMap[sym] = pct != null ? { shortPct: pct, shortRatio: ratio }
-                              : floatPct != null ? { floatPct, note: 'float data only — short % unavailable' }
-                              : null;
-      });
+      // Short interest — not available on FMP stable API
+      // Removed API call — will be added when data source is identified
 
-      // PEG ratio — from ratios-ttm endpoint
+      // PEG ratio + current P/E — from ratios-ttm
+      // Confirmed fields: priceToEarningsGrowthRatioTTM, priceToEarningsRatioTTM
       const pegMap = {};
+      const ratiosPeMap = {};
       ratiosResults.forEach((data, idx) => {
         const sym  = top20[idx];
         const item = Array.isArray(data) ? data[0] : data;
-        if (!item) { pegMap[sym] = null; return; }
-        const peg = item.priceEarningsToGrowthRatioTTM ?? item.pegRatioTTM ?? null;
-        pegMap[sym] = peg != null && peg > 0 && peg < 100 ? +peg.toFixed(2) : null;
+        if (!item) { pegMap[sym] = null; ratiosPeMap[sym] = null; return; }
+        const peg = item.priceToEarningsGrowthRatioTTM ?? item.priceEarningsToGrowthRatioTTM ?? null;
+        pegMap[sym] = peg != null && peg > 0 && peg < 200 ? +peg.toFixed(2) : null;
+        const pe = item.priceToEarningsRatioTTM ?? null;
+        ratiosPeMap[sym] = pe != null && pe > 0 && pe < 10000 ? +pe.toFixed(1) : null;
       });
 
       // Historical P/E — 5Y annual average
+      // key-metrics annual has no peRatio field — calculate from earningsYield (PE = 1/earningsYield)
       const historicalPeMap = {};
       annualMetricResults.forEach((data, idx) => {
         const sym = top20[idx];
         if (!Array.isArray(data) || !data.length) { historicalPeMap[sym] = null; return; }
         const validPEs = data
-          .map(d => d.peRatio ?? d.priceEarningsRatio ?? d.pe)
+          .map(d => {
+            if (d.earningsYield != null && d.earningsYield > 0.001)
+              return +(1 / d.earningsYield).toFixed(1);
+            return null;
+          })
           .filter(pe => pe != null && pe > 0 && pe < 1000);
         historicalPeMap[sym] = validPEs.length >= 2
           ? +(validPEs.reduce((a, b) => a + b, 0) / validPEs.length).toFixed(1)
           : null;
       });
 
-      // ── Build metrics lookup for P/E comparison ───────────────────────────
+      // ── Build metrics lookup ───────────────────────────────────────────────
       const metricsLookup = {};
       metricResults.flat().filter(Boolean).forEach(i => { metricsLookup[i.symbol] = i; });
-
-      // ── DEBUG: Show raw field names from first record of each new endpoint ─
-      const debugSym = top20[0];
-      const debugIdx = 0;
-      const debugEarnings  = surpriseResults[debugIdx];
-      const debugHistPE    = annualMetricResults[debugIdx];
-      const debugRatios    = ratiosResults[debugIdx];
-      const debugShort     = shortInterestResults[debugIdx];
-      const earningsFields  = debugEarnings?.[0]  ? Object.keys(debugEarnings[0]).join(', ')  : 'empty/null';
-      const histPEFields    = debugHistPE?.[0]    ? Object.keys(debugHistPE[0]).join(', ')    : 'empty/null';
-      const ratiosFields    = debugRatios?.[0]    ? Object.keys(Array.isArray(debugRatios) ? debugRatios[0] : debugRatios).join(', ') : 'empty/null';
-      const shortFields     = debugShort?.[0]     ? Object.keys(debugShort[0]).join(', ')     : 'empty/null';
-      const earningsSample  = debugEarnings?.[0]  ? JSON.stringify(debugEarnings[0]).slice(0, 300) : 'null';
 
       // ── Append intelligence text ──────────────────────────────────────────
       text += `\n═══════════════════════════════════════════════════════\n`;
       text += `MARKET INTELLIGENCE — ${todayUAE()}\n`;
       text += `Portfolio: ${symbols.join(', ')}\n`;
       text += `Movers data: ${marketDataDate ? `from ${marketDataDate}` : 'unavailable'} — ${moverSyms.join(', ') || 'none'}\n`;
-      text += `\nDEBUG — RAW FIELD NAMES FROM FMP (${debugSym}):\n`;
-      text += `earnings fields: ${earningsFields}\n`;
-      text += `earnings[0] sample: ${earningsSample}\n`;
-      text += `key-metrics-annual fields: ${histPEFields}\n`;
-      text += `ratios-ttm fields: ${ratiosFields}\n`;
-      text += `short-interest fields: ${shortFields}\n`;
       text += `═══════════════════════════════════════════════════════\n\n`;
 
       // Technical indicators table
@@ -602,28 +572,17 @@ module.exports = async (req, res) => {
       });
       text += `\n`;
 
-      // Short interest
-      text += `SHORT INTEREST (% of float — higher % = more bearish bets):\n`;
-      top20.forEach(sym => {
-        const s = shortInterestMap[sym];
-        if (!s) { text += `${sym.padEnd(7)} N/A\n`; return; }
-        if (s.note) { text += `${sym.padEnd(7)} float=${s.floatPct}%  [short % not available via this endpoint]\n`; return; }
-        const flag = s.shortPct > 10 ? ' ⚠️ HIGH SHORT INTEREST'
-                   : s.shortPct > 5  ? ' notable'
-                   : '';
-        text += `${sym.padEnd(7)} short%=${s.shortPct}%  days_to_cover=${s.shortRatio || 'N/A'}${flag}\n`;
-      });
-      text += `\n`;
+      // Short interest — not available on FMP stable API
+      text += `SHORT INTEREST: not available via FMP stable API\n\n`;
 
       // Historical P/E comparison + PEG ratio
       text += `HISTORICAL P/E + PEG RATIO (5Y annual avg vs current TTM):\n`;
       top20.forEach(sym => {
         const hist      = historicalPeMap[sym];
-        const currentPE = metricsLookup[sym]?.peRatioTTM != null
-          ? +metricsLookup[sym].peRatioTTM.toFixed(1) : null;
+        const currentPE = ratiosPeMap[sym] ?? (metricsLookup[sym]?.peRatioTTM != null ? +metricsLookup[sym].peRatioTTM.toFixed(1) : null);
         const peg = pegMap[sym];
         if (!hist && !currentPE && !peg) {
-          text += `${sym.padEnd(7)} N/A (negative earnings or no history)\n`; return;
+          text += `${sym.padEnd(7)} N/A (no earnings history)\n`; return;
         }
         let note = '';
         if (hist && currentPE) {
