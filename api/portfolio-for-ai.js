@@ -156,7 +156,7 @@ module.exports = async (req, res) => {
 
   const authHeader = req.headers['authorization'] || '';
   const key = authHeader.replace('Bearer ', '').trim();
-  if (key && key !== API_KEY) {
+  if (!key || key !== API_KEY) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
