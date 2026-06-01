@@ -446,10 +446,12 @@ module.exports = async (req, res) => {
         const beats = validPcts.filter(p => p > 0.5).length;
         const avgSurprise = validPcts.length
           ? validPcts.reduce((s, p) => s + p, 0) / validPcts.length : 0;
+        // Cap display at ±500% — near-zero estimated EPS causes distorted percentages
+        const avgSurpriseCapped = Math.max(-500, Math.min(500, avgSurprise));
         surpriseMap[sym] = {
           pattern,
           beatRate: `${beats}/${recent.length}`,
-          avgSurprisePct: +avgSurprise.toFixed(1)
+          avgSurprisePct: +avgSurpriseCapped.toFixed(1)
         };
       });
 
@@ -593,7 +595,9 @@ module.exports = async (req, res) => {
         const pegStr = peg != null
           ? `  peg=${peg}x${peg < 1 ? ' (undervalued)' : peg > 2 ? ' (expensive)' : ''}`
           : '';
-        text += `${sym.padEnd(7)} hist5Y=${hist || 'N/A'}x  currentPE=${currentPE || 'N/A'}x${pegStr}${note}\n`;
+        const histStr = hist != null ? `${hist}x` : 'N/A';
+        const peStr   = currentPE != null ? `${currentPE}x` : 'N/A';
+        text += `${sym.padEnd(7)} hist5Y=${histStr}  currentPE=${peStr}${pegStr}${note}\n`;
       });
       text += `\n`;
 
