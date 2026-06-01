@@ -296,6 +296,13 @@ module.exports = async (req, res) => {
 
       const allSyms = [...new Set([...symbols, ...moverSyms])];
 
+      // Insider-activity symbol set: all non-ETF portfolio holdings, then movers
+      // (excluding owned + known ETFs). ETFs have no insiders — skip them entirely.
+      const etfSyms = new Set(enriched.filter(h => h.sector === 'etf').map(h => h.sym));
+      const insiderPortfolioSyms = enriched.filter(h => h.sector !== 'etf').map(h => h.sym);
+      const insiderMoverSyms = moverSyms.filter(s => !ownedSet.has(s) && !etfSyms.has(s));
+      const insiderSyms = [...new Set([...insiderPortfolioSyms, ...insiderMoverSyms])];
+
       // Grades: last 60 days
       const gradesFrom = daysAgoUAE(60);
 
@@ -310,7 +317,8 @@ module.exports = async (req, res) => {
         dcfResults,
         priceChangeResults,
         annualMetricResults,
-        ratiosResults
+        ratiosResults,
+        insiderResults
       ] = await Promise.all([
         // Existing calls
         fmpGet(`/earnings-calendar?from=${todayUAE()}&to=${daysAheadUAE(60)}&symbol=${allSyms.join(',')}`),
@@ -323,7 +331,9 @@ module.exports = async (req, res) => {
         Promise.all(top20.map(sym => fmpGet(`/discounted-cash-flow?symbol=${sym}`))),
         Promise.all(top20.map(sym => fmpGet(`/stock-price-change?symbol=${sym}`))),
         Promise.all(top20.map(sym => fmpGet(`/key-metrics?symbol=${sym}&period=annual&limit=5`))),
-        Promise.all(top20.map(sym => fmpGet(`/ratios-ttm?symbol=${sym}`)))
+        Promise.all(top20.map(sym => fmpGet(`/ratios-ttm?symbol=${sym}`))),
+        // Insider trading statistics — full quarterly history per symbol (trimmed to 4Q below)
+        Promise.allSettled(insiderSyms.map(sym => fmpGet(`/insider-trading/statistics?symbol=${sym}`)))
       ]);
 
       // ── Build tech map ────────────────────────────────────────────────────
@@ -535,6 +545,37 @@ module.exports = async (req, res) => {
           : null;
       });
 
+      // Insider activity — last 4 quarters; open-market BUYING is the signal
+      // (acquired = grants/vesting, NOT conviction; selling = mostly routine noise)
+      const insiderMap = {};
+      insiderResults.forEach((result, idx) => {
+        const sym = insiderSyms[idx];
+        if (result.status !== 'fulfilled' || !Array.isArray(result.value) || !result.value.length) {
+          insiderMap[sym] = null; return;
+        }
+        const num = v => { const n = typeof v === 'number' ? v : parseInt(v, 10); return Number.isFinite(n) ? n : 0; };
+        const quarters = [...result.value]
+          .sort((a, b) => (num(b.year) - num(a.year)) || (num(b.quarter) - num(a.quarter)))
+          .slice(0, 4);
+        const recentPurchases  = quarters.reduce((s, q) => s + num(q.totalPurchases), 0);
+        const purchaseQuarters = quarters.filter(q => num(q.totalPurchases) > 0).length;
+        const totalAcquired    = quarters.reduce((s, q) => s + num(q.totalAcquired), 0);
+        const totalDisposed    = quarters.reduce((s, q) => s + num(q.totalDisposed), 0);
+        // Context label only — disposals heavily outweighing acquisitions = routine comp selling
+        const netSelling = totalDisposed > 0 && totalDisposed > totalAcquired * 3;
+        let verdict;
+        if (purchaseQuarters >= 2) {
+          verdict = `open-market buying in ${purchaseQuarters} of last 4 quarters → CONVICTION SIGNAL ✅`;
+        } else if (recentPurchases > 0) {
+          verdict = `open-market buying in 1 of last 4 quarters → mild positive`;
+        } else if (netSelling) {
+          verdict = `no open-market buying; routine comp selling only → NEUTRAL`;
+        } else {
+          verdict = `no open-market buying → NEUTRAL (no signal)`;
+        }
+        insiderMap[sym] = { recentPurchases, purchaseQuarters, netSelling, verdict };
+      });
+
       // ── Build metrics lookup ───────────────────────────────────────────────
       const metricsLookup = {};
       metricResults.flat().filter(Boolean).forEach(i => { metricsLookup[i.symbol] = i; });
@@ -634,6 +675,24 @@ module.exports = async (req, res) => {
         text += `${sym.padEnd(7)} consensus=${c.consensus.padEnd(9)} analysts=${c.totalAnalysts}  (${c.bullish} buy / ${c.neutral} neutral / ${c.bearish} sell)\n`;
       });
       text += `\n`;
+
+      // Insider activity — institutional/insider conviction signal (weekly/monthly)
+      text += `═══════════════════════════════════════════════════════\n`;
+      text += `INSIDER ACTIVITY (last 4 quarters — open-market buying is the signal)\n`;
+      text += `═══════════════════════════════════════════════════════\n`;
+      const renderInsider = sym => {
+        const ins = insiderMap[sym];
+        if (!ins) { text += `${sym.padEnd(6)} — no insider data available → no signal\n`; return; }
+        text += `${sym.padEnd(6)} — ${ins.verdict}\n`;
+      };
+      insiderPortfolioSyms.forEach(renderInsider);
+      if (insiderMoverSyms.length) {
+        text += `--- movers ---\n`;
+        insiderMoverSyms.forEach(renderInsider);
+      }
+      text += `INTERPRETATION: Insider BUYING = conviction. Insider SELLING = mostly routine,\n`;
+      text += `not bearish. Absence of buying is neutral, not negative.\n`;
+      text += `[Source: FMP insider-trading/statistics — open-market purchases only are the signal]\n\n`;
 
       // Earnings calendar
       text += `EARNINGS CALENDAR (next 60 days):\n`;
