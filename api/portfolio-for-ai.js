@@ -103,20 +103,45 @@ async function fetchLatestMarketData() {
 
 // ─── Fetch technicals for one symbol ─────────────────────────────────────────
 async function fetchTechnicals(sym) {
-  const [rsiRaw, macdRaw, sma50Raw, sma200Raw, ema20Raw, bbRaw] = await Promise.all([
+  const [rsiRaw, ema12Raw, ema26Raw, sma50Raw, sma200Raw, ema20Raw, bbRaw] = await Promise.all([
     fmpGet(`/technical-indicators/rsi?symbol=${sym}&periodLength=14&timeframe=1day&limit=1`),
-    fmpGet(`/technical-indicators/macd?symbol=${sym}&timeframe=1day&limit=1`),
+    fmpGet(`/technical-indicators/ema?symbol=${sym}&periodLength=12&timeframe=1day&limit=30`),
+    fmpGet(`/technical-indicators/ema?symbol=${sym}&periodLength=26&timeframe=1day&limit=30`),
     fmpGet(`/technical-indicators/sma?symbol=${sym}&periodLength=50&timeframe=1day&limit=1`),
     fmpGet(`/technical-indicators/sma?symbol=${sym}&periodLength=200&timeframe=1day&limit=1`),
     fmpGet(`/technical-indicators/ema?symbol=${sym}&periodLength=20&timeframe=1day&limit=1`),
     fmpGet(`/technical-indicators/standardDeviation?symbol=${sym}&periodLength=20&timeframe=1day&limit=1`)
   ]);
+
+  // ── Calculate MACD from EMA12 − EMA26 (FMP has no direct MACD endpoint) ──
+  let macd = null, signal = null, histogram = null;
+  if (Array.isArray(ema12Raw) && Array.isArray(ema26Raw) && ema12Raw.length && ema26Raw.length) {
+    const ema26Map = {};
+    ema26Raw.forEach(d => { if (d.date && d.ema != null) ema26Map[d.date] = d.ema; });
+    // Build MACD series newest-first (matching EMA12 order)
+    const macdSeries = ema12Raw
+      .filter(d => d.date && d.ema != null && ema26Map[d.date] != null)
+      .map(d => d.ema - ema26Map[d.date]);
+    if (macdSeries.length > 0) {
+      macd = +macdSeries[0].toFixed(4);
+      if (macdSeries.length >= 9) {
+        // 9-period EMA of MACD series for signal line (reverse → oldest first)
+        const reversed = [...macdSeries].reverse();
+        const k = 2 / 10;
+        let sig = reversed[0];
+        for (let i = 1; i < reversed.length; i++) sig = reversed[i] * k + sig * (1 - k);
+        signal    = +sig.toFixed(4);
+        histogram = +(macd - signal).toFixed(4);
+      }
+    }
+  }
+
   return {
     sym,
     rsi:       latest(rsiRaw,   'rsi'),
-    macd:      latest(macdRaw,  'macd') ?? latest(macdRaw, 'macdLine'),
-    signal:    latest(macdRaw,  'signal') ?? latest(macdRaw, 'signalLine'),
-    histogram: latest(macdRaw,  'histogram') ?? latest(macdRaw, 'macdHistogram'),
+    macd,
+    signal,
+    histogram,
     sma50:     latest(sma50Raw,  'sma'),
     sma200:    latest(sma200Raw, 'sma'),
     ema20:     latest(ema20Raw,  'ema'),
