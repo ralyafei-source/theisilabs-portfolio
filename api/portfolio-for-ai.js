@@ -15,7 +15,7 @@
 
 const REPO    = 'ralyafei-source/theisilabs-portfolio';
 const UA      = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
-const API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
+const API_KEY = process.env.BRIEFING_API_KEY;
 const FMP_KEY = process.env.FMP_API_KEY;
 const FMP     = 'https://financialmodelingprep.com/stable';
 
