@@ -1,7 +1,17 @@
 // api/portfolio-for-ai.js
-// Returns portfolio as formatted plain text for Claude
-// Supports ?nickname=ahmed for per-user portfolios
-// Supports ?include=intelligence for smart FMP data (earnings, targets, grades, metrics, technicals)
+// v6 — Phase 1 quality improvements
+// Changes from v5:
+//   - Removed SPUS "never sell" rule — scored on merits like any position
+//   - Removed Wio Invest broker name — no analytical value
+//   - Removed market open time — not analytical
+//   - Added FMP earnings-surprises → real B/B/B/M history
+//   - Added FMP discounted-cash-flow → real DCF fair values
+//   - Added FMP stock-price-change → real weekly % change
+//   - Added FMP stock-short-interest → real short interest %
+//   - Added PEG ratio + peRatioTTM to key metrics extraction
+//   - Added FMP annual key-metrics → 5Y historical P/E average
+//   - Added analyst consensus calculation (bullish/mixed/bearish per stock)
+//   - Grades now filtered to upgrades/downgrades/initiations only (removes maintains)
 
 const REPO    = 'ralyafei-source/theisilabs-portfolio';
 const UA      = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
@@ -188,15 +198,14 @@ module.exports = async (req, res) => {
     text += `Live prices: ${pricesAvailable}/${symbols.length} stocks updated\n`;
     text += `═══════════════════════════════════════════════════════\n`;
 
+    // ── Investor rules — cleaned, no hardcoded broker or SPUS rule ───────────
     if (!isGenericUser) {
       text += `INVESTOR RULES:\n`;
       text += `- UAE investor — ZERO capital gains tax\n`;
-      text += `- Cannot short sell or trade options (Wio Invest)\n`;
-      text += `- SPUS = Sharia ETF — never recommend selling\n`;
-      text += `- US market opens 5:30pm UAE time\n`;
+      text += `- Cannot short sell or trade options\n`;
       text += `- Long-term growth investor, high risk tolerance\n`;
     } else {
-      text += `INVESTOR: ${investorName}, UAE — long-term growth focus\n`;
+      text += `INVESTOR: ${investorName} — long-term growth focus\n`;
     }
     text += `═══════════════════════════════════════════════════════\n\n`;
 
@@ -227,13 +236,13 @@ module.exports = async (req, res) => {
 
       const { date: marketDataDate, syms: moverSyms } = await fetchLatestMarketData();
 
-      // Top 20 non-ETF for all analyst calls + technicals
+      // Top 20 non-ETF for all analyst + new data calls
       const top20     = enriched.filter(h => h.sector !== 'etf').slice(0, 20).map(h => h.sym);
       const top20tech = enriched.filter(h => h.sector !== 'etf').slice(0, 20).map(h => h.sym);
 
       const allSyms = [...new Set([...symbols, ...moverSyms])];
 
-      // Grades: last 60 days only
+      // Grades: last 60 days
       const gradesFrom = daysAgoUAE(60);
 
       // ── All FMP calls in parallel ─────────────────────────────────────────
@@ -242,13 +251,25 @@ module.exports = async (req, res) => {
         targetResults,
         gradeResults,
         metricResults,
-        techResults
+        techResults,
+        surpriseResults,
+        dcfResults,
+        priceChangeResults,
+        shortInterestResults,
+        annualMetricResults
       ] = await Promise.all([
+        // Existing calls
         fmpGet(`/earnings-calendar?from=${todayUAE()}&to=${daysAheadUAE(60)}&symbol=${allSyms.join(',')}`),
         Promise.all(top20.map(sym => fmpGet(`/price-target-consensus?symbol=${sym}`))),
         Promise.all(top20.map(sym => fmpGet(`/grades?symbol=${sym}&limit=50`))),
         Promise.all(top20.map(sym => fmpGet(`/key-metrics-ttm?symbol=${sym}`))),
-        Promise.allSettled(top20tech.map(sym => fetchTechnicals(sym)))
+        Promise.allSettled(top20tech.map(sym => fetchTechnicals(sym))),
+        // New calls
+        Promise.all(top20.map(sym => fmpGet(`/earnings-surprises?symbol=${sym}&limit=4`))),
+        Promise.all(top20.map(sym => fmpGet(`/discounted-cash-flow?symbol=${sym}`))),
+        Promise.all(top20.map(sym => fmpGet(`/stock-price-change?symbol=${sym}`))),
+        Promise.all(top20.map(sym => fmpGet(`/stock-short-interest?symbol=${sym}`))),
+        Promise.all(top20.map(sym => fmpGet(`/key-metrics?symbol=${sym}&period=annual&limit=5`)))
       ]);
 
       // ── Build tech map ────────────────────────────────────────────────────
@@ -303,24 +324,57 @@ module.exports = async (req, res) => {
         }
       });
 
+      // ── Analyst consensus (all grades, before date filter) ────────────────
+      const gradeConsensusMap = {};
+      top20.forEach((sym, idx) => {
+        const allGrades = (gradeResults[idx] || []).filter(Boolean);
+        if (!allGrades.length) {
+          gradeConsensusMap[sym] = { consensus: 'no coverage', totalAnalysts: 0 };
+          return;
+        }
+        // Latest grade per firm only
+        const firmLatest = {};
+        allGrades.forEach(entry => {
+          if (!firmLatest[entry.gradingCompany]) firmLatest[entry.gradingCompany] = entry.newGrade;
+        });
+        const latestGrades = Object.values(firmLatest);
+        const bullish = latestGrades.filter(g =>
+          ['Buy','Strong Buy','Overweight','Outperform','Market Outperform','Positive'].includes(g)
+        ).length;
+        const bearish = latestGrades.filter(g =>
+          ['Sell','Strong Sell','Underperform','Reduce','Underweight','Negative'].includes(g)
+        ).length;
+        const neutral = latestGrades.length - bullish - bearish;
+        gradeConsensusMap[sym] = {
+          totalAnalysts: latestGrades.length,
+          bullish, neutral, bearish,
+          consensus: bullish > (neutral + bearish) ? 'Bullish'
+                   : bearish > (bullish + neutral) ? 'Bearish'
+                   : 'Mixed'
+        };
+      });
+
       // ── Flatten analyst data ──────────────────────────────────────────────
       const earnings = earningsRaw || [];
       const targets  = targetResults.flat().filter(Boolean)
         .map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
 
-      // Grades: filter to last 60 days in JS (FMP ignores from param)
+      // Grades: last 60 days + upgrades/downgrades/initiations only (no maintains)
+      const actionKeywords = ['upgrade','downgrade','initiat','reiterat','resumed','lower','raise'];
       const grades = gradeResults.flat().filter(Boolean)
         .filter(i => i.date >= gradesFrom)
+        .filter(i => actionKeywords.some(kw => (i.action || '').toLowerCase().includes(kw)))
         .map(i => ({...i, inPortfolio: ownedSet.has(i.symbol)}));
 
-      // Key metrics: keep only 10 useful fields
+      // Key metrics: include PEG and P/E TTM alongside existing fields
       const metrics = metricResults.flat().filter(Boolean).map(i => {
         const clean = { symbol: i.symbol, inPortfolio: ownedSet.has(i.symbol) };
         const keepFields = [
           'evToEBITDATTM','evToSalesTTM','returnOnEquityTTM',
           'returnOnInvestedCapitalTTM','returnOnAssetsTTM',
           'currentRatioTTM','earningsYieldTTM','freeCashFlowYieldTTM',
-          'netDebtToEBITDATTM','stockBasedCompensationToRevenueTTM'
+          'netDebtToEBITDATTM','stockBasedCompensationToRevenueTTM',
+          'peRatioTTM','priceEarningsToGrowthRatioTTM'
         ];
         keepFields.forEach(f => { if (i[f] != null) clean[f] = +i[f].toFixed(3); });
         return clean;
@@ -333,13 +387,94 @@ module.exports = async (req, res) => {
           return new Date(a.date) - new Date(b.date);
         });
 
-      // ── Append to text ────────────────────────────────────────────────────
+      // ── Process new data ──────────────────────────────────────────────────
+
+      // Earnings surprises — B/B/B/M pattern per stock
+      const surpriseMap = {};
+      surpriseResults.forEach((data, idx) => {
+        const sym = top20[idx];
+        if (!Array.isArray(data) || !data.length) { surpriseMap[sym] = null; return; }
+        const recent = data.slice(0, 4);
+        const pattern = recent.map(q => {
+          if (q.surprisePercent == null) return '?';
+          if (q.surprisePercent > 0.5)  return 'B';
+          if (q.surprisePercent < -0.5) return 'W';
+          return 'M';
+        }).join('/');
+        const beats = recent.filter(q => q.surprisePercent > 0.5).length;
+        const valid = recent.filter(q => q.surprisePercent != null);
+        const avgSurprise = valid.length
+          ? valid.reduce((s, q) => s + q.surprisePercent, 0) / valid.length
+          : 0;
+        surpriseMap[sym] = {
+          pattern,
+          beatRate: `${beats}/${recent.length}`,
+          avgSurprisePct: +avgSurprise.toFixed(1)
+        };
+      });
+
+      // DCF fair values
+      const dcfMap = {};
+      dcfResults.forEach((data, idx) => {
+        const sym = top20[idx];
+        const item = Array.isArray(data) ? data[0] : data;
+        if (!item?.dcf) { dcfMap[sym] = null; return; }
+        const dcfVal = +item.dcf;
+        const price  = priceMap[sym] || 0;
+        const upside = price > 0 ? +((dcfVal - price) / price * 100).toFixed(1) : null;
+        dcfMap[sym] = { dcf: +dcfVal.toFixed(2), upside };
+      });
+
+      // Weekly price change (5 trading days)
+      const weeklyChangeMap = {};
+      priceChangeResults.forEach((data, idx) => {
+        const sym  = top20[idx];
+        const item = Array.isArray(data) ? data[0] : data;
+        weeklyChangeMap[sym] = item?.['5D'] != null ? +item['5D'].toFixed(2) : null;
+      });
+
+      // Short interest
+      const shortInterestMap = {};
+      shortInterestResults.forEach((data, idx) => {
+        const sym = top20[idx];
+        if (!Array.isArray(data) || !data.length) { shortInterestMap[sym] = null; return; }
+        const item = data[0];
+        const pct  = item.shortPercentOfFloat != null
+          ? +(item.shortPercentOfFloat * 100).toFixed(2)
+          : item.shortPercent != null
+            ? +(item.shortPercent).toFixed(2)
+            : null;
+        const ratio = item.daysToCover != null ? +item.daysToCover.toFixed(1)
+                    : item.shortRatio  != null ? +item.shortRatio.toFixed(1)
+                    : null;
+        shortInterestMap[sym] = { shortPct: pct, shortRatio: ratio };
+      });
+
+      // Historical P/E — 5Y annual average
+      const historicalPeMap = {};
+      annualMetricResults.forEach((data, idx) => {
+        const sym = top20[idx];
+        if (!Array.isArray(data) || !data.length) { historicalPeMap[sym] = null; return; }
+        const validPEs = data
+          .map(d => d.peRatio)
+          .filter(pe => pe != null && pe > 0 && pe < 1000);
+        historicalPeMap[sym] = validPEs.length >= 2
+          ? +(validPEs.reduce((a, b) => a + b, 0) / validPEs.length).toFixed(1)
+          : null;
+      });
+
+      // ── Build metrics lookup for P/E comparison ───────────────────────────
+      const metricsLookup = {};
+      metricResults.flat().filter(Boolean).forEach(i => { metricsLookup[i.symbol] = i; });
+
+      // ── Append intelligence text ──────────────────────────────────────────
       text += `\n═══════════════════════════════════════════════════════\n`;
       text += `MARKET INTELLIGENCE — ${todayUAE()}\n`;
       text += `Portfolio: ${symbols.join(', ')}\n`;
       text += `Movers data: ${marketDataDate ? `from ${marketDataDate}` : 'unavailable'} — ${moverSyms.join(', ') || 'none'}\n`;
       text += `═══════════════════════════════════════════════════════\n\n`;
 
+      // Technical indicators table
       text += `TECHNICAL INDICATORS (top 20 non-ETF stocks):\n`;
       text += `${'SYM'.padEnd(7)} ${'RSI'.padEnd(7)} ${'MACD'.padEnd(10)} ${'SMA50'.padEnd(9)} ${'SMA200'.padEnd(9)} ${'EMA20'.padEnd(9)} BB\n`;
       text += `────────────────────────────────────────────────────────────────────\n`;
@@ -361,19 +496,92 @@ module.exports = async (req, res) => {
       });
       text += `\n`;
 
+      // Earnings surprises — real B/B/B/M history
+      text += `EARNINGS SURPRISES — last 4 quarters (B=beat >0.5% | M=meet | W=miss <-0.5%):\n`;
+      top20.forEach(sym => {
+        const s = surpriseMap[sym];
+        if (!s) { text += `${sym.padEnd(7)} N/A\n`; return; }
+        const sign = s.avgSurprisePct >= 0 ? '+' : '';
+        text += `${sym.padEnd(7)} ${s.pattern.padEnd(12)} beat_rate=${s.beatRate}  avg_surprise=${sign}${s.avgSurprisePct}%\n`;
+      });
+      text += `[Source: FMP earnings-surprises — actual vs estimated EPS]\n\n`;
+
+      // DCF fair values — real FMP model
+      text += `DCF FAIR VALUES (FMP intrinsic value model):\n`;
+      top20.forEach(sym => {
+        const d = dcfMap[sym];
+        const price = priceMap[sym];
+        if (!d) { text += `${sym.padEnd(7)} DCF=N/A\n`; return; }
+        const upsideSign = d.upside >= 0 ? '+' : '';
+        const arrow = d.upside > 10 ? '↑ undervalued' : d.upside < -10 ? '↓ overvalued' : '→ fair';
+        text += `${sym.padEnd(7)} dcf=$${d.dcf}  price=$${price?.toFixed(2) || 'N/A'}  upside=${upsideSign}${d.upside}%  ${arrow}\n`;
+      });
+      text += `[Note: FMP uses their growth assumptions — apply 20% margin of safety. DCF models vary ±30% between analysts.]\n\n`;
+
+      // Weekly price change
+      text += `WEEKLY PRICE CHANGE (5 trading days):\n`;
+      top20.forEach(sym => {
+        const w = weeklyChangeMap[sym];
+        const val = w != null ? `${w >= 0 ? '+' : ''}${w}%` : 'N/A';
+        text += `${sym.padEnd(7)} ${val}\n`;
+      });
+      text += `\n`;
+
+      // Short interest
+      text += `SHORT INTEREST (% of float — higher % = more bearish bets):\n`;
+      top20.forEach(sym => {
+        const s = shortInterestMap[sym];
+        if (!s || s.shortPct == null) { text += `${sym.padEnd(7)} N/A\n`; return; }
+        const flag = s.shortPct > 10 ? ' ⚠️ HIGH SHORT INTEREST'
+                   : s.shortPct > 5  ? ' notable'
+                   : '';
+        text += `${sym.padEnd(7)} short%=${s.shortPct}%  days_to_cover=${s.shortRatio || 'N/A'}${flag}\n`;
+      });
+      text += `\n`;
+
+      // Historical P/E comparison
+      text += `HISTORICAL P/E COMPARISON (5Y annual average vs current TTM):\n`;
+      top20.forEach(sym => {
+        const hist      = historicalPeMap[sym];
+        const currentPE = metricsLookup[sym]?.peRatioTTM != null
+          ? +metricsLookup[sym].peRatioTTM.toFixed(1) : null;
+        if (!hist && !currentPE) { text += `${sym.padEnd(7)} N/A (negative earnings or no history)\n`; return; }
+        let note = '';
+        if (hist && currentPE) {
+          if (currentPE < hist * 0.85)      note = ' → BELOW historical avg — potential value';
+          else if (currentPE > hist * 1.15) note = ' → ABOVE historical avg — premium valuation';
+          else                               note = ' → near historical avg';
+        }
+        text += `${sym.padEnd(7)} hist5Y=${hist || 'N/A'}x  currentPE=${currentPE || 'N/A'}x${note}\n`;
+      });
+      text += `\n`;
+
+      // Analyst consensus
+      text += `ANALYST CONSENSUS (current positioning across all firms):\n`;
+      top20.forEach(sym => {
+        const c = gradeConsensusMap[sym];
+        if (!c || c.totalAnalysts === 0) { text += `${sym.padEnd(7)} no analyst coverage\n`; return; }
+        text += `${sym.padEnd(7)} consensus=${c.consensus.padEnd(9)} analysts=${c.totalAnalysts}  (${c.bullish} buy / ${c.neutral} neutral / ${c.bearish} sell)\n`;
+      });
+      text += `\n`;
+
+      // Earnings calendar
       text += `EARNINGS CALENDAR (next 60 days):\n`;
       text += JSON.stringify({
         portfolio: earningsSorted.filter(e => e.inPortfolio),
         movers:    earningsSorted.filter(e => !e.inPortfolio).slice(0, 5)
       }, null, 2) + '\n\n';
 
+      // Analyst price targets
       text += `ANALYST PRICE TARGETS:\n`;
       text += JSON.stringify(targets, null, 2) + '\n\n';
 
-      text += `ANALYST GRADES (last 60 days):\n`;
+      // Analyst grades (filtered — upgrades/downgrades/initiations only)
+      text += `ANALYST GRADES — last 60 days (upgrades/downgrades/initiations only):\n`;
       text += JSON.stringify(grades, null, 2) + '\n\n';
 
-      text += `KEY METRICS TTM:\n`;
+      // Key metrics TTM (now includes PEG and P/E)
+      text += `KEY METRICS TTM (includes P/E and PEG ratio):\n`;
       text += JSON.stringify(metrics, null, 2) + '\n';
 
       text += `\n═══════════════════════════════════════════════════════\n`;
