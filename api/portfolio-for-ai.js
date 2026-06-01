@@ -523,11 +523,30 @@ module.exports = async (req, res) => {
       const metricsLookup = {};
       metricResults.flat().filter(Boolean).forEach(i => { metricsLookup[i.symbol] = i; });
 
+      // ── DEBUG: Show raw field names from first record of each new endpoint ─
+      const debugSym = top20[0];
+      const debugIdx = 0;
+      const debugEarnings  = surpriseResults[debugIdx];
+      const debugHistPE    = annualMetricResults[debugIdx];
+      const debugRatios    = ratiosResults[debugIdx];
+      const debugShort     = shortInterestResults[debugIdx];
+      const earningsFields  = debugEarnings?.[0]  ? Object.keys(debugEarnings[0]).join(', ')  : 'empty/null';
+      const histPEFields    = debugHistPE?.[0]    ? Object.keys(debugHistPE[0]).join(', ')    : 'empty/null';
+      const ratiosFields    = debugRatios?.[0]    ? Object.keys(Array.isArray(debugRatios) ? debugRatios[0] : debugRatios).join(', ') : 'empty/null';
+      const shortFields     = debugShort?.[0]     ? Object.keys(debugShort[0]).join(', ')     : 'empty/null';
+      const earningsSample  = debugEarnings?.[0]  ? JSON.stringify(debugEarnings[0]).slice(0, 300) : 'null';
+
       // ── Append intelligence text ──────────────────────────────────────────
       text += `\n═══════════════════════════════════════════════════════\n`;
       text += `MARKET INTELLIGENCE — ${todayUAE()}\n`;
       text += `Portfolio: ${symbols.join(', ')}\n`;
       text += `Movers data: ${marketDataDate ? `from ${marketDataDate}` : 'unavailable'} — ${moverSyms.join(', ') || 'none'}\n`;
+      text += `\nDEBUG — RAW FIELD NAMES FROM FMP (${debugSym}):\n`;
+      text += `earnings fields: ${earningsFields}\n`;
+      text += `earnings[0] sample: ${earningsSample}\n`;
+      text += `key-metrics-annual fields: ${histPEFields}\n`;
+      text += `ratios-ttm fields: ${ratiosFields}\n`;
+      text += `short-interest fields: ${shortFields}\n`;
       text += `═══════════════════════════════════════════════════════\n\n`;
 
       // Technical indicators table
