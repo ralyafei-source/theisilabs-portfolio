@@ -295,12 +295,12 @@ module.exports = async (req, res) => {
         Promise.all(top20.map(sym => fmpGet(`/key-metrics-ttm?symbol=${sym}`))),
         Promise.allSettled(top20tech.map(sym => fetchTechnicals(sym))),
         // New calls
-        Promise.all(top20.map(sym => fmpGetV3(`/earnings-surprises/${sym}`))),
+        Promise.all(top20.map(sym => fmpGet(`/earnings?symbol=${sym}&limit=8`))),
         Promise.all(top20.map(sym => fmpGet(`/discounted-cash-flow?symbol=${sym}`))),
         Promise.all(top20.map(sym => fmpGet(`/stock-price-change?symbol=${sym}`))),
-        Promise.all(top20.map(sym => fmpGetV4(`/short-interest?symbol=${sym}&date=${daysAgoUAE(14)}`))),
-        Promise.all(top20.map(sym => fmpGetV3(`/key-metrics/${sym}?period=annual&limit=5`))),
-        Promise.all(top20.map(sym => fmpGetV3(`/ratios-ttm/${sym}`)))
+        Promise.all(top20.map(sym => fmpGet(`/short-interest?symbol=${sym}`))),
+        Promise.all(top20.map(sym => fmpGet(`/key-metrics?symbol=${sym}&period=annual&limit=5`))),
+        Promise.all(top20.map(sym => fmpGet(`/ratios-ttm?symbol=${sym}`)))
       ]);
 
       // ── Build tech map ────────────────────────────────────────────────────
@@ -428,9 +428,13 @@ module.exports = async (req, res) => {
         if (!Array.isArray(data) || !data.length) { surpriseMap[sym] = null; return; }
         const recent = data.slice(0, 4);
         const getSurprisePct = q => {
+          // stable /earnings endpoint uses: eps, epsEstimated
+          // v3 /earnings-surprises uses: actualEarningResult, estimatedEarning, surprisePercent
           if (q.surprisePercent != null) return q.surprisePercent;
-          if (q.estimatedEarning != null && q.estimatedEarning !== 0 && q.actualEarningResult != null)
-            return ((q.actualEarningResult - q.estimatedEarning) / Math.abs(q.estimatedEarning)) * 100;
+          const actual   = q.eps ?? q.actualEarningResult;
+          const estimate = q.epsEstimated ?? q.estimatedEarning;
+          if (actual != null && estimate != null && estimate !== 0)
+            return ((actual - estimate) / Math.abs(estimate)) * 100;
           return null;
         };
         const pattern = recent.map(q => {
@@ -508,7 +512,7 @@ module.exports = async (req, res) => {
         const sym = top20[idx];
         if (!Array.isArray(data) || !data.length) { historicalPeMap[sym] = null; return; }
         const validPEs = data
-          .map(d => d.peRatio)
+          .map(d => d.peRatio ?? d.priceEarningsRatio ?? d.pe)
           .filter(pe => pe != null && pe > 0 && pe < 1000);
         historicalPeMap[sym] = validPEs.length >= 2
           ? +(validPEs.reduce((a, b) => a + b, 0) / validPEs.length).toFixed(1)
