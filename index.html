@@ -2832,19 +2832,20 @@ function parseAnalysisSections(content, type){
   scoring:   ['═══ SCORING ENGINE']
 },
     monthly: {
-      competitive: ['COMPETITIVE EDGE','الميزة التنافسية','القسم الأول'],
-      longview:    ['LONG VIEW','النظرة طويلة المدى','القسم الثاني'],
-      health:      ['PORTFOLIO HEALTH','صحة المحفظة','القسم الثالث']
-    }
+  competitive: ['═══ COMPETITIVE EDGE', 'COMPETITIVE EDGE','الميزة التنافسية','القسم الأول'],
+  longview:    ['═══ LONG VIEW', 'LONG VIEW','النظرة طويلة المدى','القسم الثاني'],
+  health:      ['═══ PORTFOLIO HEALTH', 'PORTFOLIO HEALTH','صحة المحفظة','القسم الثالث']
+}
   };
   const markers = markersByType[type] || markersByType.daily;
 
-  // If content has clear section markers, split it
-  let remaining=content;
-  const lines=content.split('\n');
-  let currentFirm=null;
-  let currentText=[];
-  const result={};
+// If content has clear section markers, split it
+let remaining=content;
+try { content = JSON.parse(content).content || content; } catch(e) {}
+const lines=content.split('\n');
+let currentFirm=null;
+let currentText=[];
+const result={};
 
   lines.forEach(line=>{
     let matched=false;
@@ -2852,7 +2853,7 @@ function parseAnalysisSections(content, type){
       if(keys.some(k=>line.toUpperCase().includes(k.toUpperCase()))){
         if(currentFirm) result[currentFirm]=currentText.join('\n').trim();
         currentFirm=firm;
-        currentText=[line];
+        currentText=[];
         matched=true;
         break;
       }
