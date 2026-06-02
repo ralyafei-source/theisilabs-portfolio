@@ -321,6 +321,7 @@ module.exports = async function handler(req, res) {
         const safeUsers = users.map(u => ({
           nickname: u.nickname,
           isAdmin: u.isAdmin || false,
+          tier: u.tier || 'fast',               // ← NEW: expose tier (default fast if missing)
           createdAt: u.createdAt,
           failedAttempts: u.failedAttempts || 0,
           lockoutUntil: u.lockoutUntil || null,
@@ -334,7 +335,7 @@ module.exports = async function handler(req, res) {
 
     // ── POST ──
     if (req.method === 'POST') {
-      const { action: bodyAction, nickname, reason, type } = req.body || {};
+      const { action: bodyAction, nickname, reason, type, tier } = req.body || {};
 
       if (bodyAction === 'generate-invite') {
         const codesFile = await ghGet('data/invite-codes.json', githubToken);
@@ -404,6 +405,20 @@ module.exports = async function handler(req, res) {
         await ghPut('data/users.json', users, usersFile.sha, githubToken);
         return res.status(200).json({ success: true });
       }
+
+      // ── NEW: set-tier ──────────────────────────────────────────────────────
+      if (bodyAction === 'set-tier') {
+        if (!nickname) return res.status(400).json({ error: 'Nickname required' });
+        if (!tier || !['fast', 'deep'].includes(tier)) {
+          return res.status(400).json({ error: 'tier must be "fast" or "deep"' });
+        }
+        const idx = users.findIndex(u => u.nickname.toLowerCase() === nickname.toLowerCase());
+        if (idx === -1) return res.status(404).json({ error: 'User not found' });
+        users[idx].tier = tier;
+        await ghPut('data/users.json', users, usersFile.sha, githubToken);
+        return res.status(200).json({ success: true, nickname, tier });
+      }
+      // ──────────────────────────────────────────────────────────────────────
 
       if (bodyAction === 'generate-analysis') {
         if (!nickname) return res.status(400).json({ error: 'Nickname required' });
