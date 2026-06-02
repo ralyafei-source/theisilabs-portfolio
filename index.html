@@ -5344,8 +5344,8 @@ async function loadAdminData(token) {
               ${u.isBlocked && u.blockReason ? `<div style="font-size:10px;color:var(--red);margin-top:2px;">Reason: ${u.blockReason}</div>` : ''}
             </div>
           </div>
-          ${!u.isAdmin ? `
           <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            ${!u.isAdmin ? `
             ${u.lockoutUntil && new Date(u.lockoutUntil) > new Date() ? `<button class="admin-action-btn" onclick="unlockUser('${u.nickname}')">🔓 Unlock</button>` : ''}
             <button class="admin-action-btn" onclick="resetPin('${u.nickname}')">🔑 Reset PIN</button>
             ${u.isBlocked
@@ -5353,6 +5353,7 @@ async function loadAdminData(token) {
               : `<button class="admin-action-btn" onclick="blockUser('${u.nickname}')" style="border-color:var(--gold);color:var(--gold);">🚫 Block</button>`
             }
             <button class="admin-action-btn" onclick="deleteUser('${u.nickname}')" style="border-color:var(--red);color:var(--red);">🗑 Delete</button>
+            ` : ''}
             <div style="display:flex;gap:4px;align-items:center;margin-left:4px;">
               <span style="font-size:11px;color:var(--text3);">Tier:</span>
               <button id="tier-fast-${u.nickname}" class="admin-action-btn" onclick="setUserTier('${u.nickname}','fast')"
@@ -5368,7 +5369,7 @@ async function loadAdminData(token) {
               </select>
               <button class="admin-action-btn" onclick="generateUserAnalysis('${u.nickname}')" style="border-color:var(--accent);color:var(--accent);">⚡ Generate</button>
             </div>
-          </div>` : ''}
+          </div>
         </div>`).join('');
     }
     // Render codes
