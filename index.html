@@ -521,7 +521,6 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
       <div class="nav-tab" onclick="showTab('alerts',this)">🔔 <span class="nt">Alerts</span></div>
       <div class="nav-tab" onclick="showTab('transactions',this)">💳 <span class="nt">Transactions</span></div>
       <div class="nav-tab" onclick="showTab('setup',this)">⚙️ <span class="nt">Setup</span></div>
-      <div class="nav-tab" onclick="showTab('profile',this)">👤 <span class="nt">Profile</span></div>
     </div>
   </div>
 </nav>
@@ -1155,59 +1154,6 @@ WOLF remains at critical lows<br><br>
   </div>
 </div>
 
-<!-- ===== PROFILE TAB ===== -->
-<div id="tab-profile" class="tab-content">
-  <div class="card" style="max-width:680px;margin:0 auto;">
-    <div class="section-hdr" style="margin-bottom:6px;">
-      <div>
-        <div class="section-title">👤 Investor Profile</div>
-        <div class="section-sub">Tell the AI advisor about your situation. All fields are optional — leave anything blank and a safe default is used. This tailors your daily, weekly and monthly analysis.</div>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Cash available to invest (USD)</label>
-      <input class="form-input" type="number" min="0" step="100" id="pf-cash" placeholder="e.g. 25000 — leave blank if none">
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Risk tolerance</label>
-      <select class="form-input" id="pf-risk">
-        <option value="low">Low — protect capital first (default)</option>
-        <option value="medium">Medium — balanced</option>
-        <option value="high">High — comfortable with big swings</option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Time horizon</label>
-      <select class="form-input" id="pf-horizon">
-        <option value="long">Long-term — years (default)</option>
-        <option value="medium">Medium — months to a couple of years</option>
-        <option value="short">Short — under a year</option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Goals</label>
-      <input class="form-input" type="text" id="pf-goals" placeholder="e.g. growth, income, preservation">
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Constraints (hard rules the AI must respect)</label>
-      <input class="form-input" type="text" id="pf-constraints" placeholder="e.g. no options, Sharia-compliant only">
-    </div>
-
-    <div class="form-group">
-      <label class="form-label">Notes — anything else the AI should know</label>
-      <textarea class="form-input" id="pf-notes" rows="3" style="resize:vertical;font-family:'Cairo',sans-serif;" placeholder="Free text"></textarea>
-    </div>
-
-    <button class="btn btn-primary" id="pf-save" onclick="saveProfile()">💾 Save Profile</button>
-    <span id="pf-status" style="margin-left:14px;font-size:13px;"></span>
-  </div>
-</div>
-
 <!-- ===== PROMPT TAB ===== -->
 <div id="tab-prompt" class="tab-content">
   <div class="card">
@@ -1480,75 +1426,12 @@ function showTab(name,el){
     if(name==='prompt') renderPrompt();
     if(name==='transactions') renderTxTable();
     if(name==='advisor') loadAnalysis();
-    if(name==='profile') loadProfile();
   }catch(e){
     console.error('Tab error in '+name+':',e);
     document.getElementById('tab-'+name).innerHTML='<div style="padding:40px;color:var(--red);font-family:monospace;">Error: '+e.message+'</div>';
   }
 }
  
- 
-// ===== INVESTOR PROFILE =====
-async function loadProfile(){
-  const token = localStorage.getItem(AUTH_SESSION_KEY);
-  if(!token) return;
-  try{
-    const r = await fetch('/api/user-portfolio', { headers:{ 'Authorization':'Bearer '+token } });
-    if(!r.ok) return;
-    const data = await r.json();
-    const p = (data.portfolio && data.portfolio.profile) || data.profile || {};
-    if(p.cashToInvest!=null) document.getElementById('pf-cash').value = p.cashToInvest;
-    if(p.riskTolerance) document.getElementById('pf-risk').value = p.riskTolerance;
-    if(p.timeHorizon) document.getElementById('pf-horizon').value = p.timeHorizon;
-    if(p.goals) document.getElementById('pf-goals').value = p.goals;
-    if(p.constraints) document.getElementById('pf-constraints').value = p.constraints;
-    if(p.notes) document.getElementById('pf-notes').value = p.notes;
-  }catch(e){ console.error('loadProfile error:', e); }
-}
-
-async function saveProfile(){
-  const token = localStorage.getItem(AUTH_SESSION_KEY);
-  const statusEl = document.getElementById('pf-status');
-  const btn = document.getElementById('pf-save');
-  if(!token){
-    statusEl.innerHTML = '<span style="color:var(--red)">Please sign in first</span>';
-    return;
-  }
-  // Build profile — only include fields the user actually filled in
-  const profile = {};
-  const cashRaw = document.getElementById('pf-cash').value.trim();
-  if(cashRaw !== ''){ const n = parseFloat(cashRaw); if(!isNaN(n)) profile.cashToInvest = n; }
-  profile.riskTolerance = document.getElementById('pf-risk').value;
-  profile.timeHorizon = document.getElementById('pf-horizon').value;
-  const goals = document.getElementById('pf-goals').value.trim();
-  const constraints = document.getElementById('pf-constraints').value.trim();
-  const notes = document.getElementById('pf-notes').value.trim();
-  if(goals) profile.goals = goals;
-  if(constraints) profile.constraints = constraints;
-  if(notes) profile.notes = notes;
-
-  statusEl.innerHTML = '<span style="color:var(--text2)">⏳ Saving...</span>';
-  btn.disabled = true;
-  try{
-    const r = await fetch('/api/user-portfolio', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
-      body: JSON.stringify({ profile })
-    });
-    let msg = '';
-    try{ const d = await r.json(); msg = d.message || ''; }catch(_){}
-    if(r.ok){
-      statusEl.innerHTML = '<span style="color:var(--accent2)">✅ '+(msg||'Saved')+'</span>';
-    }else{
-      statusEl.innerHTML = '<span style="color:var(--red)">❌ '+(msg||'Couldn\'t save — please try again')+'</span>';
-    }
-  }catch(e){
-    statusEl.innerHTML = '<span style="color:var(--red)">❌ Connection error — please try again</span>';
-  }finally{
-    btn.disabled = false;
-  }
-}
-
 // ===== PORTFOLIO =====
 function sortP(col){
   if(pSortCol===col){ pSortDir*=-1; } else { pSortCol=col; pSortDir=1; }
@@ -5449,13 +5332,20 @@ async function loadAdminData(token) {
         <div class="user-row" style="flex-direction:column;align-items:flex-start;gap:8px;padding:12px 0;">
           <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
             <div>
-              <div class="user-nick">${u.nickname} ${u.isAdmin ? '👑' : ''} ${u.isBlocked ? '<span style="color:var(--red);font-size:10px;">🚫 Blocked</span>' : ''}</div>
+              <div class="user-nick">${u.nickname} ${u.isAdmin ? '👑' : ''} ${u.isBlocked ? '<span style="color:var(--red);font-size:10px;">🚫 Blocked</span>' : ''}
+                <span id="tier-badge-${u.nickname}" style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;margin-left:6px;
+                  ${(u.tier||'fast')==='deep'
+                    ? 'background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.3);'
+                    : 'background:rgba(30,45,74,.4);color:var(--text3);border:1px solid var(--border);'}">
+                  ${(u.tier||'fast')==='deep' ? '⚡ DEEP' : '⚡ FAST'}
+                </span>
+              </div>
               <div class="user-meta">Joined: ${u.createdAt ? u.createdAt.slice(0,10) : 'unknown'} · Failed: ${u.failedAttempts || 0}</div>
               ${u.isBlocked && u.blockReason ? `<div style="font-size:10px;color:var(--red);margin-top:2px;">Reason: ${u.blockReason}</div>` : ''}
             </div>
           </div>
           ${!u.isAdmin ? `
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
             ${u.lockoutUntil && new Date(u.lockoutUntil) > new Date() ? `<button class="admin-action-btn" onclick="unlockUser('${u.nickname}')">🔓 Unlock</button>` : ''}
             <button class="admin-action-btn" onclick="resetPin('${u.nickname}')">🔑 Reset PIN</button>
             ${u.isBlocked
@@ -5463,6 +5353,13 @@ async function loadAdminData(token) {
               : `<button class="admin-action-btn" onclick="blockUser('${u.nickname}')" style="border-color:var(--gold);color:var(--gold);">🚫 Block</button>`
             }
             <button class="admin-action-btn" onclick="deleteUser('${u.nickname}')" style="border-color:var(--red);color:var(--red);">🗑 Delete</button>
+            <div style="display:flex;gap:4px;align-items:center;margin-left:4px;">
+              <span style="font-size:11px;color:var(--text3);">Tier:</span>
+              <button id="tier-fast-${u.nickname}" class="admin-action-btn" onclick="setUserTier('${u.nickname}','fast')"
+                style="${(u.tier||'fast')==='fast' ? 'border-color:var(--accent2);color:var(--accent2);font-weight:700;' : ''}">Fast</button>
+              <button id="tier-deep-${u.nickname}" class="admin-action-btn" onclick="setUserTier('${u.nickname}','deep')"
+                style="${(u.tier||'fast')==='deep' ? 'border-color:#818cf8;color:#818cf8;font-weight:700;' : ''}">Deep</button>
+            </div>
             <div style="display:flex;gap:4px;align-items:center;">
               <select id="gen-type-${u.nickname}" style="background:var(--bg);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:3px 6px;font-size:11px;font-family:'Cairo',sans-serif;">
                 <option value="daily">Daily</option>
@@ -5760,6 +5657,43 @@ async function generateUserAnalysis(nickname) {
     }
   } catch(e) {
     btn.textContent = origText; btn.disabled = false;
+    alert('Error: ' + e.message);
+  }
+}
+
+// ── Set user tier (fast / deep) ──
+async function setUserTier(nickname, tier) {
+  const token = localStorage.getItem(AUTH_SESSION_KEY);
+  const fastBtn = document.getElementById('tier-fast-' + nickname);
+  const deepBtn = document.getElementById('tier-deep-' + nickname);
+  const badge   = document.getElementById('tier-badge-' + nickname);
+  const activeBtn   = tier === 'deep' ? deepBtn : fastBtn;
+  const inactiveBtn = tier === 'deep' ? fastBtn  : deepBtn;
+
+  // Optimistic UI — highlight active immediately
+  if (activeBtn)   { activeBtn.style.borderColor = tier==='deep' ? '#818cf8' : 'var(--accent2)'; activeBtn.style.color = tier==='deep' ? '#818cf8' : 'var(--accent2)'; activeBtn.style.fontWeight = '700'; }
+  if (inactiveBtn) { inactiveBtn.style.borderColor = ''; inactiveBtn.style.color = ''; inactiveBtn.style.fontWeight = ''; }
+  if (badge) {
+    badge.textContent = tier === 'deep' ? '⚡ DEEP' : '⚡ FAST';
+    badge.style.background  = tier === 'deep' ? 'rgba(99,102,241,.15)' : 'rgba(30,45,74,.4)';
+    badge.style.color       = tier === 'deep' ? '#818cf8' : 'var(--text3)';
+    badge.style.borderColor = tier === 'deep' ? 'rgba(99,102,241,.3)' : 'var(--border)';
+  }
+
+  try {
+    const r = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ action: 'set-tier', nickname, tier })
+    });
+    const data = await r.json();
+    if (!r.ok || !data.success) {
+      alert('Error: ' + (data.error || 'Unknown error'));
+      // Revert UI
+      if (activeBtn)   { activeBtn.style.borderColor = ''; activeBtn.style.color = ''; activeBtn.style.fontWeight = ''; }
+      if (inactiveBtn) { inactiveBtn.style.borderColor = tier==='deep' ? 'var(--accent2)' : '#818cf8'; inactiveBtn.style.color = tier==='deep' ? 'var(--accent2)' : '#818cf8'; inactiveBtn.style.fontWeight = '700'; }
+    }
+  } catch(e) {
     alert('Error: ' + e.message);
   }
 }
