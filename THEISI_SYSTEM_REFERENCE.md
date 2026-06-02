@@ -63,16 +63,11 @@ UAE time: `addHours(now;4)`
 ---
 
 ## OPEN TASKS
-1. **Auth gap** — endpoint accepts NO-key requests. Fix to require key.
-   Blocked until Module 12 sends the Authorization header (in progress S22).
-2. **Token rotation** — `theisilabs2026` leaked in git history; rotate
-   (new value in Vercel + all Make.com modules + scrub from docs).
-3. **FMP rate limit** — insider feature adds ~30-40 calls/run; hit "Too Many
-   Requests" on FMP modules. May need throttling or fewer symbols.
+1. ~~**Auth gap**~~ ✅ Fixed — endpoint requires Bearer token, Module 12 sends it.
+2. ~~**Token rotation**~~ ✅ Done — `theisilabs2026` replaced, all Make.com modules updated.
+3. **FMP rate limit** — Starter plan (300/min) but runs hitting 1,500-3,000/min. Monitoring tomorrow's 7:10 AM run before acting. Fix options: upgrade FMP plan or reduce calls in portfolio-for-ai.js.
 4. Multi-user (`?nickname=`), Railway migration, dashboard footer disclaimer.
-5. **Track loose docs** — THEISI_SYSTEM_REFERENCE.md, BUILD_SPEC_*, PROFILE_SYSTEM_PLAN.md,
-   test-profile-save.ps1 are untracked in the repo folder (not backed up on GitHub).
-   `git add` + commit them when convenient (skip anything with secrets).
+5. **Prompt cleanup for 357 modules** — done (Session 23). SPUS rule updated in CLAUDE.md + reference doc.
 
 ---
 
@@ -94,7 +89,10 @@ UAE time: `addHours(now;4)`
   - Scenario 357 modules 13/7/15: added same INVESTOR CONTEXT block + pointer to INVESTOR PROFILE in {{4.data}}. (Module 7 had no hardcoded identity but needed the pointer added.)
   - Confirmed INVESTOR PROFILE block present in both {{12.data}} and {{4.data}}.
 - **SPUS rule changed:** no longer "never sell" — evaluated on merits like any ETF. Updated CLAUDE.md (rule 2) and THEISI_SYSTEM_REFERENCE.md golden rules. Broker name removed from rule 3.
-- Git: untracked docs still loose in repo folder (THEISI_SYSTEM_REFERENCE.md, BUILD_SPEC_*, PROFILE_SYSTEM_PLAN.md, test-profile-save.ps1) — not tracked/backed up yet (housekeeping TODO).
+- **Token rotation complete:** `BRIEFING_API_KEY` rotated in Vercel to new value. All Make.com modules updated (255 module 37 + all 357 HTTP modules). Old `theisilabs2026` no longer in use.
+- **FMP rate limit:** Starter plan confirmed (300 calls/min). Scheduled morning runs hitting 1,500-3,000 calls/min — over limit. Decision: monitor tomorrow's 7:10 AM run first before fixing. Options if it fails: upgrade FMP plan or reduce calls in portfolio-for-ai.js.
+- **FMP key mismatch note:** Vercel `FMP_API_KEY` starts with `sk_live` — doesn't match FMP's standard key format. Worth verifying this is correct if FMP errors appear.
+- **Docs housekeeping complete:** All loose files tracked and pushed to GitHub (BUILD_SPEC_*, PROFILE_SYSTEM_PLAN.md, THEISI_SYSTEM_REFERENCE.md, test-profile-save.ps1).
 
 ### Session 22 — 2026-06-01
 - Setup: Git installed, repo cloned locally, Claude Code working (reads CLAUDE.md).
