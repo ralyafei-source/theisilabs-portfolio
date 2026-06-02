@@ -168,6 +168,7 @@ module.exports = async (req, res) => {
     let cash = {};
     let investorName = 'Rashed';
     let isGenericUser = false;
+    let profile = {};   // optional investor profile; safe defaults applied below
 
     if (nickname && nickname !== 'rashed') {
       investorName = nickname.charAt(0).toUpperCase() + nickname.slice(1);
@@ -180,6 +181,7 @@ module.exports = async (req, res) => {
         return res.status(200).send(`Portfolio for ${investorName} is empty or not found.\nNo stocks to analyze.`);
       }
       const portfolio = await raw.json();
+      profile = portfolio.profile || {};
       const userStocks = portfolio.stocks || [];
       if (userStocks.length === 0) {
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
@@ -197,6 +199,7 @@ module.exports = async (req, res) => {
       const portfolio = await raw.json();
       holdings = portfolio.holdings || [];
       cash = portfolio.cash_summary || {};
+      profile = portfolio.profile || {};
     }
 
     const symbols  = holdings.map(h => h.sym);
@@ -284,6 +287,29 @@ module.exports = async (req, res) => {
       text += `Return on cash invested: +${roi}%\n`;
     }
     text += `═══════════════════════════════════════════════════════\n`;
+
+    // ── Investor profile (optional; safe defaults when absent, never throws) ──
+    const riskTolerance    = profile.riskTolerance || 'low';
+    const timeHorizon      = profile.timeHorizon   || 'long';
+    const riskIsDefault    = !profile.riskTolerance;
+    const horizonIsDefault = !profile.timeHorizon;
+    const horizonLabel = { short: 'SHORT-TERM', medium: 'MEDIUM-TERM', long: 'LONG-TERM' }[timeHorizon]
+                         || String(timeHorizon).toUpperCase();
+
+    text += `\n═══════════════════════════════════════════════════════\n`;
+    text += `INVESTOR PROFILE (use to tailor recommendations; absent fields use safe defaults)\n`;
+    text += `═══════════════════════════════════════════════════════\n`;
+    text += `Risk tolerance: ${riskTolerance.toUpperCase()}${riskIsDefault ? ' (default)' : ''}\n`;
+    text += `Time horizon: ${horizonLabel}${horizonIsDefault ? ' (default)' : ''}\n`;
+    if (profile.cashToInvest != null && Number.isFinite(+profile.cashToInvest)) {
+      text += `Cash available to invest: $${(+profile.cashToInvest).toLocaleString()}\n`;
+    }
+    if (profile.goals)       text += `Goals: ${profile.goals}\n`;
+    if (profile.constraints) text += `Constraints: ${profile.constraints}\n`;
+    if (profile.notes)       text += `Notes: ${profile.notes}\n`;
+    text += `INTERPRETATION: These are the investor's stated preferences. Respect constraints `;
+    text += `as hard rules. If risk is low, favor capital preservation and avoid aggressive `;
+    text += `recommendations. Use cash-to-invest for deployment suggestions. Absent fields = defaults; do not invent preferences.\n`;
 
     // ── Intelligence block ───────────────────────────────────────────────────
     if (wantIntelligence) {
