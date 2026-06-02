@@ -3,34 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Theisi Labs — ذكاء مالي</title>
+<title>Financial Intelligence Dashboard</title>
 <meta name="description" content="Arabic Finance Intelligence System — Personal Portfolio Advisor">
-<meta name="theme-color" content="#0D0D0F">
+<meta name="theme-color" content="#0d1117">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzBkMTExNyIvPgogIDxyZWN0IHg9IjMiIHk9IjIwIiB3aWR0aD0iNCIgaGVpZ2h0PSI4IiByeD0iMSIgZmlsbD0iIzAwZDRmZiIgb3BhY2l0eT0iMC45Ii8+CiAgPHJlY3QgeD0iOSIgeT0iMTQiIHdpZHRoPSI0IiBoZWlnaHQ9IjE0IiByeD0iMSIgZmlsbD0iIzAwZmY4OCIgb3BhY2l0eT0iMC45Ii8+CiAgPHJlY3QgeD0iMTUiIHk9IjkiIHdpZHRoPSI0IiBoZWlnaHQ9IjE5IiByeD0iMSIgZmlsbD0iIzAwZDRmZiIvPgogIDxyZWN0IHg9IjIxIiB5PSI0IiB3aWR0aD0iNCIgaGVpZ2h0PSIyNCIgcng9IjEiIGZpbGw9IiMwMGZmODgiLz4KICA8cG9seWxpbmUgcG9pbnRzPSI1LDIwIDExLDE0IDE3LDkgMjMsNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjEuMiIgc3Ryb2tlLW9wYWNpdHk9IjAuMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iNSIgY3k9IjIwIiByPSIxLjIiIGZpbGw9IiMwMGQ0ZmYiLz4KICA8Y2lyY2xlIGN4PSIxMSIgY3k9IjE0IiByPSIxLjIiIGZpbGw9IiMwMGZmODgiLz4KICA8Y2lyY2xlIGN4PSIxNyIgY3k9IjkiIHI9IjEuMiIgZmlsbD0iIzAwZDRmZiIvPgogIDxjaXJjbGUgY3g9IjIzIiBjeT0iNCIgcj0iMS4yIiBmaWxsPSIjMDBmZjg4Ii8+Cjwvc3ZnPg==">
 <link rel="icon" type="image/png" sizes="16x16" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNiAxNiI+CiAgPHJlY3Qgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiByeD0iMyIgZmlsbD0iIzBkMTExNyIvPgogIDxyZWN0IHg9IjIiIHk9IjEwIiB3aWR0aD0iMiIgaGVpZ2h0PSI0IiBmaWxsPSIjMDBkNGZmIi8+CiAgPHJlY3QgeD0iNSIgeT0iNyIgd2lkdGg9IjIiIGhlaWdodD0iNyIgZmlsbD0iIzAwZmY4OCIvPgogIDxyZWN0IHg9IjgiIHk9IjQiIHdpZHRoPSIyIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMDBkNGZmIi8+CiAgPHJlY3QgeD0iMTEiIHk9IjIiIHdpZHRoPSIyIiBoZWlnaHQ9IjEyIiBmaWxsPSIjMDBmZjg4Ii8+CiAgPHJlY3QgeD0iMiIgeT0iMTAiIHdpZHRoPSIxMSIgaGVpZ2h0PSIxIiBmaWxsPSJub25lIiBzdHJva2U9IiMwMGQ0ZmYiIHN0cm9rZS13aWR0aD0iMC41IiBvcGFjaXR5PSIwLjQiLz4KPC9zdmc+">
 <link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj4KICA8cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjMyIiBmaWxsPSIjMGQxMTE3Ii8+CiAgPHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTYwIiBoZWlnaHQ9IjE2MCIgcng9IjI2IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMGQ0ZmYiIHN0cm9rZS13aWR0aD0iMSIgb3BhY2l0eT0iMC4xNSIvPgogIDxyZWN0IHg9IjE4IiB5PSIxMDUiIHdpZHRoPSIyNCIgaGVpZ2h0PSI1MiIgcng9IjQiIGZpbGw9IiMwMGQ0ZmYiIG9wYWNpdHk9IjAuOSIvPgogIDxyZWN0IHg9IjUyIiB5PSI4MCIgd2lkdGg9IjI0IiBoZWlnaHQ9Ijc3IiByeD0iNCIgZmlsbD0iIzAwZmY4OCIgb3BhY2l0eT0iMC45Ii8+CiAgPHJlY3QgeD0iODYiIHk9IjUwIiB3aWR0aD0iMjQiIGhlaWdodD0iMTA3IiByeD0iNCIgZmlsbD0iIzAwZDRmZiIvPgogIDxyZWN0IHg9IjEyMCIgeT0iMjIiIHdpZHRoPSIyNCIgaGVpZ2h0PSIxMzUiIHJ4PSI0IiBmaWxsPSIjMDBmZjg4Ii8+CiAgPHBvbHlsaW5lIHBvaW50cz0iMzAsMTA1IDY0LDgwIDk4LDUwIDEzMiwyMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2Utb3BhY2l0eT0iMC4yNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPGNpcmNsZSBjeD0iMzAiIGN5PSIxMDUiIHI9IjUiIGZpbGw9IiMwMGQ0ZmYiLz4KICA8Y2lyY2xlIGN4PSI2NCIgY3k9IjgwIiByPSI1IiBmaWxsPSIjMDBmZjg4Ii8+CiAgPGNpcmNsZSBjeD0iOTgiIGN5PSI1MCIgcj0iNSIgZmlsbD0iIzAwZDRmZiIvPgogIDxjaXJjbGUgY3g9IjEzMiIgY3k9IjIyIiByPSI1IiBmaWxsPSIjMDBmZjg4Ii8+CiAgPHRleHQgeD0iOTAiIHk9IjE2OCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSIxMSIgZmlsbD0iIzAwZDRmZiIgb3BhY2l0eT0iMC42IiBmb250LXdlaWdodD0iYm9sZCI+Rkk8L3RleHQ+Cjwvc3ZnPg==">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Theisi Labs">
-<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<meta name="apple-mobile-web-app-title" content="FI Dashboard">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 :root {
-  --bg:#0D0D0F; --bg2:#111116; --bg3:#18181f;
-  --border:#252535; --accent:#35D6FF; --accent2:#00c864;
-  --pink:#FF0A78; --accent3:#ff6b35; --gold:#ffd700; --red:#ff4444;
-  --green:#00c864; --text:#f0f0f5; --text2:#8888aa; --text3:#4a4a6a;
+  --bg:#0a0e1a; --bg2:#0f1524; --bg3:#151c30;
+  --border:#1e2d4a; --accent:#00d4ff; --accent2:#00ff88;
+  --accent3:#ff6b35; --gold:#ffd700; --red:#ff4444;
+  --green:#00c864; --text:#e8f0fe; --text2:#8899bb; --text3:#4a5a7a;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Almarai',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
-body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 20% 20%,rgba(255,10,120,0.04) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(53,214,255,0.03) 0%,transparent 50%);pointer-events:none;z-index:0;}
+body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 20% 20%,rgba(0,212,255,0.05) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(0,255,136,0.03) 0%,transparent 50%);pointer-events:none;z-index:0;}
 .container{max-width:1400px;margin:0 auto;padding:0 20px;position:relative;z-index:1;}
 
 header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 0;position:sticky;top:0;z-index:100;}
 .header-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
 .logo{display:flex;align-items:center;gap:10px;}
-.logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--pink),var(--accent));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;}
-.logo-text{font-size:16px;font-weight:800;letter-spacing:-0.02em;}
+.logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.logo-text{font-size:17px;font-weight:900;}
 .logo-sub{font-size:10px;color:var(--text2);}
 .header-right{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
 .hstat{text-align:center;}
@@ -39,14 +39,14 @@ header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 
 .status-dot{width:7px;height:7px;background:var(--accent2);border-radius:50%;display:inline-block;margin-left:5px;animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.3);}}
 .lang-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
-.lang-btn{padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text2);font-family:'Almarai',sans-serif;transition:all .15s;}
-.lang-btn.active{background:var(--pink);color:#fff;}
+.lang-btn{padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text2);font-family:'Cairo',sans-serif;transition:all .15s;}
+.lang-btn.active{background:var(--accent);color:#000;}
 
 nav{background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:67px;z-index:99;}
 .nav-inner{display:flex;overflow-x:auto;}
 .nav-tab{padding:12px 20px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text2);border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:7px;}
 .nav-tab:hover{color:var(--text);background:var(--bg3);}
-.nav-tab.active{color:var(--pink);border-bottom-color:var(--pink);}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
 
 main{padding:24px 0;}
 .tab-content{display:none;}
@@ -61,7 +61,7 @@ main{padding:24px 0;}
 
 .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden;}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
-.stat-card.blue::before{background:linear-gradient(90deg,var(--pink),transparent);}
+.stat-card.blue::before{background:linear-gradient(90deg,var(--accent),transparent);}
 .stat-card.green::before{background:linear-gradient(90deg,var(--accent2),transparent);}
 .stat-card.orange::before{background:linear-gradient(90deg,var(--accent3),transparent);}
 .stat-card.gold::before{background:linear-gradient(90deg,var(--gold),transparent);}
@@ -116,14 +116,14 @@ main{padding:24px 0;}
 
 .tg-box{background:#17212b;border-radius:14px;padding:18px;border:1px solid #2b3f50;max-width:380px;}
 .tg-hdr{display:flex;align-items:center;gap:9px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #2b3f50;}
-.tg-av{width:34px;height:34px;background:linear-gradient(135deg,var(--pink),var(--accent));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.tg-av{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;}
 .tg-name{font-size:13px;font-weight:700;}
 .tg-status{font-size:10px;color:#6b8b9e;}
 .tg-msg{background:#1e3a4f;border-radius:10px 10px 3px 10px;padding:12px;font-size:12px;line-height:1.8;direction:rtl;text-align:right;}
 .tg-time{font-size:10px;color:#6b8b9e;text-align:left;margin-top:5px;}
 
-.btn{padding:9px 18px;border-radius:9px;font-family:'Almarai',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;display:inline-flex;align-items:center;gap:7px;}
-.btn-primary{background:linear-gradient(135deg,var(--pink),#cc0060);color:#fff;}
+.btn{padding:9px 18px;border-radius:9px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;display:inline-flex;align-items:center;gap:7px;}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#0099cc);color:#000;}
 .btn-primary:hover{transform:translateY(-1px);}
 .btn-success{background:linear-gradient(135deg,var(--accent2),#00cc66);color:#000;}
 .btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);}
@@ -134,20 +134,20 @@ main{padding:24px 0;}
 .form-label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;}
 .form-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text);outline:none;transition:border-color .2s;direction:ltr;}
 .form-input:focus{border-color:var(--accent);}
-select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
+select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
 .code-block{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent2);white-space:pre-wrap;word-break:break-all;direction:ltr;text-align:left;max-height:500px;overflow-y:auto;}
 
 .step-item{display:flex;gap:14px;margin-bottom:20px;align-items:flex-start;}
-.step-num{width:30px;height:30px;background:linear-gradient(135deg,var(--pink),var(--accent));border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#fff;flex-shrink:0;}
+.step-num{width:30px;height:30px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#000;flex-shrink:0;}
 .step-title{font-size:14px;font-weight:700;margin-bottom:5px;}
 .step-desc{font-size:12px;color:var(--text2);line-height:1.6;}
 
 .trend-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
-.t-btn{font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:'Almarai',sans-serif;transition:all .15s;white-space:nowrap;}
-.t-btn.active{background:var(--pink);color:#fff;border-color:transparent;}
+.t-btn{font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:'Cairo',sans-serif;transition:all .15s;white-space:nowrap;}
+.t-btn.active{background:var(--accent);color:#000;border-color:transparent;}
 .t-btn:hover:not(.active){background:var(--bg3);}
 .t-sep{width:1px;height:20px;background:var(--border);}
-.trend-search{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;color:var(--text);font-family:'Almarai',sans-serif;width:130px;outline:none;}
+.trend-search{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;color:var(--text);font-family:'Cairo',sans-serif;width:130px;outline:none;}
 .trend-search:focus{border-color:var(--accent);}
 .trend-grid{display:grid;gap:10px;}
 .tg-sm{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));}
@@ -166,7 +166,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .s-pct-dn{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--red);text-align:right;}
 .s-footer{display:flex;justify-content:space-between;align-items:center;margin-top:4px;}
 .s-cost{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;}
-.s-pin{font-size:10px;border:none;background:none;cursor:pointer;color:var(--text3);padding:0;font-family:'Almarai',sans-serif;}
+.s-pin{font-size:10px;border:none;background:none;cursor:pointer;color:var(--text3);padding:0;font-family:'Cairo',sans-serif;}
 .s-pin:hover{color:var(--accent);}
 .drag-hint{font-size:10px;color:var(--text3);text-align:center;margin-bottom:10px;}
 .section-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
@@ -201,7 +201,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
 .modal-sym{font-size:28px;font-weight:900;color:var(--accent);}
 .modal-name{font-size:14px;color:var(--text2);margin-top:2px;}
-.modal-close{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 18px;border-radius:9px;cursor:pointer;font-family:'Almarai',sans-serif;font-size:13px;font-weight:600;}
+.modal-close{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 18px;border-radius:9px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;}
 .modal-close:hover{border-color:var(--red);color:var(--red);}
 .modal-chart-area{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;}
 .modal-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
@@ -236,11 +236,11 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 
 /* AI ADVISOR */
 .advisor-date-nav{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
-.advisor-date-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:8px;cursor:pointer;font-family:'Almarai',sans-serif;font-size:12px;transition:all .15s;}
+.advisor-date-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:6px 14px;border-radius:8px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:12px;transition:all .15s;}
 .advisor-date-btn:hover{border-color:var(--accent);color:var(--accent);}
 .advisor-date-current{font-size:14px;font-weight:700;color:var(--accent);font-family:'IBM Plex Mono',monospace;padding:6px 14px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);border-radius:8px;}
 .advisor-lang-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto;}
-.advisor-lang-btn{padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text2);font-family:'Almarai',sans-serif;transition:all .15s;}
+.advisor-lang-btn{padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text2);font-family:'Cairo',sans-serif;transition:all .15s;}
 .advisor-lang-btn.active{background:var(--gold);color:#000;}
 .analysis-group{margin-bottom:20px;}
 .group-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;gap:12px;}
@@ -278,12 +278,12 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .auth-view{display:none;}
 .auth-view.active{display:block;}
 .auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:24px;}
-.auth-tab{padding:10px;text-align:center;font-size:13px;font-weight:700;cursor:pointer;background:transparent;border:none;color:var(--text2);font-family:'Almarai',sans-serif;transition:all .2s;}
+.auth-tab{padding:10px;text-align:center;font-size:13px;font-weight:700;cursor:pointer;background:transparent;border:none;color:var(--text2);font-family:'Cairo',sans-serif;transition:all .2s;}
 .auth-tab.active{background:var(--accent);color:#000;}
-.auth-input{width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:'Almarai',sans-serif;margin-bottom:12px;outline:none;transition:border .2s;}
+.auth-input{width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:'Cairo',sans-serif;margin-bottom:12px;outline:none;transition:border .2s;}
 .auth-input:focus{border-color:var(--accent);}
-.auth-btn{width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:'Almarai',sans-serif;transition:all .2s;margin-top:4px;}
-.auth-btn-primary{background:linear-gradient(135deg,var(--pink),#cc0060);color:#fff;}
+.auth-btn{width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:'Cairo',sans-serif;transition:all .2s;margin-top:4px;}
+.auth-btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;}
 .auth-btn-primary:hover{opacity:0.9;}
 .auth-btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2);margin-top:8px;}
 .auth-btn-outline:hover{border-color:var(--accent);color:var(--accent);}
@@ -291,12 +291,12 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .auth-error.show{display:block;}
 .pin-dots{display:flex;gap:14px;justify-content:center;margin:20px 0;}
 .pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:transparent;transition:all .2s;}
-.pin-dot.filled{background:var(--pink);border-color:var(--pink);}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent);}
 .pin-dot.error{background:var(--red);border-color:var(--red);}
 .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;}
 .numpad-btn{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 0;text-align:center;font-size:20px;font-weight:700;cursor:pointer;font-family:'IBM Plex Mono',monospace;color:var(--text);transition:all .15s;user-select:none;}
 .numpad-btn:hover{background:var(--border);border-color:var(--accent);}
-.numpad-btn:active{transform:scale(0.94);background:rgba(255,10,120,0.1);}
+.numpad-btn:active{transform:scale(0.94);background:rgba(0,212,255,0.1);}
 .numpad-btn.del{font-size:16px;color:var(--text2);}
 .numpad-btn.empty{background:transparent;border-color:transparent;cursor:default;}
 .numpad-btn.empty:hover{background:transparent;border-color:transparent;}
@@ -304,7 +304,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .auth-step-label{font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
 .auth-progress{display:flex;gap:5px;justify-content:center;margin-bottom:20px;}
 .auth-pdot{width:6px;height:6px;border-radius:50%;background:var(--border);}
-.auth-pdot.active{background:var(--pink);}
+.auth-pdot.active{background:var(--accent);}
 .auth-pdot.done{background:var(--accent2);}
 /* Admin panel */
 .admin-section{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;}
@@ -313,7 +313,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .user-row:last-child{border-bottom:none;}
 .user-nick{font-size:13px;font-weight:600;}
 .user-meta{font-size:10px;color:var(--text2);}
-.admin-action-btn{background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'Almarai',sans-serif;}
+.admin-action-btn{background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'Cairo',sans-serif;}
 .admin-action-btn:hover{border-color:var(--accent3);color:var(--accent3);}
 .invite-code-display{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--accent);text-align:center;letter-spacing:3px;padding:16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;margin:12px 0;}
 </style>
@@ -322,12 +322,12 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 
 <!-- ===== AUTH OVERLAY ===== -->
 <div id="authBlur" style="display:block;"></div>
-<div id="authOverlay" style="display:flex;">
+<div id="authOverlay" style="display:block;">
   <div id="authCard">
     <div class="auth-logo">
-      <div class="auth-logo-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 4C7 4 2.73 7.11 1 12c1.73 4.89 6 8 11 8s9.27-3.11 11-8c-1.73-4.89-6-8-11-8z" fill="rgba(255,255,255,0.9)"/><circle cx="12" cy="12" r="4" fill="#FF0A78"/><circle cx="12" cy="12" r="2" fill="#fff"/></svg></div>
-      <div class="auth-title">Theisi Labs</div>
-      <div class="auth-sub" id="auth-sub-text">ذكاء مالي · مدعوم بالذكاء الاصطناعي</div>
+      <div class="auth-logo-icon">📊</div>
+      <div class="auth-title">Financial Intelligence</div>
+      <div class="auth-sub" id="auth-sub-text">Secure investment dashboard</div>
     </div>
 
     <!-- SIGN IN / SIGN UP TABS -->
@@ -464,7 +464,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
         <span></span>
       </div>
       <div id="su-stock-rows" style="max-height:220px;overflow-y:auto;"></div>
-      <button onclick="addSignupStockRow()" style="background:rgba(0,212,255,.1);border:1px solid var(--accent);color:var(--accent);border-radius:10px;padding:10px;width:100%;cursor:pointer;font-size:13px;font-weight:600;font-family:'Almarai',sans-serif;margin-bottom:12px;transition:all .2s;">+ Add Stock</button>
+      <button onclick="addSignupStockRow()" style="background:rgba(0,212,255,.1);border:1px solid var(--accent);color:var(--accent);border-radius:10px;padding:10px;width:100%;cursor:pointer;font-size:13px;font-weight:600;font-family:'Cairo',sans-serif;margin-bottom:12px;transition:all .2s;">+ Add Stock</button>
       <button class="auth-btn auth-btn-primary" onclick="saveSignupPortfolio()">🚀 Launch My Dashboard</button>
       <button class="auth-btn auth-btn-outline" onclick="skipPortfolioSetup()" style="margin-top:8px;">Skip — I'll add stocks later</button>
     </div>
@@ -476,10 +476,10 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
   <div class="container">
     <div class="header-inner">
       <div class="logo">
-        <div class="logo-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4C7 4 2.73 7.11 1 12c1.73 4.89 6 8 11 8s9.27-3.11 11-8c-1.73-4.89-6-8-11-8z" fill="rgba(255,255,255,0.9)"/><circle cx="12" cy="12" r="4" fill="#FF0A78"/><circle cx="12" cy="12" r="2" fill="#fff"/></svg></div>
+        <div class="logo-icon">📊</div>
         <div>
-          <div class="logo-text" id="h-title">Theisi Labs</div>
-          <div class="logo-sub" id="h-sub">ذكاء مالي · مدعوم بالذكاء الاصطناعي</div>
+          <div class="logo-text" id="h-title">Financial Intelligence</div>
+          <div class="logo-sub" id="h-sub">Arabic Market Analysis System</div>
         </div>
       </div>
       <div class="header-right">
@@ -501,7 +501,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
           </div>
           <div class="hstat-label" id="h-system">System</div>
         </div>
-        <button onclick="togglePrivacy()" id="privacyBtn" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:14px;font-family:'Almarai',sans-serif;" title="Hide/Show values">👁</button>
+        <button onclick="togglePrivacy()" id="privacyBtn" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:14px;font-family:'Cairo',sans-serif;" title="Hide/Show values">👁</button>
         <div class="lang-toggle">
           <button class="lang-btn active" onclick="setLang('en',this)">EN</button>
           <button class="lang-btn" onclick="setLang('ar',this)">عربي</button>
@@ -520,7 +520,8 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
       <div class="nav-tab" onclick="showTab('weights',this)">⚖️ <span class="nt">Indicators</span></div>
       <div class="nav-tab" onclick="showTab('alerts',this)">🔔 <span class="nt">Alerts</span></div>
       <div class="nav-tab" onclick="showTab('transactions',this)">💳 <span class="nt">Transactions</span></div>
-      <div class="nav-tab" onclick="showTab('setup',this)" id="nav-setup-tab">⚙️ <span class="nt" id="nav-setup-label">Setup</span></div>
+      <div class="nav-tab" onclick="showTab('setup',this)">⚙️ <span class="nt">Setup</span></div>
+      <div class="nav-tab" onclick="showTab('profile',this)">👤 <span class="nt">Profile</span></div>
     </div>
   </div>
 </nav>
@@ -573,8 +574,8 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
       ⏳ Loading live prices...
     </div>
     <div style="display:flex;gap:8px;">
-      <button onclick="fetchLivePrices()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:4px 12px;border-radius:7px;cursor:pointer;font-size:11px;font-family:'Almarai',sans-serif;">↺ Refresh Prices</button>
-      <button onclick="openTradeModal()" style="background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#000;padding:4px 14px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;font-family:'Almarai',sans-serif;">+ Record Trade</button>
+      <button onclick="fetchLivePrices()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:4px 12px;border-radius:7px;cursor:pointer;font-size:11px;font-family:'Cairo',sans-serif;">↺ Refresh Prices</button>
+      <button onclick="openTradeModal()" style="background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#000;padding:4px 14px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;font-family:'Cairo',sans-serif;">+ Record Trade</button>
     </div>
   </div>
   <div class="grid-4">
@@ -705,31 +706,17 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 
 <!-- ===== ALERTS TAB ===== -->
 <div id="tab-alerts" class="tab-content">
-
-  <!-- Filter + action bar -->
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="t-btn active" id="af-all" onclick="filterAlerts('all',this)" id="a-filter-all">الكل</button>
-      <button class="t-btn" onclick="filterAlerts('critical',this)" id="a-filter-crit">🔴 خسارة حادة</button>
-      <button class="t-btn" onclick="filterAlerts('warning',this)" id="a-filter-warn">🟡 تحذير</button>
-      <button class="t-btn" onclick="filterAlerts('positive',this)" id="a-filter-pos">🟢 إيجابي</button>
-    </div>
-    <button class="btn btn-primary" style="font-size:11px;padding:7px 14px;" id="a-add">+ إضافة تنبيه</button>
-  </div>
-
-  <!-- Alerts list — full width -->
-  <div class="card" style="margin-bottom:16px;">
-    <div id="alertList"></div>
-  </div>
-
-  <!-- Settings — collapsible at bottom -->
-  <details style="margin-bottom:8px;">
-    <summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--text2);padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;list-style:none;display:flex;align-items:center;gap:8px;">
-      ⚙️ <span id="a-settings-title">إعدادات التنبيهات</span>
-    </summary>
-    <div class="card" style="border-top:none;border-radius:0 0 10px 10px;margin-top:0;">
-      <div class="grid-3" style="margin-bottom:0;">
-        <div class="form-group" style="margin-bottom:0;">
+  <div class="grid-2">
+    <div>
+      <div class="card">
+        <div class="section-hdr">
+          <div class="section-title" id="a-title">Active Alerts</div>
+          <button class="btn btn-primary" style="font-size:11px;padding:7px 12px;" id="a-add">+ Add Alert</button>
+        </div>
+        <div id="alertList"></div>
+        <hr class="divider">
+        <div class="card-title" id="a-settings-title">Alert Settings</div>
+        <div class="form-group">
           <label class="form-label" id="a-sens">Alert Sensitivity</label>
           <select class="form-input" id="sensSelect">
             <option id="sens1">Big moves only (±3%)</option>
@@ -737,17 +724,42 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
             <option id="sens3">All moves (±0.5%)</option>
           </select>
         </div>
-        <div class="form-group" style="margin-bottom:0;">
+        <div class="form-group">
           <label class="form-label" id="a-time">Morning Brief Time</label>
           <input class="form-input" type="time" value="07:00">
         </div>
-        <div style="display:flex;align-items:flex-end;">
-          <button class="btn btn-success" id="a-save" style="width:100%;">💾 حفظ الإعدادات</button>
+        <button class="btn btn-success" id="a-save">💾 Save Settings</button>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title" id="a-tg-title">Telegram Preview</div>
+        <div class="tg-box">
+          <div class="tg-hdr">
+            <div class="tg-av">📊</div>
+            <div>
+              <div class="tg-name" id="tg-bot-name">Market Intelligence Bot</div>
+              <div class="tg-status" id="tg-bot-status">Bot · Active now</div>
+            </div>
+          </div>
+          <div class="tg-msg" id="tgMsg">
+🌅 <strong>Morning Portfolio Brief</strong><br>
+Daily | 7:00 AM UAE<br><br>
+💼 <strong>Portfolio: —</strong><br><br>
+📈 <strong>Top Moves:</strong><br>
+• Loaded from Make.com each morning<br><br>
+🌍 <strong>Key News Today:</strong><br>
+• Fed decision at 8:30pm UAE<br>
+• PCE inflation data out today<br><br>
+⚠️ <strong>Watch:</strong><br>
+WOLF remains at critical lows<br><br>
+<em style="color:#6b8b9e;font-size:10px">This is informational analysis, not financial advice</em>
+          </div>
+          <div class="tg-time">07:00 ✓✓</div>
         </div>
       </div>
     </div>
-  </details>
-
+  </div>
 </div>
 
 <!-- ===== TRANSACTIONS TAB ===== -->
@@ -943,7 +955,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
   <div style="width:40px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0;"></div>
   <div id="scoringSheetContent" style="padding:16px;"></div>
   <div style="padding:0 16px 24px;">
-    <button onclick="closeScoringSheet()" style="width:100%;padding:12px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:10px;cursor:pointer;font-family:'Almarai',sans-serif;font-size:13px;">إغلاق</button>
+    <button onclick="closeScoringSheet()" style="width:100%;padding:12px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:10px;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px;">إغلاق</button>
   </div>
 </div>
 <div id="scoringSheetBackdrop" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9998;background:rgba(0,0,0,0.5);" onclick="closeScoringSheet()"></div>
@@ -1076,99 +1088,138 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 
 <!-- ===== SETUP TAB ===== -->
 <div id="tab-setup" class="tab-content">
-
-  <!-- ADMIN VIEW — shown only to rashed -->
-  <div id="setup-admin-view" style="display:none;">
+  <div class="grid-2">
     <div class="card">
-      <div class="section-hdr">
+      <div class="card-title" id="s-keys-title">API Keys</div>
+      <div class="form-group">
+        <label class="form-label">Claude API Key</label>
+        <input class="form-input" type="password" placeholder="sk-ant-api03-...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Telegram Bot Token</label>
+        <input class="form-input" type="password" placeholder="123456:AAF...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Telegram Chat ID</label>
+        <input class="form-input" type="text" placeholder="-100123456...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Alpha Vantage Key</label>
+        <input class="form-input" type="password" placeholder="ABCDEF123...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">NewsAPI Key</label>
+        <input class="form-input" type="password" placeholder="abc123...">
+      </div>
+      <button class="btn btn-primary" id="s-save">💾 Save Config</button>
+    </div>
+    <div class="card">
+      <div class="card-title" id="s-steps-title">Make.com Setup Steps</div>
+      <div class="step-item">
+        <div class="step-num">1</div>
         <div>
-          <div class="section-title" id="pr-title">Claude API Prompt</div>
-          <div class="section-sub" id="pr-sub">Copy this into Make.com → HTTP Module → Body</div>
+          <div class="step-title" id="st1-title">Create new scenario</div>
+          <div class="step-desc" id="st1-desc">In Make.com click "Create a new scenario" then press the "+" button in the center</div>
         </div>
-        <button class="btn btn-primary" onclick="copyPrompt()" id="pr-copy">📋 Copy All</button>
       </div>
-      <div class="code-block" id="promptBlock"></div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title" id="st2-title">Add Schedule trigger</div>
+          <div class="step-desc" id="st2-desc">Search "Schedule" → Every day → Set time to 03:00 UTC (= 7:00am UAE)</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title" id="st3-title">Add HTTP module for market data</div>
+          <div class="step-desc" id="st3-desc">Search "HTTP" → Make a request → Enter this URL:</div>
+          <div class="code-block" style="margin-top:8px;font-size:10px;">https://www.alphavantage.co/query?function=BATCH_STOCK_QUOTES&symbols=NVDA,AMZN,MSFT,AAPL,GOOGL,MU&apikey=YOUR_KEY</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title" id="st4-title">Add Claude AI module</div>
+          <div class="step-desc" id="st4-desc">Add another HTTP module → POST to https://api.anthropic.com/v1/messages → Copy prompt from Claude Prompt tab</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">5</div>
+        <div>
+          <div class="step-title" id="st5-title">Add Telegram module</div>
+          <div class="step-desc" id="st5-desc">Search "Telegram Bot" → Send a Message → Enter your Chat ID → Map Claude's response as message</div>
+        </div>
+      </div>
     </div>
   </div>
+</div>
 
-  <!-- USER VIEW — shown to all non-admin users -->
-  <div id="setup-user-view" style="display:none;">
-    <div class="grid-2">
-
-      <!-- Account Info -->
+<!-- ===== PROFILE TAB ===== -->
+<div id="tab-profile" class="tab-content">
+  <div class="card" style="max-width:680px;margin:0 auto;">
+    <div class="section-hdr" style="margin-bottom:6px;">
       <div>
-        <div class="card">
-          <div class="card-title" id="su-account-title">حسابي</div>
-          <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding:14px;background:var(--bg3);border-radius:10px;border:1px solid var(--border);">
-            <div style="width:48px;height:48px;background:linear-gradient(135deg,var(--pink),var(--accent));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;" id="su-avatar">—</div>
-            <div>
-              <div style="font-size:16px;font-weight:800;" id="su-display-name">—</div>
-              <div style="font-size:11px;color:var(--text2);margin-top:2px;" id="su-member-label">عضو نشط · Theisi Labs</div>
-            </div>
-          </div>
-
-          <!-- Language preference -->
-          <div class="form-group">
-            <label class="form-label" id="su-lang-label">اللغة المفضلة</label>
-            <div style="display:flex;gap:8px;">
-              <button class="t-btn active" id="su-lang-ar" onclick="setLang('ar',document.querySelector('.lang-btn'));document.getElementById('su-lang-ar').classList.add('active');document.getElementById('su-lang-en').classList.remove('active');">العربية</button>
-              <button class="t-btn" id="su-lang-en" onclick="setLang('en',document.querySelector('.lang-btn'));document.getElementById('su-lang-en').classList.add('active');document.getElementById('su-lang-ar').classList.remove('active');">English</button>
-            </div>
-          </div>
-
-          <hr class="divider">
-
-          <!-- Sign out -->
-          <button onclick="signOut()" class="btn btn-danger" style="width:100%;" id="su-signout">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-left:6px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            تسجيل الخروج
-          </button>
-        </div>
+        <div class="section-title">👤 Investor Profile</div>
+        <div class="section-sub">Tell the AI advisor about your situation. All fields are optional — leave anything blank and a safe default is used. This tailors your daily, weekly and monthly analysis.</div>
       </div>
-
-      <!-- Change PIN -->
-      <div>
-        <div class="card">
-          <div class="card-title" id="su-pin-title">تغيير رمز PIN</div>
-          <div class="form-group">
-            <label class="form-label" id="su-current-pin-label">الرمز الحالي</label>
-            <div class="pin-dots" id="cp-dots" style="justify-content:flex-start;gap:10px;">
-              <div class="pin-dot" id="cp-d1"></div>
-              <div class="pin-dot" id="cp-d2"></div>
-              <div class="pin-dot" id="cp-d3"></div>
-              <div class="pin-dot" id="cp-d4"></div>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label" id="su-new-pin-label">الرمز الجديد</label>
-            <div class="pin-dots" id="np-dots" style="justify-content:flex-start;gap:10px;">
-              <div class="pin-dot" id="np-d1"></div>
-              <div class="pin-dot" id="np-d2"></div>
-              <div class="pin-dot" id="np-d3"></div>
-              <div class="pin-dot" id="np-d4"></div>
-            </div>
-          </div>
-          <div class="numpad" style="max-width:240px;">
-            <div class="numpad-btn" onclick="changePinPress(1)">1</div>
-            <div class="numpad-btn" onclick="changePinPress(2)">2</div>
-            <div class="numpad-btn" onclick="changePinPress(3)">3</div>
-            <div class="numpad-btn" onclick="changePinPress(4)">4</div>
-            <div class="numpad-btn" onclick="changePinPress(5)">5</div>
-            <div class="numpad-btn" onclick="changePinPress(6)">6</div>
-            <div class="numpad-btn" onclick="changePinPress(7)">7</div>
-            <div class="numpad-btn" onclick="changePinPress(8)">8</div>
-            <div class="numpad-btn" onclick="changePinPress(9)">9</div>
-            <div class="numpad-btn empty"></div>
-            <div class="numpad-btn" onclick="changePinPress(0)">0</div>
-            <div class="numpad-btn del" onclick="changePinBack()">⌫</div>
-          </div>
-          <div id="cp-msg" style="font-size:12px;margin-top:10px;min-height:20px;"></div>
-        </div>
-      </div>
-
     </div>
-  </div>
 
+    <div class="form-group">
+      <label class="form-label">Cash available to invest (USD)</label>
+      <input class="form-input" type="number" min="0" step="100" id="pf-cash" placeholder="e.g. 25000 — leave blank if none">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Risk tolerance</label>
+      <select class="form-input" id="pf-risk">
+        <option value="low">Low — protect capital first (default)</option>
+        <option value="medium">Medium — balanced</option>
+        <option value="high">High — comfortable with big swings</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Time horizon</label>
+      <select class="form-input" id="pf-horizon">
+        <option value="long">Long-term — years (default)</option>
+        <option value="medium">Medium — months to a couple of years</option>
+        <option value="short">Short — under a year</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Goals</label>
+      <input class="form-input" type="text" id="pf-goals" placeholder="e.g. growth, income, preservation">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Constraints (hard rules the AI must respect)</label>
+      <input class="form-input" type="text" id="pf-constraints" placeholder="e.g. no options, Sharia-compliant only">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Notes — anything else the AI should know</label>
+      <textarea class="form-input" id="pf-notes" rows="3" style="resize:vertical;font-family:'Cairo',sans-serif;" placeholder="Free text"></textarea>
+    </div>
+
+    <button class="btn btn-primary" id="pf-save" onclick="saveProfile()">💾 Save Profile</button>
+    <span id="pf-status" style="margin-left:14px;font-size:13px;"></span>
+  </div>
+</div>
+
+<!-- ===== PROMPT TAB ===== -->
+<div id="tab-prompt" class="tab-content">
+  <div class="card">
+    <div class="section-hdr">
+      <div>
+        <div class="section-title" id="pr-title">Claude API Prompt</div>
+        <div class="section-sub" id="pr-sub">Copy this into Make.com → HTTP Module → Body</div>
+      </div>
+      <button class="btn btn-primary" onclick="copyPrompt()" id="pr-copy">📋 Copy All</button>
+    </div>
+    <div class="code-block" id="promptBlock"></div>
+  </div>
 </div>
 
 </div>
@@ -1296,7 +1347,7 @@ let txFilter='all';
 // Translations
 const T={
   en:{
-    hTitle:'Theisi Labs',hSub:'ذكاء مالي · مدعوم بالذكاء الاصطناعي',
+    hTitle:'Financial Intelligence',hSub:'Arabic Market Analysis System',
     hPortfolio:'Portfolio',hStocks:'Stocks',hMonth:'This Month',hActive:'Active',hSystem:'System',
     navPortfolio:'Portfolio',navAdvisor:'AI Advisor',navTrends:'Trends',navIndicators:'Indicators',navAlerts:'Alerts',navTransactions:'Transactions',navSetup:'Setup',
     pTotalLabel:'Total Portfolio',pBestLabel:'Best Performer',pReviewLabel:'Needs Review',pLargestLabel:'Largest Position',
@@ -1327,7 +1378,7 @@ const T={
     cost:'cost',pin:'pin',unpin:'unpin',pinned:'pinned',
   },
   ar:{
-    hTitle:'Theisi Labs',hSub:'ذكاء مالي · مدعوم بالذكاء الاصطناعي',
+    hTitle:'المحلل المالي الذكي',hSub:'نظام تحليل السوق الأمريكي',
     hPortfolio:'المحفظة',hStocks:'سهم',hMonth:'هذا الشهر',hActive:'نشط',hSystem:'النظام',
     navPortfolio:'المحفظة',navAdvisor:'المستشار الذكي',navTrends:'الاتجاهات',navIndicators:'المؤشرات',navAlerts:'التنبيهات',navTransactions:'المعاملات',navSetup:'الإعداد',
     pTotalLabel:'إجمالي المحفظة',pBestLabel:'أفضل أداء',pReviewLabel:'يحتاج مراجعة',pLargestLabel:'أكبر مركز',
@@ -1429,12 +1480,75 @@ function showTab(name,el){
     if(name==='prompt') renderPrompt();
     if(name==='transactions') renderTxTable();
     if(name==='advisor') loadAnalysis();
+    if(name==='profile') loadProfile();
   }catch(e){
     console.error('Tab error in '+name+':',e);
     document.getElementById('tab-'+name).innerHTML='<div style="padding:40px;color:var(--red);font-family:monospace;">Error: '+e.message+'</div>';
   }
 }
  
+ 
+// ===== INVESTOR PROFILE =====
+async function loadProfile(){
+  const token = localStorage.getItem(AUTH_SESSION_KEY);
+  if(!token) return;
+  try{
+    const r = await fetch('/api/user-portfolio', { headers:{ 'Authorization':'Bearer '+token } });
+    if(!r.ok) return;
+    const data = await r.json();
+    const p = (data.portfolio && data.portfolio.profile) || data.profile || {};
+    if(p.cashToInvest!=null) document.getElementById('pf-cash').value = p.cashToInvest;
+    if(p.riskTolerance) document.getElementById('pf-risk').value = p.riskTolerance;
+    if(p.timeHorizon) document.getElementById('pf-horizon').value = p.timeHorizon;
+    if(p.goals) document.getElementById('pf-goals').value = p.goals;
+    if(p.constraints) document.getElementById('pf-constraints').value = p.constraints;
+    if(p.notes) document.getElementById('pf-notes').value = p.notes;
+  }catch(e){ console.error('loadProfile error:', e); }
+}
+
+async function saveProfile(){
+  const token = localStorage.getItem(AUTH_SESSION_KEY);
+  const statusEl = document.getElementById('pf-status');
+  const btn = document.getElementById('pf-save');
+  if(!token){
+    statusEl.innerHTML = '<span style="color:var(--red)">Please sign in first</span>';
+    return;
+  }
+  // Build profile — only include fields the user actually filled in
+  const profile = {};
+  const cashRaw = document.getElementById('pf-cash').value.trim();
+  if(cashRaw !== ''){ const n = parseFloat(cashRaw); if(!isNaN(n)) profile.cashToInvest = n; }
+  profile.riskTolerance = document.getElementById('pf-risk').value;
+  profile.timeHorizon = document.getElementById('pf-horizon').value;
+  const goals = document.getElementById('pf-goals').value.trim();
+  const constraints = document.getElementById('pf-constraints').value.trim();
+  const notes = document.getElementById('pf-notes').value.trim();
+  if(goals) profile.goals = goals;
+  if(constraints) profile.constraints = constraints;
+  if(notes) profile.notes = notes;
+
+  statusEl.innerHTML = '<span style="color:var(--text2)">⏳ Saving...</span>';
+  btn.disabled = true;
+  try{
+    const r = await fetch('/api/user-portfolio', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+      body: JSON.stringify({ profile })
+    });
+    let msg = '';
+    try{ const d = await r.json(); msg = d.message || ''; }catch(_){}
+    if(r.ok){
+      statusEl.innerHTML = '<span style="color:var(--accent2)">✅ '+(msg||'Saved')+'</span>';
+    }else{
+      statusEl.innerHTML = '<span style="color:var(--red)">❌ '+(msg||'Couldn\'t save — please try again')+'</span>';
+    }
+  }catch(e){
+    statusEl.innerHTML = '<span style="color:var(--red)">❌ Connection error — please try again</span>';
+  }finally{
+    btn.disabled = false;
+  }
+}
+
 // ===== PORTFOLIO =====
 function sortP(col){
   if(pSortCol===col){ pSortDir*=-1; } else { pSortCol=col; pSortDir=1; }
@@ -1510,8 +1624,8 @@ function renderPortfolio(){
       <td class="num">${status}</td>
       <td class="num" style="font-family:'IBM Plex Mono';font-size:11px;color:var(--text3)">${purchaseDateStr}</td>
       <td class="num" style="white-space:nowrap;">
-        <button onclick="openEditStockModal('${s.sym}')" style="background:rgba(255,10,120,0.1);border:1px solid rgba(0,212,255,0.3);color:var(--accent);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:'Almarai',sans-serif;margin-right:4px;">✏️ Edit</button>
-        <button onclick="deleteStock('${s.sym}')" style="background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);color:var(--red);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:'Almarai',sans-serif;">🗑</button>
+        <button onclick="openEditStockModal('${s.sym}')" style="background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);color:var(--accent);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:'Cairo',sans-serif;margin-right:4px;">✏️ Edit</button>
+        <button onclick="deleteStock('${s.sym}')" style="background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);color:var(--red);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:'Cairo',sans-serif;">🗑</button>
       </td>
     </tr>`;
   }).join('');
@@ -1605,99 +1719,6 @@ function resetW(){
 }
 
 // ===== ALERTS =====
-// ── Setup tab — show correct view based on admin status ──
-function initSetupTab(isAdmin, nickname) {
-  if (isAdmin) {
-    document.getElementById('setup-admin-view').style.display = 'block';
-    document.getElementById('setup-user-view').style.display = 'none';
-    document.getElementById('nav-setup-label').textContent = 'Setup';
-  } else {
-    document.getElementById('setup-admin-view').style.display = 'none';
-    document.getElementById('setup-user-view').style.display = 'block';
-    document.getElementById('nav-setup-label').textContent = 'حسابي';
-    // Populate account info
-    const initial = (nickname || '?').charAt(0).toUpperCase();
-    const avatarEl = document.getElementById('su-avatar');
-    const nameEl = document.getElementById('su-display-name');
-    if (avatarEl) avatarEl.textContent = initial;
-    if (nameEl) nameEl.textContent = nickname || '—';
-  }
-}
-
-// ── Change PIN logic ──
-let _cpState = 'current'; // 'current' or 'new'
-let _cpCurrent = '';
-let _cpNew = '';
-
-function changePinPress(digit) {
-  if (_cpState === 'current' && _cpCurrent.length < 4) {
-    _cpCurrent += digit;
-    updateChangePinDots('cp', _cpCurrent.length);
-    if (_cpCurrent.length === 4) { _cpState = 'new'; }
-  } else if (_cpState === 'new' && _cpNew.length < 4) {
-    _cpNew += digit;
-    updateChangePinDots('np', _cpNew.length);
-    if (_cpNew.length === 4) { submitChangePin(); }
-  }
-}
-
-function changePinBack() {
-  if (_cpState === 'new' && _cpNew.length > 0) {
-    _cpNew = _cpNew.slice(0,-1);
-    updateChangePinDots('np', _cpNew.length);
-  } else if (_cpState === 'current' && _cpCurrent.length > 0) {
-    _cpCurrent = _cpCurrent.slice(0,-1);
-    updateChangePinDots('cp', _cpCurrent.length);
-  }
-}
-
-function updateChangePinDots(prefix, count) {
-  for (let i = 1; i <= 4; i++) {
-    const d = document.getElementById(`${prefix}-d${i}`);
-    if (d) d.classList.toggle('filled', i <= count);
-  }
-}
-
-async function submitChangePin() {
-  const msg = document.getElementById('cp-msg');
-  const token = localStorage.getItem(AUTH_SESSION_KEY);
-  const nickname = localStorage.getItem(AUTH_NICK_KEY);
-  try {
-    const r = await fetch('/api/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'change-pin', nickname, currentPin: _cpCurrent, newPin: _cpNew, token })
-    });
-    const d = await r.json();
-    if (r.ok && d.success) {
-      if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '✅ تم تغيير رمز PIN بنجاح'; }
-    } else {
-      if (msg) { msg.style.color = 'var(--red)'; msg.textContent = '❌ ' + (d.error || 'رمز PIN الحالي غير صحيح'); }
-    }
-  } catch(e) {
-    if (msg) { msg.style.color = 'var(--red)'; msg.textContent = '❌ خطأ في الاتصال'; }
-  }
-  // Reset state
-  _cpState = 'current'; _cpCurrent = ''; _cpNew = '';
-  updateChangePinDots('cp', 0);
-  updateChangePinDots('np', 0);
-  setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
-}
-
-
-let _allAlerts = [];
-function filterAlerts(type, btn) {
-  document.querySelectorAll('#tab-alerts .t-btn').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  const items = document.querySelectorAll('#alertList .alert-item');
-  items.forEach(item => {
-    if(type === 'all') { item.style.display = ''; return; }
-    if(type === 'critical') { item.style.display = item.classList.contains('high') ? '' : 'none'; return; }
-    if(type === 'warning')  { item.style.display = item.classList.contains('med')  ? '' : 'none'; return; }
-    if(type === 'positive') { item.style.display = item.classList.contains('low')  ? '' : 'none'; return; }
-  });
-}
-
 function renderAlerts(){
   const t=T[lang];const isAr=lang==='ar';
   const alerts=[];
@@ -2160,7 +2181,7 @@ function renderTxTable(){
       <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600">$${t.total.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
       <td>${statusBadge}</td>
       <td>
-        <button onclick="toggleRecorded(${t.id})" style="background:${t.recorded?'rgba(255,68,68,.15)':'rgba(0,200,100,.15)'};color:${t.recorded?'var(--red)':'var(--green)'};border:none;padding:3px 8px;border-radius:5px;font-size:10px;cursor:pointer;font-family:'Almarai',sans-serif;">
+        <button onclick="toggleRecorded(${t.id})" style="background:${t.recorded?'rgba(255,68,68,.15)':'rgba(0,200,100,.15)'};color:${t.recorded?'var(--red)':'var(--green)'};border:none;padding:3px 8px;border-radius:5px;font-size:10px;cursor:pointer;font-family:'Cairo',sans-serif;">
           ${t.recorded?'Unmark':'✓ Mark'}
         </button>
       </td>
@@ -2361,26 +2382,11 @@ async function loadAnalysis(){
 }
 
   const HEADER_TOOLTIPS = {
-  // Daily Signals columns
+  // Daily Signals
   'مركزك الحالي':                    'نسبة ربحك أو خسارتك الفعلية في هذا المركز حتى اليوم',
   'توقعات المحللين خلال 12 شهر':     'متوسط توقعات المحللين: إلى أي مستوى يتوقعون أن يصل السعر خلال 12 شهر',
-  'توقعات المحللين 12 شهر':          'متوسط توقعات المحللين: إلى أي مستوى يتوقعون أن يصل السعر خلال 12 شهر',
-  'السعر الحالي':                    'آخر سعر تداول للسهم في السوق',
   'التوصية':                         'توصية المحلل بناءً على تحليل السهم: شراء، احتفاظ، أو تخفيض',
   'السبب':                           'الأسباب الرئيسية وراء هذه التوصية اليوم',
-
-  // Technical terms used in cells
-  'Golden Cross':                    'المتوسط 50 يتجاوز المتوسط 200 يوماً — إشارة صعودية قوية تدل على بداية اتجاه صاعد',
-  'Death Cross':                     'المتوسط 50 يهبط تحت المتوسط 200 يوماً — إشارة هبوطية تدل على ضعف الزخم',
-  'RSI':                             'مؤشر القوة النسبية (0-100): فوق 70 = ذروة شراء وقد يتصحح، تحت 30 = ذروة بيع وقد يرتد',
-  'MACD':                            'مؤشر تقارب وتباعد المتوسطات — يُظهر زخم الاتجاه: صاعد أو هابط',
-  'EMA20':                           'المتوسط المتحرك الأسي لـ20 يوماً — السعر فوقه = زخم إيجابي، تحته = ضعف قصير المدى',
-  'SMA50':                           'المتوسط البسيط لـ50 يوماً — مؤشر الاتجاه المتوسط',
-  'SMA200':                          'المتوسط البسيط لـ200 يوماً — مؤشر الاتجاه طويل المدى',
-  'BB':                              'نطاقات بولينجر — يقيس مدى توسع أو ضيق التقلب حول المتوسط المتحرك',
-  'توافق':                           'متوسط توقعات جميع المحللين المتابعين للسهم — الأكثر موضوعية لأنه لا يعتمد على محلل واحد',
-  'ذروة شراء':                       'RSI فوق 70 — السهم ارتفع بسرعة وقد يحتاج إلى تصحيح قبل الاستمرار',
-  'ذروة بيع':                        'RSI تحت 30 — السهم انخفض بسرعة وقد يرتد قريباً',
 
   // Risk Radar
   'مستوى الخطر':                     'تقييم مستوى المخاطرة في هذا المركز من 1 إلى 10',
@@ -2395,6 +2401,7 @@ async function loadAnalysis(){
 
   // Momentum
   'الزخم':                           'قوة واتجاه حركة السعر — هل السهم في اتجاه صاعد أم هابط؟',
+  'RSI':                             'مؤشر القوة النسبية: فوق 70 = ذروة شراء، تحت 30 = ذروة بيع',
   'المتوسط المتحرك':                  'متوسط السعر خلال فترة معينة — يُستخدم لتحديد الاتجاه العام',
 
   // Competitive Edge
@@ -2588,10 +2595,6 @@ function renderAnalysis(data){
     let text = sectionsToUse[f] || (isAr ? 'لا توجد بيانات — سيتم التحديث في الموعد المجدول' : 'No data yet — updates on schedule');
 
     body.innerHTML = f==='signals' ? renderSignals(text) : f==='scoring' ? renderScoring(text) : mdToHtml(text);
-    if (f === 'signals') injectCurrentPrices(body);
-    // Apply glossary dotted underlines to newly rendered content
-    body.dataset.glossaryDone = '';
-    if (typeof highlightGlossaryTerms === 'function') highlightGlossaryTerms(body);
 body.style.direction = isAr ? 'rtl' : 'ltr';
 body.style.textAlign = isAr ? 'right' : 'left';
 body.className = 'firm-body' + (isAr ? '' : ' en');
@@ -2689,16 +2692,8 @@ function renderSignals(text){
     inTable = false;
   }
 
-  let inConviction = false;
   lines.forEach(line => {
     const t = line.trim();
-
-    // Close conviction card on empty line after content
-    if(inConviction && t === '') {
-      html += '</div>';
-      inConviction = false;
-      return;
-    }
 
     // Table row
     if(t.startsWith('|') && t.endsWith('|')){
@@ -2712,13 +2707,6 @@ function renderSignals(text){
 
     // Section header
     if(/^[\d١-٩][\.\-\)]/.test(t) || /^#{1,3}\s/.test(t) || t.includes('═══')){
-      const isConviction = /أعلى صفقة|best conviction|conviction trade/i.test(t);
-      if (isConviction) {
-        inConviction = true;
-        html += `<div style="font-size:13px;font-weight:800;color:var(--pink);margin:20px 0 6px;padding:8px 14px;background:rgba(255,10,120,0.08);border-radius:8px;border-right:3px solid var(--pink);direction:rtl;text-align:right;">🎯 ${t.replace(/^[\d١-٩][\.\-\)]\s*/,'').replace(/\*\*/g,'').trim()}</div>
-        <div style="background:linear-gradient(135deg,rgba(255,10,120,0.08),rgba(53,214,255,0.05));border:1px solid rgba(255,10,120,0.3);border-radius:14px;padding:16px 18px;margin-bottom:12px;direction:rtl;text-align:right;">`;
-        return;
-      }
       html += `<div style="font-size:14px;font-weight:800;color:var(--accent);margin:20px 0 10px;padding:10px 14px;background:rgba(0,212,255,0.06);border-radius:8px;border-right:3px solid var(--accent);direction:rtl;text-align:right;">${t.replace(/^#+\s*/,'').replace(/═══/g,'').trim()}</div>`;
       return;
     }
@@ -2752,70 +2740,13 @@ function renderSignals(text){
     }
 
     if(!matched && t){
-      // Conviction trade card detection
-      if(/أعلى صفقة|best conviction|conviction trade/i.test(t)) {
-        return;
-      }
-      // Dash-prefixed detail lines — style as conviction card rows
-      if(t.startsWith('- ') || t.startsWith('– ')) {
-        const content = t.replace(/^[-–]\s*/, '');
-        const isTarget = /الهدف|target/i.test(content);
-        const isReason = /السبب|reason/i.test(content);
-        const isQty = /الكمية|quantity/i.test(content);
-        const color = isTarget ? 'var(--accent)' : isReason ? 'var(--text)' : isQty ? 'var(--pink)' : 'var(--text2)';
-        const weight = isTarget || isQty ? '700' : '400';
-        html += `<div style="font-size:13px;color:${color};font-weight:${weight};padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);line-height:1.7;">${colorizePercent(content)}</div>`;
-        return;
-      }
-      // Stock ticker line inside conviction (🎯 ONTO — ...)
-      if(t.includes('🎯') || /^[A-Z]{2,5}\s*—/.test(t)) {
-        html += `<div style="font-size:15px;font-weight:800;color:var(--pink);padding:6px 0 10px;border-bottom:1px solid rgba(255,10,120,0.2);margin-bottom:8px;">${colorizePercent(t)}</div>`;
-        return;
-      }
       html += `<div style="font-size:13px;color:var(--text2);padding:4px 8px;direction:rtl;text-align:right;line-height:1.7;">${colorizePercent(t)}</div>`;
     }
   });
 
   if(inTable) flushSignalTable();
-  if(inConviction) html += '</div>';
   return html;
 }
-// ── Inject current price into signals table ───────────────────────────────
-function injectCurrentPrices(bodyEl) {
-  if (!bodyEl) return;
-  const table = bodyEl.querySelector('table');
-  if (!table) return;
-  const rows = table.querySelectorAll('tr');
-  rows.forEach((row, idx) => {
-    const cells = row.querySelectorAll('th, td');
-    if (!cells.length) return;
-    const firstCell = cells[0];
-    const sym = firstCell.textContent.replace(/\*+/g,'').trim();
-    if (idx === 0) {
-      // Header row — add "السعر الحالي" th
-      const th = document.createElement('th');
-      th.style.cssText = 'padding:10px 14px;background:rgba(0,212,255,0.08);border:1px solid var(--border);text-align:center;font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap;';
-      const tip = 'آخر سعر تداول للسهم في السوق';
-      th.innerHTML = `السعر الحالي <span style="border-bottom:1px dotted var(--accent);cursor:help;" title="${tip}">ⓘ</span>`;
-      // Insert before last column (analyst targets)
-      const lastTh = cells[cells.length - 1];
-      row.insertBefore(th, lastTh);
-      return;
-    }
-    // Data row — look up price
-    const stock = stocks.find(s => s.sym === sym);
-    const td = document.createElement('td');
-    td.style.cssText = 'padding:10px 14px;border:1px solid var(--border);text-align:center;font-size:13px;font-family:"IBM Plex Mono",monospace;vertical-align:middle;';
-    if (stock && stock.price) {
-      td.innerHTML = `<span style="color:var(--accent);font-weight:600;">$${stock.price.toFixed(2)}</span>`;
-    } else {
-      td.innerHTML = `<span style="color:var(--text3);">—</span>`;
-    }
-    const lastTd = cells[cells.length - 1];
-    row.insertBefore(td, lastTd);
-  });
-}
-
 function parseAnalysisSections(content, type){
   const sections={};
   // Map section markers by type
@@ -2832,20 +2763,19 @@ function parseAnalysisSections(content, type){
   scoring:   ['═══ SCORING ENGINE']
 },
     monthly: {
-  competitive: ['═══ COMPETITIVE EDGE', 'COMPETITIVE EDGE','الميزة التنافسية','القسم الأول'],
-  longview:    ['═══ LONG VIEW', 'LONG VIEW','النظرة طويلة المدى','القسم الثاني'],
-  health:      ['═══ PORTFOLIO HEALTH', 'PORTFOLIO HEALTH','صحة المحفظة','القسم الثالث']
-}
+      competitive: ['COMPETITIVE EDGE','الميزة التنافسية','القسم الأول'],
+      longview:    ['LONG VIEW','النظرة طويلة المدى','القسم الثاني'],
+      health:      ['PORTFOLIO HEALTH','صحة المحفظة','القسم الثالث']
+    }
   };
   const markers = markersByType[type] || markersByType.daily;
 
-// If content has clear section markers, split it
-let remaining=content;
-try { content = JSON.parse(content).content || content; } catch(e) {}
-const lines=content.split('\n');
-let currentFirm=null;
-let currentText=[];
-const result={};
+  // If content has clear section markers, split it
+  let remaining=content;
+  const lines=content.split('\n');
+  let currentFirm=null;
+  let currentText=[];
+  const result={};
 
   lines.forEach(line=>{
     let matched=false;
@@ -2853,7 +2783,7 @@ const result={};
       if(keys.some(k=>line.toUpperCase().includes(k.toUpperCase()))){
         if(currentFirm) result[currentFirm]=currentText.join('\n').trim();
         currentFirm=firm;
-        currentText=[];
+        currentText=[line];
         matched=true;
         break;
       }
@@ -3679,13 +3609,13 @@ function openEditStockModal(sym) {
         </div>
         <div>
           <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">SECTOR</label>
-          <select id="edit-sector" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Almarai',sans-serif;font-size:13px;">${sectorOptions}</select>
+          <select id="edit-sector" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;">${sectorOptions}</select>
         </div>
       </div>
       <div id="edit-status" style="margin-top:12px;font-size:12px;text-align:center;"></div>
       <div style="display:flex;gap:10px;margin-top:18px;">
-        <button onclick="saveEditStock('${sym}')" style="flex:1;padding:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#000;border-radius:10px;font-weight:900;font-size:14px;cursor:pointer;font-family:'Almarai',sans-serif;">💾 Save Changes</button>
-        <button onclick="document.getElementById('editStockModal').remove()" style="padding:12px 18px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:10px;cursor:pointer;font-family:'Almarai',sans-serif;">Cancel</button>
+        <button onclick="saveEditStock('${sym}')" style="flex:1;padding:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#000;border-radius:10px;font-weight:900;font-size:14px;cursor:pointer;font-family:'Cairo',sans-serif;">💾 Save Changes</button>
+        <button onclick="document.getElementById('editStockModal').remove()" style="padding:12px 18px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:10px;cursor:pointer;font-family:'Cairo',sans-serif;">Cancel</button>
       </div>
     </div>`;
 
@@ -3794,16 +3724,16 @@ fetchLivePrices();
 
     <!-- Action Toggle -->
     <div style="display:flex;gap:8px;margin-bottom:18px;">
-      <button id="btn-buy"  onclick="setTradeAction('BUY')"  style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--green);background:rgba(0,200,100,.15);color:var(--green);font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">📈 BUY</button>
-      <button id="btn-sell" onclick="setTradeAction('SELL')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">📉 SELL</button>
-      <button id="btn-remove" onclick="setTradeAction('REMOVE')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">🗑 REMOVE</button>
+      <button id="btn-buy"  onclick="setTradeAction('BUY')"  style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--green);background:rgba(0,200,100,.15);color:var(--green);font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif;">📈 BUY</button>
+      <button id="btn-sell" onclick="setTradeAction('SELL')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif;">📉 SELL</button>
+      <button id="btn-remove" onclick="setTradeAction('REMOVE')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif;">🗑 REMOVE</button>
     </div>
 
     <!-- Stock Symbol -->
     <div style="margin-bottom:14px;">
       <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">STOCK SYMBOL</label>
       <div style="display:flex;gap:8px;">
-        <select id="tradeSymSelect" onchange="onSymSelect(this.value)" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Almarai',sans-serif;font-size:13px;">
+        <select id="tradeSymSelect" onchange="onSymSelect(this.value)" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;">
           <option value="">— Select existing stock —</option>
         </select>
         <span style="color:var(--text2);line-height:38px;">or</span>
@@ -3814,9 +3744,9 @@ fetchLivePrices();
     <!-- New Stock Details (hidden unless new) -->
     <div id="newStockFields" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
       <div style="font-size:11px;color:var(--accent);margin-bottom:10px;font-weight:700;">NEW STOCK DETAILS</div>
-      <input id="newStockName" placeholder="Full name (e.g. Tesla Inc.)" style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-family:'Almarai',sans-serif;font-size:12px;margin-bottom:8px;">
-      <input id="newStockNameAr" placeholder="Arabic name (e.g. تيسلا)" dir="rtl" style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-family:'Almarai',sans-serif;font-size:12px;margin-bottom:8px;">
-      <select id="newStockSector" style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-family:'Almarai',sans-serif;font-size:12px;">
+      <input id="newStockName" placeholder="Full name (e.g. Tesla Inc.)" style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-family:'Cairo',sans-serif;font-size:12px;margin-bottom:8px;">
+      <input id="newStockNameAr" placeholder="Arabic name (e.g. تيسلا)" dir="rtl" style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-family:'Cairo',sans-serif;font-size:12px;margin-bottom:8px;">
+      <select id="newStockSector" style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-family:'Cairo',sans-serif;font-size:12px;">
         <option value="tech">Technology</option>
         <option value="spec">Speculative</option>
         <option value="bio">Biotech</option>
@@ -3844,8 +3774,8 @@ fetchLivePrices();
 
     <!-- Submit -->
     <div style="display:flex;gap:10px;">
-      <button onclick="submitTrade()" id="tradeSubmitBtn" style="flex:1;padding:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#000;border-radius:10px;font-weight:900;font-size:14px;cursor:pointer;font-family:'Almarai',sans-serif;">Confirm Trade</button>
-      <button onclick="closeTradeModal()" style="padding:12px 18px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:10px;cursor:pointer;font-family:'Almarai',sans-serif;">Cancel</button>
+      <button onclick="submitTrade()" id="tradeSubmitBtn" style="flex:1;padding:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#000;border-radius:10px;font-weight:900;font-size:14px;cursor:pointer;font-family:'Cairo',sans-serif;">Confirm Trade</button>
+      <button onclick="closeTradeModal()" style="padding:12px 18px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:10px;cursor:pointer;font-family:'Cairo',sans-serif;">Cancel</button>
     </div>
 
     <!-- Status -->
@@ -4050,7 +3980,7 @@ fetchLivePrices();
   text-align: right;
   direction: rtl;
   transition: border-color .15s, color .15s, background .15s;
-  font-family: 'Almarai', sans-serif;
+  font-family: 'Cairo', sans-serif;
 }
 .chat-suggestion:hover {
   border-color: var(--accent);
@@ -4079,7 +4009,7 @@ fetchLivePrices();
   resize: none;
   height: 38px;
   max-height: 110px;
-  font-family: 'Almarai', sans-serif;
+  font-family: 'Cairo', sans-serif;
   outline: none;
   direction: rtl;
   transition: border-color .15s;
@@ -4493,10 +4423,8 @@ async function sendChatMsg() {
       dailyContext,
       weeklyContext,
       monthlyContext,
-      currentTab,
-      nickname: localStorage.getItem(AUTH_NICK_KEY) || 'المستخدم'
+      currentTab
     };
-// Upload both files → test with Asma's account → the chatbot will now address her by name with her own portfolio context.
 
     const res = await fetch('/api/chat', {
       method: 'POST',
@@ -4578,7 +4506,7 @@ function clearChat() {
   text-align: left;
 }
 #glossaryTooltip .gt-def { color: var(--text2); }
-#glossaryTooltip .gt-ar { color: var(--text); margin-top: 4px; font-family: 'Almarai', sans-serif; }
+#glossaryTooltip .gt-ar { color: var(--text); margin-top: 4px; font-family: 'Cairo', sans-serif; }
 .glossary-term {
   border-bottom: 1px dotted var(--accent);
   cursor: help;
@@ -5057,13 +4985,26 @@ async function checkSession() {
       const displayName = data.nickname.charAt(0).toUpperCase() + data.nickname.slice(1);
       const titleEl = document.getElementById('h-title');
       if (titleEl) titleEl.textContent = 'Hi, ' + displayName;
-      document.title = 'Theisi Labs | ' + displayName;
+      document.title = 'Financial Intelligence | ' + displayName;
       const chatTitle = document.getElementById('chatTitle');
       if (chatTitle) chatTitle.textContent = 'مستشار ' + displayName;
       const chatBtn = document.getElementById('chatBtn');
       if (chatBtn) chatBtn.title = 'مستشار ' + displayName + ' الذكي';
       if (data.isAdmin) showAdminButton();
-      initSetupTab(data.isAdmin, data.nickname);
+      else if (!document.getElementById('signOutBtn')) {
+        const headerRight = document.querySelector('.header-right');
+        if (headerRight) {
+          const soBtn = document.createElement('button');
+          soBtn.id = 'signOutBtn';
+          soBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Out';
+    soBtn.title = 'Sign Out';
+    soBtn.style.cssText = 'background:rgba(255,68,68,0.12);border:1px solid rgba(255,68,68,0.4);color:var(--red);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;font-family:Cairo,sans-serif;display:flex;align-items:center;';
+    soBtn.onclick = signOut;
+    soBtn.onmouseover = () => { soBtn.style.background='rgba(255,68,68,0.25)'; soBtn.style.borderColor='var(--red)'; };
+    soBtn.onmouseout = () => { soBtn.style.background='rgba(255,68,68,0.12)'; soBtn.style.borderColor='rgba(255,68,68,0.4)'; };
+          headerRight.appendChild(soBtn);
+        }
+      }
       // Load their portfolio
       loadUserPortfolio(token, data.isAdmin, data.nickname);
     } else {
@@ -5271,7 +5212,7 @@ function onAuthSuccess(nickname, isAdmin, token, firstLogin) {
   const titleEl = document.getElementById('h-title');
   if (titleEl) titleEl.textContent = 'Hi, ' + displayName;
   // Update browser tab title
-  document.title = 'Theisi Labs | ' + displayName;
+  document.title = 'Financial Intelligence | ' + displayName;
   // Update chat title
   const chatTitle = document.getElementById('chatTitle');
   if (chatTitle) chatTitle.textContent = 'مستشار ' + displayName;
@@ -5286,14 +5227,13 @@ function onAuthSuccess(nickname, isAdmin, token, firstLogin) {
       soBtn.id = 'signOutBtn';
       soBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Out';
     soBtn.title = 'Sign Out';
-    soBtn.style.cssText = 'background:rgba(255,68,68,0.12);border:1px solid rgba(255,68,68,0.4);color:var(--red);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;font-family:Almarai,sans-serif;display:flex;align-items:center;';
+    soBtn.style.cssText = 'background:rgba(255,68,68,0.12);border:1px solid rgba(255,68,68,0.4);color:var(--red);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;font-family:Cairo,sans-serif;display:flex;align-items:center;';
     soBtn.onclick = signOut;
     soBtn.onmouseover = () => { soBtn.style.background='rgba(255,68,68,0.25)'; soBtn.style.borderColor='var(--red)'; };
     soBtn.onmouseout = () => { soBtn.style.background='rgba(255,68,68,0.12)'; soBtn.style.borderColor='rgba(255,68,68,0.4)'; };
       headerRight.appendChild(soBtn);
     }
   }
-  initSetupTab(isAdmin, nickname);
   // Load portfolio for this user
   loadUserPortfolio(token, isAdmin, nickname);
 }
@@ -5443,7 +5383,7 @@ function showAdminButton() {
     soBtn.id = 'signOutBtn';
     soBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Out';
     soBtn.title = 'Sign Out';
-    soBtn.style.cssText = 'background:rgba(255,68,68,0.12);border:1px solid rgba(255,68,68,0.4);color:var(--red);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;font-family:Almarai,sans-serif;display:flex;align-items:center;';
+    soBtn.style.cssText = 'background:rgba(255,68,68,0.12);border:1px solid rgba(255,68,68,0.4);color:var(--red);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;font-family:Cairo,sans-serif;display:flex;align-items:center;';
     soBtn.onclick = signOut;
     soBtn.onmouseover = () => { soBtn.style.background='rgba(255,68,68,0.25)'; soBtn.style.borderColor='var(--red)'; };
     soBtn.onmouseout = () => { soBtn.style.background='rgba(255,68,68,0.12)'; soBtn.style.borderColor='rgba(255,68,68,0.4)'; };
@@ -5452,7 +5392,7 @@ function showAdminButton() {
   const btn = document.createElement('button');
   btn.id = 'adminBtn';
   btn.textContent = '⚙ Admin';
-  btn.style.cssText = 'background:rgba(255,107,53,.15);border:1px solid rgba(255,107,53,.4);color:var(--accent3);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Almarai,sans-serif;';
+  btn.style.cssText = 'background:rgba(255,107,53,.15);border:1px solid rgba(255,107,53,.4);color:var(--accent3);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Cairo,sans-serif;';
   btn.onclick = openAdminPanel;
   headerRight.appendChild(btn);
 }
@@ -5470,11 +5410,11 @@ async function openAdminPanel() {
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:20px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:28px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
           <div style="font-size:16px;font-weight:900;">⚙ Admin Panel</div>
-          <button onclick="document.getElementById('adminPanel').remove()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:5px 12px;cursor:pointer;font-family:Almarai,sans-serif;">✕ Close</button>
+          <button onclick="document.getElementById('adminPanel').remove()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:5px 12px;cursor:pointer;font-family:Cairo,sans-serif;">✕ Close</button>
         </div>
         <div class="admin-section">
           <div class="admin-section-title">Generate Invite Code</div>
-          <button onclick="generateInvite()" style="background:linear-gradient(135deg,var(--pink),var(--accent));border:none;color:#fff;border-radius:10px;padding:12px;width:100%;font-size:14px;font-weight:700;cursor:pointer;font-family:Almarai,sans-serif;">+ Generate New Code</button>
+          <button onclick="generateInvite()" style="background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#000;border-radius:10px;padding:12px;width:100%;font-size:14px;font-weight:700;cursor:pointer;font-family:Cairo,sans-serif;">+ Generate New Code</button>
           <div class="invite-code-display" id="newInviteCode" style="display:none;"></div>
           <div style="font-size:11px;color:var(--text2);text-align:center;" id="inviteMsg"></div>
         </div>
@@ -5524,7 +5464,7 @@ async function loadAdminData(token) {
             }
             <button class="admin-action-btn" onclick="deleteUser('${u.nickname}')" style="border-color:var(--red);color:var(--red);">🗑 Delete</button>
             <div style="display:flex;gap:4px;align-items:center;">
-              <select id="gen-type-${u.nickname}" style="background:var(--bg);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:3px 6px;font-size:11px;font-family:'Almarai',sans-serif;">
+              <select id="gen-type-${u.nickname}" style="background:var(--bg);border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:3px 6px;font-size:11px;font-family:'Cairo',sans-serif;">
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
@@ -5708,7 +5648,7 @@ function finishOnboarding(userStocks) {
   // Update header
   const titleEl = document.getElementById('h-title');
   if (titleEl) titleEl.textContent = 'Hi, ' + displayName;
-  document.title = 'Theisi Labs | ' + displayName;
+  document.title = 'Financial Intelligence | ' + displayName;
   const chatTitle = document.getElementById('chatTitle');
   if (chatTitle) chatTitle.textContent = 'مستشار ' + displayName;
   if (isAdmin) showAdminButton();
