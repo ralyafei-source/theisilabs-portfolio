@@ -6,14 +6,15 @@
 
 const REPO  = 'ralyafei-source/theisilabs-portfolio';
 const TOKEN = process.env.GITHUB_TOKEN;
-const API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
+const API_KEY = process.env.BRIEFING_API_KEY;
 
 function getFilePath(type, date, week, month, nickname) {
   const nick = nickname ? `-${nickname}` : '';
+  const safeDate = date || new Date().toISOString().slice(0, 10);
   if (type === 'market-data') return `data/market-data-${date}.json`;
-  if (type === 'weekly')  return `data/analysis-weekly${nick}-${week || date?.slice(0,7)}.json`;
-  if (type === 'monthly') return `data/analysis-monthly${nick}-${month || date?.slice(0,7)}.json`;
-  return `data/analysis-daily${nick}-${date}.json`;
+  if (type === 'weekly')  return `data/analysis-weekly${nick}-${week || safeDate.slice(0,7)}.json`;
+  if (type === 'monthly') return `data/analysis-monthly${nick}-${month || safeDate.slice(0,7)}.json`;
+  return `data/analysis-daily${nick}-${safeDate}.json`;
 }
 
 async function readFile(path) {
@@ -119,7 +120,7 @@ module.exports = async (req, res) => {
   if (req.method === 'POST') {
     const authHeader = req.headers['authorization'];
     const key = authHeader?.replace('Bearer ', '') || req.body?.api_key;
-    if (key !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    if (!API_KEY || key !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
 
     let { type, date, week, month, content, generated, nickname } = req.body;
     if (!content) return res.status(400).json({ error: 'No content' });
