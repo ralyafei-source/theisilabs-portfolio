@@ -255,15 +255,8 @@ module.exports = async (req, res) => {
     text += `Live prices: ${pricesAvailable}/${symbols.length} stocks updated\n`;
     text += `═══════════════════════════════════════════════════════\n`;
 
-    // ── Investor rules — cleaned, no hardcoded broker or SPUS rule ───────────
-    if (!isGenericUser) {
-      text += `INVESTOR RULES:\n`;
-      text += `- UAE investor — ZERO capital gains tax\n`;
-      text += `- Cannot short sell or trade options\n`;
-      text += `- Long-term growth investor, high risk tolerance\n`;
-    } else {
-      text += `INVESTOR: ${investorName} — long-term growth focus\n`;
-    }
+    // ── Investor identity — risk/horizon/constraints now in INVESTOR PROFILE ──
+    text += `INVESTOR: ${investorName}\n`;
     text += `═══════════════════════════════════════════════════════\n\n`;
 
     Object.values(sectors).forEach(sec => {
