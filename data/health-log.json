@@ -104,5 +104,27 @@
       }
     },
     "note": "17 unavailable field(s)"
+  },
+  {
+    "ts": "2026-06-03T18:14:08.555Z",
+    "type": "market-data",
+    "nickname": null,
+    "status": "failed",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 49013,
+      "scoresFound": 0,
+      "sectionsFound": [],
+      "sectionsMissing": [
+        "DAILY SIGNALS",
+        "EARNINGS & EVENTS",
+        "MACRO TODAY"
+      ],
+      "totalSentinels": 6,
+      "sentinelHits": {
+        "null": 6
+      }
+    },
+    "note": "3 section(s) missing; 6 unavailable field(s)"
   }
 ]
