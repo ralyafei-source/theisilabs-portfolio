@@ -3149,7 +3149,7 @@ function parseScoreBlocks(text) {
   const positions = [];
 
   // Try original format: SYMBOL | Score X.X/10 | label
-  const origRe = /(?:^|>|\n)\*{0,2}([A-Z]{1,6})\*{0,2}\s*\|\s*Score\s*([\d.]+)\/(?:10|100)\s*\|\s*([^\n<]+)/gm;
+  const origRe = /(?:^|>|\n)(?:<b>)?\*{0,2}([A-Z]{1,6})\*{0,2}\s*\|\s*Score\s*([\d.]+)\/(?:10|100)\s*\|\s*([^\n<]+)/gm;
   let match;
   while ((match = origRe.exec(text)) !== null) {
     let score = parseFloat(match[2]);
@@ -3179,8 +3179,8 @@ function parseScoreBlocks(text) {
     const blockText = text.slice(p.pos, end).trim();
     const layerScores = [];
 
-    // Try درجة هذه الطبقة format
-    const layerRe = /درجة هذه الطبقة[^:]*:\s*(\d+)\/10/g;
+    // Try درجة هذه الطبقة format (handles <b> tags, → arrows, bold wrapping)
+    const layerRe = /درجة هذه الطبقة[^<:]*(?:<[^>]+>)*:\s*(?:<[^>]+>)*\s*(\d+)\/10/g;
     let lm;
     while ((lm = layerRe.exec(blockText)) !== null) {
       layerScores.push(parseFloat(lm[1]));
