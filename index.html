@@ -3254,7 +3254,7 @@ function buildScoreCard(stock, type, idx) {
     ${stock.action
       ? `<div style="font-size:11px;padding:6px 10px;border-radius:7px;text-align:center;font-weight:600;background:${bgAccent};color:${scoreColor};direction:rtl;">${stock.action}</div>`
       : ''}
-    <div style="font-size:9px;color:var(--text3);text-align:center;margin-top:5px;opacity:0.6;">hover للتفاصيل الكاملة ⓘ</div>
+    <div style="font-size:10px;color:var(--accent);text-align:center;margin-top:6px;opacity:0.8;letter-spacing:0.3px;">🖱️ اضغط ثم مرّر لقراءة كل الطبقات</div>
   </div>`;
 }
 
@@ -3376,7 +3376,7 @@ function lockScoringPopup(e, uid) {
   if (!popup) return;
   popup.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;position:sticky;top:0;background:var(--bg2);padding-bottom:8px;border-bottom:1px solid var(--border);z-index:1;">
-      <span style="font-size:10px;color:var(--text3);">scroll to read more ↕</span>
+      <span style="font-size:11px;color:var(--accent);opacity:0.9;">✅ الآن يمكنك التمرير ↕</span>
       <button onclick="unlockScoringPopup()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✕</button>
     </div>` + buildScoringPopupHTML(uid);
   popup.style.overflowY = 'auto';
