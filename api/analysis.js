@@ -264,7 +264,7 @@ module.exports = async (req, res) => {
       health = { status: 'unknown', summary: 'health check error', checks: {} };
     }
 
-    if (ok) return res.json({ success: true, path, health });
+    if (ok) return res.json({ success: true, path, health, nickname: nick });
     return res.status(500).json({ error: 'Failed to save', health });
   }
 
