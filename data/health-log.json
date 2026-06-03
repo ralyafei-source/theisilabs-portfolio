@@ -174,25 +174,25 @@
     "note": "1 section(s) missing; 18 unavailable field(s)"
   },
   {
-    "ts": "2026-06-03T18:38:13.462Z",
-    "type": "market-data",
+    "ts": "2026-06-03T18:40:55.447Z",
+    "type": "daily",
     "nickname": null,
-    "status": "failed",
+    "status": "degraded",
     "checks": {
       "writeOk": true,
-      "contentLength": 48984,
+      "contentLength": 12299,
       "scoresFound": 0,
-      "sectionsFound": [],
-      "sectionsMissing": [
+      "sectionsFound": [
         "DAILY SIGNALS",
         "EARNINGS & EVENTS",
         "MACRO TODAY"
       ],
-      "totalSentinels": 6,
+      "sectionsMissing": [],
+      "totalSentinels": 29,
       "sentinelHits": {
-        "null": 6
+        "غير متوفر": 29
       }
     },
-    "note": "3 section(s) missing; 6 unavailable field(s)"
+    "note": "29 unavailable field(s)"
   }
 ]
