@@ -108,7 +108,7 @@ function buildHealth(content, type, writeOk) {
   // parsing which the structured DATA_QUALITY block (CP2) will provide. Until then
   // we approximate with sentinel count + section completeness. Calibrate after 1 week.
   let status = 'ok';
-  const scoringExpected = (runType !== 'monthly'); // monthly Part B is narrative-heavy
+  const scoringExpected = false; // v1: daily/weekly use recommendation labels, not X/10 scores. Re-enable per run-type once confirmed which emits X/10. See CP6 build doc.
   if (!writeOk) {
     status = 'failed';
   } else if (contentLength < 500 || sectionsFound.length === 0) {
