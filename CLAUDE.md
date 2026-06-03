@@ -22,9 +22,12 @@ Vercel; data lives in this repo as JSON.
 
 1. **Never start over.** Always build on what already exists. This system has
    20+ sessions of work behind it — extend, don't rewrite.
-2. **Never sell SPUS.** It is a Sharia-compliant ETF. It is excluded from every
-   reduce/sell recommendation under all conditions.
-3. **No shorts, no options.** Wio Invest only allows long positions and ETFs.
+2. **SPUS is a normal ETF.** It is a Sharia-compliant ETF, but it gets NO special
+   treatment — evaluate it on performance and merits like any other holding. It is
+   NOT excluded from sell/reduce recommendations. (Superseded the old "never sell
+   SPUS" rule — Session 23.)
+3. **No shorts, no options.** Long positions and ETFs only. (Platform constraint —
+   do not hardcode a specific broker name.)
 4. **UAE investor — zero capital gains tax.** Factor this into position sizing;
    don't let tax thinking block a good decision.
 5. **All Telegram output must be Arabic.** Dashboard is EN/AR toggle (default EN).
