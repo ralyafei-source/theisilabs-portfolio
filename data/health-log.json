@@ -263,25 +263,26 @@
     "note": "31 unavailable field(s)"
   },
   {
-    "ts": "2026-06-03T23:43:38.253Z",
-    "type": "market-data",
-    "nickname": null,
-    "status": "failed",
+    "ts": "2026-06-03T23:45:58.890Z",
+    "type": "daily",
+    "nickname": "rashed",
+    "status": "degraded",
     "checks": {
       "writeOk": true,
-      "contentLength": 39695,
+      "contentLength": 12054,
       "scoresFound": 0,
-      "sectionsFound": [],
-      "sectionsMissing": [
+      "sectionsFound": [
         "DAILY SIGNALS",
-        "EARNINGS & EVENTS",
+        "EARNINGS & EVENTS"
+      ],
+      "sectionsMissing": [
         "MACRO TODAY"
       ],
-      "totalSentinels": 6,
+      "totalSentinels": 29,
       "sentinelHits": {
-        "null": 6
+        "غير متوفر": 29
       }
     },
-    "note": "3 section(s) missing; 6 unavailable field(s)"
+    "note": "1 section(s) missing; 29 unavailable field(s)"
   }
 ]
