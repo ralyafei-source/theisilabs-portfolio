@@ -1,0 +1,64 @@
+[
+  {
+    "ts": "2026-06-03T17:31:39.556Z",
+    "type": "daily",
+    "nickname": "tester",
+    "status": "failed",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 366,
+      "scoresFound": 2,
+      "sectionsFound": [
+        "DAILY SIGNALS",
+        "EARNINGS & EVENTS",
+        "MACRO TODAY"
+      ],
+      "sectionsMissing": [],
+      "totalSentinels": 0,
+      "sentinelHits": {}
+    },
+    "note": "content too short"
+  },
+  {
+    "ts": "2026-06-03T17:33:59.790Z",
+    "type": "daily",
+    "nickname": "tester",
+    "status": "ok",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 628,
+      "scoresFound": 3,
+      "sectionsFound": [
+        "DAILY SIGNALS",
+        "EARNINGS & EVENTS",
+        "MACRO TODAY"
+      ],
+      "sectionsMissing": [],
+      "totalSentinels": 0,
+      "sentinelHits": {}
+    },
+    "note": "all healthy"
+  },
+  {
+    "ts": "2026-06-03T17:39:36.544Z",
+    "type": "market-data",
+    "nickname": null,
+    "status": "failed",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 47911,
+      "scoresFound": 0,
+      "sectionsFound": [],
+      "sectionsMissing": [
+        "DAILY SIGNALS",
+        "EARNINGS & EVENTS",
+        "MACRO TODAY"
+      ],
+      "totalSentinels": 6,
+      "sentinelHits": {
+        "null": 6
+      }
+    },
+    "note": "3 section(s) missing; 6 unavailable field(s)"
+  }
+]
