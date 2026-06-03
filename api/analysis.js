@@ -48,6 +48,105 @@ async function writeFile(path, data) {
   return r.ok;
 }
 
+// ───────────────────────── CP6: Health check helpers ─────────────────────────
+
+// Section keyword arrays MUST mirror the dashboard's parseAnalysisSections
+// (index.html) so "section present" means the same to CP6 as to the UI.
+const HEALTH_SECTIONS = {
+  daily: [
+    ['DAILY SIGNALS', 'إشارات اليوم', 'الإشارات اليومية'],
+    ['EARNINGS & EVENTS', 'EARNINGS', 'الأرباح والأحداث'],
+    ['MACRO TODAY', 'MACRO', 'ماكرو اليوم', 'الاقتصاد العالمي']
+  ],
+  weekly: [
+    ['═══ RISK RADAR', 'RISK RADAR'],
+    ['═══ FAIR VALUE', 'FAIR VALUE'],
+    ['═══ MOMENTUM', 'MOMENTUM']
+  ],
+  monthly: [
+    ['COMPETITIVE EDGE', 'الميزة التنافسية'],
+    ['LONG VIEW', 'النظرة طويلة المدى'],
+    ['PORTFOLIO HEALTH', 'صحة المحفظة']
+  ]
+};
+
+// Sentinels that indicate a missing/failed data point in the analysis text.
+const HEALTH_SENTINELS = ['غير متوفر', 'N/A', 'null', 'Error', 'Legacy', 'Too Many Requests'];
+
+// Build the health object from the content we just saved.
+// writeOk = result of writeFile(); type = run type.
+function buildHealth(content, type, writeOk) {
+  const text = typeof content === 'string' ? content : JSON.stringify(content || '');
+  const runType = (type || 'daily').toLowerCase();
+  const expected = HEALTH_SECTIONS[runType] || HEALTH_SECTIONS.daily;
+
+  // Check A — sections present (any keyword variant counts as found)
+  const sectionsFound = [];
+  const sectionsMissing = [];
+  for (const variants of expected) {
+    const hit = variants.some(k => text.includes(k));
+    (hit ? sectionsFound : sectionsMissing).push(variants[0]);
+  }
+
+  // Check A — scores present (X/10 format) + length floor
+  const scoresFound = (text.match(/\b(?:10|[0-9])\s*\/\s*10\b/g) || []).length;
+  const contentLength = text.length;
+
+  // Check B — count sentinel hits (proxy until CP2's structured DATA_QUALITY block)
+  const sentinelHits = {};
+  let totalSentinels = 0;
+  for (const s of HEALTH_SENTINELS) {
+    const n = (text.match(new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+    if (n > 0) { sentinelHits[s] = n; totalSentinels += n; }
+  }
+
+  // Status roll-up.
+  // failed: write failed, OR no sections at all, OR content clearly truncated.
+  // degraded: some sections missing, OR notable sentinel count, OR no scores where expected.
+  // ok: otherwise.
+  // NOTE v1: per-system proportion thresholds (25%/60%) require per-stock field
+  // parsing which the structured DATA_QUALITY block (CP2) will provide. Until then
+  // we approximate with sentinel count + section completeness. Calibrate after 1 week.
+  let status = 'ok';
+  const scoringExpected = (runType !== 'monthly'); // monthly Part B is narrative-heavy
+  if (!writeOk) {
+    status = 'failed';
+  } else if (contentLength < 500 || sectionsFound.length === 0) {
+    status = 'failed';
+  } else if (sectionsMissing.length > 0 || totalSentinels > 8 || (scoringExpected && scoresFound === 0)) {
+    status = 'degraded';
+  }
+
+  const summary =
+    status === 'ok' ? 'all healthy' :
+    [
+      sectionsMissing.length ? `${sectionsMissing.length} section(s) missing` : null,
+      totalSentinels ? `${totalSentinels} unavailable field(s)` : null,
+      !writeOk ? 'write failed' : null,
+      contentLength < 500 ? 'content too short' : null
+    ].filter(Boolean).join('; ') || 'see checks';
+
+  return {
+    status, summary,
+    checks: { writeOk, contentLength, scoresFound, sectionsFound, sectionsMissing, totalSentinels, sentinelHits }
+  };
+}
+
+// Append the new entry to data/health-log.json, capped to last 30. Defensive:
+// any failure here is swallowed so it can NEVER break the analysis save.
+async function appendHealthLog(entry) {
+  try {
+    const log = (await readFile('data/health-log.json')) || [];
+    const arr = Array.isArray(log) ? log : [];
+    arr.push(entry);
+    const capped = arr.slice(-30);
+    await writeFile('data/health-log.json', capped);
+  } catch (e) {
+    // swallow — monitoring must never take down the thing it monitors
+  }
+}
+// ──────────────────────── end CP6 helpers ────────────────────────
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
@@ -148,8 +247,25 @@ module.exports = async (req, res) => {
     };
 
     const ok = await writeFile(path, data);
-    if (ok) return res.json({ success: true, path });
-    return res.status(500).json({ error: 'Failed to save' });
+
+    // CP6 — evaluate health, log it, attach to response (defensive: never throw)
+    let health = null;
+    try {
+      health = buildHealth(content, type, ok);
+      await appendHealthLog({
+        ts: new Date().toISOString(),
+        type: type || 'daily',
+        nickname: nick || null,
+        status: health.status,
+        checks: health.checks,
+        note: health.summary
+      });
+    } catch (e) {
+      health = { status: 'unknown', summary: 'health check error', checks: {} };
+    }
+
+    if (ok) return res.json({ success: true, path, health });
+    return res.status(500).json({ error: 'Failed to save', health });
   }
 
   res.status(405).json({ error: 'Method not allowed' });
