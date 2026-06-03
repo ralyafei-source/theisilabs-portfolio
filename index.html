@@ -2635,20 +2635,20 @@ function parseAnalysisSections(content, type){
   // Map section markers by type
   const markersByType = {
     daily: {
-      signals:   ['═══ DAILY SIGNALS','DAILY SIGNALS','إشارات اليوم','القسم الأول','الإشارات اليومية'],
-      earnings:  ['═══ EARNINGS & EVENTS','═══ EARNINGS','EARNINGS & EVENTS','EARNINGS','الأرباح والأحداث','القسم الثاني','الأرباح والأحداث القادمة'],
-      macro:     ['═══ MACRO TODAY','═══ MACRO','MACRO TODAY','MACRO','ماكرو اليوم','القسم الثالث','الماكرو اليوم','الاقتصاد العالمي اليوم']
+      signals:   ['DAILY SIGNALS','إشارات اليوم','القسم الأول','إشارات اليوم','الإشارات اليومية'],
+      earnings:  ['EARNINGS & EVENTS','EARNINGS','الأرباح والأحداث','القسم الثاني','الأرباح والأحداث القادمة'],
+      macro:     ['MACRO TODAY','MACRO','ماكرو اليوم','القسم الثالث','الماكرو اليوم','الاقتصاد العالمي اليوم']
     },
     weekly: {
-      risk:      ['═══ RISK RADAR','RISK RADAR'],
-      fairvalue: ['═══ FAIR VALUE','FAIR VALUE'],
-      momentum:  ['═══ MOMENTUM','MOMENTUM'],
-      scoring:   ['═══ SCORING ENGINE','SCORING ENGINE']
-    },
+  risk:      ['═══ RISK RADAR'],
+  fairvalue: ['═══ FAIR VALUE'],
+  momentum:  ['═══ MOMENTUM'],
+  scoring:   ['═══ SCORING ENGINE']
+},
     monthly: {
-      competitive: ['═══ COMPETITIVE EDGE','COMPETITIVE EDGE','الميزة التنافسية','القسم الأول'],
-      longview:    ['═══ LONG VIEW','LONG VIEW','النظرة طويلة المدى','القسم الثاني'],
-      health:      ['═══ PORTFOLIO HEALTH','═══ REBALANCING','PORTFOLIO HEALTH','صحة المحفظة','القسم الثالث']
+      competitive: ['COMPETITIVE EDGE','الميزة التنافسية','القسم الأول'],
+      longview:    ['LONG VIEW','النظرة طويلة المدى','القسم الثاني'],
+      health:      ['PORTFOLIO HEALTH','صحة المحفظة','القسم الثالث']
     }
   };
   const markers = markersByType[type] || markersByType.daily;
@@ -3082,21 +3082,6 @@ function renderScoring(text) {
 
   window._scoreCards = {};
 
-  // If no الجزء sections found, try building cards from the whole text (Deep prompt format)
-  if (!text.includes('الجزء الأول') && !text.includes('الجزء الثاني')) {
-    const allStocks = parseScoreBlocks(text);
-    if (allStocks.length > 0) {
-      let h = '<div style="padding:4px 0;line-height:1.4;font-size:13px;">';
-      h += scoringSectionHeader('تقييم المراكز', 'var(--accent2)');
-      h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px;">';
-      allStocks.forEach((s, i) => { h += buildScoreCard(s, s.score >= 6 ? 'buy' : 'reduce', i); });
-      h += '</div></div>';
-      return h;
-    }
-    // No parseable stocks — render as formatted text
-    return mdToHtml(text);
-  }
-
   // Find section boundaries
   const p1s = text.indexOf('الجزء الأول');
   const p2s = text.indexOf('الجزء الثاني');
@@ -3184,24 +3169,6 @@ function parseScoreBlocks(text) {
       const scoreMatch = blockText.match(/(?:الدرجة الإجمالية|درجة المخاطرة|درجة الضغط)[:\s]*(?:\*{0,2})(\d+)\/100/);
       if (scoreMatch) {
         let score = parseFloat(scoreMatch[1]) / 10;
-        positions.push({ sym, score, label, pos });
-      }
-    }
-  }
-
-  // If still no matches, try numbered list format: "1. SYMBOL — name" + "الدرجة: X/10"
-  if (positions.length === 0) {
-    const numRe = /(?:^|\n)\s*\d+\.\s*\*{0,2}([A-Z]{1,6})\*{0,2}\s*—\s*([^\n]+)/gm;
-    while ((match = numRe.exec(text)) !== null) {
-      const sym = match[1].trim();
-      const label = match[2].trim().slice(0, 40);
-      const pos = match.index;
-      const blockEnd = numRe.lastIndex + 1500;
-      const blockText = text.slice(pos, blockEnd);
-      const scoreMatch = blockText.match(/الدرجة[:\s]*(?:\*{0,2})(\d+(?:\.\d+)?)\/(?:10|100)/);
-      if (scoreMatch) {
-        let score = parseFloat(scoreMatch[1]);
-        if (score > 10) score = score / 10;
         positions.push({ sym, score, label, pos });
       }
     }
