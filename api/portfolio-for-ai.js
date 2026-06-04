@@ -613,6 +613,94 @@ module.exports = async (req, res) => {
       const metricsLookup = {};
       metricResults.flat().filter(Boolean).forEach(i => { metricsLookup[i.symbol] = i; });
 
+      // ═══════════════════════════════════════════════════════════════════
+      // CP3 — Finnhub second-source cross-check
+      // Adds Finnhub free as a second source for ROE / P/E / PEG / margins.
+      // ROIC / DCF / price-target stay FMP-only (different definitions or gated).
+      // Cross-check logic:
+      //   ≤10% difference  → ✅ agree  (show one value, high confidence)
+      //   10–20%           → ℹ️ minor  (show both, note minor spread)
+      //   >20% on ROE/PE/margins → ⚠️ conflict (data quality issue — flag)
+      //   >20% on PEG      → ℹ️ range  (methodology differs — not a data error)
+      // Wrapped in try/catch — Finnhub failure NEVER breaks the response.
+      // ═══════════════════════════════════════════════════════════════════
+
+      const FINNHUB_KEY = process.env.FINNHUB_API_KEY;
+      const finnhubMap = {};  // sym -> { roe, pe, peg, netMargin, grossMargin } or null
+
+      if (FINNHUB_KEY) {
+        try {
+          // Fetch Finnhub metrics for top20 in parallel (free tier: 60/min)
+          // top20 is ≤20 calls — well within limit
+          const finnhubResults = await Promise.allSettled(
+            top20.map(async sym => {
+              try {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), 5000);
+                const r = await fetch(
+                  `https://finnhub.io/api/v1/stock/metric?symbol=${sym}&metric=all&token=${FINNHUB_KEY}`,
+                  { signal: controller.signal }
+                );
+                clearTimeout(timer);
+                if (!r.ok) return { sym, data: null };
+                const d = await r.json();
+                const m = d?.metric || null;
+                if (!m) return { sym, data: null };
+                return {
+                  sym,
+                  data: {
+                    roe:        m.roeTTM        != null ? +(m.roeTTM).toFixed(2)        : null,
+                    pe:         m.peTTM         != null ? +(m.peTTM).toFixed(1)         : null,
+                    peg:        m.pegTTM        != null ? +(m.pegTTM).toFixed(2)        : null,
+                    netMargin:  m.netProfitMarginTTM != null ? +(m.netProfitMarginTTM).toFixed(1) : null,
+                    grossMargin: m.grossMarginTTM    != null ? +(m.grossMarginTTM).toFixed(1)     : null,
+                  }
+                };
+              } catch { return { sym, data: null }; }
+            })
+          );
+          finnhubResults.forEach(result => {
+            if (result.status === 'fulfilled' && result.value) {
+              finnhubMap[result.value.sym] = result.value.data;
+            }
+          });
+        } catch (e) {
+          // Finnhub fetch failed entirely — continue without cross-check
+        }
+      }
+
+      // ── Cross-check helper ────────────────────────────────────────────
+      // Returns a formatted string showing one or both values + agreement label.
+      // isPegField: true for PEG (methodology range, not data conflict)
+      function crossCheck(fmpVal, finnhubVal, fmtFn, isPegField) {
+        const fmpOk  = fmpVal     != null && Number.isFinite(+fmpVal);
+        const fhOk   = finnhubVal != null && Number.isFinite(+finnhubVal);
+
+        if (!fmpOk && !fhOk) return 'N/A';
+        if (!fmpOk)           return `N/A (FMP) | Finnhub ${fmtFn(finnhubVal)}`;
+        if (!fhOk)            return `${fmtFn(fmpVal)} (FMP only — Finnhub N/A)`;
+
+        // Both present — compare
+        const diff = Math.abs((+fmpVal - +finnhubVal) / Math.abs(+fmpVal)) * 100;
+
+        if (diff <= 10) {
+          // Agree — show FMP value (primary source), note confirmed
+          return `${fmtFn(fmpVal)}  ✅ (FMP + Finnhub agree)`;
+        } else if (diff <= 20) {
+          // Minor spread — show both
+          return `FMP ${fmtFn(fmpVal)} | Finnhub ${fmtFn(finnhubVal)}  ℹ️ minor spread`;
+        } else {
+          // >20% divergence
+          if (isPegField) {
+            // PEG: methodology difference, not a data error
+            return `FMP ${fmtFn(fmpVal)} | Finnhub ${fmtFn(finnhubVal)}  ℹ️ range (growth assumptions differ)`;
+          } else {
+            // ROE / PE / margins: genuine data conflict — flag
+            return `FMP ${fmtFn(fmpVal)} | Finnhub ${fmtFn(finnhubVal)}  ⚠️ conflict — treat as low-confidence`;
+          }
+        }
+      }
+
       // ── Append intelligence text ──────────────────────────────────────────
       text += `\n═══════════════════════════════════════════════════════\n`;
       text += `MARKET INTELLIGENCE — ${todayUAE()}\n`;
@@ -798,45 +886,70 @@ module.exports = async (req, res) => {
         text += `\n`;
 
         // ── KEY METRICS (labeled, field-tagged) — the NVDA root-cause fix ──
+        const finnhubAvailable = FINNHUB_KEY && Object.keys(finnhubMap).length > 0;
+
         text += `KEY METRICS (top 20 non-ETF — read these exact fields; write N/A if absent, never infer):\n`;
+        if (finnhubAvailable) {
+          text += `[Cross-check: FMP (primary) vs Finnhub (second source). ✅=agree ℹ️=range/minor ⚠️=conflict]\n`;
+          text += `[ROIC/DCF/price-target: FMP only — no Finnhub equivalent or gated on free tier]\n`;
+        }
         top20.forEach(sym => {
           const m   = metricsLookup[sym] || {};
-          const r   = ratiosPeMap[sym];                 // current P/E from ratios-ttm
-          const peg = pegMap[sym];                       // PEG from ratios-ttm
-          const dcf = dcfMap[sym];                       // { dcf, upside } or null
+          const r   = ratiosPeMap[sym];
+          const peg = pegMap[sym];
+          const dcf = dcfMap[sym];
           const tgt = targetMap[sym];
           const tgtConsensus = tgt ? (tgt.targetConsensus ?? tgt.targetMedian ?? null) : null;
+          const fh  = finnhubMap[sym] || null;
 
-          const roe        = m.returnOnEquityTTM != null ? m.returnOnEquityTTM * 100 : null;
-          const roic       = m.returnOnInvestedCapitalTTM != null ? m.returnOnInvestedCapitalTTM * 100 : null;
-          const pe         = r ?? (m.peRatioTTM ?? null);
-          const netMargin  = marginsMap[sym] ? marginsMap[sym].net   : null;
-          const grossMrg   = marginsMap[sym] ? marginsMap[sym].gross : null;
-          const dcfVal     = dcf ? dcf.dcf : null;
+          const roe      = m.returnOnEquityTTM != null ? m.returnOnEquityTTM * 100 : null;
+          const roic     = m.returnOnInvestedCapitalTTM != null ? m.returnOnInvestedCapitalTTM * 100 : null;
+          const pe       = r ?? (m.peRatioTTM ?? null);
+          const netMrg   = marginsMap[sym] ? marginsMap[sym].net   : null;
+          const grossMrg = marginsMap[sym] ? marginsMap[sym].gross : null;
+          const dcfVal   = dcf ? dcf.dcf : null;
+
+          // Finnhub values (already multiplied by 100 where needed from fetch above)
+          const fhRoe      = fh ? fh.roe        : null;
+          const fhPe       = fh ? fh.pe         : null;
+          const fhPeg      = fh ? fh.peg        : null;
+          const fhNetMrg   = fh ? fh.netMargin  : null;
+          const fhGrossMrg = fh ? fh.grossMargin : null;
 
           // record presence for DATA_QUALITY
           dq[sym] = {
-            ROE: present(roe), ROIC: present(roic), PE: present(pe), PEG: present(peg),
-            netMargin: present(netMargin), grossMargin: present(grossMrg),
-            DCF: present(dcfVal), priceTarget: present(tgtConsensus)
+            ROE:        present(roe),      ROIC:        present(roic),
+            PE:         present(pe),       PEG:         present(peg),
+            netMargin:  present(netMrg),   grossMargin: present(grossMrg),
+            DCF:        present(dcfVal),   priceTarget: present(tgtConsensus),
+            // Finnhub presence (new CP3 columns)
+            fhROE:       present(fhRoe),   fhPE:        present(fhPe),
+            fhPEG:       present(fhPeg),   fhNetMargin: present(fhNetMrg),
+            fhGrossMargin: present(fhGrossMrg)
           };
           DQ_FIELDS.forEach(f => { if (!dq[sym][f]) perFieldMissing[f]++; });
 
           text += `KEY METRICS — ${sym}\n`;
-          text += `  ROE:          ${fmtPct(roe)}   (returnOnEquityTTM)\n`;
-          text += `  ROIC:         ${fmtPct(roic)}   (returnOnInvestedCapitalTTM)\n`;
-          text += `  P/E (TTM):    ${fmtNum(pe, 1)}   (priceToEarningsRatioTTM)\n`;
-          text += `  PEG:          ${fmtNum(peg, 2)}   (priceToEarningsGrowthRatioTTM)\n`;
-          text += `  Net margin:   ${fmtPct(netMargin)}   (netProfitMarginTTM)\n`;
-          text += `  Gross margin: ${fmtPct(grossMrg)}   (grossProfitMarginTTM)\n`;
-          text += `  DCF fair $:   ${fmtNum(dcfVal)}   (discounted-cash-flow)\n`;
-          text += `  Price target: ${fmtNum(tgtConsensus)}   (price-target-consensus)\n`;
+          // Cross-checked fields
+          text += `  ROE:          ${crossCheck(roe,      fhRoe,      fmtPct, false)}   (returnOnEquityTTM)\n`;
+          text += `  P/E (TTM):    ${crossCheck(pe,       fhPe,       v => fmtNum(v,1), false)}   (priceToEarningsRatioTTM)\n`;
+          text += `  PEG:          ${crossCheck(peg,      fhPeg,      v => fmtNum(v,2), true)}   (priceToEarningsGrowthRatioTTM)\n`;
+          text += `  Net margin:   ${crossCheck(netMrg,   fhNetMrg,   fmtPct, false)}   (netProfitMarginTTM)\n`;
+          text += `  Gross margin: ${crossCheck(grossMrg, fhGrossMrg, fmtPct, false)}   (grossProfitMarginTTM)\n`;
+          // FMP-only fields (no Finnhub equivalent)
+          text += `  ROIC:         ${fmtPct(roic)}   (returnOnInvestedCapitalTTM — FMP only)\n`;
+          text += `  DCF fair $:   ${fmtNum(dcfVal)}   (discounted-cash-flow — FMP only)\n`;
+          text += `  Price target: ${fmtNum(tgtConsensus)}   (price-target-consensus — FMP only)\n`;
         });
         text += `\n`;
 
-        // ── DATA_QUALITY block (CP6 parses this; CP3 will extend it) ──────
+        // ── DATA_QUALITY block — extended for CP3 ────────────────────────
         text += `═══ DATA_QUALITY ═══\n`;
         text += `FIELDS: ${DQ_FIELDS.join(', ')}\n`;
+        if (finnhubAvailable) {
+          text += `CROSS_CHECK_FIELDS: ROE, PE, PEG, netMargin, grossMargin (FMP+Finnhub)\n`;
+          text += `SINGLE_SOURCE_FIELDS: ROIC, DCF, priceTarget (FMP only)\n`;
+        }
         let totalMissing = 0, stocksWithGaps = 0;
         top20.forEach(sym => {
           const row = dq[sym] || {};
@@ -844,11 +957,19 @@ module.exports = async (req, res) => {
           totalMissing += miss;
           if (miss > 0) stocksWithGaps++;
           const cells = DQ_FIELDS.map(f => `${f}=${row[f] ? '✓' : '✗'}`).join(' ');
-          text += `${sym}: ${cells} | missing=${miss}\n`;
+          // CP3: add Finnhub availability per cross-check field
+          const fhCells = finnhubAvailable
+            ? `  fh=${['ROE','PE','PEG','netMargin','grossMargin'].map(f => `${f}=${row['fh'+f] ? '✓' : '✗'}`).join(' ')}`
+            : '';
+          text += `${sym}: ${cells} | missing=${miss}${fhCells}\n`;
         });
         const n = top20.length;
         text += `SUMMARY: ${n} stocks · ${totalMissing} field(s) missing across ${stocksWithGaps} stock(s)\n`;
         text += `PER_FIELD_MISSING: ${DQ_FIELDS.map(f => `${f}=${perFieldMissing[f]}/${n}`).join(' ')}\n`;
+        if (finnhubAvailable) {
+          const fhFields = ['ROE','PE','PEG','netMargin','grossMargin'];
+          text += `FINNHUB_COVERAGE: ${fhFields.map(f => `${f}=${top20.filter(s => dq[s]?.['fh'+f]).length}/${n}`).join(' ')}\n`;
+        }
         text += `═══ END DATA_QUALITY ═══\n`;
 
       } catch (e) {
