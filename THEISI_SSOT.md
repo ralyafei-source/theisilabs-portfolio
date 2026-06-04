@@ -1,6 +1,6 @@
 # THEISI LABS — SINGLE SOURCE OF TRUTH (SSOT)
 ## Arabic Finance Intelligence System
-### v1.1 · 2026-06-03 · Supersedes all prior MASTER_RULES, SYSTEM_REFERENCE, and SESSION_SUMMARY files
+### v1.3 · 2026-06-04 · Supersedes all prior MASTER_RULES, SYSTEM_REFERENCE, and SESSION_SUMMARY files
 
 > **v1.1 changes:** Corrected FMP plan **$69 Premium → $29 Starter** (verified
 > live). Added Finnhub free as the planned CP3 second source and the
@@ -14,6 +14,16 @@
 > Corrected conflicting stock-count/value figures to "computed live, never fixed."
 > **Filename rule:** this doc should live as a constant `THEISI_SSOT.md` (version
 > inside, not in the filename).
+
+> **v1.2 changes (2026-06-04):** CP6 monitoring built & live in `api/analysis.js`
+> (health checks on every save, rolling `data/health-log.json`, Make 255 alerts).
+> **v1.3 changes (2026-06-04):** CP2 built & live in `api/portfolio-for-ai.js`
+> (labeled metric lines + structured `DATA_QUALITY` block, replacing the raw-JSON
+> dumps that caused the NVDA hallucination). Re-baselined §6/§7 against the
+> **deployed** file: it uses **top 20** (not top 10), and the FMP key + auth token
+> are already read from `process.env` in that file (no hardcoded fallback there —
+> the `theisilabs2026` fallback lives only in the other writer files). Margins are
+> sourced from `ratios-ttm` (key-metrics-ttm does not carry them).
 
 > **What this document is.** One reconciled reference that replaces the
 > conflicting set of docs (MASTER_RULES v5–v21, THEISI_SYSTEM_REFERENCE,
@@ -135,6 +145,8 @@
 | Price alerts | ✅ Working | — |
 | Deep-analysis scoring engine | ✅ Working | — |
 | Live prices (Yahoo) | ✅ Working | — |
+| 🩺 Health monitoring (CP6) → log + Telegram alerts | ✅ Working (built 2026-06-04) | every save |
+| 📋 Data-quality block (CP2) in portfolio-for-ai | ✅ Working (built 2026-06-04) | per intelligence request |
 
 > **RECONCILED — Instagram & deep analysis:** The original onboarding note listed
 > Instagram as "Pending (Facebook issue)" and deep analysis as "Not built yet."
@@ -208,10 +220,35 @@ are from MASTER_RULES v21 — verify against the live scenario before editing.
 - Vercel function timeout raised to 60s for portfolio-for-ai.js. ✅
 - Live-price source inside the function: **Yahoo Finance chart endpoint** (no key). ✅
 
-> **RECONCILED — top 10 vs top 20:** The code snapshot uses **top 10** non-ETF
-> holdings for per-symbol analyst/metrics calls (`slice(0, 10)`), and **all**
-> symbols for technical indicators. Some docs say "top 20." ⚠️ Confirm the
-> deployed value; treat **top 10** as current unless production shows otherwise.
+> **CP2 (built 2026-06-04) — data assembly in `portfolio-for-ai.js`:** The
+> intelligence block's three raw-JSON dumps (price targets, grades, key metrics)
+> were replaced with **labeled, field-tagged lines** + a structured
+> **`DATA_QUALITY`** block. Each metric is tagged with its exact FMP field name
+> (e.g. `ROE: 111.7% (returnOnEquityTTM)`); missing values render `N/A`, never
+> inferred. This fixed the NVDA hallucination root cause (LLM filling vague-JSON
+> fields from training data). No new FMP calls — it re-presents already-computed
+> maps. Margins come from **`ratios-ttm`** (key-metrics-ttm lacks them).
+>
+> **DATA_QUALITY contract (stable — CP6 reads it, CP3 will extend it):**
+> ```
+> ═══ DATA_QUALITY ═══
+> FIELDS: ROE, ROIC, PE, PEG, netMargin, grossMargin, DCF, priceTarget
+> <SYM>: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=N
+> ...
+> SUMMARY: <N> stocks · <X> field(s) missing across <Y> stock(s)
+> PER_FIELD_MISSING: ROE=0/20 ROIC=0/20 PE=6/20 PEG=6/20 netMargin=0/20 grossMargin=0/20 DCF=0/20 priceTarget=0/20
+> ═══ END DATA_QUALITY ═══
+> ```
+> - Cross-checkable fields (ROE/PE/PEG/margins) get a Finnhub column + agreement
+>   flag in CP3; ROIC/DCF/priceTarget stay FMP-only (per CP3 §9.5 + the
+>   definition-matching rule — never compare ROIC↔Finnhub ROI).
+> - CP6 consumes `PER_FIELD_MISSING` for per-system thresholds and per-stock
+>   `missing=N` for the user transparency tiers (replacing sentinel-counting).
+
+> **RESOLVED — top 20 (verified 2026-06-04 against deployed file):** The deployed
+> `portfolio-for-ai.js` uses **top 20** non-ETF holdings for per-symbol
+> analyst/metrics calls (`slice(0, 20)`), and **all** symbols for technical
+> indicators. The earlier "top 10" note is superseded.
 
 ---
 
@@ -225,9 +262,17 @@ must NOT be treated as production truth. Evidence:
 - It does **not** show the insider-activity feature that THEISI_SYSTEM_REFERENCE
   (Session 22) says shipped — so the deployed file is newer than this snapshot.
 
-🔴 **ACTION:** Pull the current `api/portfolio-for-ai.js` from the deployed Vercel
-project / GitHub `main`, and re-baseline §6 and the secrets table against it.
-Until then, code-level claims here are "best known," not confirmed.
+✅ **RESOLVED 2026-06-04:** The deployed `api/portfolio-for-ai.js` was pulled and
+re-baselined (during the CP2 build). Findings vs the old snapshot:
+- **Secrets:** this file already reads `process.env.BRIEFING_API_KEY` and
+  `process.env.FMP_API_KEY` — **no hardcoded fallback here.** The `theisilabs2026`
+  fallback the secrets table warns about is only in the *writer* files
+  (`update-portfolio.js` etc.), not this one. (Key rotation is still an open task.)
+- **Top 20** confirmed (not top 10) — see §6.
+- **Insider feature present** — so the deployed file is indeed newer than the v2 snapshot.
+- **Dead code noted (not fixed):** `fmpGetV3`/`fmpGetV4` + `FMP_V3`/`FMP_V4` are
+  defined but unused (and `/api/v3` is retired). Also the old `metrics` array is now
+  unused after CP2. Both are harmless — clean up in a later pass.
 
 ---
 
@@ -342,24 +387,20 @@ SHA as an optimistic lock. Design the profile shape cleanly for a future DB.
 1. 🔴 Rotate FMP key; confirm deployed code uses `process.env.FMP_API_KEY` (§1, §7).
 2. 🔴 Rotate `theisilabs2026` auth token; close the no-key auth gap on the endpoint.
 3. 🔴 Rotate the Telegram security-bot token (printed in v21).
-4. 🔴 Re-baseline this SSOT against the **deployed** `portfolio-for-ai.js` (§7).
+4. ✅ **DONE — Re-baselined SSOT against deployed `portfolio-for-ai.js`** (2026-06-04, §6/§7).
 5. ⚠️ Confirm Make.com module numbers (Monthly A = 14 vs 44) before editing.
 6. ⚠️ FMP burst/concurrency on insider feature (~30–40 calls/run) — confirm it's
    bursting, not the 300/min cap; throttle/batch if needed.
 7. ✅ **DONE — FMP $29 endpoint audit** (DCF + TTM metrics all work on $29; "$69"
    docs corrected). Verified 2026-06-03.
-8. ✅ CP6 BUILT (2026-06-04) — health-checking in api/analysis.js POST path.
-   Response now includes { success, path, health, nickname }. Health log at
-   data/health-log.json (rolling 30 entries). Make 255: daily heartbeat+alert
-   module 47, weekly alert module after 17, monthly alert module after 19.
-   All reference 16.data.health.status / 17.data.health.status / 19.data.health.status.
-   scoringExpected=false in v1 (daily uses labels not X/10 — re-enable per run-type
-   once confirmed). max_tokens on module 7 increased to 16,000. Thresholds are
-   first-draft — calibrate after ~1 week from health-log.json.
-   Next: CP2 (data-assembly DATA_QUALITY block).
-9. ⏳ **CP3 build** — add Finnhub free cross-check (ROE/PE/PEG/margins only;
+8. ⏳ Reliability program (doc: ARCHITECTURE_AND_RELIABILITY_REVIEW_v1) — monitoring
+   + checkpoints. Build order CP6 → CP2 → CP3 → CP1 → CP5 → CP4.
+   **Progress: ✅ CP6 built (2026-06-04), ✅ CP2 built (2026-06-04). Next: CP3.**
+9. ⏳ **CP3 build (NEXT)** — add Finnhub free cross-check (ROE/PE/PEG/margins only;
    definition-matched pairs; ROIC/DCF/targets stay FMP-only) inside
-   `portfolio-for-ai.js`. Configurable N, start top 10. See CP3 doc §9.
+   `portfolio-for-ai.js`. Extend the CP2 `DATA_QUALITY` block (now live) with a
+   Finnhub column + agreement flag on the cross-checkable fields. Configurable N,
+   start top 20 (deployed default). See CP3 doc §9.
 10. 🔴 **Fix portfolio-save overwrite bug** — POST drops existing `profile`;
     make it read-modify-write (Profile System Phase 2). Silent data loss.
 11. ⏳ Multi-user `?nickname=` hardening (mind 12-function limit).
@@ -368,11 +409,18 @@ SHA as an optimistic lock. Design the profile shape cleanly for a future DB.
 14. ⏳ Dashboard footer disclaimer text (+ 357 "not financial advice" disclaimer).
 15. ⏳ 90-day GitHub data cleanup after API consolidation.
 16. ⏳ Favicon / landing page (waiting on logo).
-17. ⏳ Add nickname to module 16/17/19 body fields for non-Rashed users (currently
-    hardcoded "rashed" in module 16; weekly/monthly nickname empty).
-18. ⏳ User management / delete user functionality (dashboard admin feature).
-19. ⏳ Fix module 16 content mapping — investigate why manual runs produce empty
-    content (scheduled runs work fine).
+17. ✅ **DONE — CP6 monitoring built (2026-06-04).** Health checks in `api/analysis.js`
+    POST path; response now `{ success, path, health, nickname }`; rolling
+    `data/health-log.json` (30 entries). Make 255: daily heartbeat/alert module 47;
+    weekly alert after 17; monthly alert after 19 (read `*.data.health.status`).
+    `scoringExpected=false` in v1. Thresholds first-draft — calibrate after ~1 week.
+18. ✅ **DONE — CP2 built (2026-06-04).** Labeled metric lines + `DATA_QUALITY` block
+    in `portfolio-for-ai.js`; margins sourced from `ratios-ttm`. NVDA verified
+    (ROE 111.7%, P/E 32.7, PEG 0.30, DCF 242.13, margins 63.0/74.1%). See §6.
+19. ⏳ **Dead-code cleanup (low priority, `portfolio-for-ai.js`):** remove unused
+    `fmpGetV3`/`fmpGetV4` + `FMP_V3`/`FMP_V4` (v3 retired) and the now-unused
+    `metrics` array (CP2 reads `metricsLookup`). Harmless; do in a later pass.
+20. ⏳ Add nickname to module 16/17/19 body fields for non-Rashed users.
 
 ---
 
