@@ -5817,7 +5817,7 @@ function _hlRender() {
     const kb = c.contentLength ? Math.round(c.contentLength / 102.4) / 10 + 'k' : '—';
     const sects = c.sectionsFound ? c.sectionsFound.length + '/3' : '—';
     const unavail = c.totalSentinels || '—';
-    return `<tr>
+    return `<tr onclick="_hlExpand('${l.ts}')" style="cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
       <td style="font-family:var(--font-mono,monospace);font-size:11px;white-space:nowrap">${_hlToUAE(l.ts)}</td>
       <td style="font-size:12px">${l.type || '—'}</td>
       <td style="font-size:12px;color:var(--text2)">${l.nickname || 'rashed'}</td>
@@ -5829,6 +5829,46 @@ function _hlRender() {
       <td class="num">${writeCell}</td>
     </tr>`;
   }).join('');
+}
+
+function _hlExpand(ts) {
+  const l = _hlLogs.find(x => x.ts === ts);
+  if (!l) return;
+  const existing = document.getElementById('hlDetail');
+  if (existing && existing.dataset.ts === ts) { existing.remove(); return; }
+  if (existing) existing.remove();
+  const c = l.checks || {};
+  let html = `<div id="hlDetail" data-ts="${ts}" style="background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;padding:16px;margin:12px 0;font-size:12px;">`;
+  html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">`;
+  html += `<span style="font-weight:500;color:var(--text1)">${_hlToUAE(l.ts)} — ${l.type} / ${l.nickname || 'rashed'} — ${_hlBadge(l.status)}</span>`;
+  html += `<span style="color:var(--text2);cursor:pointer;" onclick="document.getElementById('hlDetail').remove()">✕</span></div>`;
+  if (l.scenario) html += `<div style="margin-bottom:8px;color:var(--text2)">Scenario: <span style="color:var(--text1)">${l.scenario}${l.scenarioTitle ? ' — ' + l.scenarioTitle : ''}</span></div>`;
+  html += `<div style="margin-bottom:12px;"><span style="color:var(--text2)">Sentinel hits: </span>`;
+  if (c.sentinelHits && Object.keys(c.sentinelHits).length) {
+    html += Object.entries(c.sentinelHits).map(([k,v]) => `<span style="color:var(--gold)">${k} × ${v}</span>`).join('  ');
+  } else { html += '<span style="color:var(--text2)">none</span>'; }
+  html += '</div>';
+  if (l.dataQuality) {
+    const lines = l.dataQuality.split('\n').filter(ln => ln.includes('|') && ln.includes('missing='));
+    if (lines.length) {
+      html += `<div style="margin-bottom:8px;font-weight:500;color:var(--text1)">Per-stock field coverage:</div>`;
+      html += `<div style="font-family:var(--font-mono,monospace);font-size:11px;line-height:1.8;">`;
+      lines.forEach(ln => {
+        const miss = ln.match(/missing=(\d+)/);
+        const missCount = miss ? parseInt(miss[1]) : 0;
+        const color = missCount >= 4 ? 'var(--red)' : missCount >= 2 ? 'var(--gold)' : 'var(--text2)';
+        html += `<div style="color:${color}">${ln.trim()}</div>`;
+      });
+      html += '</div>';
+      const summary = l.dataQuality.match(/SUMMARY: (.+)/);
+      if (summary) html += `<div style="margin-top:8px;color:var(--text2)">${summary[1]}</div>`;
+      const perField = l.dataQuality.match(/PER_FIELD_MISSING: (.+)/);
+      if (perField) html += `<div style="color:var(--text2);font-family:var(--font-mono,monospace);font-size:11px;margin-top:4px;">${perField[1]}</div>`;
+    }
+  }
+  html += '</div>';
+  const table = document.getElementById('healthTable');
+  table.parentNode.insertBefore(document.createRange().createContextualFragment(html), table);
 }
 
 async function loadHealthLog() {
