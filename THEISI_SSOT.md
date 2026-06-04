@@ -1,6 +1,6 @@
 # THEISI LABS — SINGLE SOURCE OF TRUTH (SSOT)
 ## Arabic Finance Intelligence System
-### v1.3 · 2026-06-04 · Supersedes all prior MASTER_RULES, SYSTEM_REFERENCE, and SESSION_SUMMARY files
+### v1.7 · 2026-06-04 · Supersedes all prior MASTER_RULES, SYSTEM_REFERENCE, and SESSION_SUMMARY files
 
 > **v1.1 changes:** Corrected FMP plan **$69 Premium → $29 Starter** (verified
 > live). Added Finnhub free as the planned CP3 second source and the
@@ -17,6 +17,49 @@
 
 > **v1.2 changes (2026-06-04):** CP6 monitoring built & live in `api/analysis.js`
 > (health checks on every save, rolling `data/health-log.json`, Make 255 alerts).
+> **v1.7 changes (2026-06-04):** Health tab built & live in dashboard (admin only).
+> 🩺 Health nav tab added to index.html — hidden for non-admin, revealed by
+> showAdminButton()/revealHealthTab(). Shows summary cards (total/ok/degraded/failed),
+> filterable log table, and expandable rows with per-stock field coverage.
+> Expandable row shows: scenario ID/title, sentinel hits breakdown, full per-stock
+> DATA_QUALITY + TRANSPARENCY block (color-coded: red=4+ missing, gold=2-3, grey=ok).
+> api/analysis.js updated to accept scenario/scenarioTitle/dataQuality fields and
+> store them in health log entries. Make.com modules 16/17/19 updated to pass
+> scenario="255", scenarioTitle, and dataQuality (extracted from module 12 output).
+> Content length guard added to api/analysis.js — rejects saves < 500 chars,
+> logs to health-log as failed, returns 422 so Make.com treats as real failure.
+> Prevents bad runs from overwriting good analysis.
+>
+> **v1.6 changes (2026-06-04):** CP4 built & live — write-back verification.
+> `api/analysis.js` POST now reads back the saved file via GitHub Contents API
+> (not raw CDN — guaranteed fresh) immediately after writeFile(). If write claimed
+> success but read-back fails or returns empty (size ≤ 10), `ok` is forced false →
+> CP6 sets status='failed' → Make.com alert fires. `const ok` → `let ok` (required
+> for reassignment). 8s timeout, fail-open on fetch error (conservative: false alarm
+> over silent miss). **All 6 reliability checkpoints now complete:**
+> CP6 → CP2 → CP3 → CP1 → CP5 → CP4 ✅
+>
+> **v1.5 changes (2026-06-04):** CP5 built & live — presentation transparency.
+> `api/portfolio-for-ai.js` now appends a `═══ TRANSPARENCY ═══` block after
+> DATA_QUALITY. Per-stock warnings generated from `dq[sym]` (FMP fields only —
+> Finnhub is cross-check, not required source): 0–1 missing → silent;
+> 2–3 missing → ⚠️ "Score analysis was done without considering: [fields]";
+> 4+ missing → 🔴 same + "(low-confidence score)". Portfolio summary line also
+> generated. Make.com modules 7/15/14/43 updated manually to instruct the AI
+> to include transparency lines verbatim in its analysis output.
+> First live run confirmed: 17/20 stocks fully covered, 3 with ⚠️ (NTLA/ZETA/PONY
+> missing P/E+PEG — expected for pre-revenue/unprofitable companies).
+>
+> **v1.4 changes (2026-06-04):** CP3 built & live — Finnhub free cross-check
+> added to `api/portfolio-for-ai.js`. `FINNHUB_API_KEY` in Vercel env. DATA_QUALITY
+> block extended with `fh=` columns + `FINNHUB_COVERAGE` line. Cross-check logic:
+> ✅ agree (≤10%) · ℹ️ minor (10–20%) · ⚠️ conflict (>20%, data fields) ·
+> ℹ️ range (>20%, PEG only — methodology difference, not data error). ROIC/DCF/
+> price-target stay FMP-only per CP3 §9.5. Transient FMP null returns confirmed
+> as known burst/concurrency issue (Open Task #6). PEG divergence design decision
+> recorded: FMP and Finnhub use different growth-rate assumptions → show both as
+> a range, not a conflict. This is intentional and informative.
+>
 > **v1.3 changes (2026-06-04):** CP2 built & live in `api/portfolio-for-ai.js`
 > (labeled metric lines + structured `DATA_QUALITY` block, replacing the raw-JSON
 > dumps that caused the NVDA hallucination). Re-baselined §6/§7 against the
@@ -147,6 +190,12 @@
 | Live prices (Yahoo) | ✅ Working | — |
 | 🩺 Health monitoring (CP6) → log + Telegram alerts | ✅ Working (built 2026-06-04) | every save |
 | 📋 Data-quality block (CP2) in portfolio-for-ai | ✅ Working (built 2026-06-04) | per intelligence request |
+| 🔀 Finnhub cross-check (CP3) in portfolio-for-ai | ✅ Working (built 2026-06-04) | per intelligence request |
+| 📋 Transparency warnings (CP5) in portfolio-for-ai | ✅ Working (built 2026-06-04) | per intelligence request |
+| ✅ Write-back verification (CP4) in analysis.js | ✅ Working (built 2026-06-04) | every save |
+| 🩺 Health tab in dashboard | ✅ Working (built 2026-06-04) | admin only |
+| 🛡️ Content length guard in analysis.js | ✅ Working (built 2026-06-04) | every save |
+| 📦 scenario/dataQuality in health log | ✅ Working (built 2026-06-04) | every save |
 
 > **RECONCILED — Instagram & deep analysis:** The original onboarding note listed
 > Instagram as "Pending (Facebook issue)" and deep analysis as "Not built yet."
@@ -244,6 +293,11 @@ are from MASTER_RULES v21 — verify against the live scenario before editing.
 >   definition-matching rule — never compare ROIC↔Finnhub ROI).
 > - CP6 consumes `PER_FIELD_MISSING` for per-system thresholds and per-stock
 >   `missing=N` for the user transparency tiers (replacing sentinel-counting).
+> - **CP3 extends DATA_QUALITY** with `fh=ROE=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓`
+>   per stock and a `FINNHUB_COVERAGE` summary line. Cross-checkable fields:
+>   ROE/PE/PEG/margins (FMP+Finnhub). Single-source: ROIC/DCF/priceTarget (FMP only).
+> - **PEG design rule:** >20% FMP/Finnhub divergence on PEG = ℹ️ range (growth
+>   assumptions differ), NOT ⚠️ conflict. Both values shown. AI reasons from range.
 
 > **RESOLVED — top 20 (verified 2026-06-04 against deployed file):** The deployed
 > `portfolio-for-ai.js` uses **top 20** non-ETF holdings for per-symbol
@@ -281,7 +335,7 @@ re-baselined (during the CP2 build). Findings vs the old snapshot:
 | Source | Used for | Auth |
 |--------|----------|------|
 | FMP (stable API, **$29 Starter**) | RSI, MACD (or self-calc from EMA12/EMA26), SMA50/200, EMA20, Bollinger, earnings calendar, price-target consensus, analyst grades, key-metrics-TTM (ROE/ROIC/margins), DCF, historical P/E + PEG, insider activity | Vercel env key |
-| **Finnhub (free) — second source for CP3 cross-check (planned, not built)** | ROE / P/E / PEG / margins cross-check via `stock/metric?metric=all`. **Price-target gated on free — not used.** | free key (env) |
+| **Finnhub (free) — CP3 cross-check (built 2026-06-04)** | ROE / P/E / PEG / margins cross-check via `stock/metric?metric=all`. **Price-target gated on free — not used.** | free key (env) |
 | Yahoo Finance | Live prices (chart endpoint) | none |
 | NewsAPI | News feed (Morning Brief) | key |
 | Alpha Vantage | Market data (Morning Brief). **Free tier 25 req/day — too small for fundamentals cross-check; ruled out for CP3.** | key |
@@ -395,12 +449,11 @@ SHA as an optimistic lock. Design the profile shape cleanly for a future DB.
    docs corrected). Verified 2026-06-03.
 8. ⏳ Reliability program (doc: ARCHITECTURE_AND_RELIABILITY_REVIEW_v1) — monitoring
    + checkpoints. Build order CP6 → CP2 → CP3 → CP1 → CP5 → CP4.
-   **Progress: ✅ CP6 built (2026-06-04), ✅ CP2 built (2026-06-04). Next: CP3.**
-9. ⏳ **CP3 build (NEXT)** — add Finnhub free cross-check (ROE/PE/PEG/margins only;
-   definition-matched pairs; ROIC/DCF/targets stay FMP-only) inside
-   `portfolio-for-ai.js`. Extend the CP2 `DATA_QUALITY` block (now live) with a
-   Finnhub column + agreement flag on the cross-checkable fields. Configurable N,
-   start top 20 (deployed default). See CP3 doc §9.
+   **Progress: ✅ ALL 6 CHECKPOINTS COMPLETE (CP6→CP2→CP3→CP1→CP5→CP4, all 2026-06-04).**
+9. ✅ **DONE — CP3 built (2026-06-04).** Finnhub free cross-check live for top 20.
+   DATA_QUALITY extended with `fh=` columns + `FINNHUB_COVERAGE`. Cross-check
+   logic: ✅/ℹ️/⚠️ per field. PEG divergence = ℹ️ range by design. ROIC/DCF/
+   price-target FMP-only. `FINNHUB_API_KEY` in Vercel env. Next: CP1.
 10. 🔴 **Fix portfolio-save overwrite bug** — POST drops existing `profile`;
     make it read-modify-write (Profile System Phase 2). Silent data loss.
 11. ⏳ Multi-user `?nickname=` hardening (mind 12-function limit).
@@ -421,6 +474,36 @@ SHA as an optimistic lock. Design the profile shape cleanly for a future DB.
     `fmpGetV3`/`fmpGetV4` + `FMP_V3`/`FMP_V4` (v3 retired) and the now-unused
     `metrics` array (CP2 reads `metricsLookup`). Harmless; do in a later pass.
 20. ⏳ Add nickname to module 16/17/19 body fields for non-Rashed users.
+21. ✅ **DONE — CP3 Finnhub cross-check (2026-06-04).** See item 9.
+22. ✅ **DONE — CP1 input health checks (2026-06-04).** SOURCE HEALTH block added.
+    Yahoo/FMP/Finnhub status shown at top of intelligence output.
+23. ⏳ **Calibrate CP6 thresholds** after ~1 week of health-log data. Check
+    `data/health-log.json` and tune the 25%/60% per-field-missing thresholds.
+24. ✅ **DONE — CP5 presentation transparency (2026-06-04).** TRANSPARENCY block
+    added to `portfolio-for-ai.js`. Per-stock warnings (⚠️/🔴) based on FMP
+    field coverage. Make.com modules 7/15/14/43 updated with transparency
+    instruction. Thresholds: 0–1 missing=silent, 2–3=⚠️, 4+=🔴.
+25. ✅ **DONE — CP4 write-back verification (2026-06-04).** GitHub Contents API
+    read-back after every save. Forces ok=false if write claimed success but
+    file missing/empty. const ok → let ok. 8s timeout, fail-open.
+    **ALL 6 RELIABILITY CHECKPOINTS COMPLETE. 🎉**
+26. ✅ **DONE — Health tab dashboard (2026-06-04).** 🩺 tab in index.html, admin
+    only. Summary cards, filterable log table, expandable rows with per-stock
+    field coverage from dataQuality block. Color-coded: red=4+, gold=2-3, grey=ok.
+27. ✅ **DONE — Content length guard (2026-06-04).** api/analysis.js rejects
+    saves < 500 chars, logs failed entry with ts, returns 422. Prevents bad
+    runs from overwriting good analysis.
+28. ✅ **DONE — scenario/dataQuality in health log (2026-06-04).** api/analysis.js
+    accepts scenario/scenarioTitle/dataQuality. Make.com modules 16/17/19 pass
+    scenario="255" and dataQuality extracted from module 12 output. Enables
+    per-stock root-cause diagnosis from health tab expandable rows.
+29. ⏳ **FMP burst/concurrency fix (Open Task #6).** PE/PEG missing for 6/20
+    stocks on most runs — traced to FMP ratios-ttm returning null under load.
+    PLTR specifically: 6 FMP fields missing but Finnhub has all 5. Fix: throttle
+    insider calls (30-40 parallel) with small delay between batches.
+30. ⏳ **Calibrate CP6 thresholds** after ~1 week of health-log data with
+    dataQuality. Now have per-stock + per-field data to set meaningful thresholds.
+    Check PER_FIELD_MISSING patterns across 7+ days before adjusting.
 
 ---
 
