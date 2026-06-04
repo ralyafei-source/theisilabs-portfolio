@@ -236,6 +236,20 @@ module.exports = async (req, res) => {
       content = content.map(c => c.text || c).join('');
     }
 
+    // Content length guard — reject empty/garbage responses before they overwrite good analysis
+    const contentStr = typeof content === 'string' ? content : String(content);
+    if (contentStr.trim().length < 500) {
+      try {
+        await appendHealthLog({ ts: new Date().toISOString(), type: type || 'daily', nickname: nickname || null, status: 'failed', note: `rejected: content too short (${contentStr.trim().length} chars)`, checks: { writeOk: false, contentLength: contentStr.trim().length } });
+      } catch(e) { /* never block the response */ }
+      return res.status(422).json({
+        success: false,
+        reason: 'rejected: content too short',
+        length: contentStr.trim().length
+      });
+    }
+    content = contentStr;
+
     const nick = nickname || null;
     const path = getFilePath(type || 'daily', date, week, month, nick);
     const data = {
