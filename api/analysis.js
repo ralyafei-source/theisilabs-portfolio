@@ -160,6 +160,28 @@ module.exports = async (req, res) => {
 
     // Specific type requested
     if (type) {
+      // ── Multi-day fetch: ?type=daily&days=N returns last N daily analyses concatenated ──
+      const days = parseInt(req.query.days);
+      if (type === 'daily' && days > 1 && days <= 14) {
+        const results = [];
+        const baseDate = new Date(Date.now() + 4 * 3600 * 1000); // UAE time
+        for (let i = 0; i < days; i++) {
+          const d = new Date(baseDate.getTime() - i * 86400000);
+          const dateStr = d.toISOString().slice(0, 10);
+          const p = nick
+            ? `data/analysis-daily-${nick}-${dateStr}.json`
+            : `data/analysis-daily-rashed-${dateStr}.json`;
+          const data = await readFile(p);
+          if (data && data.content) {
+            results.push(`═══ DAILY ANALYSIS — ${dateStr} ═══\n${data.content}\n═══ END ${dateStr} ═══`);
+          }
+        }
+        if (!results.length) return res.json({ error: 'No daily analyses found' });
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        return res.status(200).send(results.reverse().join('\n\n'));
+      }
+
+      // ── Single file fetch (existing behaviour) ──
       const path = getFilePath(type, date, week, month, nick);
       const data = await readFile(path);
       if (data) return res.json(data);
