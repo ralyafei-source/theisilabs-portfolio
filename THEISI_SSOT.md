@@ -348,8 +348,15 @@ SHA as an optimistic lock. Design the profile shape cleanly for a future DB.
    bursting, not the 300/min cap; throttle/batch if needed.
 7. ✅ **DONE — FMP $29 endpoint audit** (DCF + TTM metrics all work on $29; "$69"
    docs corrected). Verified 2026-06-03.
-8. ⏳ Reliability program (separate doc: ARCHITECTURE_AND_RELIABILITY_REVIEW_v1) —
-   monitoring + checkpoints. Build order: CP6 → CP2 → CP3 → CP1 → CP5 → CP4.
+8. ✅ CP6 BUILT (2026-06-04) — health-checking in api/analysis.js POST path.
+   Response now includes { success, path, health, nickname }. Health log at
+   data/health-log.json (rolling 30 entries). Make 255: daily heartbeat+alert
+   module 47, weekly alert module after 17, monthly alert module after 19.
+   All reference 16.data.health.status / 17.data.health.status / 19.data.health.status.
+   scoringExpected=false in v1 (daily uses labels not X/10 — re-enable per run-type
+   once confirmed). max_tokens on module 7 increased to 16,000. Thresholds are
+   first-draft — calibrate after ~1 week from health-log.json.
+   Next: CP2 (data-assembly DATA_QUALITY block).
 9. ⏳ **CP3 build** — add Finnhub free cross-check (ROE/PE/PEG/margins only;
    definition-matched pairs; ROIC/DCF/targets stay FMP-only) inside
    `portfolio-for-ai.js`. Configurable N, start top 10. See CP3 doc §9.
@@ -361,6 +368,11 @@ SHA as an optimistic lock. Design the profile shape cleanly for a future DB.
 14. ⏳ Dashboard footer disclaimer text (+ 357 "not financial advice" disclaimer).
 15. ⏳ 90-day GitHub data cleanup after API consolidation.
 16. ⏳ Favicon / landing page (waiting on logo).
+17. ⏳ Add nickname to module 16/17/19 body fields for non-Rashed users (currently
+    hardcoded "rashed" in module 16; weekly/monthly nickname empty).
+18. ⏳ User management / delete user functionality (dashboard admin feature).
+19. ⏳ Fix module 16 content mapping — investigate why manual runs produce empty
+    content (scheduled runs work fine).
 
 ---
 
