@@ -959,7 +959,7 @@ module.exports = async (req, res) => {
           const cells = DQ_FIELDS.map(f => `${f}=${row[f] ? '✓' : '✗'}`).join(' ');
           // CP3: add Finnhub availability per cross-check field
           const fhCells = finnhubAvailable
-            ? `  fh=${['ROE','PE','PEG','netMargin','grossMargin'].map(f => `${f}=${row['fh'+f] ? '✓' : '✗'}`).join(' ')}`
+            ? `  fh=${['ROE','PE','PEG','netMargin','grossMargin'].map(f => `${f}=${row['fh' + f.charAt(0).toUpperCase() + f.slice(1)] ? '✓' : '✗'}`).join(' ')}`
             : '';
           text += `${sym}: ${cells} | missing=${miss}${fhCells}\n`;
         });
@@ -968,7 +968,7 @@ module.exports = async (req, res) => {
         text += `PER_FIELD_MISSING: ${DQ_FIELDS.map(f => `${f}=${perFieldMissing[f]}/${n}`).join(' ')}\n`;
         if (finnhubAvailable) {
           const fhFields = ['ROE','PE','PEG','netMargin','grossMargin'];
-          text += `FINNHUB_COVERAGE: ${fhFields.map(f => `${f}=${top20.filter(s => dq[s]?.['fh'+f]).length}/${n}`).join(' ')}\n`;
+          text += `FINNHUB_COVERAGE: ${fhFields.map(f => `${f}=${top20.filter(s => dq[s]?.['fh' + f.charAt(0).toUpperCase() + f.slice(1)]).length}/${n}`).join(' ')}\n`;
         }
         text += `═══ END DATA_QUALITY ═══\n`;
 
