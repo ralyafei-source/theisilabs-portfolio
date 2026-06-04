@@ -995,6 +995,45 @@ module.exports = async (req, res) => {
         }
         text += `═══ END DATA_QUALITY ═══\n`;
 
+        // ── CP5 — Transparency lines for the AI to include in analysis ──────
+        // The AI must copy the relevant transparency line into its analysis
+        // text when writing about each stock. Rules:
+        //   missing = 0-1 → nothing shown (common, not meaningful)
+        //   missing = 2-3 → ⚠️ caution line
+        //   missing = 4+  → 🔴 low-confidence line
+        // Field display names for user-facing text
+        const fieldDisplayNames = {
+          ROE: 'ROE', ROIC: 'ROIC', PE: 'P/E', PEG: 'PEG',
+          netMargin: 'net margin', grossMargin: 'gross margin',
+          DCF: 'DCF', priceTarget: 'price target'
+        };
+
+        const transparencyLines = {};
+        top20.forEach(sym => {
+          const row = dq[sym] || {};
+          const missingFields = DQ_FIELDS.filter(f => !row[f]);
+          const count = missingFields.length;
+          if (count <= 1) { transparencyLines[sym] = null; return; }
+          const fieldList = missingFields.map(f => fieldDisplayNames[f] || f).join(', ');
+          const icon = count >= 4 ? '🔴' : '⚠️';
+          const suffix = count >= 4 ? ' (low-confidence score)' : '';
+          transparencyLines[sym] = `${icon} ${sym} — Score analysis was done without considering: ${fieldList}${suffix}`;
+        });
+
+        const stocksWithWarnings = top20.filter(s => transparencyLines[s]);
+        const qualitySummary = stocksWithWarnings.length === 0
+          ? `📊 Data quality: all ${top20.length} stocks fully covered`
+          : `📊 Data quality: ${top20.length - stocksWithWarnings.length}/${top20.length} stocks fully covered · ${stocksWithWarnings.length} stock(s) analyzed with partial data`;
+
+        text += `\n═══ TRANSPARENCY ═══\n`;
+        text += `QUALITY SUMMARY: ${qualitySummary}\n`;
+        text += `INSTRUCTION: When writing analysis for each stock below, include the\n`;
+        text += `transparency line exactly as written. For stocks with no line, write nothing.\n`;
+        top20.forEach(sym => {
+          if (transparencyLines[sym]) text += `${sym}: ${transparencyLines[sym]}\n`;
+        });
+        text += `═══ END TRANSPARENCY ═══\n`;
+
       } catch (e) {
         // Monitoring/formatting must never break the data response
         text += `\n[DATA_QUALITY unavailable: ${e.message}]\n`;
