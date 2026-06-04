@@ -546,6 +546,20 @@ module.exports = async (req, res) => {
         ratiosPeMap[sym] = pe != null && pe > 0 && pe < 10000 ? +pe.toFixed(1) : null;
       });
 
+      // Margins — from ratios-ttm (key-metrics-ttm does not carry these)
+      const marginsMap = {};
+      ratiosResults.forEach((data, idx) => {
+        const sym  = top20[idx];
+        const item = Array.isArray(data) ? data[0] : data;
+        if (!item) { marginsMap[sym] = { net: null, gross: null }; return; }
+        const net   = item.netProfitMarginTTM ?? null;
+        const gross = item.grossProfitMarginTTM ?? null;
+        marginsMap[sym] = {
+          net:   net   != null ? +(net   * 100).toFixed(1) : null,
+          gross: gross != null ? +(gross * 100).toFixed(1) : null
+        };
+      });
+
       // Historical P/E — 5Y annual average
       // key-metrics annual has no peRatio field — calculate from earningsYield (PE = 1/earningsYield)
       const historicalPeMap = {};
@@ -796,8 +810,8 @@ module.exports = async (req, res) => {
           const roe        = m.returnOnEquityTTM != null ? m.returnOnEquityTTM * 100 : null;
           const roic       = m.returnOnInvestedCapitalTTM != null ? m.returnOnInvestedCapitalTTM * 100 : null;
           const pe         = r ?? (m.peRatioTTM ?? null);
-          const netMargin  = m.netProfitMarginTTM != null ? m.netProfitMarginTTM * 100 : null;
-          const grossMrg   = m.grossProfitMarginTTM != null ? m.grossProfitMarginTTM * 100 : null;
+          const netMargin  = marginsMap[sym] ? marginsMap[sym].net   : null;
+          const grossMrg   = marginsMap[sym] ? marginsMap[sym].gross : null;
           const dcfVal     = dcf ? dcf.dcf : null;
 
           // record presence for DATA_QUALITY
