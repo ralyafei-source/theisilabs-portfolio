@@ -261,5 +261,50 @@
       }
     },
     "note": "31 unavailable field(s)"
+  },
+  {
+    "ts": "2026-06-03T23:45:58.890Z",
+    "type": "daily",
+    "nickname": "rashed",
+    "status": "degraded",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 12054,
+      "scoresFound": 0,
+      "sectionsFound": [
+        "DAILY SIGNALS",
+        "EARNINGS & EVENTS"
+      ],
+      "sectionsMissing": [
+        "MACRO TODAY"
+      ],
+      "totalSentinels": 29,
+      "sentinelHits": {
+        "غير متوفر": 29
+      }
+    },
+    "note": "1 section(s) missing; 29 unavailable field(s)"
+  },
+  {
+    "ts": "2026-06-04T00:11:25.703Z",
+    "type": "daily",
+    "nickname": "rashed",
+    "status": "degraded",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 13522,
+      "scoresFound": 0,
+      "sectionsFound": [
+        "DAILY SIGNALS",
+        "EARNINGS & EVENTS",
+        "MACRO TODAY"
+      ],
+      "sectionsMissing": [],
+      "totalSentinels": 24,
+      "sentinelHits": {
+        "غير متوفر": 24
+      }
+    },
+    "note": "24 unavailable field(s)"
   }
 ]
