@@ -720,17 +720,127 @@ module.exports = async (req, res) => {
         movers:    earningsSorted.filter(e => !e.inPortfolio).slice(0, 5)
       }, null, 2) + '\n\n';
 
-      // Analyst price targets
-      text += `ANALYST PRICE TARGETS:\n`;
-      text += JSON.stringify(targets, null, 2) + '\n\n';
+      // ═══════════════════════════════════════════════════════════════════
+      // CP2 — labeled metric lines + structured DATA_QUALITY block
+      // Replaces the old raw-JSON dumps (targets/grades/metrics) that invited
+      // the LLM to read a vague label and fill numbers from training data.
+      // Every value is tagged with its exact FMP field name; missing = "N/A".
+      // Whole section is wrapped so it can NEVER break the portfolio response.
+      // ═══════════════════════════════════════════════════════════════════
+      try {
+        // Helpers — format a value or "N/A", and track presence for DATA_QUALITY
+        const fmtPct = v => (v != null && Number.isFinite(+v)) ? `${(+v).toFixed(1)}%` : 'N/A';
+        const fmtNum = (v, d = 2) => (v != null && Number.isFinite(+v)) ? (+v).toFixed(d) : 'N/A';
+        const present = v => v != null && Number.isFinite(+v);
 
-      // Analyst grades (filtered — upgrades/downgrades/initiations only)
-      text += `ANALYST GRADES — last 60 days (upgrades/downgrades/initiations only):\n`;
-      text += JSON.stringify(grades, null, 2) + '\n\n';
+        // Index analyst targets + grades by symbol for per-stock lookup
+        const targetMap = {};
+        targets.forEach(t => { if (t && t.symbol) targetMap[t.symbol] = t; });
 
-      // Key metrics TTM (now includes PEG and P/E)
-      text += `KEY METRICS TTM (includes P/E and PEG ratio):\n`;
-      text += JSON.stringify(metrics, null, 2) + '\n';
+        const gradesBySym = {};
+        grades.forEach(g => {
+          if (!g || !g.symbol) return;
+          (gradesBySym[g.symbol] = gradesBySym[g.symbol] || []).push(g);
+        });
+
+        // Fields tracked in DATA_QUALITY (CP3 will add Finnhub columns to the
+        // cross-checkable ones: ROE/PE/PEG/margins. ROIC/DCF/target stay FMP-only.)
+        const DQ_FIELDS = ['ROE', 'ROIC', 'PE', 'PEG', 'netMargin', 'grossMargin', 'DCF', 'priceTarget'];
+        const dq = {};                                   // sym -> { field: bool }
+        const perFieldMissing = Object.fromEntries(DQ_FIELDS.map(f => [f, 0]));
+
+        // ── ANALYST PRICE TARGETS (labeled) ──────────────────────────────
+        text += `ANALYST PRICE TARGETS (top 20 non-ETF):\n`;
+        top20.forEach(sym => {
+          const t = targetMap[sym];
+          const price = priceMap[sym];
+          if (!t) { text += `${sym}: N/A (no target coverage)\n`; return; }
+          const consensus = t.targetConsensus ?? t.targetMedian ?? null;
+          const vsPrice = (present(consensus) && present(price))
+            ? `  vs price: ${consensus >= price ? '+' : ''}${(((consensus - price) / price) * 100).toFixed(1)}% (price ${fmtNum(price)})`
+            : '';
+          text += `${sym}: consensus ${fmtNum(consensus)} (targetConsensus)  `;
+          text += `high/low ${fmtNum(t.targetHigh, 0)}/${fmtNum(t.targetLow, 0)} (targetHigh/targetLow)${vsPrice}\n`;
+        });
+        text += `\n`;
+
+        // ── ANALYST GRADES (labeled summary) ─────────────────────────────
+        text += `ANALYST GRADES — last 60 days (upgrades/downgrades/initiations only):\n`;
+        top20.forEach(sym => {
+          const gs = gradesBySym[sym] || [];
+          if (!gs.length) { text += `${sym}: no rating changes in last 60 days\n`; return; }
+          const has = kw => g => (g.action || '').toLowerCase().includes(kw);
+          const ups   = gs.filter(g => has('upgrade')(g) || has('raise')(g)).length;
+          const downs = gs.filter(g => has('downgrade')(g) || has('lower')(g)).length;
+          const inits = gs.filter(g => has('initiat')(g) || has('resumed')(g)).length;
+          const reits = gs.filter(g => has('reiterat')(g)).length;
+          const parts = [];
+          if (ups)   parts.push(`${ups} upgrade${ups > 1 ? 's' : ''}`);
+          if (downs) parts.push(`${downs} downgrade${downs > 1 ? 's' : ''}`);
+          if (inits) parts.push(`${inits} initiation${inits > 1 ? 's' : ''}`);
+          if (reits) parts.push(`${reits} reiteration${reits > 1 ? 's' : ''}`);
+          text += `${sym}: ${parts.join(', ') || `${gs.length} rating change(s)`}\n`;
+        });
+        text += `\n`;
+
+        // ── KEY METRICS (labeled, field-tagged) — the NVDA root-cause fix ──
+        text += `KEY METRICS (top 20 non-ETF — read these exact fields; write N/A if absent, never infer):\n`;
+        top20.forEach(sym => {
+          const m   = metricsLookup[sym] || {};
+          const r   = ratiosPeMap[sym];                 // current P/E from ratios-ttm
+          const peg = pegMap[sym];                       // PEG from ratios-ttm
+          const dcf = dcfMap[sym];                       // { dcf, upside } or null
+          const tgt = targetMap[sym];
+          const tgtConsensus = tgt ? (tgt.targetConsensus ?? tgt.targetMedian ?? null) : null;
+
+          const roe        = m.returnOnEquityTTM != null ? m.returnOnEquityTTM * 100 : null;
+          const roic       = m.returnOnInvestedCapitalTTM != null ? m.returnOnInvestedCapitalTTM * 100 : null;
+          const pe         = r ?? (m.peRatioTTM ?? null);
+          const netMargin  = m.netProfitMarginTTM != null ? m.netProfitMarginTTM * 100 : null;
+          const grossMrg   = m.grossProfitMarginTTM != null ? m.grossProfitMarginTTM * 100 : null;
+          const dcfVal     = dcf ? dcf.dcf : null;
+
+          // record presence for DATA_QUALITY
+          dq[sym] = {
+            ROE: present(roe), ROIC: present(roic), PE: present(pe), PEG: present(peg),
+            netMargin: present(netMargin), grossMargin: present(grossMrg),
+            DCF: present(dcfVal), priceTarget: present(tgtConsensus)
+          };
+          DQ_FIELDS.forEach(f => { if (!dq[sym][f]) perFieldMissing[f]++; });
+
+          text += `KEY METRICS — ${sym}\n`;
+          text += `  ROE:          ${fmtPct(roe)}   (returnOnEquityTTM)\n`;
+          text += `  ROIC:         ${fmtPct(roic)}   (returnOnInvestedCapitalTTM)\n`;
+          text += `  P/E (TTM):    ${fmtNum(pe, 1)}   (priceToEarningsRatioTTM)\n`;
+          text += `  PEG:          ${fmtNum(peg, 2)}   (priceToEarningsGrowthRatioTTM)\n`;
+          text += `  Net margin:   ${fmtPct(netMargin)}   (netProfitMarginTTM)\n`;
+          text += `  Gross margin: ${fmtPct(grossMrg)}   (grossProfitMarginTTM)\n`;
+          text += `  DCF fair $:   ${fmtNum(dcfVal)}   (discounted-cash-flow)\n`;
+          text += `  Price target: ${fmtNum(tgtConsensus)}   (price-target-consensus)\n`;
+        });
+        text += `\n`;
+
+        // ── DATA_QUALITY block (CP6 parses this; CP3 will extend it) ──────
+        text += `═══ DATA_QUALITY ═══\n`;
+        text += `FIELDS: ${DQ_FIELDS.join(', ')}\n`;
+        let totalMissing = 0, stocksWithGaps = 0;
+        top20.forEach(sym => {
+          const row = dq[sym] || {};
+          const miss = DQ_FIELDS.filter(f => !row[f]).length;
+          totalMissing += miss;
+          if (miss > 0) stocksWithGaps++;
+          const cells = DQ_FIELDS.map(f => `${f}=${row[f] ? '✓' : '✗'}`).join(' ');
+          text += `${sym}: ${cells} | missing=${miss}\n`;
+        });
+        const n = top20.length;
+        text += `SUMMARY: ${n} stocks · ${totalMissing} field(s) missing across ${stocksWithGaps} stock(s)\n`;
+        text += `PER_FIELD_MISSING: ${DQ_FIELDS.map(f => `${f}=${perFieldMissing[f]}/${n}`).join(' ')}\n`;
+        text += `═══ END DATA_QUALITY ═══\n`;
+
+      } catch (e) {
+        // Monitoring/formatting must never break the data response
+        text += `\n[DATA_QUALITY unavailable: ${e.message}]\n`;
+      }
 
       text += `\n═══════════════════════════════════════════════════════\n`;
     }
