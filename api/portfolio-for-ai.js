@@ -708,6 +708,29 @@ module.exports = async (req, res) => {
       text += `Movers data: ${marketDataDate ? `from ${marketDataDate}` : 'unavailable'} — ${moverSyms.join(', ') || 'none'}\n`;
       text += `═══════════════════════════════════════════════════════\n\n`;
 
+      // ── CP1 — Source health check (no new network calls — reads existing results) ──
+      const fmpHealthCount  = metricResults.flat().filter(Boolean).length;
+      const fmpHealthTotal  = top20.length;
+      const fmpPct          = fmpHealthTotal > 0 ? fmpHealthCount / fmpHealthTotal : 0;
+      const fmpStatus       = fmpPct >= 0.8 ? '✅' : fmpPct >= 0.5 ? '⚠️ degraded' : '✗ down';
+
+      const fhCount         = Object.values(finnhubMap).filter(v => v !== null).length;
+      const fhTotal         = top20.length;
+      const fhPct           = fhTotal > 0 ? fhCount / fhTotal : 0;
+      const fhStatus        = !FINNHUB_KEY ? '✗ no key'
+                            : fhPct >= 0.8  ? '✅'
+                            : fhPct > 0     ? '⚠️ degraded'
+                            : '✗ unavailable';
+
+      const yahooPct        = symbols.length > 0 ? pricesAvailable / symbols.length : 0;
+      const yahooStatus     = yahooPct >= 0.8 ? '✅' : yahooPct >= 0.5 ? '⚠️ degraded' : '✗ down';
+
+      text += `SOURCE HEALTH — ${todayUAE()}\n`;
+      text += `  Yahoo prices: ${pricesAvailable}/${symbols.length} updated ${yahooStatus}\n`;
+      text += `  FMP:          ${fmpHealthCount}/${fmpHealthTotal} stocks with metrics ${fmpStatus}\n`;
+      text += `  Finnhub:      ${fhCount}/${fhTotal} stocks cross-checked ${fhStatus}\n`;
+      text += `\n`;
+
       // Technical indicators table
       text += `TECHNICAL INDICATORS (top 20 non-ETF stocks):\n`;
       text += `${'SYM'.padEnd(7)} ${'RSI'.padEnd(7)} ${'MACD'.padEnd(10)} ${'SMA50'.padEnd(9)} ${'SMA200'.padEnd(9)} ${'EMA20'.padEnd(9)} BB\n`;
