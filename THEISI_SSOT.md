@@ -1,6 +1,6 @@
 # THEISI LABS — SINGLE SOURCE OF TRUTH (SSOT)
 ## Arabic Finance Intelligence System
-### v1.7 · 2026-06-04 · Supersedes all prior MASTER_RULES, SYSTEM_REFERENCE, and SESSION_SUMMARY files
+### v1.8 · 2026-06-04 · Supersedes all prior MASTER_RULES, SYSTEM_REFERENCE, and SESSION_SUMMARY files
 
 > **v1.1 changes:** Corrected FMP plan **$69 Premium → $29 Starter** (verified
 > live). Added Finnhub free as the planned CP3 second source and the
@@ -17,6 +17,16 @@
 
 > **v1.2 changes (2026-06-04):** CP6 monitoring built & live in `api/analysis.js`
 > (health checks on every save, rolling `data/health-log.json`, Make 255 alerts).
+> **v1.8 changes (2026-06-04):** Step 6 (scoring engine cross-analysis) built.
+> api/analysis.js GET now supports `?type=daily&days=N` (2≤N≤14) — returns last
+> N daily analyses concatenated as plain text with date headers. Make.com scenario
+> 255 updated: module 51 (HTTP GET last 6 daily analyses) and module 52 (HTTP GET
+> last monthly analysis) added to 2nd route (Weekly/Saturday) before module 15.
+> Module 15 (Weekly Analysis) now receives {{51.data}} + {{52.data}} in addition
+> to {{12.data}} — full week context + moat/competitive data from monthly.
+> Corrected scenario 255 router structure: 1st=Monthly(14→43→19→50),
+> fallback=Daily(7→16→47→23→5), 2nd=Weekly(51→52→15→17→49).
+>
 > **v1.7 changes (2026-06-04):** Health tab built & live in dashboard (admin only).
 > 🩺 Health nav tab added to index.html — hidden for non-admin, revealed by
 > showAdminButton()/revealHealthTab(). Shows summary cards (total/ok/degraded/failed),
@@ -239,6 +249,19 @@
 - Monthly: `formatDate(addHours(now;4);"dddd") = Sunday` AND `formatDate(addHours(now;4);"D") <= 7`
 - Weekly: `formatDate(addHours(now;4);"dddd") = Saturday`
 - Daily: fallback (Mon–Fri)
+
+**Scenario 255 confirmed module flow (verified 2026-06-04):**
+```
+26 → 39 → 27 → 28 → 29 → 31 → 37 → 12 → 13 (Router)
+  1st route (Monthly):  14 → 43 → 19 → 50
+  Fallback (Daily):      7 → 16 → 47 → 23 → 5
+  2nd route (Weekly):   51 → 52 → 15 → 17 → 49
+```
+Module 51: HTTP GET `/api/analysis?type=daily&days=6&nickname=rashed` → last 6 daily analyses
+Module 52: HTTP GET `raw.githubusercontent.com/.../analysis-monthly-rashed-{{YYYY-MM}}.json` → last monthly
+Module 47: Telegram Bot (daily route)
+Module 49: Telegram Bot (weekly route)
+Module 50: Telegram Bot (monthly route)
 
 **Claude prompt modules in Intelligence Engine (255):** ⚠️ module numbers below
 are from MASTER_RULES v21 — verify against the live scenario before editing.
@@ -497,11 +520,14 @@ SHA as an optimistic lock. Design the profile shape cleanly for a future DB.
     accepts scenario/scenarioTitle/dataQuality. Make.com modules 16/17/19 pass
     scenario="255" and dataQuality extracted from module 12 output. Enables
     per-stock root-cause diagnosis from health tab expandable rows.
-29. ⏳ **FMP burst/concurrency fix (Open Task #6).** PE/PEG missing for 6/20
+29. ✅ **DONE — Step 6 scoring cross-analysis (2026-06-04).** api/analysis.js
+    supports `?type=daily&days=N`. Make.com modules 51+52 added to weekly route.
+    Module 15 now receives full week context (6 daily) + monthly moat data.
+30. ⏳ **FMP burst/concurrency fix (Open Task #6).** PE/PEG missing for 6/20
     stocks on most runs — traced to FMP ratios-ttm returning null under load.
     PLTR specifically: 6 FMP fields missing but Finnhub has all 5. Fix: throttle
     insider calls (30-40 parallel) with small delay between batches.
-30. ⏳ **Calibrate CP6 thresholds** after ~1 week of health-log data with
+31. ⏳ **Calibrate CP6 thresholds** after ~1 week of health-log data with
     dataQuality. Now have per-stock + per-field data to set meaningful thresholds.
     Check PER_FIELD_MISSING patterns across 7+ days before adjusting.
 
