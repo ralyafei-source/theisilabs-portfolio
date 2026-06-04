@@ -221,7 +221,7 @@ module.exports = async (req, res) => {
     const key = authHeader?.replace('Bearer ', '') || req.body?.api_key;
     if (!API_KEY || key !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
 
-    let { type, date, week, month, content, generated, nickname } = req.body;
+    let { type, date, week, month, content, generated, nickname, scenario, scenarioTitle, dataQuality } = req.body;
     if (!content) return res.status(400).json({ error: 'No content' });
 
     // Sanitize content
@@ -257,7 +257,10 @@ module.exports = async (req, res) => {
       date:      date || new Date().toISOString().slice(0, 10),
       nickname:  nick || null,
       content,
-      generated: generated || new Date().toISOString()
+      generated: generated || new Date().toISOString(),
+      ...(scenario      ? { scenario }      : {}),
+      ...(scenarioTitle ? { scenarioTitle } : {}),
+      ...(dataQuality   ? { dataQuality }   : {})
     };
 
     let ok = await writeFile(path, data);
@@ -305,7 +308,9 @@ module.exports = async (req, res) => {
         nickname: nick || null,
         status: health.status,
         checks: health.checks,
-        note: health.summary
+        note: health.summary,
+        ...(scenario    ? { scenario }    : {}),
+        ...(dataQuality ? { dataQuality } : {})
       });
     } catch (e) {
       health = { status: 'unknown', summary: 'health check error', checks: {} };
