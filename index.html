@@ -2457,7 +2457,7 @@ async function lookupStock() {
         ${[
           ['P/E Ratio', d.pe?.toFixed(1) ?? '—'],
           ['PEG Ratio', d.peg?.toFixed(2) ?? '—'],
-          ['ROE', d.roe ? (d.roe*100).toFixed(1)+'%' : '—'],
+          ['ROE', d.roe != null ? d.roe+'%' : '—'],
           ['Revenue Growth', d.revenueGrowth ? (d.revenueGrowth*100).toFixed(1)+'%' : '—'],
           ['Analyst Target', d.targetMean ? '$'+d.targetMean.toFixed(0)+(upside ? ' ('+upside+'%)' : '') : '—'],
           ['DCF Fair Value', d.dcfValue ? '$'+d.dcfValue.toFixed(0)+(dcfUpside ? ' ('+dcfUpside+'%)' : '') : '—'],
