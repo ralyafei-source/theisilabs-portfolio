@@ -12,6 +12,101 @@
 //   - Added FMP annual key-metrics → 5Y historical P/E average
 //   - Added analyst consensus calculation (bullish/mixed/bearish per stock)
 //   - Grades now filtered to upgrades/downgrades/initiations only (removes maintains)
+// ── STOCK LOOKUP MODE ─────────────────────────────────────────────────────
+if (req.query.mode === 'lookup') {
+  const sym = (req.query.sym || '').toUpperCase().trim();
+  if (!sym) return res.status(400).json({ error: 'sym required' });
+
+  const [quote, metrics, targets, grades, dcf, insider] = await Promise.all([
+    fmpGet(`/quote/${sym}`),
+    fmpGet(`/key-metrics-ttm/${sym}`),
+    fmpGet(`/price-target-consensus?symbol=${sym}`),
+    fmpGet(`/grades-latest?symbol=${sym}&limit=5`),
+    fmpGet(`/discounted-cash-flow/${sym}`),
+    fmpGetV4(`/insider-roaster-statistic?symbol=${sym}`)
+  ]);
+
+  const q = Array.isArray(quote) ? quote[0] : quote;
+  const m = Array.isArray(metrics) ? metrics[0] : metrics;
+  const t = Array.isArray(targets) ? targets[0] : targets;
+  const d = Array.isArray(dcf) ? dcf[0] : dcf;
+
+  const data = {
+    symbol: sym,
+    price: q?.price,
+    change: q?.change,
+    changePct: q?.changesPercentage,
+    marketCap: q?.marketCap,
+    pe: m?.peRatioTTM,
+    peg: m?.pegRatioTTM,
+    roe: m?.roeTTM,
+    fcf: m?.freeCashFlowPerShareTTM,
+    revenueGrowth: m?.revenueGrowthTTM,
+    targetMean: t?.targetMean,
+    targetHigh: t?.targetHigh,
+    targetLow: t?.targetLow,
+    analystConsensus: t?.analystRatingsStrongBuy + t?.analystRatingsBuy > t?.analystRatingsSell + t?.analystRatingsStrongSell ? 'bullish' : 'bearish',
+    dcfValue: d?.dcf,
+    grades: Array.isArray(grades) ? grades.slice(0, 5) : [],
+    insider: insider || {}
+  };
+
+  // Ask Claude for Arabic summary
+  const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+  let analysis = '';
+  try {
+    const prompt = `أنت محلل مالي متخصص في السوق الأمريكي. قدم تحليلاً شاملاً بالعربية للسهم التالي:
+
+الرمز: ${sym}
+السعر الحالي: $${data.price}
+التغير اليوم: ${data.changePct?.toFixed(2)}%
+القيمة السوقية: $${(data.marketCap/1e9)?.toFixed(1)}B
+P/E: ${data.pe?.toFixed(1)}
+PEG: ${data.peg?.toFixed(2)}
+نمو الإيرادات: ${(data.revenueGrowth*100)?.toFixed(1)}%
+ROE: ${(data.roe*100)?.toFixed(1)}%
+هدف المحللين (متوسط): $${data.targetMean}
+القيمة العادلة DCF: $${data.dcfValue?.toFixed(0)}
+توجه المحللين: ${data.analystConsensus}
+
+قدم التحليل في هذا الشكل:
+## ملخص السهم
+[3 أسطر عن الشركة وما تفعله]
+
+## التقييم
+[هل السهم رخيص أم غالٍ؟ مقارنة السعر بالهدف والـ DCF]
+
+## نقاط القوة
+[3 نقاط إيجابية]
+
+## نقاط الضعف / المخاطر
+[3 مخاطر]
+
+## الحكم النهائي
+[شراء قوي / شراء / احتفظ / خفف / بيع] مع سبب موجز
+
+⚠️ هذا تحليل معلوماتي وليس توصية مالية.`;
+
+    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const aiData = await aiRes.json();
+    analysis = aiData.content?.[0]?.text || '';
+  } catch(e) {}
+
+  return res.status(200).json({ data, analysis });
+}
+// ── END STOCK LOOKUP ──────────────────────────────────────────────────────
 
 const REPO    = 'ralyafei-source/theisilabs-portfolio';
 const UA      = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
