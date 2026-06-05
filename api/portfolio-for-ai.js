@@ -147,28 +147,29 @@ if (req.query.mode === 'lookup') {
   const sym = (req.query.sym || '').toUpperCase().trim();
   if (!sym) return res.status(400).json({ error: 'sym required' });
 
-  let yahooRaw, metrics, targets, grades, dcf, ratios;
+  let quoteRaw, metrics, targets, grades, dcf, ratios, growth;
   try {
-    [yahooRaw, metrics, targets, grades, dcf, ratios] = await Promise.all([
-      fetch(`https://query2.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`, { headers: { 'User-Agent': UA } }).then(r => r.ok ? r.json() : null).catch(() => null),
+    [quoteRaw, metrics, targets, grades, dcf, ratios, growth] = await Promise.all([
+      fmpGet(`/quote?symbol=${sym}`),
       fmpGet(`/key-metrics-ttm?symbol=${sym}`),
       fmpGet(`/price-target-consensus?symbol=${sym}`),
       fmpGet(`/grades-latest?symbol=${sym}&limit=5`),
       fmpGet(`/discounted-cash-flow?symbol=${sym}`),
-      fmpGet(`/ratios-ttm?symbol=${sym}`)
+      fmpGet(`/ratios-ttm?symbol=${sym}`),
+      fmpGet(`/income-statement-growth?symbol=${sym}&limit=1`)
     ]);
   } catch(e) {
     return res.status(500).json({ error: 'Fetch error: ' + e.message });
   }
 
-  const meta = yahooRaw?.chart?.result?.[0]?.meta;
-  const prevClose = meta?.chartPreviousClose || meta?.regularMarketPrice;
-  const livePrice = meta?.regularMarketPrice || null;
-  const changePct = prevClose && livePrice ? ((livePrice - prevClose) / prevClose * 100) : null;
+  const lq = Array.isArray(quoteRaw) ? quoteRaw[0] : (quoteRaw || null);
+const livePrice = lq?.price ?? null;
+const changePct = lq?.changesPercentage ?? null;
   const lm = Array.isArray(metrics) ? metrics[0] : (metrics || null);
   const lt = Array.isArray(targets) ? targets[0] : (targets || null);
   const ld = Array.isArray(dcf) ? dcf[0] : (dcf || null);
   const lr = Array.isArray(ratios) ? ratios[0] : (ratios || null);
+  const lg = Array.isArray(growth) ? growth[0] : (growth || null);
 
   const data = {
     symbol: sym,
@@ -178,7 +179,7 @@ if (req.query.mode === 'lookup') {
     pe: lr?.priceToEarningsRatioTTM ? +lr.priceToEarningsRatioTTM.toFixed(1) : null,
     peg: lr?.priceToEarningsGrowthRatioTTM ? +lr.priceToEarningsGrowthRatioTTM.toFixed(2) : null,
     roe: lm?.returnOnEquityTTM ? +(lm.returnOnEquityTTM * 100).toFixed(1) : null,
-    revenueGrowth: null,
+    revenueGrowth: lg?.growthRevenue ?? null,
     targetMean: lt?.targetConsensus ?? lt?.targetMedian ?? null,
     targetHigh: lt?.targetHigh ?? null,
     targetLow: lt?.targetLow ?? null,
