@@ -6271,7 +6271,7 @@ async function initLiveData(){ await loadLiveNews();
         const pr=await fetch(prUrl);
         if(pr.ok){const pd=await pr.json();prices=pd.prices||{};}
       }catch(e){}
-This makes it fetch live prices for Ahmed's specific symbols instead of loading Rashed's portfolio. Commit and test!
+
       let tv=0,tc=0;
       h.forEach(x=>{const p=prices[x.sym]||x.cost;tv+=x.shares*p;tc+=x.shares*x.cost;});
       const pl=tv-tc,plp=tc>0?(pl/tc*100):0;
