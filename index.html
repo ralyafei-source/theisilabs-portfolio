@@ -1445,14 +1445,8 @@ const periodCfg={
 
 // placeholder news
 // Live news loads from /data/news.json (written daily by Make.com Morning Brief).
-// These placeholders show only until the live feed is available.
-let newsItems=[
-  {icon:'📰',title:'NVIDIA Reports Record Data Center Revenue, Beats Estimates',summary:'Sample placeholder — live market news appears here once the daily feed is connected.',url:'#',syms:['NVDA'],source:'Reuters',time:'—'},
-  {icon:'📊',title:'Fed Officials Signal Rate Hold Amid Inflation Progress',summary:'Sample placeholder — live market news appears here once the daily feed is connected.',url:'#',syms:['QQQ','SPY'],source:'Bloomberg',time:'—'},
-  {icon:'🔬',title:'Micron Technology Raises Q3 Guidance on AI Memory Demand',summary:'Sample placeholder — live market news appears here once the daily feed is connected.',url:'#',syms:['MU'],source:'WSJ',time:'—'},
-  {icon:'🤖',title:'Palantir Wins $500M US Army Contract Extension',summary:'Sample placeholder — live market news appears here once the daily feed is connected.',url:'#',syms:['PLTR'],source:'FT',time:'—'},
-  {icon:'📉',title:'CrowdStrike Faces Competition Headwinds in Enterprise Security',summary:'Sample placeholder — live market news appears here once the daily feed is connected.',url:'#',syms:['CRWD','PANW'],source:'Seeking Alpha',time:'—'},
-];
+// Placeholders show until live feed loads
+let newsItems=[];
 let newsIsLive=false;
 // Fetch live news (Option B: static JSON written by Make.com to the repo).
 async function loadLiveNews(){
@@ -6197,7 +6191,7 @@ async function initLiveData(){
       }
     }
   }catch(e){}
-  setTimeout(()=>{ renderMarketNews(); loadLiveNews(); },2500);
+  setTimeout(()=>{ loadLiveNews(); },1500);
 }
 
 // Dashboard "Market news": hover (desktop) / tap (mobile) expands summary inline.
