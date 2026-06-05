@@ -3697,11 +3697,10 @@ async function saveEditStock(sym) {
   try {
     let r;
     if (isAdmin) {
-      r = await fetch('/api/update-portfolio', {
+      r = await fetch('/api/update-portfolio?api_key=theisilabs2026', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          api_key: 'theisilabs2026',
           action: 'EDIT',
           sym: sym,
           shares: newShares,
@@ -3748,15 +3747,14 @@ async function deleteStock(sym) {
   try {
     if (isAdmin) {
       // Admin portfolio — use REMOVE action on update-portfolio endpoint
-      const r = await fetch('/api/update-portfolio', {
+      const r = await fetch('/api/update-portfolio?api_key=theisilabs2026', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          api_key: 'theisilabs2026',
           action: 'REMOVE',
           sym: sym,
-          shares: 1,  // required by endpoint validation but ignored by REMOVE
-          price: 1    // required by endpoint validation but ignored by REMOVE
+          shares: 1,
+          price: 1
         })
       });
       if (r.ok) { renderPortfolio(); updateStatCards(); }
