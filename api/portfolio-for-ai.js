@@ -1,5 +1,5 @@
 // api/portfolio-for-ai.js
-// v7 — Added Stock Lookup mode
+// v8 — Fixed model name
 
 const REPO    = 'ralyafei-source/theisilabs-portfolio';
 const UA      = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
