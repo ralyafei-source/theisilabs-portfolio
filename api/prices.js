@@ -32,8 +32,13 @@ module.exports = async (req, res) => {
 
   let symbols = fallbackSymbols;
 
-  // Try to read symbols from portfolio.json (3 second timeout)
-  try {
+// If symbols passed as query param, use those directly
+if (req.query.symbols) {
+  const requested = req.query.symbols.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+  if (requested.length > 0) symbols = requested;
+} else {
+// Try to read symbols from portfolio.json (3 second timeout)
+try {
     const pfRes = await fetchWithTimeout(
       `https://raw.githubusercontent.com/${REPO}/main/data/portfolio.json?t=${Date.now()}`,
       {}, 3000
