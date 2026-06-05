@@ -151,6 +151,22 @@ async function verifySession(sessionToken, githubToken) {
   return user;
 }
 
+// List files in a repo directory
+async function ghList(path, token) {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'api.github.com',
+      path: `/repos/${REPO}/contents/${path}`,
+      headers: { 'Authorization': `token ${token}`, 'User-Agent': 'theisilabs-app' }
+    };
+    https.get(options, res => {
+      let data = '';
+      res.on('data', d => data += d);
+      res.on('end', () => { try { resolve(JSON.parse(data)); } catch(e) { reject(e); } });
+    }).on('error', reject);
+  });
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -172,6 +188,41 @@ module.exports = async function handler(req, res) {
 
     // ── GET: load user's portfolio ──
     if (req.method === 'GET') {
+
+      // ── top-tickers: count most common stocks across all user portfolios ──
+      if (req.query && req.query.action === 'top-tickers') {
+        if (!user.isAdmin) return res.status(403).json({ error: 'Admin only' });
+        try {
+          const files = await ghList('data', githubToken);
+          const portfolioFiles = Array.isArray(files)
+            ? files.filter(f => f.name && f.name.match(/^portfolio(-[a-z0-9_]+)?\.json$/))
+            : [];
+          const tickerCount = {};
+          await Promise.all(portfolioFiles.map(async f => {
+            try {
+              const pf = await ghGet(`data/${f.name}`, githubToken);
+              const data = JSON.parse(Buffer.from(pf.content, 'base64').toString());
+              // Support both schemas: holdings[] (admin) and stocks[] (users)
+              const items = data.holdings || data.stocks || [];
+              const seen = new Set();
+              items.forEach(item => {
+                const sym = (item.sym || item.symbol || '').toUpperCase().trim();
+                if (sym && !seen.has(sym)) {
+                  seen.add(sym);
+                  tickerCount[sym] = (tickerCount[sym] || 0) + 1;
+                }
+              });
+            } catch(e) { /* skip unreadable files */ }
+          }));
+          const top10 = Object.entries(tickerCount)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10)
+            .map(([sym]) => sym);
+          return res.status(200).json({ tickers: top10, computed: new Date().toISOString() });
+        } catch(e) {
+          return res.status(500).json({ error: 'Failed to compute top tickers', detail: e.message });
+        }
+      }
       // Admin (rashed) gets portfolio.json which is already managed separately
       if (user.isAdmin && portfolioFile === 'portfolio.json') {
         try {
