@@ -6130,7 +6130,7 @@ const _API='https://theisilabs.vercel.app';
 const _GH='https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main';
 let _liveLoaded=false;
 
-async function initLiveData(){
+async function initLiveData(){ await loadLiveNews();
   if(_liveLoaded)return; _liveLoaded=true;
   try{
     const r=await fetch(_GH+'/data/portfolio.json?t='+Date.now());
@@ -6268,5 +6268,6 @@ document.addEventListener('DOMContentLoaded',function(){
 
 </body>
 </html>
+
 
 
