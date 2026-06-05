@@ -150,7 +150,7 @@ module.exports = async (req, res) => {
     let quote, metrics, targets, grades, dcf;
     try {
       [quote, metrics, targets, grades, dcf] = await Promise.all([
-        fmpGet(`/quote/${sym}`),
+        fmpGetV3(`/quote/${sym}`),
         fmpGet(`/key-metrics-ttm/${sym}`),
         fmpGet(`/price-target-consensus?symbol=${sym}`),
         fmpGet(`/grades-latest?symbol=${sym}&limit=5`),
@@ -161,6 +161,7 @@ module.exports = async (req, res) => {
     }
 
     const q = Array.isArray(quote) ? quote[0] : quote;
+    console.log('LOOKUP DEBUG:', JSON.stringify({q, m, t, d}));
     const m = Array.isArray(metrics) ? metrics[0] : metrics;
     const t = Array.isArray(targets) ? targets[0] : targets;
     const d = Array.isArray(dcf) ? dcf[0] : dcf;
