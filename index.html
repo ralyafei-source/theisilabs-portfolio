@@ -3810,7 +3810,6 @@ async function deleteStock(sym) {
 applyTranslations();
 renderPortfolio();
 renderNews();
-loadLiveNews();
 loadBriefing();
 loadTxFromStorage();
 fetchLivePrices();
@@ -6191,7 +6190,7 @@ async function initLiveData(){
       }
     }
   }catch(e){}
-  setTimeout(()=>{ loadLiveNews(); },1500);
+  setTimeout(async()=>{ await loadLiveNews(); renderNews(); },1500);
 }
 
 // Dashboard "Market news": hover (desktop) / tap (mobile) expands summary inline.
