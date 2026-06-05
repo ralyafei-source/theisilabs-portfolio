@@ -142,62 +142,61 @@ module.exports = async (req, res) => {
   const authHeader = req.headers['authorization'] || '';
   const key = authHeader.replace('Bearer ', '').trim();
 
-  // ── STOCK LOOKUP MODE — no API key required ───────────────────────────────
-  if (req.query.mode === 'lookup') {
-    const sym = (req.query.sym || '').toUpperCase().trim();
-    if (!sym) return res.status(400).json({ error: 'sym required' });
+ // ── STOCK LOOKUP MODE — no API key required ───────────────────────────────
+if (req.query.mode === 'lookup') {
+  const sym = (req.query.sym || '').toUpperCase().trim();
+  if (!sym) return res.status(400).json({ error: 'sym required' });
 
-    let yahooRaw, metrics, targets, grades, dcf;
-    try {
-      [yahooRaw, metrics, targets, grades, dcf] = await Promise.all([
-        fetch(`https://query2.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`, { headers: { 'User-Agent': UA } }).then(r => r.ok ? r.json() : null).catch(() => null),
-        fmpGet(`/key-metrics-ttm?symbol=${sym}`),
-fmpGet(`/price-target-consensus?symbol=${sym}`),
-fmpGet(`/grades-latest?symbol=${sym}&limit=5`),
-fmpGet(`/discounted-cash-flow?symbol=${sym}`)
-      ]);
-    } catch(e) {
-      return res.status(500).json({ error: 'Fetch error: ' + e.message });
-    }
+  let yahooRaw, metrics, targets, grades, dcf, ratios;
+  try {
+    [yahooRaw, metrics, targets, grades, dcf, ratios] = await Promise.all([
+      fetch(`https://query2.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`, { headers: { 'User-Agent': UA } }).then(r => r.ok ? r.json() : null).catch(() => null),
+      fmpGet(`/key-metrics-ttm?symbol=${sym}`),
+      fmpGet(`/price-target-consensus?symbol=${sym}`),
+      fmpGet(`/grades-latest?symbol=${sym}&limit=5`),
+      fmpGet(`/discounted-cash-flow?symbol=${sym}`),
+      fmpGet(`/ratios-ttm?symbol=${sym}`)
+    ]);
+  } catch(e) {
+    return res.status(500).json({ error: 'Fetch error: ' + e.message });
+  }
 
-    const meta = yahooRaw?.chart?.result?.[0]?.meta;
-    const prevClose = meta?.chartPreviousClose || meta?.regularMarketPrice;
-    const livePrice = meta?.regularMarketPrice || null;
-    const changePct = prevClose && livePrice ? ((livePrice - prevClose) / prevClose * 100) : null;
-    const lm = Array.isArray(metrics) ? metrics[0] : (metrics || null);
+  const meta = yahooRaw?.chart?.result?.[0]?.meta;
+  const prevClose = meta?.chartPreviousClose || meta?.regularMarketPrice;
+  const livePrice = meta?.regularMarketPrice || null;
+  const changePct = prevClose && livePrice ? ((livePrice - prevClose) / prevClose * 100) : null;
+  const lm = Array.isArray(metrics) ? metrics[0] : (metrics || null);
+  const lt = Array.isArray(targets) ? targets[0] : (targets || null);
+  const ld = Array.isArray(dcf) ? dcf[0] : (dcf || null);
+  const lr = Array.isArray(ratios) ? ratios[0] : (ratios || null);
 
-const lt = Array.isArray(targets) ? targets[0] : targets;
-const ld = Array.isArray(dcf) ? dcf[0] : dcf;
+  const data = {
+    symbol: sym,
+    price: livePrice,
+    changePct: changePct,
+    marketCap: lm?.marketCap ?? null,
+    pe: lr?.priceToEarningsRatioTTM ? +lr.priceToEarningsRatioTTM.toFixed(1) : null,
+    peg: lr?.priceToEarningsGrowthRatioTTM ? +lr.priceToEarningsGrowthRatioTTM.toFixed(2) : null,
+    roe: lm?.returnOnEquityTTM ? +(lm.returnOnEquityTTM * 100).toFixed(1) : null,
+    revenueGrowth: null,
+    targetMean: lt?.targetConsensus ?? lt?.targetMedian ?? null,
+    targetHigh: lt?.targetHigh ?? null,
+    targetLow: lt?.targetLow ?? null,
+    analystConsensus: ((lt?.analystRatingsStrongBuy||0)+(lt?.analystRatingsBuy||0)) > ((lt?.analystRatingsSell||0)+(lt?.analystRatingsStrongSell||0)) ? 'Bullish 📈' : 'Bearish 📉',
+    dcfValue: ld?.dcf ?? null,
+    grades: Array.isArray(grades) ? grades.slice(0,5) : []
+  };
 
-   const data = {
-  symbol: sym,
-  price: livePrice,
-  changePct: changePct,
-  marketCap: lm?.marketCapTTM ?? lm?.marketCap ?? null,
-  pe: lm?.earningsYieldTTM ? +(1 / lm.earningsYieldTTM).toFixed(1) : null,
-  peg: null,
-  roe: lm?.returnOnEquityTTM ?? null,
-  revenueGrowth: null,
-  targetMean: lt?.targetConsensus ?? lt?.targetMedian ?? null,
-  targetHigh: lt?.targetHigh ?? null,
-  targetLow: lt?.targetLow ?? null,
-  analystConsensus: ((lt?.analystRatingsStrongBuy||0)+(lt?.analystRatingsBuy||0)) > ((lt?.analystRatingsSell||0)+(lt?.analystRatingsStrongSell||0)) ? 'Bullish 📈' : 'Bearish 📉',
-  dcfValue: ld?.dcf ?? null,
-  grades: Array.isArray(grades) ? grades.slice(0,5) : []
-};
-
-    let analysis = '';
-    try {
-      const prompt = `أنت محلل مالي متخصص في السوق الأمريكي. قدم تحليلاً شاملاً بالعربية للسهم التالي:
+  let analysis = '';
+  try {
+    const prompt = `أنت محلل مالي متخصص في السوق الأمريكي. قدم تحليلاً شاملاً بالعربية للسهم التالي:
 
 الرمز: ${sym}
 السعر: $${data.price ?? '—'}
 التغير اليوم: ${data.changePct != null ? data.changePct.toFixed(2) : '—'}%
-القيمة السوقية: $${data.marketCap ? (data.marketCap/1e9).toFixed(1)+'B' : '—'}
-P/E: ${data.pe != null ? data.pe.toFixed(1) : '—'}
-PEG: ${data.peg != null ? data.peg.toFixed(2) : '—'}
-نمو الإيرادات: ${data.revenueGrowth != null ? (data.revenueGrowth*100).toFixed(1)+'%' : '—'}
-ROE: ${data.roe != null ? (data.roe*100).toFixed(1)+'%' : '—'}
+P/E: ${data.pe ?? '—'}
+PEG: ${data.peg ?? '—'}
+ROE: ${data.roe != null ? data.roe+'%' : '—'}
 هدف المحللين: $${data.targetMean ?? '—'}
 DCF: $${data.dcfValue != null ? data.dcfValue.toFixed(0) : '—'}
 توجه المحللين: ${data.analystConsensus}
@@ -221,28 +220,29 @@ DCF: $${data.dcfValue != null ? data.dcfValue.toFixed(0) : '—'}
 
 ⚠️ هذا تحليل معلوماتي وليس توصية مالية.`;
 
-      const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
-      const aiData = await aiRes.json();
-      analysis = aiData.content?.[0]?.text || '';
-   } catch(e) {
-      analysis = 'تعذر توليد التحليل: ' + e.message + ' | ' + JSON.stringify(e);
-    }
-
-    return res.status(200).json({ data, analysis });
+    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const aiData = await aiRes.json();
+    analysis = aiData.content?.[0]?.text || '';
+    if (!analysis) analysis = 'خطأ: ' + JSON.stringify(aiData);
+  } catch(e) {
+    analysis = 'تعذر توليد التحليل: ' + e.message;
   }
-  // ── END STOCK LOOKUP ──────────────────────────────────────────────────────
+
+  return res.status(200).json({ data, analysis });
+}
+// ── END STOCK LOOKUP ──────────────────────────────────────────────────────
 
   // Normal mode — require API key
   if (!key || key !== API_KEY) {
