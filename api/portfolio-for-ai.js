@@ -151,10 +151,10 @@ module.exports = async (req, res) => {
     try {
       [yahooRaw, metrics, targets, grades, dcf] = await Promise.all([
         fetch(`https://query2.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`, { headers: { 'User-Agent': UA } }).then(r => r.ok ? r.json() : null).catch(() => null),
-        fmpGet(`/key-metrics-ttm/${sym}`),
-        fmpGet(`/price-target-consensus?symbol=${sym}`),
-        fmpGet(`/grades-latest?symbol=${sym}&limit=5`),
-        fmpGet(`/discounted-cash-flow/${sym}`)
+        fmpGet(`/key-metrics-ttm?symbol=${sym}`),
+fmpGet(`/price-target-consensus?symbol=${sym}`),
+fmpGet(`/grades-latest?symbol=${sym}&limit=5`),
+fmpGet(`/discounted-cash-flow?symbol=${sym}`)
       ]);
     } catch(e) {
       return res.status(500).json({ error: 'Fetch error: ' + e.message });
