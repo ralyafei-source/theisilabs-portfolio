@@ -3699,7 +3699,7 @@ async function saveEditStock(sym) {
     if (isAdmin) {
       r = await fetch('/api/update-portfolio', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': 'theisilabs2026' },
+        headers: { 'Content-Type': 'application/json', 'x-api-key': 'theisi-2026-X9k3mP' },
         body: JSON.stringify({
           action: 'EDIT',
           sym: sym,
@@ -3749,7 +3749,7 @@ async function deleteStock(sym) {
       // Admin portfolio — use REMOVE action on update-portfolio endpoint
       const r = await fetch('/api/update-portfolio', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': 'theisilabs2026' },
+        headers: { 'Content-Type': 'application/json', 'x-api-key': 'theisi-2026-X9k3mP' },
         body: JSON.stringify({
           action: 'REMOVE',
           sym: sym,
@@ -6263,6 +6263,10 @@ document.addEventListener('DOMContentLoaded',function(){
 
 </body>
 </html>
+
+
+
+
 
 
 
