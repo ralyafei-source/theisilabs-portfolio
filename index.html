@@ -6263,7 +6263,12 @@ async function initLiveData(){ await loadLiveNews();
     const r=await fetch(_GH+'/'+pfFile+'?t='+Date.now());
     if(r.ok){
       const data=await r.json();
-      const h=isAdmin?(data.holdings||[]):(data.stocks||[]);
+      const rawH=isAdmin?(data.holdings||[]):(data.stocks||[]);
+      const h=rawH.map(x=>({
+        sym: x.sym,
+        shares: x.shares || (x.mv/x.cost),
+        cost: x.cost
+      }));
       let prices={};
       try{
         const nick=localStorage.getItem(AUTH_NICK_KEY)||'';
