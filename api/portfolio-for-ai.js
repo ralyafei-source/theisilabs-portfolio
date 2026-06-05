@@ -249,11 +249,16 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
 
-  const authHeader = req.headers['authorization'] || '';
-  const key = authHeader.replace('Bearer ', '').trim();
-  if (!key || key !== API_KEY) {
+const authHeader = req.headers['authorization'] || '';
+const key = authHeader.replace('Bearer ', '').trim();
+
+// For lookup mode — allow any logged-in user (session token)
+// For normal mode — require the API key
+if (req.query.mode !== 'lookup') {
+  if (key && key !== API_KEY) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
+}
 
   // ── STOCK LOOKUP MODE ─────────────────────────────────────────────────────
 if (req.query.mode === 'lookup') {
