@@ -587,6 +587,7 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
       <div class="nav-tab active" onclick="showTab('dashboard',this)" id="nav-dashboard">Dashboard</div>
       <div class="nav-tab" onclick="showTab('portfolio',this)" id="nav-portfolio">Portfolio</div>
       <div class="nav-tab" onclick="showTab('advisor',this)" id="nav-advisor">AI Advisor</div>
+<div class="nav-tab" onclick="showTab('lookup',this)" id="nav-lookup">🔍 Stock Lookup</div>
       <div class="nav-tab" onclick="showTab('trends',this)" id="nav-trends">Trends</div>
       <div class="nav-tab" onclick="showTab('weights',this)" id="nav-indicators">Indicators</div>
       <div class="nav-tab" onclick="showTab('alerts',this)" id="nav-alerts">Alerts</div>
@@ -981,6 +982,42 @@ WOLF remains at critical lows<br><br>
   </div>
 </div>
 
+  <!-- ===== STOCK LOOKUP TAB ===== -->
+<div id="tab-lookup" class="tab-content">
+  <div class="card">
+    <div class="section-hdr" style="margin-bottom:16px;">
+      <div>
+        <div class="section-title">🔍 Stock Lookup — بحث سهم</div>
+        <div class="section-sub">ابحث عن أي سهم أمريكي واحصل على تحليل كامل بالعربية</div>
+      </div>
+    </div>
+    <!-- Search Box -->
+    <div style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;">
+      <input id="lookup-input" type="text" placeholder="Enter symbol e.g. NVDA, AAPL, TSLA"
+        style="flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:10px;font-size:14px;font-family:'IBM Plex Mono',monospace;outline:none;"
+        onkeydown="if(event.key==='Enter')lookupStock()"
+      />
+      <button onclick="lookupStock()" style="background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#000;padding:10px 24px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">بحث</button>
+    </div>
+    <!-- Loading -->
+    <div id="lookup-loading" style="display:none;padding:30px;text-align:center;color:var(--text2);font-size:13px;">
+      ⏳ جاري تحليل السهم...
+    </div>
+    <!-- Error -->
+    <div id="lookup-error" style="display:none;padding:20px;color:var(--red);font-size:13px;text-align:center;"></div>
+    <!-- Results -->
+    <div id="lookup-result" style="display:none;">
+      <!-- Data Card -->
+      <div id="lookup-data-card" style="background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px;"></div>
+      <!-- AI Analysis -->
+      <div style="border:1px solid var(--border);border-radius:14px;padding:20px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:14px;">تحليل الذكاء الاصطناعي</div>
+        <div id="lookup-analysis" style="font-size:13px;line-height:1.9;color:var(--text);direction:rtl;text-align:right;white-space:pre-wrap;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
   
 <!-- ===== AI ADVISOR TAB ===== -->
 <div id="tab-advisor" class="tab-content">
@@ -2378,6 +2415,81 @@ function showFirm(id,btn){
   }, 200);
 }
 
+  // ===== STOCK LOOKUP =====
+async function lookupStock() {
+  const sym = document.getElementById('lookup-input').value.trim().toUpperCase();
+  if (!sym) return;
+
+  document.getElementById('lookup-loading').style.display = 'block';
+  document.getElementById('lookup-result').style.display = 'none';
+  document.getElementById('lookup-error').style.display = 'none';
+
+  try {
+    const token = localStorage.getItem(AUTH_SESSION_KEY) || '';
+    const r = await fetch(`/api/portfolio-for-ai?mode=lookup&sym=${encodeURIComponent(sym)}`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!r.ok) throw new Error('فشل تحميل البيانات');
+    const res = await r.json();
+    if (res.error) throw new Error(res.error);
+
+    const d = res.data;
+
+    // Build data card
+    const pctColor = d.changePct >= 0 ? 'var(--green)' : 'var(--red)';
+    const pctSign = d.changePct >= 0 ? '▲' : '▼';
+    const upside = d.targetMean && d.price ? (((d.targetMean - d.price) / d.price) * 100).toFixed(1) : null;
+    const dcfUpside = d.dcfValue && d.price ? (((d.dcfValue - d.price) / d.price) * 100).toFixed(1) : null;
+
+    document.getElementById('lookup-data-card').innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <div>
+          <div style="font-size:28px;font-weight:900;font-family:'IBM Plex Mono',monospace;color:var(--text);">${d.symbol}</div>
+          <div style="font-size:22px;font-weight:700;color:var(--text);margin-top:2px;">$${d.price?.toFixed(2) ?? '—'}</div>
+          <div style="font-size:14px;color:${pctColor};margin-top:2px;">${pctSign} ${Math.abs(d.changePct ?? 0).toFixed(2)}% today</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">Market Cap</div>
+          <div style="font-size:16px;font-weight:700;color:var(--text);">$${d.marketCap ? (d.marketCap/1e9).toFixed(1)+'B' : '—'}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
+        ${[
+          ['P/E Ratio', d.pe?.toFixed(1) ?? '—'],
+          ['PEG Ratio', d.peg?.toFixed(2) ?? '—'],
+          ['ROE', d.roe ? (d.roe*100).toFixed(1)+'%' : '—'],
+          ['Revenue Growth', d.revenueGrowth ? (d.revenueGrowth*100).toFixed(1)+'%' : '—'],
+          ['Analyst Target', d.targetMean ? '$'+d.targetMean.toFixed(0)+(upside ? ' ('+upside+'%)' : '') : '—'],
+          ['DCF Fair Value', d.dcfValue ? '$'+d.dcfValue.toFixed(0)+(dcfUpside ? ' ('+dcfUpside+'%)' : '') : '—'],
+          ['Consensus', d.analystConsensus ?? '—'],
+        ].map(([lbl,val]) => `
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">${lbl}</div>
+            <div style="font-size:14px;font-weight:700;color:var(--accent);font-family:'IBM Plex Mono',monospace;">${val}</div>
+          </div>
+        `).join('')}
+      </div>
+      ${d.grades?.length ? `
+        <div style="margin-top:14px;font-size:11px;color:var(--text3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Latest Analyst Grades</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          ${d.grades.map(g => `<span style="background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;">${g.gradingCompany} — ${g.newGrade}</span>`).join('')}
+        </div>
+      ` : ''}
+    `;
+
+    // AI analysis
+    document.getElementById('lookup-analysis').textContent = res.analysis || 'لا يوجد تحليل متاح';
+
+    document.getElementById('lookup-loading').style.display = 'none';
+    document.getElementById('lookup-result').style.display = 'block';
+
+  } catch(e) {
+    document.getElementById('lookup-loading').style.display = 'none';
+    document.getElementById('lookup-error').style.display = 'block';
+    document.getElementById('lookup-error').textContent = '❌ ' + e.message;
+  }
+}
+  
 function navigateDate(dir){
   const d=new Date(advisorDate);
   d.setDate(d.getDate()+dir);
