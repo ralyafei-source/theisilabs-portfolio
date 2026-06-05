@@ -164,7 +164,8 @@ fmpGet(`/discounted-cash-flow?symbol=${sym}`)
     const prevClose = meta?.chartPreviousClose || meta?.regularMarketPrice;
     const livePrice = meta?.regularMarketPrice || null;
     const changePct = prevClose && livePrice ? ((livePrice - prevClose) / prevClose * 100) : null;
-    const lm = Array.isArray(metrics) ? metrics[0] : metrics;
+    const lm = Array.isArray(metrics) ? metrics[0] : (metrics || null);
+console.log('LM:', JSON.stringify(lm), 'LT:', JSON.stringify(lt), 'LD:', JSON.stringify(ld));
 const lt = Array.isArray(targets) ? targets[0] : targets;
 const ld = Array.isArray(dcf) ? dcf[0] : dcf;
 
