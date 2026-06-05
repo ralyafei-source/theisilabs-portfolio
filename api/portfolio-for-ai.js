@@ -252,9 +252,11 @@ module.exports = async (req, res) => {
 const authHeader = req.headers['authorization'] || '';
 const key = authHeader.replace('Bearer ', '').trim();
 
-// For lookup mode — allow any logged-in user (session token)
-// For normal mode — require the API key
-if (req.query.mode !== 'lookup') {
+// Lookup mode — skip API key check (uses session token instead)
+if (req.query.mode === 'lookup') {
+  // no key check needed — open to any logged-in user
+} else {
+  // Normal mode — require API key
   if (key && key !== API_KEY) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
