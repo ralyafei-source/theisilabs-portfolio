@@ -189,7 +189,7 @@ module.exports = async function handler(req, res) {
     // ── GET: load user's portfolio ──
     if (req.method === 'GET') {
 
-      // ── top-tickers: count most common stocks across all user portfolios ──
+      // ── top-tickers: top holdings by value per user, combined ──
       if (req.query && req.query.action === 'top-tickers') {
         if (!user.isAdmin) return res.status(403).json({ error: 'Admin only' });
         try {
@@ -197,24 +197,27 @@ module.exports = async function handler(req, res) {
           const portfolioFiles = Array.isArray(files)
             ? files.filter(f => f.name && f.name.match(/^portfolio(-[a-z0-9_]+)?\.json$/))
             : [];
-          const tickerCount = {};
+          const tickerScore = {};
           await Promise.all(portfolioFiles.map(async f => {
             try {
               const pf = await ghGet(`data/${f.name}`, githubToken);
               const data = JSON.parse(Buffer.from(pf.content, 'base64').toString());
               // Support both schemas: holdings[] (admin) and stocks[] (users)
-              const items = data.holdings || data.stocks || [];
-              const seen = new Set();
-              items.forEach(item => {
-                const sym = (item.sym || item.symbol || '').toUpperCase().trim();
-                if (sym && !seen.has(sym)) {
-                  seen.add(sym);
-                  tickerCount[sym] = (tickerCount[sym] || 0) + 1;
-                }
+              const items = (data.holdings || data.stocks || [])
+                .map(item => ({
+                  sym: (item.sym || item.symbol || '').toUpperCase().trim(),
+                  mv: item.mv || (item.shares * item.price) || (item.shares * item.cost) || 0
+                }))
+                .filter(item => item.sym)
+                .sort((a, b) => b.mv - a.mv)
+                .slice(0, 3); // top 3 by value per user
+              items.forEach((item, rank) => {
+                // Weight by rank: #1 gets 3 points, #2 gets 2, #3 gets 1
+                tickerScore[item.sym] = (tickerScore[item.sym] || 0) + (3 - rank);
               });
             } catch(e) { /* skip unreadable files */ }
           }));
-          const top10 = Object.entries(tickerCount)
+          const top10 = Object.entries(tickerScore)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 10)
             .map(([sym]) => sym);
