@@ -13,8 +13,8 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Auth check — accept api_key in body OR query string
-  const apiKey = req.query?.api_key || req.headers['x-api-key'] || req.body?.api_key;
+  // Auth check
+  const apiKey = req.headers['x-api-key'] || (req.body && req.body.api_key);
   if (apiKey !== BRIEFING_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
 
   const { action, sym, shares, price, newStock, sec, purchaseDate } = req.body || {};

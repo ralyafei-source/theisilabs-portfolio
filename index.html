@@ -3697,9 +3697,9 @@ async function saveEditStock(sym) {
   try {
     let r;
     if (isAdmin) {
-      r = await fetch('/api/update-portfolio?api_key=theisilabs2026', {
+      r = await fetch('/api/update-portfolio', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-api-key': 'theisilabs2026' },
         body: JSON.stringify({
           action: 'EDIT',
           sym: sym,
@@ -3747,9 +3747,9 @@ async function deleteStock(sym) {
   try {
     if (isAdmin) {
       // Admin portfolio — use REMOVE action on update-portfolio endpoint
-      const r = await fetch('/api/update-portfolio?api_key=theisilabs2026', {
+      const r = await fetch('/api/update-portfolio', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-api-key': 'theisilabs2026' },
         body: JSON.stringify({
           action: 'REMOVE',
           sym: sym,
