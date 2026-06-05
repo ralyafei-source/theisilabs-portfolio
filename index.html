@@ -5313,12 +5313,16 @@ async function loadUserPortfolio(token, isAdmin, nickname) {
           stocks.length = 0;
           holdings.forEach(h => {
             stocks.push({
-              sym: h.sym, en: h.en, ar: h.ar,
-              cost: h.cost, price: h.price || h.cost,
-              mv: h.mv || (h.shares * (h.price || h.cost)),
-              gl: h.gl || 0, sec: h.sec,
-              shares: h.shares,
-              _shares: h.shares,
+              sym: h.sym,
+              en: h.en || h.name || h.sym,
+              ar: h.ar || h.name_ar || h.sym,
+              cost: h.cost || 0,
+              price: h.price || h.cost || 0,
+              mv: h.mv || (h.shares * (h.price || h.cost || 0)),
+              gl: h.gl || 0,
+              sec: h.sec || h.sector || 'tech',
+              shares: h.shares || 0,
+              _shares: h.shares || 0,
               purchaseDate: h.purchaseDate || ''
             });
           });
