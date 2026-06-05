@@ -186,6 +186,7 @@ module.exports = async function handler(req, res) {
         ? files.filter(f => f.name && f.name.match(/^portfolio(-[a-z0-9_]+)?\.json$/))
         : [];
       const tickerScore = {};
+      const tickerSector = {}; // sym → sector
       await Promise.all(portfolioFiles.map(async f => {
         try {
           const pf = await ghGet(`data/${f.name}`, githubToken);
@@ -193,13 +194,15 @@ module.exports = async function handler(req, res) {
           const items = (data.holdings || data.stocks || [])
             .map(item => ({
               sym: (item.sym || item.symbol || '').toUpperCase().trim(),
-              mv: item.mv || (item.shares * item.price) || (item.shares * item.cost) || 0
+              mv: item.mv || (item.shares * item.price) || (item.shares * item.cost) || 0,
+              sec: (item.sec || item.sector || 'tech').toLowerCase().trim()
             }))
             .filter(item => item.sym)
             .sort((a, b) => b.mv - a.mv)
             .slice(0, 3);
           items.forEach((item, rank) => {
             tickerScore[item.sym] = (tickerScore[item.sym] || 0) + (3 - rank);
+            if (!tickerSector[item.sym]) tickerSector[item.sym] = item.sec;
           });
         } catch(e) {}
       }));
@@ -207,7 +210,37 @@ module.exports = async function handler(req, res) {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10)
         .map(([sym]) => sym);
-      return res.status(200).json({ tickers: top10, computed: new Date().toISOString() });
+
+      // Map sectors to NewsAPI-friendly search keywords
+      const sectorKeywords = {
+        tech: 'technology "artificial intelligence"',
+        semiconductor: 'semiconductor chips "supply chain"',
+        biotech: 'biotech FDA "clinical trial"',
+        mining: 'mining "gold" "copper" commodities',
+        etf: 'ETF "S&P 500" nasdaq "market index"',
+        cybersecurity: 'cybersecurity "data breach" hacking',
+        cloud: 'cloud computing SaaS software',
+        energy: 'energy oil "interest rates"',
+        finance: 'banking "Federal Reserve" "interest rates"',
+        healthcare: 'healthcare pharma "drug approval"',
+        consumer: 'consumer retail "earnings" spending',
+        ev: '"electric vehicle" EV battery',
+        default: 'stocks "earnings" "Federal Reserve" nasdaq'
+      };
+
+      // Get unique sectors from top tickers
+      const sectors = [...new Set(top10.map(sym => tickerSector[sym] || 'default'))];
+      // Build keyword string for NewsAPI
+      const keywords = sectors
+        .map(sec => sectorKeywords[sec] || sectorKeywords.default)
+        .join(' OR ');
+
+      return res.status(200).json({
+        tickers: top10,
+        sectors,
+        keywords,
+        computed: new Date().toISOString()
+      });
     } catch(e) {
       return res.status(500).json({ error: 'Failed to compute top tickers', detail: e.message });
     }
