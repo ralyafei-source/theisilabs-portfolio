@@ -236,8 +236,8 @@ DCF: $${data.dcfValue != null ? data.dcfValue.toFixed(0) : '—'}
       });
       const aiData = await aiRes.json();
       analysis = aiData.content?.[0]?.text || '';
-    } catch(e) {
-      analysis = 'تعذر توليد التحليل: ' + e.message;
+   } catch(e) {
+      analysis = 'تعذر توليد التحليل: ' + e.message + ' | ' + JSON.stringify(e);
     }
 
     return res.status(200).json({ data, analysis });
