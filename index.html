@@ -3693,18 +3693,36 @@ async function saveEditStock(sym) {
 
   // Save to API
   const token = localStorage.getItem(AUTH_SESSION_KEY);
+  const isAdmin = localStorage.getItem(AUTH_ADMIN_KEY) === '1';
   try {
-    const r = await fetch('/api/user-portfolio', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ stocks: stocks.map(st => ({
-        sym: st.sym, en: st.en, ar: st.ar,
-        shares: st._shares || st.shares,
-        cost: st.cost, price: st.price,
-        mv: st.mv, gl: st.gl, sec: st.sec,
-        purchaseDate: st.purchaseDate || ''
-      }))})
-    });
+    let r;
+    if (isAdmin) {
+      r = await fetch('/api/update-portfolio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key: 'theisilabs2026',
+          action: 'EDIT',
+          sym: sym,
+          shares: newShares,
+          price: newCost,
+          sec: newSec,
+          purchaseDate: newDate
+        })
+      });
+    } else {
+      r = await fetch('/api/user-portfolio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ stocks: stocks.map(st => ({
+          sym: st.sym, en: st.en, ar: st.ar,
+          shares: st._shares || st.shares,
+          cost: st.cost, price: st.price,
+          mv: st.mv, gl: st.gl, sec: st.sec,
+          purchaseDate: st.purchaseDate || ''
+        }))})
+      });
+    }
     if (r.ok) {
       statusEl.innerHTML = '<span style="color:var(--green)">✅ Saved!</span>';
       renderPortfolio();

@@ -17,10 +17,14 @@ module.exports = async (req, res) => {
   const apiKey = req.headers['x-api-key'] || req.body?.api_key;
   if (apiKey !== BRIEFING_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { action, sym, shares, price, newStock } = req.body || {};
+  const { action, sym, shares, price, newStock, sec, purchaseDate } = req.body || {};
 
-  if (!action || !sym || !shares || !price) {
-    return res.status(400).json({ error: 'Missing required fields: action, sym, shares, price' });
+  if (!action || !sym) {
+    return res.status(400).json({ error: 'Missing required fields: action, sym' });
+  }
+  // shares and price required for BUY/SELL only
+  if ((action === 'BUY' || action === 'SELL') && (!shares || !price)) {
+    return res.status(400).json({ error: 'BUY/SELL require shares and price' });
   }
 
   try {
@@ -81,8 +85,16 @@ module.exports = async (req, res) => {
       if (existingIdx < 0) return res.status(400).json({ error: `${sym} not found in portfolio` });
       holdings.splice(existingIdx, 1);
       result = { sym, shares: 0, action: 'removed' };
+    } else if (action === 'EDIT') {
+      // Edit existing holding: update shares, cost, sector, purchaseDate
+      if (existingIdx < 0) return res.status(400).json({ error: `${sym} not found in portfolio` });
+      if (shares !== undefined) holdings[existingIdx].shares = Math.round(parseFloat(shares) * 10000) / 10000;
+      if (price !== undefined) holdings[existingIdx].cost = Math.round(parseFloat(price) * 100) / 100;
+      if (sec !== undefined) holdings[existingIdx].sector = sec;
+      if (purchaseDate !== undefined) holdings[existingIdx].purchaseDate = purchaseDate;
+      result = { sym, shares: holdings[existingIdx].shares, cost: holdings[existingIdx].cost, action: 'edited' };
     } else {
-      return res.status(400).json({ error: 'action must be BUY, SELL, or REMOVE' });
+      return res.status(400).json({ error: 'action must be BUY, SELL, REMOVE, or EDIT' });
     }
 
     // Update meta
