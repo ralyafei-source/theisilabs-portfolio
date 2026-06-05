@@ -164,26 +164,26 @@ module.exports = async (req, res) => {
     const prevClose = meta?.chartPreviousClose || meta?.regularMarketPrice;
     const livePrice = meta?.regularMarketPrice || null;
     const changePct = prevClose && livePrice ? ((livePrice - prevClose) / prevClose * 100) : null;
-    const m = Array.isArray(metrics) ? metrics[0] : metrics;
-    const t = Array.isArray(targets) ? targets[0] : targets;
-    const d = Array.isArray(dcf) ? dcf[0] : dcf;
+    const lm = Array.isArray(metrics) ? metrics[0] : metrics;
+const lt = Array.isArray(targets) ? targets[0] : targets;
+const ld = Array.isArray(dcf) ? dcf[0] : dcf;
 
     const data = {
-      symbol: sym,
-      price: livePrice,
-      changePct: changePct,
-      marketCap: meta?.marketCap ?? null,
-      pe: m?.peRatioTTM ?? null,
-      peg: m?.pegRatioTTM ?? null,
-      roe: m?.roeTTM ?? null,
-      revenueGrowth: m?.revenueGrowthTTM ?? null,
-      targetMean: t?.targetMean ?? null,
-      targetHigh: t?.targetHigh ?? null,
-      targetLow: t?.targetLow ?? null,
-      analystConsensus: ((t?.analystRatingsStrongBuy||0)+(t?.analystRatingsBuy||0)) > ((t?.analystRatingsSell||0)+(t?.analystRatingsStrongSell||0)) ? 'Bullish 📈' : 'Bearish 📉',
-      dcfValue: d?.dcf ?? null,
-      grades: Array.isArray(grades) ? grades.slice(0,5) : []
-    };
+  symbol: sym,
+  price: livePrice,
+  changePct: changePct,
+  marketCap: meta?.marketCap ?? null,
+  pe: lm?.peRatioTTM ?? null,
+  peg: lm?.pegRatioTTM ?? null,
+  roe: lm?.roeTTM ?? null,
+  revenueGrowth: lm?.revenueGrowthTTM ?? null,
+  targetMean: lt?.targetMean ?? null,
+  targetHigh: lt?.targetHigh ?? null,
+  targetLow: lt?.targetLow ?? null,
+  analystConsensus: ((lt?.analystRatingsStrongBuy||0)+(lt?.analystRatingsBuy||0)) > ((lt?.analystRatingsSell||0)+(lt?.analystRatingsStrongSell||0)) ? 'Bullish 📈' : 'Bearish 📉',
+  dcfValue: ld?.dcf ?? null,
+  grades: Array.isArray(grades) ? grades.slice(0,5) : []
+};
 
     let analysis = '';
     try {
