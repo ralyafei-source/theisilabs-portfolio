@@ -6145,9 +6145,13 @@ let _liveLoaded=false;
 async function initLiveData(){ await loadLiveNews();
   if(_liveLoaded)return; _liveLoaded=true;
   try{
-    const r=await fetch(_GH+'/data/portfolio.json?t='+Date.now());
+   const nick=localStorage.getItem(AUTH_NICK_KEY)||'';
+    const isAdmin=localStorage.getItem(AUTH_ADMIN_KEY)==='1';
+    const pfFile=isAdmin?'data/portfolio.json':`data/portfolio-${nick}.json`;
+    const r=await fetch(_GH+'/'+pfFile+'?t='+Date.now());
     if(r.ok){
-      const data=await r.json(); const h=data.holdings||[];
+      const data=await r.json();
+      const h=isAdmin?(data.holdings||[]):(data.stocks||[]);
       let prices={};
       try{
         const nick=localStorage.getItem(AUTH_NICK_KEY)||'';
