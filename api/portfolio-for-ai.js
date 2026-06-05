@@ -147,30 +147,32 @@ module.exports = async (req, res) => {
     const sym = (req.query.sym || '').toUpperCase().trim();
     if (!sym) return res.status(400).json({ error: 'sym required' });
 
-    let quote, metrics, targets, grades, dcf;
+    let yahooRaw, metrics, targets, grades, dcf;
     try {
-      [quote, metrics, targets, grades, dcf] = await Promise.all([
-        fmpGetV3(`/quote/${sym}`),
+      [yahooRaw, metrics, targets, grades, dcf] = await Promise.all([
+        fetch(`https://query2.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`, { headers: { 'User-Agent': UA } }).then(r => r.ok ? r.json() : null).catch(() => null),
         fmpGet(`/key-metrics-ttm/${sym}`),
         fmpGet(`/price-target-consensus?symbol=${sym}`),
         fmpGet(`/grades-latest?symbol=${sym}&limit=5`),
         fmpGet(`/discounted-cash-flow/${sym}`)
       ]);
     } catch(e) {
-      return res.status(500).json({ error: 'FMP error: ' + e.message });
+      return res.status(500).json({ error: 'Fetch error: ' + e.message });
     }
 
-    const q = Array.isArray(quote) ? quote[0] : quote;
-    console.log('LOOKUP DEBUG:', JSON.stringify({q, m, t, d}));
+    const meta = yahooRaw?.chart?.result?.[0]?.meta;
+    const prevClose = meta?.chartPreviousClose || meta?.regularMarketPrice;
+    const livePrice = meta?.regularMarketPrice || null;
+    const changePct = prevClose && livePrice ? ((livePrice - prevClose) / prevClose * 100) : null;
     const m = Array.isArray(metrics) ? metrics[0] : metrics;
     const t = Array.isArray(targets) ? targets[0] : targets;
     const d = Array.isArray(dcf) ? dcf[0] : dcf;
 
     const data = {
       symbol: sym,
-      price: q?.price ?? null,
-      changePct: q?.changesPercentage ?? null,
-      marketCap: q?.marketCap ?? null,
+      price: livePrice,
+      changePct: changePct,
+      marketCap: meta?.marketCap ?? null,
       pe: m?.peRatioTTM ?? null,
       peg: m?.pegRatioTTM ?? null,
       roe: m?.roeTTM ?? null,
