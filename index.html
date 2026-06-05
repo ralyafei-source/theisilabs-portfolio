@@ -5365,8 +5365,22 @@ async function loadUserPortfolio(token, isAdmin, nickname) {
       return;
     }
 
-    // Load their stocks
-    userStocks.forEach(s => stocks.push(s));
+  // Load their stocks — map user format to dashboard format
+userStocks.forEach(s => stocks.push({
+  sym: s.sym,
+  en: s.en || s.sym,
+  ar: s.ar || s.sym,
+  name: s.en || s.sym,
+  cost: s.cost,
+  price: s.price || s.cost,
+  mv: s.mv || Math.round(s.shares * s.cost),
+  gl: s.gl || 0,
+  sec: s.sec || 'tech',
+  sector: s.sec || 'tech',
+  shares: s.shares,
+  _shares: s.shares,
+  _origPrice: s.price || s.cost
+}));
     renderPortfolio();
     fetchLivePricesForUser(token, userStocks.map(s => s.sym));
 
