@@ -384,11 +384,10 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
   .news-headline{font-size:13px;color:var(--text);opacity:.85;line-height:1.5;margin-bottom:8px}
   .news-impact{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;display:inline-block}
   .positive-tag{background:rgba(46,216,160,.15);color:var(--up)} .negative-tag{background:rgba(255,10,108,.15);color:var(--rose)} .warning-tag{background:rgba(224,160,32,.15);color:var(--amber)} .neutral-tag{background:rgba(136,153,187,.15);color:var(--text2)}
-  /* Dashboard market-news: hover (desktop) / tap (mobile) expands summary */
-  .news-expandable{cursor:pointer;}
-  .news-card-summary{font-size:12px;color:var(--text2);line-height:1.55;margin:8px 0 4px;max-height:0;overflow:hidden;opacity:0;transition:max-height .25s ease,opacity .2s ease,margin .2s ease;}
-  .news-card.expanded .news-card-summary{max-height:240px;opacity:1;}
-  @media(hover:hover){ .news-expandable:hover .news-card-summary{max-height:240px;opacity:1;} }
+  /* Dashboard market-news: floating tooltip on hover/tap */
+  .news-expandable{cursor:pointer;transition:border-color .15s;}
+  .news-expandable:hover{border-color:var(--accent);}
+  #newsTooltipBody::-webkit-scrollbar{width:4px} #newsTooltipBody::-webkit-scrollbar-track{background:transparent} #newsTooltipBody::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
   /* Portfolio "Today's News": summary + external-link affordance */
   .news-summary{font-size:12px;color:var(--text2);line-height:1.55;margin:6px 0;}
   .news-ext{color:var(--accent);font-weight:700;font-size:12px;margin-left:4px;}
@@ -675,6 +674,17 @@ select.form-input{direction:rtl;font-family:'Cairo',sans-serif;}
   </div>
   <p style="font-size:12px;color:var(--text2);text-align:center;margin-top:6px"><span onclick="showTab('advisor',document.querySelectorAll('.nav-tab')[2])" style="cursor:pointer;color:var(--rose);text-decoration:underline;text-underline-offset:3px">Full analysis in AI Advisor tab →</span></p>
   <div class="cmd-stitle" id="cmd-news-title" style="margin-top:22px">Market news</div>
+  <p id="cmd-news-note" style="font-size:11px;margin:4px 0 10px;line-height:1.5;color:var(--text2)">روابط المقالات الكاملة متاحة في <a href="#" onclick="document.getElementById('nav-portfolio').click();return false;" style="color:var(--accent);font-weight:700;text-decoration:underline;cursor:pointer">تبويب المحفظة</a>.</p>
+  <!-- floating news tooltip -->
+  <div id="newsTooltip" style="display:none;position:fixed;z-index:9999;max-width:340px;width:90vw;background:var(--bg3);border:1px solid var(--accent);border-radius:14px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.45);pointer-events:auto;">
+    <div id="newsTooltipSrc" style="font-size:11px;font-weight:700;color:var(--rose);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+      <span id="newsTooltipSrcName"></span>
+      <span id="newsTooltipTime" style="color:var(--text2);font-weight:400"></span>
+    </div>
+    <div id="newsTooltipTitle" style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;line-height:1.5;direction:rtl;text-align:right;"></div>
+    <div id="newsTooltipBody" style="font-size:12px;color:var(--text2);line-height:1.65;max-height:180px;overflow-y:auto;direction:rtl;text-align:right;padding-right:2px;"></div>
+    <div id="newsTooltipSyms" style="margin-top:10px;"></div>
+  </div>
   <div class="news-grid" id="cmd-news">
     <div class="news-card"><div class="news-meta"><span class="news-src">Loading</span><span class="news-time">—</span></div><div class="news-headline">Fetching latest market news...</div></div>
     <div class="news-card"><div class="news-meta"><span class="news-src">—</span><span class="news-time">—</span></div><div class="news-headline">—</div></div>
@@ -6197,25 +6207,65 @@ function renderMarketNews(){
   if(!g)return;
   if(typeof newsItems==='undefined'||!newsItems||!newsItems.length)return;
   const isAr=(typeof lang!=='undefined'&&lang==='ar');
-  g.innerHTML=newsItems.slice(0,6).map(n=>{
-    const syms=n.syms&&n.syms.length?`<span class="neutral-tag news-impact">${n.syms.slice(0,2).join(' · ')}</span>`:'';
-    const summary=n.summary?`<div class="news-card-summary">${n.summary}</div>`:'';
-    return`<div class="news-card news-expandable" tabindex="0" onclick="this.classList.toggle('expanded')">
-      <div class="news-meta"><span class="news-src">${n.source||'—'}</span><span class="news-time">${n.time||'—'}</span></div>
-      <div class="news-headline">${n.title||'—'}</div>${summary}${syms}</div>`;
-  }).join('');
-  const noteId='cmd-news-note';
-  let note=document.getElementById(noteId);
-  if(!note){
-    note=document.createElement('p');
-    note.id=noteId;
-    note.style.cssText='font-size:11px;margin:10px 0 0;line-height:1.5;color:var(--text2)';
-    g.parentNode.insertBefore(note,g.nextSibling);
-  }
-  note.innerHTML=isAr
+  // Update the static note text based on language
+  const note=document.getElementById('cmd-news-note');
+  if(note) note.innerHTML=isAr
     ? 'روابط المقالات الكاملة متاحة في <a href="#" onclick="document.getElementById(\'nav-portfolio\').click();return false;" style="color:var(--accent);font-weight:700;text-decoration:underline;cursor:pointer">تبويب المحفظة</a>.'
     : 'Full article links are available in the <a href="#" onclick="document.getElementById(\'nav-portfolio\').click();return false;" style="color:var(--accent);font-weight:700;text-decoration:underline;cursor:pointer">Portfolio tab</a>.';
+  g.innerHTML=newsItems.slice(0,6).map((n,i)=>{
+    const syms=n.syms&&n.syms.length?`<span class="neutral-tag news-impact">${n.syms.slice(0,2).join(' · ')}</span>`:'';
+    return`<div class="news-card news-expandable" tabindex="0" data-news-idx="${i}"
+      onmouseenter="showNewsTooltip(event,${i})"
+      onmouseleave="hideNewsTooltip()"
+      ontouchstart="showNewsTooltip(event,${i})"
+      style="direction:rtl;text-align:right;">
+      <div class="news-meta"><span class="news-src">${n.source||'—'}</span><span class="news-time">${n.time||'—'}</span></div>
+      <div class="news-headline">${n.title||'—'}</div>${syms}</div>`;
+  }).join('');
 }
+
+// Floating tooltip for market news cards
+let _tooltipTimer=null;
+function showNewsTooltip(e,idx){
+  clearTimeout(_tooltipTimer);
+  const n=newsItems[idx];
+  if(!n)return;
+  const tt=document.getElementById('newsTooltip');
+  if(!tt)return;
+  document.getElementById('newsTooltipSrcName').textContent=n.source||'—';
+  document.getElementById('newsTooltipTime').textContent=n.time||'';
+  document.getElementById('newsTooltipTitle').textContent=n.title||'';
+  document.getElementById('newsTooltipBody').textContent=n.summary||'لا يوجد ملخص متاح.';
+  const symsEl=document.getElementById('newsTooltipSyms');
+  symsEl.innerHTML=(n.syms&&n.syms.length)?n.syms.map(s=>`<span class="neutral-tag news-impact" style="margin-left:4px">${s}</span>`).join(''):'';
+  // Position: near the card, but keep within viewport
+  tt.style.display='block';
+  const rect=e.currentTarget?e.currentTarget.getBoundingClientRect():(e.target.getBoundingClientRect());
+  const vw=window.innerWidth, vh=window.innerHeight;
+  const tw=Math.min(340,vw*0.9), th=tt.offsetHeight||260;
+  let left=rect.left, top=rect.bottom+8;
+  if(left+tw>vw-12) left=vw-tw-12;
+  if(left<8) left=8;
+  if(top+th>vh-12) top=rect.top-th-8;
+  if(top<8) top=8;
+  tt.style.left=left+'px';
+  tt.style.top=top+'px';
+  tt.style.width=tw+'px';
+  tt.onmouseleave=hideNewsTooltip;
+  tt.onmouseenter=()=>clearTimeout(_tooltipTimer);
+}
+function hideNewsTooltip(){
+  _tooltipTimer=setTimeout(()=>{
+    const tt=document.getElementById('newsTooltip');
+    if(tt) tt.style.display='none';
+  },200);
+}
+// Hide tooltip on scroll or click outside
+document.addEventListener('scroll',hideNewsTooltip,true);
+document.addEventListener('click',function(e){
+  const tt=document.getElementById('newsTooltip');
+  if(tt&&!tt.contains(e.target)&&!e.target.closest('.news-expandable')) hideNewsTooltip();
+});
 
 document.addEventListener('DOMContentLoaded',function(){
   const d=document.getElementById('tab-dashboard');
