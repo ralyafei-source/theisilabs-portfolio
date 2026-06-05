@@ -150,7 +150,7 @@ module.exports = async (req, res) => {
     let quote, metrics, targets, grades, dcf;
     try {
       [quote, metrics, targets, grades, dcf] = await Promise.all([
-        fmpGetV3(`/quote/${sym}`),
+        fmpGet(`/quote/${sym}`),
         fmpGet(`/key-metrics-ttm/${sym}`),
         fmpGet(`/price-target-consensus?symbol=${sym}`),
         fmpGet(`/grades-latest?symbol=${sym}&limit=5`),
