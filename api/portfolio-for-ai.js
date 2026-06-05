@@ -267,13 +267,18 @@ if (req.query.mode === 'lookup') {
   const sym = (req.query.sym || '').toUpperCase().trim();
   if (!sym) return res.status(400).json({ error: 'sym required' });
 
-  const [quote, metrics, targets, grades, dcf] = await Promise.all([
-    fmpGet(`/quote/${sym}`),
-    fmpGet(`/key-metrics-ttm/${sym}`),
-    fmpGet(`/price-target-consensus?symbol=${sym}`),
-    fmpGet(`/grades-latest?symbol=${sym}&limit=5`),
-    fmpGet(`/discounted-cash-flow/${sym}`)
-  ]);
+ let quote, metrics, targets, grades, dcf;
+  try {
+    [quote, metrics, targets, grades, dcf] = await Promise.all([
+      fmpGet(`/quote/${sym}`),
+      fmpGet(`/key-metrics-ttm/${sym}`),
+      fmpGet(`/price-target-consensus?symbol=${sym}`),
+      fmpGet(`/grades-latest?symbol=${sym}&limit=5`),
+      fmpGet(`/discounted-cash-flow/${sym}`)
+    ]);
+  } catch(e) {
+    return res.status(500).json({ error: 'FMP fetch failed: ' + e.message });
+  }
 
   const q = Array.isArray(quote) ? quote[0] : quote;
   const m = Array.isArray(metrics) ? metrics[0] : metrics;
