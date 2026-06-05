@@ -410,119 +410,149 @@ function show(v,btn){document.querySelectorAll('.view').forEach(e=>e.classList.r
 function openStock(t){document.getElementById('detail-tk').textContent=t;show('detail');}
 
 // ═══════════════════════════════════════════════
-// LIVE DATA — fetches from Vercel APIs on load
+// LIVE DATA
+// Sources:
+//   Portfolio holdings → GitHub raw data/portfolio.json (public)
+//   Briefing          → /api/briefing (no auth)
+//   Analysis          → /api/analysis (no auth)
 // ═══════════════════════════════════════════════
-const API = 'https://theisilabs.vercel.app';
-const AUTH = { headers: { 'Authorization': 'Bearer theisilabs2026' } };
+const API    = 'https://theisilabs.vercel.app';
+const GHRAW  = 'https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main';
 
 // ── helpers ──────────────────────────────────────
-function fmt$(n){ return n == null ? '—' : '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
-function fmtPct(n){ if(n==null) return '—'; const s = (n>=0?'+':'')+n.toFixed(2)+'%'; return s; }
+function fmt$(n){ return n==null?'—':'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtPct(n,dec=2){ if(n==null)return'—'; return (n>=0?'+':'')+n.toFixed(dec)+'%'; }
 function colClass(n){ return n==null?'':(n>=0?'up':'down'); }
+function today(){ return new Date().toISOString().split('T')[0]; }
 
-// ── PORTFOLIO ─────────────────────────────────────
+// ── 1. PORTFOLIO from GitHub raw portfolio.json ───
 async function loadPortfolio(){
   try {
-    const r = await fetch(API+'/api/portfolio');
-    if(!r.ok) return;
-    const d = await r.json();
-    // d = { totalValue, dayChange, dayChangePct, score, holdings:[{symbol,price,dayChange,dayChangePct,totalPL,totalPLPct,signal,score}] }
-    if(d.totalValue != null){
-      document.querySelector('.cmd-val .big').textContent = fmt$(d.totalValue);
-      const sub = document.querySelector('.cmd-val .sub');
-      const dc = d.dayChange, dcp = d.dayChangePct;
-      sub.textContent = (dc>=0?'▲':'▼')+' '+fmt$(Math.abs(dc))+' · '+fmtPct(dcp)+' today';
-      sub.className = 'sub '+colClass(dc);
+    // portfolio.json shape: { holdings:[{sym,shares,cost,sector,name}], cash_summary:{} }
+    const r = await fetch(GHRAW+'/data/portfolio.json?t='+Date.now());
+    if(!r.ok){ console.warn('portfolio.json fetch failed', r.status); return; }
+    const portfolio = await r.json();
+    const holdings = portfolio.holdings || [];
+
+    // Also fetch the price cache saved by Make.com every morning
+    let prices = {};
+    try {
+      const pr = await fetch(API+'/api/portfolio');
+      if(pr.ok){ const pd = await pr.json(); prices = pd.prices || {}; }
+    } catch(e){}
+
+    // Calculate totals
+    let totalValue = 0, totalCost = 0;
+    const enriched = holdings.map(h => {
+      const price = prices[h.sym] || h.cost; // fall back to cost basis if no live price
+      const value = h.shares * price;
+      const costBasis = h.shares * h.cost;
+      const pl = value - costBasis;
+      const plPct = costBasis > 0 ? (pl / costBasis * 100) : 0;
+      totalValue += value;
+      totalCost  += costBasis;
+      return { ...h, price, value, pl, plPct };
+    }).sort((a,b) => b.value - a.value);
+
+    const totalPL    = totalValue - totalCost;
+    const totalPLPct = totalCost > 0 ? (totalPL / totalCost * 100) : 0;
+
+    // ── Update command centre top row ──
+    document.querySelector('.cmd-val .big').textContent = fmt$(totalValue);
+    const sub = document.querySelector('.cmd-val .sub');
+    const arrow = totalPL >= 0 ? '▲' : '▼';
+    sub.textContent = arrow + ' ' + fmt$(Math.abs(totalPL)) + ' total · ' + fmtPct(totalPLPct);
+    sub.className = 'sub ' + colClass(totalPL);
+
+    // ── Update portfolio tab KPIs ──
+    const portKPIs = document.querySelectorAll('#v-portfolio .big');
+    if(portKPIs[0]) portKPIs[0].textContent = fmt$(totalValue);
+    if(portKPIs[2]) portKPIs[2].textContent = enriched.length;
+
+    const portSub = document.querySelector('#v-portfolio .kpi .sub.up, #v-portfolio .kpi .sub.down, #v-portfolio .kpi .sub');
+    if(portSub){ portSub.textContent = arrow+' '+fmt$(Math.abs(totalPL))+' · '+fmtPct(totalPLPct); portSub.className='sub '+colClass(totalPL); }
+
+    // ── Update holdings table ──
+    const table = document.querySelector('#v-portfolio table');
+    if(table && enriched.length){
+      const rows = enriched.map(h => {
+        // Signal based on simple rules (real scoring engine lives in Make.com)
+        let sig = 'hold', sigLabel = 'Hold';
+        if(h.plPct < -50){ sig='red'; sigLabel='Exit'; }
+        else if(h.plPct < -20){ sig='red'; sigLabel='Watch'; }
+        else if(h.plPct > 30 && h.value/totalValue < 0.05){ sig='buy'; sigLabel='Add'; }
+        return `<tr class="click" onclick="openStock('${h.sym}')">
+          <td class="tk">${h.sym}</td>
+          <td class="r">${fmt$(h.price)}</td>
+          <td class="r">—</td>
+          <td class="r ${colClass(h.pl)}">${fmtPct(h.plPct)}</td>
+          <td class="r">—</td>
+          <td class="r"><span class="pill ${sig}">${sigLabel}</span></td>
+        </tr>`;
+      }).join('');
+      table.innerHTML = `<tr><th>Ticker</th><th class="r">Price</th><th class="r">Today</th><th class="r">Total P/L</th><th class="r">Score</th><th class="r">Signal</th></tr>${rows}`;
     }
-    if(d.score != null){
-      document.querySelector('.ring.big span').textContent = d.score.toFixed(1);
-    }
-    // Portfolio tab KPIs
-    if(d.totalValue != null){
-      const bigEls = document.querySelectorAll('#v-portfolio .big');
-      if(bigEls[0]) bigEls[0].textContent = fmt$(d.totalValue);
-    }
-    // Holdings table
-    if(d.holdings && d.holdings.length){
-      const tbody = document.querySelector('#v-portfolio table');
-      if(tbody){
-        const rows = d.holdings.map(h => {
-          const sig = h.signal==='Buy'?'buy':h.signal==='Hold'?'hold':'red';
-          return `<tr class="click" onclick="openStock('${h.symbol}')">
-            <td class="tk">${h.symbol}</td>
-            <td class="r">${fmt$(h.price)}</td>
-            <td class="r ${colClass(h.dayChange)}">${fmtPct(h.dayChangePct)}</td>
-            <td class="r ${colClass(h.totalPL)}">${fmtPct(h.totalPLPct)}</td>
-            <td class="r">${h.score != null ? h.score.toFixed(1) : '—'}</td>
-            <td class="r"><span class="pill ${sig}">${h.signal||'Hold'}</span></td>
-          </tr>`;
-        }).join('');
-        tbody.innerHTML = `<tr><th>Ticker</th><th class="r">Price</th><th class="r">Today</th><th class="r">Total P/L</th><th class="r">Score</th><th class="r">Signal</th></tr>${rows}`;
-      }
-      // Holdings count
-      const hEls = document.querySelectorAll('#v-portfolio .big');
-      if(hEls[2]) hEls[2].textContent = d.holdings.length;
-    }
-  } catch(e){ console.warn('portfolio load failed', e); }
+
+  } catch(e){ console.warn('loadPortfolio error:', e); }
 }
 
-// ── BRIEFING ──────────────────────────────────────
+// ── 2. BRIEFING from /api/briefing ───────────────
 async function loadBriefing(){
   try {
     const r = await fetch(API+'/api/briefing');
-    if(!r.ok) return;
+    if(!r.ok){ console.warn('briefing fetch failed', r.status); return; }
     const d = await r.json();
-    // d = { date, content } — Arabic text from Claude
-    if(!d.content) return;
-    const text = d.content;
+    // d = { date, content } — Arabic free text from Claude
+    if(!d || !d.content) return;
 
-    // Parse the briefing into event cards
-    // The briefing is Arabic free text — we show the first 4 meaningful paragraphs
-    // as event cards, stripping markdown symbols
+    const text = d.content;
+    // Split into meaningful lines (skip headers, empty lines, very short lines)
     const lines = text.split('\n')
-      .map(l => l.trim())
-      .filter(l => l.length > 15 && !l.startsWith('#') && !l.startsWith('---'));
+      .map(l => l.replace(/^[#*\-]+\s*/,'').replace(/[*_`#]/g,'').trim())
+      .filter(l => l.length > 30);
+
+    if(!lines.length) return;
 
     const grid = document.querySelector('.event-grid');
-    if(!grid || lines.length < 2) return;
+    if(!grid) return;
 
-    // Build up to 4 cards from briefing paragraphs
-    const cards = lines.slice(0, 4).map((line, i) => {
-      // Try to detect sentiment from keywords in Arabic/English
-      const isPos = /ارتفع|نمو|إيجابي|beat|surge|up|gain|positive/i.test(line);
-      const isNeg = /انخفض|هبط|سلبي|fell|drop|loss|exit|broken/i.test(line);
-      const isWarn = /تحذير|مراقبة|watch|limit|flag|caution/i.test(line);
-      const type = isNeg ? 'negative' : isPos ? 'positive' : isWarn ? 'warning' : 'neutral';
-
-      // Try to extract a ticker at start of line e.g. "MU:" or "$MU"
-      const tickerMatch = line.match(/^\$?([A-Z]{2,5})[:\s]/);
-      const ticker = tickerMatch ? tickerMatch[1] : ['Portfolio','Macro','Market','Sector'][i] ;
-      const body = tickerMatch ? line.replace(tickerMatch[0],'').trim() : line;
-
+    // Map first 4 substantial lines to event cards
+    const cardTypes = ['neutral','positive','negative','warning'];
+    const cards = lines.slice(0,4).map((line, i) => {
+      const isPos  = /ارتفع|نمو|إيجابي|ارتفاع|قفز|تحسن|فرصة/i.test(line);
+      const isNeg  = /انخفض|هبط|سلبي|خسر|تراجع|ضعف|مخاوف|ضغط/i.test(line);
+      const isWarn = /تحذير|مراقبة|حذر|انتبه|مخاطر/i.test(line);
+      const type   = isNeg ? 'negative' : isPos ? 'positive' : isWarn ? 'warning' : cardTypes[i]||'neutral';
+      const tickerM = line.match(/\b([A-Z]{2,5})\b/);
+      const ticker  = tickerM ? tickerM[1] : ['السوق','الاقتصاد','القطاع','الأسهم'][i];
       return `<div class="event-card ${type}">
         <div class="event-ticker">${ticker}</div>
-        <div class="event-body">${body}</div>
+        <div class="event-body">${line.slice(0,160)}</div>
       </div>`;
     });
     grid.innerHTML = cards.join('');
 
-  } catch(e){ console.warn('briefing load failed', e); }
+  } catch(e){ console.warn('loadBriefing error:', e); }
 }
 
-// ── ANALYSIS (decisions) ──────────────────────────
+// ── 3. ANALYSIS (decisions) from /api/analysis ───
 async function loadAnalysis(){
   try {
-    const r = await fetch(API+'/api/analysis');
-    if(!r.ok) return;
+    const r = await fetch(API+'/api/analysis?date='+today());
+    if(!r.ok){ console.warn('analysis fetch failed', r.status); return; }
     const d = await r.json();
-    // d = { type:'daily', date, content } — Arabic text from Claude
-    if(!d.content) return;
-    const text = d.content;
+    // d = { type, date, content } — Arabic text from Claude
+    if(!d || !d.content) return;
 
-    // Extract action lines — lines containing buy/sell/hold Arabic equivalents
+    const text = d.content;
+    // Look for lines that contain stock tickers + action keywords
     const actionLines = text.split('\n')
-      .map(l => l.trim())
-      .filter(l => /شراء|بيع|احتفاظ|إضافة|خروج|buy|sell|add|exit|hold/i.test(l) && l.length > 10)
+      .map(l => l.replace(/^[#*\-]+\s*/,'').replace(/[*_`#]/g,'').trim())
+      .filter(l => {
+        const hasTicker = /\b[A-Z]{2,5}\b/.test(l);
+        const hasAction = /شراء|بيع|احتفاظ|إضافة|خروج|تخفيض|تقليص|رفع|buy|sell|add|exit|hold|trim/i.test(l);
+        return hasTicker && hasAction && l.length > 20;
+      })
       .slice(0, 3);
 
     if(!actionLines.length) return;
@@ -530,40 +560,46 @@ async function loadAnalysis(){
     const grid = document.querySelector('.action-grid');
     if(!grid) return;
 
-    const types = ['exit','buy','watch'];
+    const acTypes   = ['exit','buy','watch'];
     const pillTypes = ['red','buy','hold'];
-    const pillLabels = ['خروج','إضافة','مراقبة'];
-    const rules = ['Lynch — when the story changes, sell','Graham — margin of safety','Bridgewater — position limit'];
+    const pillAr    = ['خروج','إضافة','مراقبة'];
+    const ruleBank  = [
+      'Lynch — when the story changes, sell',
+      'Graham — margin of safety',
+      'Bridgewater — position size limit'
+    ];
 
     const cards = actionLines.map((line, i) => {
-      const tickerMatch = line.match(/[A-Z]{2,5}/);
-      const ticker = tickerMatch ? tickerMatch[0] : '—';
-      const type = types[i] || 'watch';
-      const pill = pillTypes[i] || 'hold';
-      const label = pillLabels[i] || 'مراقبة';
+      const tm     = line.match(/\b([A-Z]{2,5})\b/);
+      const ticker = tm ? tm[1] : '—';
+      const isExit = /بيع|خروج|exit|sell/i.test(line);
+      const isBuy  = /شراء|إضافة|buy|add/i.test(line);
+      const type   = isExit ? 'exit' : isBuy ? 'buy' : 'watch';
+      const pill   = isExit ? 'red' : isBuy ? 'buy' : 'hold';
+      const label  = isExit ? 'خروج' : isBuy ? 'إضافة' : 'مراقبة';
       return `<div class="action-card ${type}" onclick="openStock('${ticker}')">
         <div class="ac-header">
           <span class="ac-rank">${i+1}</span>
           <span class="ac-ticker">${ticker}</span>
           <span class="pill ${pill} ac-pill">${label}</span>
         </div>
-        <div class="ac-instruction">${line.replace(ticker,'').trim().slice(0,120)}</div>
-        <div class="ac-rule">${rules[i]||''}</div>
+        <div class="ac-instruction">${line.slice(0,140)}</div>
+        <div class="ac-rule">${ruleBank[i]||''}</div>
       </div>`;
     });
     grid.innerHTML = cards.join('');
 
-  } catch(e){ console.warn('analysis load failed', e); }
+  } catch(e){ console.warn('loadAnalysis error:', e); }
 }
 
 // ── INIT ──────────────────────────────────────────
 async function initLiveData(){
-  // Show loading state briefly
+  // Show loading dots
   document.querySelector('.cmd-val .big').textContent = '...';
-  await Promise.all([loadPortfolio(), loadBriefing(), loadAnalysis()]);
+  // Run all three in parallel
+  await Promise.all([ loadPortfolio(), loadBriefing(), loadAnalysis() ]);
 }
 
-// Run on page load
 window.addEventListener('DOMContentLoaded', initLiveData);
 // ═══════════════════════════════════════════════
 
