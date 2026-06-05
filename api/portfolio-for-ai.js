@@ -17,14 +17,18 @@ if (req.query.mode === 'lookup') {
   const sym = (req.query.sym || '').toUpperCase().trim();
   if (!sym) return res.status(400).json({ error: 'sym required' });
 
-  const [quote, metrics, targets, grades, dcf, insider] = await Promise.all([
-    fmpGet(`/quote/${sym}`),
-    fmpGet(`/key-metrics-ttm/${sym}`),
-    fmpGet(`/price-target-consensus?symbol=${sym}`),
-    fmpGet(`/grades-latest?symbol=${sym}&limit=5`),
-    fmpGet(`/discounted-cash-flow/${sym}`),
-    fmpGetV4(`/insider-roaster-statistic?symbol=${sym}`)
-  ]);
+  let quote, metrics, targets, grades, dcf;
+  try {
+    [quote, metrics, targets, grades, dcf] = await Promise.all([
+      fmpGet(`/quote/${sym}`),
+      fmpGet(`/key-metrics-ttm/${sym}`),
+      fmpGet(`/price-target-consensus?symbol=${sym}`),
+      fmpGet(`/grades-latest?symbol=${sym}&limit=5`),
+      fmpGet(`/discounted-cash-flow/${sym}`)
+    ]);
+  } catch(e) {
+    return res.status(500).json({ error: 'FMP error: ' + e.message });
+  }
 
   const q = Array.isArray(quote) ? quote[0] : quote;
   const m = Array.isArray(metrics) ? metrics[0] : metrics;
@@ -33,24 +37,74 @@ if (req.query.mode === 'lookup') {
 
   const data = {
     symbol: sym,
-    price: q?.price,
-    change: q?.change,
-    changePct: q?.changesPercentage,
-    marketCap: q?.marketCap,
-    pe: m?.peRatioTTM,
-    peg: m?.pegRatioTTM,
-    roe: m?.roeTTM,
-    fcf: m?.freeCashFlowPerShareTTM,
-    revenueGrowth: m?.revenueGrowthTTM,
-    targetMean: t?.targetMean,
-    targetHigh: t?.targetHigh,
-    targetLow: t?.targetLow,
-    analystConsensus: t?.analystRatingsStrongBuy + t?.analystRatingsBuy > t?.analystRatingsSell + t?.analystRatingsStrongSell ? 'bullish' : 'bearish',
-    dcfValue: d?.dcf,
-    grades: Array.isArray(grades) ? grades.slice(0, 5) : [],
-    insider: insider || {}
+    price: q?.price ?? null,
+    change: q?.change ?? null,
+    changePct: q?.changesPercentage ?? null,
+    marketCap: q?.marketCap ?? null,
+    pe: m?.peRatioTTM ?? null,
+    peg: m?.pegRatioTTM ?? null,
+    roe: m?.roeTTM ?? null,
+    fcf: m?.freeCashFlowPerShareTTM ?? null,
+    revenueGrowth: m?.revenueGrowthTTM ?? null,
+    targetMean: t?.targetMean ?? null,
+    targetHigh: t?.targetHigh ?? null,
+    targetLow: t?.targetLow ?? null,
+    analystConsensus: ((t?.analystRatingsStrongBuy || 0) + (t?.analystRatingsBuy || 0)) > ((t?.analystRatingsSell || 0) + (t?.analystRatingsStrongSell || 0)) ? 'Bullish 📈' : 'Bearish 📉',
+    dcfValue: d?.dcf ?? null,
+    grades: Array.isArray(grades) ? grades.slice(0, 5) : []
   };
 
+  let analysis = '';
+  try {
+    const prompt = `أنت محلل مالي متخصص في السوق الأمريكي. قدم تحليلاً شاملاً بالعربية للسهم التالي:
+
+الرمز: ${sym}
+السعر الحالي: $${data.price ?? '—'}
+التغير اليوم: ${data.changePct != null ? data.changePct.toFixed(2) : '—'}%
+القيمة السوقية: $${data.marketCap ? (data.marketCap/1e9).toFixed(1)+'B' : '—'}
+P/E: ${data.pe != null ? data.pe.toFixed(1) : '—'}
+PEG: ${data.peg != null ? data.peg.toFixed(2) : '—'}
+نمو الإيرادات: ${data.revenueGrowth != null ? (data.revenueGrowth*100).toFixed(1)+'%' : '—'}
+ROE: ${data.roe != null ? (data.roe*100).toFixed(1)+'%' : '—'}
+هدف المحللين: $${data.targetMean ?? '—'}
+القيمة العادلة DCF: $${data.dcfValue != null ? data.dcfValue.toFixed(0) : '—'}
+توجه المحللين: ${data.analystConsensus}
+
+قدم التحليل في هذا الشكل:
+
+## ملخص السهم
+[3 أسطر عن الشركة وما تفعله]
+
+## التقييم
+[هل السهم رخيص أم غالٍ؟ مقارنة السعر بالهدف والـ DCF]
+
+## نقاط القوة
+[3 نقاط إيجابية]
+
+## نقاط الضعف / المخاطر
+[3 مخاطر]
+
+## الحكم النهائي
+[شراء قوي / شراء / احتفظ / خفف / بيع] مع سبب موجز
+
+⚠️ هذا تحليل معلوماتي وليس توصية مالية.`;
+
+    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const aiData = await aiRes.json();
+    analysis = aiData.content?.[0]?.text || '';
+  }
   // Ask Claude for Arabic summary
   const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
   let analysis = '';
