@@ -20,7 +20,7 @@ if (req.query.mode === 'lookup') {
   let quote, metrics, targets, grades, dcf;
   try {
     [quote, metrics, targets, grades, dcf] = await Promise.all([
-      fmpGet(`/quote/${sym}`),
+      fmpGetV3(`/quote/${sym}`),
       fmpGet(`/key-metrics-ttm/${sym}`),
       fmpGet(`/price-target-consensus?symbol=${sym}`),
       fmpGet(`/grades-latest?symbol=${sym}&limit=5`),
