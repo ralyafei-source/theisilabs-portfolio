@@ -5419,6 +5419,8 @@ async function fetchLivePricesForUser(token, symbols) {
     const total = stocks.reduce((a, s) => a + (s.mv || 0), 0);
     const pv = document.getElementById('portfolio-val');
     if (pv && !privacyOn) pv.textContent = '$' + Math.round(total).toLocaleString();
+    const hStocks = document.getElementById('header-stocks-count');
+    if (hStocks) hStocks.textContent = stocks.length;
     updateStatCards();
     renderPortfolio();
   } catch(e) {
