@@ -32,24 +32,25 @@ module.exports = async (req, res) => {
 
   let symbols = fallbackSymbols;
 
-// If symbols passed as query param, use those directly
-if (req.query.symbols) {
-  const requested = req.query.symbols.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
-  if (requested.length > 0) symbols = requested;
-} else {
-// Try to read symbols from portfolio.json (3 second timeout)
-try {
-    const pfRes = await fetchWithTimeout(
-      `https://raw.githubusercontent.com/${REPO}/main/data/portfolio.json?t=${Date.now()}`,
-      {}, 3000
-    );
-    if (pfRes.ok) {
-      const portfolio = await pfRes.json();
-      const dynamic = (portfolio.holdings || []).map(h => h.sym).filter(Boolean);
-      if (dynamic.length > 0) symbols = dynamic;
+  // If symbols passed as query param, use those directly
+  if (req.query.symbols) {
+    const requested = req.query.symbols.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+    if (requested.length > 0) symbols = requested;
+  } else {
+    // Try to read symbols from portfolio.json (3 second timeout)
+    try {
+      const pfRes = await fetchWithTimeout(
+        `https://raw.githubusercontent.com/${REPO}/main/data/portfolio.json?t=${Date.now()}`,
+        {}, 3000
+      );
+      if (pfRes.ok) {
+        const portfolio = await pfRes.json();
+        const dynamic = (portfolio.holdings || []).map(h => h.sym).filter(Boolean);
+        if (dynamic.length > 0) symbols = dynamic;
+      }
+    } catch (e) {
+      // portfolio.json read failed — use fallback list
     }
-  } catch (e) {
-    // portfolio.json read failed — use fallback list
   }
 
   // Fetch each price with 4 second timeout
