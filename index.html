@@ -1063,12 +1063,10 @@ main{display:contents;}
       </div>
     </div>
     <div class="cmd-health">
-      <div class="cmd-lbl" id="cmd-score-label-txt" style="margin-bottom:8px">Score Breakdown</div>
-      <div class="hlayer"><span class="hlbl">Valuation</span><div class="hbar"><i style="width:88%"></i></div><span class="hval">8.8</span></div>
-      <div class="hlayer"><span class="hlbl">Fundamental</span><div class="hbar"><i style="width:82%"></i></div><span class="hval">8.2</span></div>
-      <div class="hlayer"><span class="hlbl">Technical</span><div class="hbar"><i style="width:74%"></i></div><span class="hval">7.4</span></div>
-      <div class="hlayer"><span class="hlbl">Position</span><div class="hbar"><i style="width:70%"></i></div><span class="hval">7.0</span></div>
-      <div class="hlayer"><span class="hlbl">External</span><div class="hbar"><i style="width:65%"></i></div><span class="hval">6.5</span></div>
+      <div class="cmd-lbl" id="cmd-score-label-txt" style="margin-bottom:8px">Portfolio Snapshot</div>
+      <div id="cmd-snapshot">
+        <div class="hlayer"><span class="hlbl">—</span><div class="hbar"><i style="width:0%"></i></div><span class="hval">—</span></div>
+      </div>
     </div>
   </div>
   <div class="cmd-stitle" id="cmd-happened">What happened today</div>
@@ -1964,7 +1962,7 @@ function setLang(l,btn){
   const navMap={'nav-dashboard':_isAr?'الرئيسية':'Dashboard','nav-portfolio':T[lang].navPortfolio,'nav-advisor':_isAr?'المستشار الذكي':'AI Advisor','nav-trends':T[lang].navTrends,'nav-indicators':T[lang].navIndicators,'nav-alerts':T[lang].navAlerts,'nav-transactions':T[lang].navTransactions,'nav-setup':T[lang].navSetup||'Setup','nav-health':_isAr?'الصحة':'Health'};
   Object.entries(navMap).forEach(([id,txt])=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
   // Dashboard labels
-  const _dmap={'cmd-happened':_isAr?'ما الذي حدث اليوم':'What happened today','cmd-news-title':_isAr?'أخبار السوق':'Market news','cmd-port-label':_isAr?'قيمة المحفظة':'Portfolio Value','cmd-score-label-txt':_isAr?'تفصيل النتيجة':'Score Breakdown'};
+  const _dmap={'cmd-happened':_isAr?'ما الذي حدث اليوم':'What happened today','cmd-news-title':_isAr?'أخبار السوق':'Market news','cmd-port-label':_isAr?'قيمة المحفظة':'Portfolio Value','cmd-score-label-txt':_isAr?'لمحة عن المحفظة':'Portfolio Snapshot'};
   Object.entries(_dmap).forEach(([id,txt])=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
   const _cdtEl=document.getElementById('cmd-decisions-title');
   if(_cdtEl)_cdtEl.innerHTML=`<span>${_isAr?'ما يستحق انتباهك':"Worth your attention"}</span><span id="cmd-decisions-sub" style="font-size:11px;font-weight:400;color:var(--text2);margin-${_isAr?'right':'left'}:6px">${_isAr?'إشارات للنظر فيها — والقرار لك':'signals to look at — you decide'}</span>`;
@@ -3987,6 +3985,62 @@ if(hStocks) hStocks.textContent='0';
     if(largestDetailEl && !privacyOn) largestDetailEl.textContent =
       '$'+largest.mv.toLocaleString()+' | '+(largest.gl>=0?'+':'')+largest.gl.toFixed(2)+'%';
   }
+
+  // ── Portfolio snapshot — REAL metrics for the 5 bars (no fake scores) ──
+  try{ _renderPortfolioSnapshot(total, largest); }catch(e){}
+}
+
+// Computes 5 honest portfolio-level metrics and fills the snapshot bars.
+// Each is a real figure from holdings — clearly labeled, no invented "scores".
+function _renderPortfolioSnapshot(total, largest){
+  const isAr=(typeof lang!=='undefined'&&lang==='ar');
+  const t=(en,ar)=>isAr?ar:en;
+  if(!stocks.length||!total) return;
+
+  // 1) In profit — share of holdings currently in gain
+  const inProfit = stocks.filter(s=>s.gl>0).length;
+  const profitPct = Math.round(inProfit/stocks.length*100);
+
+  // 2) Diversification — distinct sectors vs a healthy target of ~5
+  const sectorsUsed = new Set(stocks.map(s=>s.sec||'other')).size;
+  const divPct = Math.min(100, Math.round(sectorsUsed/5*100));
+
+  // 3) Balance — inverse of largest-position concentration (less concentrated = higher)
+  const topWeight = largest ? (largest.mv/total*100) : 0;
+  const balancePct = Math.max(0, Math.min(100, Math.round(100 - topWeight*2))); // 50%+ in one name → 0
+
+  // 4) Winners tilt — winners as share of all directional positions
+  const winners = stocks.filter(s=>s.gl>0).length;
+  const losers  = stocks.filter(s=>s.gl<0).length;
+  const tiltPct = (winners+losers)>0 ? Math.round(winners/(winners+losers)*100) : 50;
+
+  // 5) Avg performance — average gain/loss %, mapped onto 0–100 (−50%→0, +50%→100)
+  const avgGl = stocks.reduce((a,s)=>a+(s.gl||0),0)/stocks.length;
+  const perfPct = Math.max(0, Math.min(100, Math.round((avgGl+50)))); // clamp
+
+  const rows=[
+    {id:'snap-profit',  label:t('In Profit','رابحة'),         pct:profitPct,  val:profitPct+'%',                    tip:t('Share of your holdings currently showing a gain.','نسبة المراكز التي تحقق ربحاً حالياً.')},
+    {id:'snap-div',     label:t('Diversification','التنويع'),  pct:divPct,     val:sectorsUsed+' '+t('sectors','قطاع'), tip:t('How many sectors your money is spread across (target ~5).','عدد القطاعات التي توزّعت عليها أموالك (الهدف ~5).')},
+    {id:'snap-balance', label:t('Balance','التوازن'),          pct:balancePct, val:topWeight.toFixed(0)+'% '+t('top','الأكبر'), tip:t('How concentrated your largest position is — lower concentration is more balanced.','مدى تركّز أكبر مركز لديك — التركّز الأقل أكثر توازناً.')},
+    {id:'snap-tilt',    label:t('Winners','الرابحة مقابل الخاسرة'), pct:tiltPct, val:winners+'/'+losers, tip:t('Winners vs losers across your holdings.','عدد الرابحة مقابل الخاسرة في محفظتك.')},
+    {id:'snap-perf',    label:t('Avg Move','متوسط الأداء'),    pct:perfPct,    val:(avgGl>=0?'+':'')+avgGl.toFixed(1)+'%', tip:t('Average gain/loss across all positions.','متوسط الربح/الخسارة عبر كل المراكز.')},
+  ];
+
+  const wrap=document.getElementById('cmd-snapshot');
+  if(wrap){
+    wrap.innerHTML=rows.map(r=>{
+      const color = r.pct>=66?'var(--green)':r.pct>=40?'var(--gold)':'var(--red)';
+      return `<div class="hlayer"><span class="hlbl" title="${r.tip}">${r.label}</span><div class="hbar"><i style="width:${r.pct}%;background:${color}"></i></div><span class="hval">${r.val}</span></div>`;
+    }).join('');
+  }
+
+  // The ring: overall = share in profit; label = honest summary
+  const ringNum=document.getElementById('cmd-score-num');
+  const ringLabel=document.getElementById('cmd-score-label');
+  const ringCount=document.getElementById('cmd-actions-count');
+  if(ringNum) ringNum.textContent=profitPct+'%';
+  if(ringLabel) ringLabel.textContent=t('in profit','رابحة');
+  if(ringCount) ringCount.textContent=stocks.length+' '+t('holdings','مركز');
 }
 
 // Store original prices and share counts on first load
