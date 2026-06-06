@@ -1966,6 +1966,12 @@ function setLang(l,btn){
   Object.entries(_dmap).forEach(([id,txt])=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
   const _cdtEl=document.getElementById('cmd-decisions-title');
   if(_cdtEl)_cdtEl.innerHTML=`<span>${_isAr?'ما يستحق انتباهك':"Worth your attention"}</span><span id="cmd-decisions-sub" style="font-size:11px;font-weight:400;color:var(--text2);margin-${_isAr?'right':'left'}:6px">${_isAr?'إشارات للنظر فيها — والقرار لك':'signals to look at — you decide'}</span>`;
+  // Re-render an open Stock Lookup result in the new language
+  const _lkRes=document.getElementById('lookup-result');
+  if(_lkRes && _lkRes.style.display!=='none' && window._lastLookupSym && typeof lookupStock==='function'){
+    const _inp=document.getElementById('lookup-input');
+    if(_inp){ _inp.value=window._lastLookupSym; lookupStock(); }
+  }
 }
 
 function applyTranslations(){
@@ -3022,6 +3028,7 @@ async function lookupStock() {
     const res = await r.json();
     if (res.error) throw new Error(res.error);
     const d = res.data;
+    window._lastLookupSym = sym;  // remember for language re-render
 
     const name = d.companyName || d.name || d.symbol;
     const pctColor = (d.changePct>=0) ? 'var(--green)' : 'var(--red)';
@@ -3112,7 +3119,6 @@ async function lookupStock() {
 
         <div class="lk-sub-card">
           <div class="lk-card-title">${t('Decision Factors','عوامل القرار')}</div>
-          ${_lkRow(t('Overall Verdict','الحكم العام'), t('Current analyst consensus','إجماع المحللين الحالي'), `<span style="color:var(--green)">${d.analystConsensus||'—'}</span>`, null, null, true)}
           ${_lkRowHtml(t('Volatility Read','مستوى التقلّب'), t('A rough sense of how bumpy this might be — from PEG & recent volatility. Not a full risk model.','إحساس تقريبي بمدى تذبذب السعر — من PEG والتقلّب الأخير. ليس نموذج مخاطر كامل.'), `<span style="color:${risk.color}">${isAr?risk.ar:risk.en}</span>`, true)}
           ${_lkRow(t('Revenue Growth','نمو الإيرادات'), t('Last 12 months','آخر 12 شهراً'), d.revenueGrowth!=null?(d.revenueGrowth*100).toFixed(1)+'%':'—', null)}
           ${_lkRow(t('ROE','العائد على حقوق الملكية'), t('Return on equity','كفاءة استخدام رأس المال'), d.roe!=null?d.roe+'%':'—', null)}
