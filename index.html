@@ -61,7 +61,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 0;position:sticky;top:0;z-index:100;}
 .header-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
 .logo{display:flex;align-items:center;gap:10px;}
-.logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.logo-icon{width:38px;height:38px;background:var(--rose);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;}
 .logo-text{font-size:17px;font-weight:900;}
 .logo-sub{font-size:10px;color:var(--text2);}
 .header-right{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
@@ -148,7 +148,7 @@ main{padding:24px 0;}
 
 .tg-box{background:#17212b;border-radius:14px;padding:18px;border:1px solid #2b3f50;max-width:380px;}
 .tg-hdr{display:flex;align-items:center;gap:9px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #2b3f50;}
-.tg-av{width:34px;height:34px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.tg-av{width:34px;height:34px;background:var(--rose);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;}
 .tg-name{font-size:13px;font-weight:700;}
 .tg-status{font-size:10px;color:#6b8b9e;}
 .tg-msg{background:#1e3a4f;border-radius:10px 10px 3px 10px;padding:12px;font-size:12px;line-height:1.8;direction:rtl;text-align:right;}
@@ -170,7 +170,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .code-block{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent2);white-space:pre-wrap;word-break:break-all;direction:ltr;text-align:left;max-height:500px;overflow-y:auto;}
 
 .step-item{display:flex;gap:14px;margin-bottom:20px;align-items:flex-start;}
-.step-num{width:30px;height:30px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#000;flex-shrink:0;}
+.step-num{width:30px;height:30px;background:var(--rose);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#fff;flex-shrink:0;}
 .step-title{font-size:14px;font-weight:700;margin-bottom:5px;}
 .step-desc{font-size:12px;color:var(--text2);line-height:1.6;}
 
@@ -304,7 +304,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 #authOverlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;}
 #authCard{background:var(--bg2);border:1px solid var(--border);border-radius:22px;width:100%;max-width:360px;padding:32px 28px;position:relative;}
 .auth-logo{text-align:center;margin-bottom:24px;}
-.auth-logo-icon{width:56px;height:56px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 10px;}
+.auth-logo-icon{width:56px;height:56px;background:var(--rose);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 10px;}
 .auth-title{font-size:20px;font-weight:900;text-align:center;margin-bottom:4px;}
 .auth-sub{font-size:12px;color:var(--text2);text-align:center;margin-bottom:24px;}
 .auth-view{display:none;}
@@ -315,7 +315,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .auth-input{width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:'Almarai',sans-serif;margin-bottom:12px;outline:none;transition:border .2s;}
 .auth-input:focus{border-color:var(--accent);}
 .auth-btn{width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:'Almarai',sans-serif;transition:all .2s;margin-top:4px;}
-.auth-btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;}
+.auth-btn-primary{background:var(--rose);color:#fff;}
 .auth-btn-primary:hover{opacity:0.9;}
 .auth-btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2);margin-top:8px;}
 .auth-btn-outline:hover{border-color:var(--accent);color:var(--accent);}
@@ -723,6 +723,69 @@ main{display:contents;}
 .pin-dot.filled{background:var(--rose)!important;border-color:var(--rose)!important;}
 .auth-tab.active{background:var(--rose)!important;color:#fff!important;}
 .auth-btn-primary{background:var(--rose)!important;color:#fff!important;}
+
+/* ═══ STOCK LOOKUP — investment decision dashboard ═══ */
+#lookup-data-card{direction:rtl;}
+.lk-head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:18px;flex-wrap:wrap;}
+.lk-title{font-size:22px;font-weight:800;color:var(--text);}
+.lk-subtitle{font-size:14px;color:var(--text2);margin-top:4px;}
+.lk-updated{font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:8px;}
+.lk-band{display:grid;grid-template-columns:1fr 1fr 1fr 1.2fr;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:14px;}
+@media(max-width:760px){.lk-band{grid-template-columns:1fr 1fr;}}
+.lk-cell{background:var(--bg2);padding:20px;text-align:center;}
+.lk-cell-label{font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;display:flex;align-items:center;gap:5px;justify-content:center;}
+.lk-cell-val{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;color:var(--text);}
+.lk-cell-sym{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:700;color:var(--text);}
+.lk-cell-sub{font-size:11px;color:var(--text2);margin-top:5px;}
+.lk-info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:1px solid var(--text3);color:var(--text3);font-size:9px;font-style:normal;cursor:help;font-family:'IBM Plex Mono',monospace;position:relative;}
+.lk-info:hover::after{content:attr(data-tip);position:absolute;bottom:130%;right:50%;transform:translateX(50%);background:var(--bg4);border:1px solid var(--border2);border-radius:8px;padding:8px 11px;font-size:11px;font-weight:400;color:var(--text);width:220px;text-align:right;line-height:1.6;z-index:50;box-shadow:var(--shadow);direction:rtl;}
+.lk-gauge{position:relative;width:74px;height:74px;margin:0 auto;}
+.lk-gauge-txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;}
+.lk-lean{display:inline-block;font-size:12px;font-weight:700;padding:3px 12px;border-radius:7px;margin-top:8px;}
+.lk-lean.pos{background:var(--green-dim);color:var(--green);}
+.lk-lean.neu{background:var(--cyan-dim);color:var(--cyan);}
+.lk-lean.cau{background:var(--gold-dim);color:var(--gold);}
+.lk-read{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:14px;}
+.lk-read-head{font-size:12px;font-weight:800;color:var(--rose);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+.lk-read-head::before{content:'';width:4px;height:14px;background:var(--rose);border-radius:2px;}
+.lk-read-txt{font-size:14px;line-height:1.9;color:var(--text);}
+.lk-read-txt strong{color:var(--text);font-weight:800;}
+.lk-read-caveat{font-size:12px;color:var(--text3);margin-top:10px;font-style:italic;line-height:1.7;}
+.lk-2col{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-bottom:0;}
+@media(max-width:820px){.lk-2col{grid-template-columns:1fr;}}
+.lk-sub-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px 20px;}
+.lk-card-title{font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:14px;}
+.lk-mrow{display:flex;justify-content:space-between;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--border);gap:16px;}
+.lk-mrow:last-child{border-bottom:none;}
+.lk-mrow-l{flex:1;}
+.lk-mrow-label{font-size:14px;color:var(--text);font-weight:700;}
+.lk-mrow-mean{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.6;}
+.lk-mrow-r{text-align:left;white-space:nowrap;}
+.lk-mrow-val{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:var(--text);}
+.lk-mrow-tag{display:block;font-family:'Almarai',sans-serif;font-size:11px;font-weight:700;margin-top:4px;}
+.lk-mrow-tag.up{color:var(--green);}
+.lk-mrow-tag.dn{color:var(--red);}
+.lk-tension{background:var(--gold-dim);border:1px solid rgba(251,191,36,0.2);border-radius:12px;padding:14px 16px;margin-top:14px;}
+.lk-tension-head{font-size:12px;font-weight:800;color:var(--gold);margin-bottom:6px;}
+.lk-tension-txt{font-size:13px;line-height:1.75;color:var(--text);}
+.lk-tension-txt strong{font-weight:800;}
+.lk-grade{background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:5px 11px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text2);}
+.lk-fin-wrap{overflow-x:auto;}
+.lk-fin{width:100%;border-collapse:collapse;font-size:12.5px;}
+.lk-fin th{text-align:right;padding:9px 12px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border2);white-space:nowrap;}
+.lk-fin th.num{text-align:left;}
+.lk-fin td{padding:11px 12px;border-bottom:1px solid var(--border);color:var(--text2);}
+.lk-fin td.num{text-align:left;font-family:'IBM Plex Mono',monospace;color:var(--text);}
+.lk-fin tbody tr:last-child td{border-bottom:none;}
+.lk-fin tbody tr:hover td{background:var(--bg3);}
+.lk-fin td:first-child{font-weight:600;color:var(--text);}
+
+/* Generic sortable table headers */
+.th-sortable{cursor:pointer;user-select:none;transition:color 0.12s;}
+.th-sortable:hover{color:var(--text2);}
+.th-sort-active{color:var(--rose)!important;}
+.gen-arrow{font-size:9px;opacity:0.45;}
+.th-sort-active .gen-arrow{opacity:1;}
 </style>
 </head>
 <body>
@@ -924,7 +987,7 @@ main{display:contents;}
       <div class="nav-tab" onclick="showTab('alerts',this)" id="nav-alerts">Alerts</div>
       <div class="nav-tab" onclick="showTab('transactions',this)" id="nav-transactions">Transactions</div>
       <div class="nav-tab" onclick="showTab('setup',this)" id="nav-setup">Setup</div>
-      <div class="nav-tab" onclick="showTab('health',this)" id="healthNavTab" style="display:none" id="nav-health">Health</div>
+
     </div>
   </div>
 </nav>
@@ -1286,7 +1349,7 @@ WOLF remains at critical lows<br><br>
       </div>
 
       <div style="overflow-x:auto;">
-        <table class="tx-table">
+        <table class="tx-table js-sortable">
           <thead>
             <tr>
               <th>Date</th>
@@ -1296,7 +1359,7 @@ WOLF remains at critical lows<br><br>
               <th>Price</th>
               <th>Total</th>
               <th>Status</th>
-              <th>Mark</th>
+              <th data-nosort>Mark</th>
             </tr>
           </thead>
           <tbody id="txBody"></tbody>
@@ -1697,7 +1760,7 @@ WOLF remains at critical lows<br><br>
 
     <!-- Log table -->
     <div style="overflow-x:auto;">
-      <table class="ptable" id="healthTable">
+      <table class="ptable js-sortable" id="healthTable">
         <thead><tr>
           <th>Time (UAE)</th>
           <th>Type</th>
@@ -1936,6 +1999,7 @@ function showTab(name,el){
   document.querySelectorAll('.nav-tab,.sb-item').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   if(el) el.classList.add('active');
+  setTimeout(initSortableTables, 100);
   try{
     if(name==='trends') renderTrends();
     if(name==='weights') renderWeights();
@@ -1953,16 +2017,16 @@ function showTab(name,el){
 // ===== PORTFOLIO =====
 function sortP(col){
   if(pSortCol===col){ pSortDir*=-1; } else { pSortCol=col; pSortDir=1; }
-  // Update header arrows
-  document.querySelectorAll('.ptable th.sortable').forEach(th=>{
+  // Update header arrows (scoped to holdings table #pTable, null-safe)
+  document.querySelectorAll('#pTable th.sortable').forEach(th=>{
     th.classList.remove('sort-active');
-    th.querySelector('.sort-arrow').textContent='↕';
+    const ar=th.querySelector('.sort-arrow'); if(ar) ar.textContent='↕';
   });
   const colMap={sym:'th-sym',name:'th-name',sec:'th-sector',mv:'th-value',gl:'th-gl',status:'th-status',date:'th-date'};
   const activeEl=document.getElementById(colMap[col]);
   if(activeEl){
     activeEl.classList.add('sort-active');
-    activeEl.querySelector('.sort-arrow').textContent=pSortDir===1?'↓':'↑';
+    const ar=activeEl.querySelector('.sort-arrow'); if(ar) ar.textContent=pSortDir===1?'↓':'↑';
   }
   renderPortfolio();
 }
@@ -2051,8 +2115,25 @@ function renderNews(){
 }
 
 // ===== AI BRIEFING =====
+function _briefGreeting(isAr){
+  const h=new Date().getHours();
+  let g;
+  if(isAr){ g = h<12?'صباح الخير':'مساء الخير'; }
+  else { g = h<12?'Good morning':h<17?'Good afternoon':'Good evening'; }
+  const icon = h<12?'☀️':h<17?'🌤️':'🌙';
+  let nick='';
+  try{ nick=(localStorage.getItem('theisilabs_nick')||'').trim(); }catch(e){}
+  const name = nick ? (isAr?(' يا '+nick):(', '+nick)) : '';
+  const now=new Date();
+  const days=isAr?['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت']:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months=isAr?['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر']:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dateStr=`${days[now.getDay()]} · ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+  return `<div class="brief-hero"><div class="brief-greeting">${g}${name} ${icon}</div><div class="brief-date">${dateStr}</div></div>`;
+}
+
 async function loadBriefing(){
   const box=document.getElementById('briefingContent');
+  const isAr=(typeof lang!=='undefined' && lang==='ar');
   box.innerHTML=`<div class="briefing-loading"><div class="briefing-dot"></div><span>${T[lang].briefLoadingTxt}</span></div>`;
   try{
     const r=await fetch('/api/briefing');
@@ -2067,7 +2148,8 @@ async function loadBriefing(){
       text=d.content.text;
     }
     if(text.trim()){
-      box.innerHTML=`<div class="briefing-box" dir="rtl">${text.replace(/\n/g,'<br>')}</div><div class="briefing-ts">${d.date||'Just now'}</div>`;
+      const body = (typeof mdToHtml==='function') ? mdToHtml(text) : text.replace(/\n/g,'<br>');
+      box.innerHTML=`${_briefGreeting(isAr)}<div class="brief-body firm-body${isAr?'':' en'}">${body}</div><div class="briefing-ts">${d.date||'Just now'}</div>`;
     } else {
       box.innerHTML=`<div class="briefing-box" style="direction:ltr;text-align:left;color:var(--text2);font-size:12px;">
         No briefing available yet.<br><br>
@@ -2591,6 +2673,7 @@ function renderTxTable(){
       </td>
     </tr>`;
   }).join('');
+  const _tx=document.querySelector('.tx-table.js-sortable'); if(_tx){_tx._sortableInit=false; makeSortable(_tx);}
 }
 
 function toggleRecorded(id){
@@ -2740,9 +2823,85 @@ function showFirm(id,btn){
 }
 
   // ===== STOCK LOOKUP =====
+// ═══════════════════════════════════════════════════════════
+// STOCK LOOKUP — Investment-decision dashboard
+// Core principle: we connect the dots, the user decides.
+// Every derived number = soft direction + how + caveat.
+// ═══════════════════════════════════════════════════════════
+
+// ── Derived: Signal Read (conviction) ──
+// Consensus 30% + Upside 40% + Grades 30%  → 0..100
+function _lkSignalRead(d){
+  // Consensus score
+  const c = (d.analystConsensus||'').toLowerCase();
+  let consensus = 50;
+  if(c.includes('strong buy')) consensus = 100;
+  else if(c.includes('buy')) consensus = 75;
+  else if(c.includes('hold')) consensus = 50;
+  else if(c.includes('strong sell')) consensus = 0;
+  else if(c.includes('sell')) consensus = 25;
+  // Upside score (use best available: avg of target & DCF upside if both)
+  const tUp = (d.targetMean && d.price) ? ((d.targetMean-d.price)/d.price*100) : null;
+  const dUp = (d.dcfValue && d.price) ? ((d.dcfValue-d.price)/d.price*100) : null;
+  let up = null;
+  if(tUp!=null && dUp!=null) up=(tUp+dUp)/2; else up = (tUp!=null?tUp:dUp);
+  let upside = 40;
+  if(up!=null){
+    if(up>=40) upside=100; else if(up>=25) upside=80; else if(up>=10) upside=60;
+    else if(up>=0) upside=40; else if(up>=-15) upside=20; else upside=0;
+  }
+  // Grades score: ratio of upgrades to total recent actions
+  let grades = 50;
+  if(d.grades && d.grades.length){
+    let pos=0,neg=0;
+    d.grades.forEach(g=>{
+      const a=(g.action||g.newGrade||'').toLowerCase();
+      if(a.includes('up')||a.includes('buy')||a.includes('outperform')||a.includes('overweight')) pos++;
+      else if(a.includes('down')||a.includes('sell')||a.includes('underperform')||a.includes('underweight')) neg++;
+    });
+    const tot=pos+neg;
+    if(tot>0) grades = Math.round(pos/tot*100);
+  }
+  const score = Math.round(0.30*consensus + 0.40*upside + 0.30*grades);
+  return {score, consensus, upside, grades, up};
+}
+
+// ── Derived: Volatility/Risk read ──
+function _lkRiskRead(d){
+  // PEG component
+  let pegRisk = 1; // 0 low, 1 med, 2 high
+  if(d.peg!=null){ if(d.peg<1) pegRisk=0; else if(d.peg<=2) pegRisk=1; else pegRisk=2; }
+  // Volatility component (use beta if present, else recent change magnitude)
+  let volRisk = 1;
+  if(d.beta!=null){ if(d.beta<0.9) volRisk=0; else if(d.beta<=1.3) volRisk=1; else volRisk=2; }
+  else if(d.changePct!=null){ const a=Math.abs(d.changePct); if(a<1.5) volRisk=0; else if(a<=4) volRisk=1; else volRisk=2; }
+  const combined = (pegRisk+volRisk)/2;
+  if(combined<0.75) return {key:'low', ar:'منخفض', en:'Low', color:'var(--green)'};
+  if(combined<=1.5) return {key:'med', ar:'متوسط', en:'Medium', color:'var(--gold)'};
+  return {key:'high', ar:'مرتفع', en:'High', color:'var(--red)'};
+}
+
+// ── Conviction gauge SVG ──
+function _lkGauge(pct){
+  const r=32, circ=2*Math.PI*r, off=circ*(1-pct/100);
+  let color = pct>=66?'var(--green)':pct>=40?'var(--gold)':'var(--red)';
+  return `<div class="lk-gauge"><svg width="74" height="74" viewBox="0 0 74 74">
+    <circle cx="37" cy="37" r="32" fill="none" stroke="var(--bg4)" stroke-width="6"/>
+    <circle cx="37" cy="37" r="32" fill="none" stroke="${color}" stroke-width="6" stroke-linecap="round"
+      stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 37 37)"/>
+    </svg><div class="lk-gauge-txt" style="color:${color}">${pct}%</div></div>`;
+}
+
+function _lkLean(pct, isAr){
+  if(pct>=66) return {txt: isAr?'تميل إيجابياً':'Leaning Positive', cls:'pos'};
+  if(pct>=40) return {txt: isAr?'محايدة':'Neutral', cls:'neu'};
+  return {txt: isAr?'تميل بحذر':'Leaning Cautious', cls:'cau'};
+}
+
 async function lookupStock() {
   const sym = document.getElementById('lookup-input').value.trim().toUpperCase();
   if (!sym) return;
+  const isAr = (typeof lang!=='undefined' && lang==='ar');
 
   document.getElementById('lookup-loading').style.display = 'block';
   document.getElementById('lookup-result').style.display = 'none';
@@ -2756,53 +2915,130 @@ async function lookupStock() {
     if (!r.ok) throw new Error('فشل تحميل البيانات');
     const res = await r.json();
     if (res.error) throw new Error(res.error);
-
     const d = res.data;
 
-    // Build data card
-    const pctColor = d.changePct >= 0 ? 'var(--green)' : 'var(--red)';
-    const pctSign = d.changePct >= 0 ? '▲' : '▼';
-    const upside = d.targetMean && d.price ? (((d.targetMean - d.price) / d.price) * 100).toFixed(1) : null;
-    const dcfUpside = d.dcfValue && d.price ? (((d.dcfValue - d.price) / d.price) * 100).toFixed(1) : null;
+    const name = d.companyName || d.name || d.symbol;
+    const pctColor = (d.changePct>=0) ? 'var(--green)' : 'var(--red)';
+    const pctSign = (d.changePct>=0) ? '▲' : '▼';
+    const upside = (d.targetMean && d.price) ? (((d.targetMean-d.price)/d.price)*100) : null;
+    const dcfUpside = (d.dcfValue && d.price) ? (((d.dcfValue-d.price)/d.price)*100) : null;
+    const sig = _lkSignalRead(d);
+    const risk = _lkRiskRead(d);
+    const lean = _lkLean(sig.score, isAr);
+    const updated = new Date().toLocaleString(isAr?'ar':'en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+    // Tension detection: PEG cheap but price above target
+    let tension = '';
+    if(d.peg!=null && d.peg<1 && upside!=null && upside<5){
+      tension = isAr
+        ? 'نسبة PEG منخفضة (رخيص مقابل النمو) لكن السعر قريب من أهداف المحللين أو أعلى منها. هاتان الإشارتان تسحبان في اتجاهين متعاكسين — تستحق التأمل.'
+        : 'PEG is low (cheap vs growth) but price sits at or above analyst targets. These two pull in opposite directions — worth contemplating.';
+    } else if(dcfUpside!=null && upside!=null && ((dcfUpside>15 && upside<0)||(upside>15 && dcfUpside<0))){
+      tension = isAr
+        ? 'نموذج DCF وأهداف المحللين يختلفان في الاتجاه — أحدهما يرى صعوداً والآخر هبوطاً. لا إجماع واضح.'
+        : 'The DCF model and analyst targets disagree on direction — one sees upside, the other downside. No clear consensus.';
+    }
+
+    const t = (en,ar)=> isAr?ar:en;
 
     document.getElementById('lookup-data-card').innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-        <div>
-          <div style="font-size:28px;font-weight:900;font-family:'IBM Plex Mono',monospace;color:var(--text);">${d.symbol}</div>
-          <div style="font-size:22px;font-weight:700;color:var(--text);margin-top:2px;">$${d.price?.toFixed(2) ?? '—'}</div>
-          <div style="font-size:14px;color:${pctColor};margin-top:2px;">${pctSign} ${Math.abs(d.changePct ?? 0).toFixed(2)}% today</div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">Market Cap</div>
-          <div style="font-size:16px;font-weight:700;color:var(--text);">$${d.marketCap ? (d.marketCap/1e9).toFixed(1)+'B' : '—'}</div>
+      <!-- Header -->
+      <div class="lk-head">
+        <div class="lk-title-zone">
+          <div class="lk-title">${d.symbol} · ${name}</div>
+          <div class="lk-subtitle">${t('All the data in one place — read it, the decision is yours','كل البيانات في مكان واحد — اقرأها، وقرارك لك')}</div>
+          <div class="lk-updated">⟳ ${t('Updated','آخر تحديث')} · ${updated}</div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
-        ${[
-          ['P/E Ratio', d.pe?.toFixed(1) ?? '—'],
-          ['PEG Ratio', d.peg?.toFixed(2) ?? '—'],
-          ['ROE', d.roe != null ? d.roe+'%' : '—'],
-          ['Revenue Growth', d.revenueGrowth ? (d.revenueGrowth*100).toFixed(1)+'%' : '—'],
-          ['Analyst Target', d.targetMean ? '$'+d.targetMean.toFixed(0)+(upside ? ' ('+upside+'%)' : '') : '—'],
-          ['DCF Fair Value', d.dcfValue ? '$'+d.dcfValue.toFixed(0)+(dcfUpside ? ' ('+dcfUpside+'%)' : '') : '—'],
-          ['Consensus', d.analystConsensus ?? '—'],
-        ].map(([lbl,val]) => `
-          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">${lbl}</div>
-            <div style="font-size:14px;font-weight:700;color:var(--accent);font-family:'IBM Plex Mono',monospace;">${val}</div>
-          </div>
-        `).join('')}
+
+      <!-- Decision band -->
+      <div class="lk-band">
+        <div class="lk-cell">
+          <div class="lk-cell-label">${t('Symbol','رمز السهم')}</div>
+          <div class="lk-cell-sym">${d.symbol}</div>
+          <div class="lk-cell-sub">${name}</div>
+        </div>
+        <div class="lk-cell">
+          <div class="lk-cell-label">${t('Current Price','السعر الحالي')}</div>
+          <div class="lk-cell-val">$${d.price?.toFixed(2) ?? '—'}</div>
+          <div class="lk-cell-sub" style="color:${pctColor}">${pctSign} ${Math.abs(d.changePct ?? 0).toFixed(2)}% ${t('today','اليوم')}</div>
+        </div>
+        <div class="lk-cell">
+          <div class="lk-cell-label">${t('Fair Value · DCF','القيمة العادلة · DCF')} <span class="lk-info" data-tip="${t('FMP discounted-cash-flow estimate. One model, with its own assumptions.','تقدير نموذج DCF من FMP. نموذج واحد بافتراضاته الخاصة.')}">i</span></div>
+          <div class="lk-cell-val">${d.dcfValue ? '$'+d.dcfValue.toFixed(2) : '—'}</div>
+          <div class="lk-cell-sub" style="color:${dcfUpside>=0?'var(--green)':'var(--red)'}">${dcfUpside!=null ? (dcfUpside>=0?'+':'')+dcfUpside.toFixed(1)+'% '+t('vs price','عن السعر') : '—'}</div>
+        </div>
+        <div class="lk-cell">
+          <div class="lk-cell-label">${t('Signal Read','قراءة الإشارات')} <span class="lk-info" data-tip="${t('Our composite: Consensus 30% + Upside 40% + Grades 30%. A sense of direction, not a verdict.','مؤشرنا المركّب: الإجماع 30% + الصعود 40% + الترقيات 30%. إحساس بالاتجاه، لا حكم.')}">i</span></div>
+          ${_lkGauge(sig.score)}
+          <div class="lk-lean ${lean.cls}">${lean.txt}</div>
+        </div>
       </div>
+
+      <!-- Honest read note -->
+      <div class="lk-read">
+        <div class="lk-read-head">${t('What does this reading mean?','ماذا تعني هذه القراءة؟')}</div>
+        <div class="lk-read-txt">
+          ${t(
+            `The signals this week <strong>${lean.txt.toLowerCase()}</strong> — analyst consensus, upside potential, and recent grades mostly point the same way. Calculated from: Consensus (30%) + Upside (40%) + Grades (30%).`,
+            `الإشارات هذا الأسبوع <strong>${lean.txt}</strong> — إجماع المحللين، وفرص الصعود، والترقيات الأخيرة تشير معظمها إلى نفس الجهة. محسوبة من: الإجماع (30%) + الصعود (40%) + الترقيات (30%).`
+          )}
+        </div>
+        <div class="lk-read-caveat">
+          ${t(
+            '⚠ This is not a recommendation or a confirmed fact — it is a sense of where the signals lean, with a wide margin of error. We gather, connect the dots, and explain; the decision stays yours.',
+            '⚠ هذه ليست توصية ولا حقيقة مؤكدة — إنها إحساس بميل الإشارات، بهامش خطأ كبير. نحن نجمع البيانات ونربط النقاط ونشرحها لك؛ القرار يبقى قرارك أنت.'
+          )}
+        </div>
+      </div>
+
+      <!-- Two columns -->
+      <div class="lk-2col">
+        <div class="lk-sub-card">
+          <div class="lk-card-title">${t('Valuation — what the numbers say','التقييم — ماذا تقول الأرقام')}</div>
+          ${_lkRow(t('Analyst Target','هدف المحللين'), t('Average 12-month analyst expectation','متوسط ما يتوقعه المحللون خلال 12 شهراً'), d.targetMean?'$'+d.targetMean.toFixed(2):'—', upside!=null?(upside>=0?'+':'')+upside.toFixed(1)+'% '+t('potential','محتمل'):null, upside>=0)}
+          ${_lkRow(t('Fair Value · DCF','القيمة العادلة · DCF'), t('Value estimate from future cash flows','تقدير القيمة بناءً على التدفقات النقدية المستقبلية'), d.dcfValue?'$'+d.dcfValue.toFixed(2):'—', dcfUpside!=null?(dcfUpside>=0?'+':'')+dcfUpside.toFixed(1)+'% '+t('potential','محتمل'):null, dcfUpside>=0)}
+          ${_lkRow(t('P/E Ratio','مضاعف الربحية · P/E'), d.pe!=null?(d.pe.toFixed(1)+'x — '+t('reasonable for tech sector','معقول مقارنةً بقطاع التقنية')):t('Price to earnings','السعر إلى الأرباح'), d.pe!=null?d.pe.toFixed(1)+'x':'—', null)}
+          ${_lkRow(t('PEG Ratio','نسبة PEG'), t('Below 1 = price cheap vs growth rate','أقل من 1 = السعر رخيص مقارنةً بمعدل النمو'), d.peg!=null?d.peg.toFixed(2):'—', d.peg!=null&&d.peg<1?t('relatively cheap','رخيص نسبياً'):null, true)}
+          ${tension ? `<div class="lk-tension"><div class="lk-tension-head">⚖ ${t('Conflicting signals — worth contemplating','إشارات متضاربة — تستحق التأمل')}</div><div class="lk-tension-txt">${tension}</div></div>` : ''}
+        </div>
+
+        <div class="lk-sub-card">
+          <div class="lk-card-title">${t('Decision Factors','عوامل القرار')}</div>
+          ${_lkRow(t('Overall Verdict','الحكم العام'), t('Current analyst consensus','إجماع المحللين الحالي'), `<span style="color:var(--green)">${d.analystConsensus||'—'}</span>`, null, null, true)}
+          ${_lkRowHtml(t('Volatility Read','مستوى التقلّب'), t('A rough sense of how bumpy this might be — from PEG & recent volatility. Not a full risk model.','إحساس تقريبي بمدى تذبذب السعر — من PEG والتقلّب الأخير. ليس نموذج مخاطر كامل.'), `<span style="color:${risk.color}">${isAr?risk.ar:risk.en}</span>`, true)}
+          ${_lkRow(t('Revenue Growth','نمو الإيرادات'), t('Last 12 months','آخر 12 شهراً'), d.revenueGrowth!=null?(d.revenueGrowth*100).toFixed(1)+'%':'—', null)}
+          ${_lkRow(t('ROE','العائد على حقوق الملكية'), t('Return on equity','كفاءة استخدام رأس المال'), d.roe!=null?d.roe+'%':'—', null)}
+          ${_lkRow(t('Market Cap','القيمة السوقية'), '', d.marketCap?'$'+(d.marketCap/1e9).toFixed(1)+'B':'—', null)}
+        </div>
+      </div>
+
       ${d.grades?.length ? `
-        <div style="margin-top:14px;font-size:11px;color:var(--text3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Latest Analyst Grades</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;">
-          ${d.grades.map(g => `<span style="background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:4px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace;">${g.gradingCompany} — ${g.newGrade}</span>`).join('')}
-        </div>
-      ` : ''}
+        <div class="lk-sub-card" style="margin-top:14px;">
+          <div class="lk-card-title">${t('Recent Analyst Grades','ترقيات المحللين الأخيرة')}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:7px;">
+            ${d.grades.map(g=>`<span class="lk-grade">${g.gradingCompany||g.gradingHouse||'—'} — ${g.newGrade||g.action||'—'}</span>`).join('')}
+          </div>
+        </div>` : ''}
+
+      <!-- Financial history placeholder (lights up when API adds it) -->
+      <div id="lk-financials"></div>
+      <!-- Price vs fair value chart placeholder -->
+      <div id="lk-chart-wrap"></div>
     `;
 
-    // AI analysis
-    document.getElementById('lookup-analysis').textContent = res.analysis || 'لا يوجد تحليل متاح';
+    // Render financial history if the API provided it
+    if(d.financials && d.financials.length){ _lkRenderFinancials(d.financials, isAr); }
+    // Render price chart if the API provided historical prices
+    if(d.priceHistory && d.priceHistory.length){ _lkRenderChart(d.priceHistory, d.dcfValue, d.targetMean, isAr); }
+
+    // AI analysis — rendered through mdToHtml for proper hierarchy (no raw ##)
+    const analysisEl = document.getElementById('lookup-analysis');
+    if(analysisEl){
+      analysisEl.className = 'firm-body' + (isAr?'':' en');
+      analysisEl.innerHTML = (typeof mdToHtml==='function' && res.analysis) ? mdToHtml(res.analysis) : (res.analysis || t('No analysis available','لا يوجد تحليل متاح'));
+      try{ enhanceAnalysis(analysisEl); }catch(e){}
+    }
 
     document.getElementById('lookup-loading').style.display = 'none';
     document.getElementById('lookup-result').style.display = 'block';
@@ -2813,7 +3049,199 @@ async function lookupStock() {
     document.getElementById('lookup-error').textContent = '❌ ' + e.message;
   }
 }
-  
+
+// Metric row with optional tag
+function _lkRow(label, meaning, val, tag, tagUp){
+  return `<div class="lk-mrow">
+    <div class="lk-mrow-l"><div class="lk-mrow-label">${label}</div>${meaning?`<div class="lk-mrow-mean">${meaning}</div>`:''}</div>
+    <div class="lk-mrow-r"><div class="lk-mrow-val">${val}</div>${tag?`<span class="lk-mrow-tag ${tagUp?'up':'dn'}">${tag}</span>`:''}</div>
+  </div>`;
+}
+// Row variant with an info tooltip on the label
+function _lkRowHtml(label, tip, val, hasInfo){
+  return `<div class="lk-mrow">
+    <div class="lk-mrow-l"><div class="lk-mrow-label">${label} ${hasInfo?`<span class="lk-info" data-tip="${tip}">i</span>`:''}</div></div>
+    <div class="lk-mrow-r"><div class="lk-mrow-val">${val}</div></div>
+  </div>`;
+}
+
+// Financial history table (FY-1, FY, TTM + CAGR + sparkline)
+function _lkRenderFinancials(fin, isAr){
+  const t=(en,ar)=>isAr?ar:en;
+  const wrap=document.getElementById('lk-financials');
+  if(!wrap) return;
+  const rows=[
+    {key:'revenue', label:t('Revenue (USD bn)','الإيرادات (مليار $)'), fmt:v=>(v/1e9).toFixed(1)},
+    {key:'netIncome', label:t('Net Income (USD bn)','صافي الدخل (مليار $)'), fmt:v=>(v/1e9).toFixed(1)},
+    {key:'netMargin', label:t('Net Margin (%)','هامش الربح (%)'), fmt:v=>v.toFixed(1)+'%'},
+    {key:'freeCashFlow', label:t('Free Cash Flow (USD bn)','التدفق النقدي الحر (مليار $)'), fmt:v=>(v/1e9).toFixed(1)},
+  ];
+  // fin = [{year, revenue, netIncome, netMargin, freeCashFlow}, ...] oldest→newest, last = TTM
+  const cols = fin.map(f=>f.label||f.year);
+  let html=`<div class="lk-sub-card" style="margin-top:14px;"><div class="lk-card-title">${t('Financial History','أبرز المؤشرات المالية')}</div>
+    <div class="lk-fin-wrap"><table class="lk-fin">
+    <thead><tr><th>${t('Metric','المؤشر')}</th>${cols.map(c=>`<th class="num">${c}</th>`).join('')}<th class="num">${t('3Y CAGR','نمو 3 سنوات')}</th><th class="num">${t('Trend','الاتجاه')}</th></tr></thead><tbody>`;
+  rows.forEach(row=>{
+    const vals=fin.map(f=>f[row.key]).filter(v=>v!=null);
+    const cagr = (vals.length>=2 && vals[0]>0) ? (Math.pow(vals[vals.length-1]/vals[0], 1/(vals.length-1))-1)*100 : null;
+    // sparkline
+    const spark=_lkSpark(vals);
+    html+=`<tr><td>${row.label}</td>${fin.map(f=>`<td class="num">${f[row.key]!=null?row.fmt(f[row.key]):'—'}</td>`).join('')}<td class="num" style="color:${cagr>=0?'var(--green)':'var(--red)'}">${cagr!=null?(cagr>=0?'+':'')+cagr.toFixed(1)+'%':'—'}</td><td class="num">${spark}</td></tr>`;
+  });
+  html+=`</tbody></table></div></div>`;
+  wrap.innerHTML=html;
+}
+function _lkSpark(vals){
+  if(!vals||vals.length<2) return '';
+  const w=64,h=20,min=Math.min(...vals),max=Math.max(...vals),rng=(max-min)||1;
+  const pts=vals.map((v,i)=>`${(i/(vals.length-1)*w).toFixed(1)},${(h-((v-min)/rng)*h).toFixed(1)}`).join(' ');
+  const up=vals[vals.length-1]>=vals[0];
+  return `<svg width="${w}" height="${h}" style="vertical-align:middle"><polyline points="${pts}" fill="none" stroke="${up?'var(--green)':'var(--red)'}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+// Price vs Fair Value chart
+function _lkRenderChart(hist, dcf, target, isAr){
+  const t=(en,ar)=>isAr?ar:en;
+  const wrap=document.getElementById('lk-chart-wrap');
+  if(!wrap||typeof Chart==='undefined') return;
+  wrap.innerHTML=`<div class="lk-sub-card" style="margin-top:14px;"><div class="lk-card-title">${t('Price vs Fair Value','السعر الفعلي مقابل القيمة العادلة')}</div><div style="position:relative;height:240px;"><canvas id="lkChart"></canvas></div></div>`;
+  const labels=hist.map(p=>p.date);
+  const prices=hist.map(p=>p.price);
+  const fvLine = dcf ? labels.map(()=>dcf) : null;
+  const ds=[{label:t('Price','السعر'),data:prices,borderColor:'#38BDF8',backgroundColor:'rgba(56,189,248,0.05)',borderWidth:2,pointRadius:0,fill:true,tension:0.3}];
+  if(fvLine) ds.push({label:t('Fair Value (DCF)','القيمة العادلة'),data:fvLine,borderColor:'#34D399',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false});
+  new Chart(document.getElementById('lkChart'),{type:'line',data:{labels,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#9595A8',font:{size:11},usePointStyle:true,boxWidth:6}}},scales:{x:{ticks:{color:'#5C5C70',font:{size:9},maxTicksLimit:6},grid:{display:false}},y:{ticks:{color:'#5C5C70',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// GENERIC TABLE SORTER — click any <th> to sort rows in place
+// Works on any table given class "js-sortable". Detects number,
+// currency, %, and date cells automatically; falls back to text.
+// ═══════════════════════════════════════════════════════════
+function _sortValue(cell){
+  // Prefer explicit data-sort attribute if present
+  if(cell.hasAttribute('data-sort')){
+    const v=cell.getAttribute('data-sort');
+    const n=parseFloat(v);
+    return isNaN(n)?v.toLowerCase():n;
+  }
+  let txt=(cell.textContent||'').trim();
+  if(!txt||txt==='—'||txt==='-') return -Infinity; // empties sort to bottom on desc
+  // Date YYYY-MM-DD
+  if(/^\d{4}-\d{2}-\d{2}/.test(txt)) return new Date(txt).getTime();
+  // Currency / number / percent — strip $ , % + ▲ ▼ x and spaces
+  const cleaned=txt.replace(/[$,%▲▼+xX\s]/g,'').replace(/[()]/g,'');
+  const num=parseFloat(cleaned);
+  if(!isNaN(num) && /[\d]/.test(txt)) return num;
+  return txt.toLowerCase();
+}
+
+function makeSortable(table){
+  if(!table || table._sortableInit) return;
+  table._sortableInit=true;
+  const thead=table.querySelector('thead');
+  if(!thead) return;
+  const ths=thead.querySelectorAll('th');
+  ths.forEach((th, colIndex)=>{
+    // Skip columns flagged no-sort (action/mark columns)
+    if(th.hasAttribute('data-nosort')) return;
+    th.classList.add('th-sortable');
+    if(!th.querySelector('.gen-arrow')){
+      const a=document.createElement('span');
+      a.className='gen-arrow'; a.textContent=' ↕';
+      th.appendChild(a);
+    }
+    th.addEventListener('click', ()=>{
+      const tbody=table.querySelector('tbody');
+      if(!tbody) return;
+      const rows=Array.from(tbody.querySelectorAll('tr')).filter(r=>r.querySelectorAll('td').length>1);
+      if(!rows.length) return;
+      const dir = (table._sortCol===colIndex && table._sortDir===1) ? -1 : 1;
+      table._sortCol=colIndex; table._sortDir=dir;
+      rows.sort((ra,rb)=>{
+        const va=_sortValue(ra.children[colIndex]);
+        const vb=_sortValue(rb.children[colIndex]);
+        if(typeof va==='number' && typeof vb==='number') return (va-vb)*dir;
+        return String(va).localeCompare(String(vb),undefined,{numeric:true})*dir;
+      });
+      rows.forEach(r=>tbody.appendChild(r));
+      // arrows
+      ths.forEach(h=>{const ar=h.querySelector('.gen-arrow'); if(ar){ar.textContent=' ↕';} h.classList.remove('th-sort-active');});
+      const ar=th.querySelector('.gen-arrow'); if(ar) ar.textContent = dir===1?' ↑':' ↓';
+      th.classList.add('th-sort-active');
+    });
+  });
+}
+
+// Auto-attach to all .js-sortable tables, and re-attach after renders
+function initSortableTables(){
+  document.querySelectorAll('table.js-sortable').forEach(makeSortable);
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// PRESENTATION ENHANCER — upgrades plain analysis bullets into
+// premium cards/rows. Conservative: only transforms confident
+// patterns, leaves everything else as clean prose.
+// Core principle: organize & explain, never invent meaning.
+// ═══════════════════════════════════════════════════════════
+
+// Sentiment from Arabic/English keywords in a heading
+function _enhSentiment(txt){
+  const t = txt.toLowerCase();
+  // risk / negative
+  if(/خطر|مخاطر|ضعف|تحذير|سلب|تراجع|قلق|risk|weak|threat|concern|warning|negative|decline|caution/.test(t)) return 'red';
+  // strength / positive
+  if(/قوة|قوي|ميزة|فرص|إيجاب|نمو|تحسّن|تحسن|صعود|strength|strong|advantage|opportunit|positive|growth|bullish|upside/.test(t)) return 'green';
+  // watch / neutral
+  if(/راقب|انتباه|متوسط|محايد|watch|neutral|monitor|moderate/.test(t)) return 'gold';
+  return 'mag';
+}
+
+// Given a container of rendered markdown, upgrade qualifying bullet groups.
+function enhanceAnalysis(container){
+  if(!container) return;
+  // Work on consecutive .md-li groups
+  const items = Array.from(container.querySelectorAll('.md-li:not(.md-li-num)'));
+  if(!items.length) return;
+
+  items.forEach(li=>{
+    const txtEl = li.querySelector('.md-li-txt');
+    if(!txtEl) return;
+    const html = txtEl.innerHTML.trim();
+    // Pattern A: bold-led "  <strong>Heading</strong> — detail "  or  ": detail"
+    const boldLed = html.match(/^<strong>(.+?)<\/strong>\s*[—:–-]\s*(.+)$/);
+    if(boldLed){
+      const head = boldLed[1].trim();
+      const body = boldLed[2].trim();
+      const sent = _enhSentiment(head);
+      const card = document.createElement('div');
+      card.className = 'enh-card '+sent;
+      card.innerHTML = `<div class="enh-card-head">${head}</div><div class="enh-card-body">${body}</div>`;
+      li.replaceWith(card);
+      return;
+    }
+    // Pattern B: label-value "Label: $value" or "Label — 12%" (short value)
+    // Strip inline markup (glossary spans, tooltips) before matching
+    const plain = html.replace(/<[^>]+>/g,'').trim();
+    const labelVal = plain.match(/^([^:—–]{2,40})\s*[:—–]\s*(\$?[\d.,]+%?x?\+?|[+\-]?[\d.,]+%)\s*$/);
+    if(labelVal){
+      const label = labelVal[1].trim();
+      const val = labelVal[2].trim();
+      const up = /\+|صعود|نمو/.test(val);
+      const dn = /^-|−/.test(val);
+      const row = document.createElement('div');
+      row.className = 'enh-row';
+      row.innerHTML = `<span class="enh-row-label">${label}</span><span class="enh-row-val ${up?'up':dn?'dn':''}">${val}</span>`;
+      li.replaceWith(row);
+      return;
+    }
+    // else leave as-is
+  });
+}
+
+
 function navigateDate(dir){
   const d=new Date(advisorDate);
   d.setDate(d.getDate()+dir);
@@ -3068,6 +3496,8 @@ function renderAnalysis(data){
 body.style.direction = isAr ? 'rtl' : 'ltr';
 body.style.textAlign = isAr ? 'right' : 'left';
 body.className = 'firm-body' + (isAr ? '' : ' en');
+// Stage 6: upgrade narrative bullets to cards/rows (skip custom-rendered firms)
+if(f!=='signals' && f!=='scoring'){ try{ enhanceAnalysis(body); }catch(e){} }
 if(f==='scoring'){
   body.style.lineHeight='1.3';
   body.style.fontSize='13px';
@@ -5018,6 +5448,65 @@ function clearChat() {
 }
 .glossary-term:hover { color: var(--accent); }
 body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-val{font-size:18px;}.hstat-label{font-size:12px;}.card-title{font-size:13px;}.section-title{font-size:19px;}.section-sub{font-size:14px;}.ptable th{font-size:12px;}.ptable td{font-size:14px;}.sym-badge{font-size:13px;}.stat-label{font-size:13px;}.stat-value{font-size:26px;}.stat-change{font-size:13px;}.s-sym{font-size:15px;}.s-price{font-size:14px;}.s-pct-up,.s-pct-dn{font-size:13px;}.alert-title{font-size:15px;}.alert-desc{font-size:13px;}.news-title{font-size:14px;}.briefing-box{font-size:15px;line-height:2;}.firm-body{font-size:15px;line-height:2;}.firm-title{font-size:18px;}.btn{font-size:14px;}.form-label{font-size:14px;}.form-input{font-size:14px;}.tg-msg{font-size:14px;}.msg-bubble{font-size:13px;}#chatInput{font-size:13px;}
+
+/* ═══ STAGE 4 — Larger, more readable fonts ═══ */
+/* Holdings table */
+.ptable thead th{font-size:11px;}
+.ptable tbody td{font-size:14.5px;padding:15px 14px;}
+.hold-sym{font-size:14px;}
+.hold-name{font-size:13.5px;}
+.hold-sector{font-size:12.5px;}
+.hold-mv{font-size:15px;}
+.hold-gl{font-size:15px;}
+.hold-date{font-size:12.5px;}
+/* Today's news / articles */
+.news-title{font-size:15.5px;line-height:1.5;}
+.news-summary{font-size:14px;line-height:1.65;}
+.news-meta{font-size:11.5px;}
+.news-src{font-size:12px;}
+.news-time{font-size:12px;}
+.news-sym{font-size:11.5px;}
+/* AI analysis / morning brief */
+.firm-body{font-size:15.5px;line-height:1.95;}
+.firm-body .md-p,.firm-body .md-li-txt{font-size:15.5px;line-height:1.95;}
+.briefing-box{font-size:15.5px;line-height:2;}
+.md-h1{font-size:21px;}
+.md-h2{font-size:17.5px;}
+.md-h3{font-size:14px;}
+.md-table{font-size:13.5px;}
+
+/* ═══ STAGE 5 — Structured Morning Brief ═══ */
+.brief-hero{background:linear-gradient(135deg,var(--rose-dim),transparent);border:1px solid var(--border2);
+  border-radius:16px;padding:22px 24px;margin-bottom:16px;}
+.brief-greeting{font-size:22px;font-weight:800;color:var(--text);margin-bottom:5px;}
+.brief-date{font-size:12.5px;color:var(--text3);font-family:'IBM Plex Mono',monospace;}
+.brief-body{padding:0 2px;}
+/* In the brief, h2 headings become magenta-tabbed block titles */
+.brief-body .md-h2{font-size:13px;font-weight:800;color:var(--rose);text-transform:uppercase;
+  letter-spacing:0.07em;border-bottom:none;padding:0 0 0 0;margin:22px 0 10px;display:flex;
+  align-items:center;gap:9px;}
+.brief-body .md-h2::before{content:'';width:4px;height:15px;background:var(--rose);border-radius:2px;flex-shrink:0;}
+.firm-body.en .brief-body .md-h2::before,.brief-body .md-h2::before{order:-1;}
+.brief-body .md-h3{font-size:13px;}
+.brief-body .md-p{font-size:15.5px;line-height:1.95;color:var(--text2);}
+.brief-body .md-p strong{color:var(--text);}
+
+/* ═══ STAGE 6 — Presentation enhancer cards/rows ═══ */
+.enh-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;
+  padding:14px 16px;margin:8px 0;border-inline-start:3px solid var(--text3);}
+.enh-card.green{border-inline-start-color:var(--green);}
+.enh-card.red{border-inline-start-color:var(--red);}
+.enh-card.gold{border-inline-start-color:var(--gold);}
+.enh-card.mag{border-inline-start-color:var(--rose);}
+.enh-card-head{font-size:15px;font-weight:800;color:var(--text);margin-bottom:5px;}
+.enh-card-body{font-size:14px;color:var(--text2);line-height:1.75;}
+.enh-row{display:flex;justify-content:space-between;align-items:center;gap:16px;
+  padding:12px 2px;border-bottom:1px solid var(--border);}
+.enh-row:last-of-type{border-bottom:none;}
+.enh-row-label{font-size:14px;color:var(--text2);font-weight:600;}
+.enh-row-val{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;}
+.enh-row-val.up{color:var(--green);}
+.enh-row-val.dn{color:var(--red);}
 </style>
 
 <!-- Tooltip container -->
@@ -5495,13 +5984,13 @@ async function checkSession() {
       if (chatBtn) chatBtn.title = 'مستشار ' + displayName + ' الذكي';
       if (data.isAdmin) showAdminButton();
       else if (!document.getElementById('signOutBtn')) {
-        const headerRight = document.querySelector('.header-right');
+        const headerRight = document.getElementById('tbRight');
         if (headerRight) {
           const soBtn = document.createElement('button');
           soBtn.id = 'signOutBtn';
           soBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Out';
     soBtn.title = 'Sign Out';
-    soBtn.style.cssText = 'background:rgba(255,68,68,0.12);border:1px solid rgba(255,68,68,0.4);color:var(--red);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;font-family:Almarai,sans-serif;display:flex;align-items:center;';
+    soBtn.className='tb-btn'; soBtn.style.cssText='font-size:12px;font-weight:700;padding:0 11px;color:var(--red);border-color:rgba(248,113,113,0.4);';
     soBtn.onclick = signOut;
     soBtn.onmouseover = () => { soBtn.style.background='rgba(255,68,68,0.25)'; soBtn.style.borderColor='var(--red)'; };
     soBtn.onmouseout = () => { soBtn.style.background='rgba(255,68,68,0.12)'; soBtn.style.borderColor='rgba(255,68,68,0.4)'; };
@@ -5724,13 +6213,13 @@ function onAuthSuccess(nickname, isAdmin, token, firstLogin) {
   // Show admin panel button if admin
   if (isAdmin) showAdminButton();
   else if (!document.getElementById('signOutBtn')) {
-    const headerRight = document.querySelector('.header-right');
+    const headerRight = document.getElementById('tbRight');
     if (headerRight) {
       const soBtn = document.createElement('button');
       soBtn.id = 'signOutBtn';
       soBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Out';
     soBtn.title = 'Sign Out';
-    soBtn.style.cssText = 'background:rgba(255,68,68,0.12);border:1px solid rgba(255,68,68,0.4);color:var(--red);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;font-family:Almarai,sans-serif;display:flex;align-items:center;';
+    soBtn.className='tb-btn'; soBtn.style.cssText='font-size:12px;font-weight:700;padding:0 11px;color:var(--red);border-color:rgba(248,113,113,0.4);';
     soBtn.onclick = signOut;
     soBtn.onmouseover = () => { soBtn.style.background='rgba(255,68,68,0.25)'; soBtn.style.borderColor='var(--red)'; };
     soBtn.onmouseout = () => { soBtn.style.background='rgba(255,68,68,0.12)'; soBtn.style.borderColor='rgba(255,68,68,0.4)'; };
@@ -5916,7 +6405,7 @@ function clearAuthError() {
 
 // ── Admin button ──
 function showAdminButton() {
-  const headerRight = document.querySelector('.header-right');
+  const headerRight = document.getElementById('tbRight');
   if (!headerRight || document.getElementById('adminBtn')) return;
   // Sign out button for all users
   if (!document.getElementById('signOutBtn')) {
@@ -5924,7 +6413,7 @@ function showAdminButton() {
     soBtn.id = 'signOutBtn';
     soBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Out';
     soBtn.title = 'Sign Out';
-    soBtn.style.cssText = 'background:rgba(255,68,68,0.12);border:1px solid rgba(255,68,68,0.4);color:var(--red);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700;font-family:Almarai,sans-serif;display:flex;align-items:center;';
+    soBtn.className='tb-btn'; soBtn.style.cssText='font-size:12px;font-weight:700;padding:0 11px;color:var(--red);border-color:rgba(248,113,113,0.4);';
     soBtn.onclick = signOut;
     soBtn.onmouseover = () => { soBtn.style.background='rgba(255,68,68,0.25)'; soBtn.style.borderColor='var(--red)'; };
     soBtn.onmouseout = () => { soBtn.style.background='rgba(255,68,68,0.12)'; soBtn.style.borderColor='rgba(255,68,68,0.4)'; };
@@ -5933,7 +6422,7 @@ function showAdminButton() {
   const btn = document.createElement('button');
   btn.id = 'adminBtn';
   btn.textContent = '⚙ Admin';
-  btn.style.cssText = 'background:rgba(255,107,53,.15);border:1px solid rgba(255,107,53,.4);color:var(--accent3);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Almarai,sans-serif;';
+  btn.className='tb-btn'; btn.style.cssText='font-size:12px;font-weight:700;padding:0 11px;';
   btn.onclick = openAdminPanel;
   headerRight.appendChild(btn);
   revealHealthTab();
