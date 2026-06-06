@@ -29,6 +29,7 @@
   --red:#F87171; --red-dim:rgba(248,113,113,0.10);
   --gold:#FBBF24; --gold-dim:rgba(251,191,36,0.10);
   --cyan:#38BDF8; --cyan-dim:rgba(56,189,248,0.10);
+  --violet:#A78BFA; --violet-dim:rgba(167,139,250,0.14); --gold-agree:#FBBF24; --gold-agree-dim:rgba(251,191,36,0.14); --slate:#9B9BAE; --slate-dim:rgba(155,155,174,0.14);
   --accent2:#34D399; --accent3:#FB923C;
   /* Text — strict 3-level hierarchy */
   --text:#F4F4F6; --text2:#9595A8; --text3:#5C5C70;
@@ -49,6 +50,7 @@
   --red:#DC2626; --red-dim:rgba(220,38,38,0.08);
   --gold:#D97706; --gold-dim:rgba(217,119,6,0.08);
   --cyan:#0284C7; --cyan-dim:rgba(2,132,199,0.08);
+  --violet:#7C3AED; --violet-dim:rgba(124,58,237,0.10); --gold-agree:#D97706; --gold-agree-dim:rgba(217,119,6,0.10); --slate:#6B6B7E; --slate-dim:rgba(107,107,126,0.10);
   --text:#16161D; --text2:#5E5E70; --text3:#9A9AAC;
   --shadow-sm:0 1px 3px rgba(16,16,29,0.08);
   --shadow:0 2px 12px rgba(16,16,29,0.07);
@@ -2846,42 +2848,148 @@ function showFirm(id,btn){
 // Every derived number = soft direction + how + caveat.
 // ═══════════════════════════════════════════════════════════
 
-// ── Derived: Signal Read (conviction) ──
-// Consensus 30% + Upside 40% + Grades 30%  → 0..100
-function _lkSignalRead(d){
-  // Consensus score
-  const c = (d.analystConsensus||'').toLowerCase();
-  let consensus = 50;
-  if(c.includes('strong buy')) consensus = 100;
-  else if(c.includes('buy')) consensus = 75;
-  else if(c.includes('hold')) consensus = 50;
-  else if(c.includes('strong sell')) consensus = 0;
-  else if(c.includes('sell')) consensus = 25;
-  // Upside score (use best available: avg of target & DCF upside if both)
-  const tUp = (d.targetMean && d.price) ? ((d.targetMean-d.price)/d.price*100) : null;
-  const dUp = (d.dcfValue && d.price) ? ((d.dcfValue-d.price)/d.price*100) : null;
-  let up = null;
-  if(tUp!=null && dUp!=null) up=(tUp+dUp)/2; else up = (tUp!=null?tUp:dUp);
-  let upside = 40;
-  if(up!=null){
-    if(up>=40) upside=100; else if(up>=25) upside=80; else if(up>=10) upside=60;
-    else if(up>=0) upside=40; else if(up>=-15) upside=20; else upside=0;
-  }
-  // Grades score: ratio of upgrades to total recent actions
-  let grades = 50;
-  if(d.grades && d.grades.length){
-    let pos=0,neg=0;
-    d.grades.forEach(g=>{
-      const a=(g.action||g.newGrade||'').toLowerCase();
-      if(a.includes('up')||a.includes('buy')||a.includes('outperform')||a.includes('overweight')) pos++;
-      else if(a.includes('down')||a.includes('sell')||a.includes('underperform')||a.includes('underweight')) neg++;
-    });
-    const tot=pos+neg;
-    if(tot>0) grades = Math.round(pos/tot*100);
-  }
-  const score = Math.round(0.30*consensus + 0.40*upside + 0.30*grades);
-  return {score, consensus, upside, grades, up};
+// ═══════════════════════════════════════════════════════════════
+// THEISI SIGNAL ENGINE — 5 independent reads + agreement + synthesis
+// Core principle: we show multiple things to consider, explained,
+// side by side. No single score drives the decision. The agreement
+// indicator measures CONCURRENCE (violet/amber/slate), never good/bad.
+// ═══════════════════════════════════════════════════════════════
+
+// Each read returns: {key, label, value, dir, lean, why}
+//   dir: 'fav' | 'cau' | 'neu' | 'na'   (favorable / cautious / neutral / no data)
+function _sigReads(d, isAr){
+  const t=(en,ar)=>isAr?ar:en;
+  const reads=[];
+  const price=d.price;
+
+  // 1) DCF view
+  (function(){
+    if(d.dcfValue==null||price==null){ reads.push({key:'dcf',label:t('DCF Model','نموذج التدفقات النقدية'),value:'—',dir:'na',why:t('No cash-flow valuation available.','لا يوجد تقييم تدفقات نقدية.')}); return; }
+    const gap=(d.dcfValue-price)/price*100;
+    let dir = gap>5?'fav':gap<-5?'cau':'neu';
+    let why;
+    if(gap<-40){
+      why=t(`The model values it ~${Math.abs(gap).toFixed(0)}% below price. For a heavily-followed large-cap this often reflects model limits (it doesn't fully credit buybacks, brand, or ecosystem) rather than certain overvaluation.`,
+            `النموذج يُقدّر قيمته أقل من السعر بنحو ${Math.abs(gap).toFixed(0)}%. في الشركات الكبرى كثيرة المتابعة، هذا غالباً يعكس حدود النموذج (لا يحتسب إعادة الشراء والعلامة التجارية بالكامل) أكثر من كونه مبالغة مؤكدة في السعر.`);
+    } else if(gap<0){
+      why=t(`Cash-flow model puts fair value ~${Math.abs(gap).toFixed(0)}% below current price.`,`نموذج التدفقات يضع القيمة العادلة أقل من السعر بنحو ${Math.abs(gap).toFixed(0)}%.`);
+    } else {
+      why=t(`Cash-flow model puts fair value ~${gap.toFixed(0)}% above current price.`,`نموذج التدفقات يضع القيمة العادلة أعلى من السعر بنحو ${gap.toFixed(0)}%.`);
+    }
+    reads.push({key:'dcf',label:t('DCF Model','نموذج التدفقات النقدية'),value:'$'+d.dcfValue.toFixed(0),sub:(gap>=0?'+':'')+gap.toFixed(1)+'%',dir,why});
+  })();
+
+  // 2) Analyst view
+  (function(){
+    if(d.targetMean==null||price==null){ reads.push({key:'analyst',label:t('Analyst Target','هدف المحللين'),value:'—',dir:'na',why:t('No analyst target available.','لا يوجد هدف للمحللين.')}); return; }
+    const gap=(d.targetMean-price)/price*100;
+    let dir = gap>5?'fav':gap<-5?'cau':'neu';
+    const why=t(`Consensus 12-month target is ~${(gap>=0?'+':'')+gap.toFixed(0)}% from current price.`,`متوسط هدف المحللين لـ 12 شهراً يبعد ~${(gap>=0?'+':'')+gap.toFixed(0)}% عن السعر الحالي.`);
+    reads.push({key:'analyst',label:t('Analyst Target','هدف المحللين'),value:'$'+d.targetMean.toFixed(0),sub:(gap>=0?'+':'')+gap.toFixed(1)+'%',dir,why});
+  })();
+
+  // 3) Valuation view (P/E + PEG)
+  (function(){
+    if(d.pe==null&&d.peg==null){ reads.push({key:'val',label:t('Valuation','التقييم'),value:'—',dir:'na',why:t('No valuation multiples available.','لا توجد مضاعفات تقييم.')}); return; }
+    let score=0,parts=[];
+    if(d.peg!=null){ if(d.peg<1){score++;parts.push(t('PEG below 1 (cheap vs growth)','PEG أقل من 1 (رخيص مقابل النمو)'));} else if(d.peg>2){score--;parts.push(t('PEG above 2 (rich vs growth)','PEG أعلى من 2 (مرتفع مقابل النمو)'));} else {parts.push(t('PEG fair','PEG معقول'));} }
+    if(d.pe!=null){ if(d.pe>35){score--;parts.push(t(`P/E ${d.pe.toFixed(0)}x is high`,`مضاعف الربحية ${d.pe.toFixed(0)}x مرتفع`));} else if(d.pe<18&&d.pe>0){score++;parts.push(t(`P/E ${d.pe.toFixed(0)}x is modest`,`مضاعف الربحية ${d.pe.toFixed(0)}x منخفض`));} else if(d.pe>0){parts.push(t(`P/E ${d.pe.toFixed(0)}x is moderate`,`مضاعف الربحية ${d.pe.toFixed(0)}x متوسط`));} }
+    let dir = score>0?'fav':score<0?'cau':'neu';
+    reads.push({key:'val',label:t('Valuation','التقييم'),value:(d.pe!=null?d.pe.toFixed(1)+'x':'')+(d.peg!=null?(d.pe!=null?' · ':'')+'PEG '+d.peg.toFixed(2):''),dir,why:parts.join(' · ')});
+  })();
+
+  // 4) Momentum view (price vs 50-day avg & 1yr range position)
+  (function(){
+    const h=d.priceHistory;
+    if(!Array.isArray(h)||h.length<10||price==null){ reads.push({key:'mom',label:t('Momentum','الزخم'),value:'—',dir:'na',why:t('Not enough price history.','تاريخ سعري غير كافٍ.')}); return; }
+    const prices=h.map(p=>p.price).filter(v=>v!=null);
+    const recent=prices.slice(-10); // ~last 10 sampled points ≈ 50 trading days
+    const avg=recent.reduce((a,b)=>a+b,0)/recent.length;
+    const lo=Math.min(...prices), hi=Math.max(...prices);
+    const rangePos=(price-lo)/((hi-lo)||1)*100; // 0=year low, 100=year high
+    const aboveAvg=price>=avg;
+    let dir = (aboveAvg&&rangePos>=55)?'fav':(!aboveAvg&&rangePos<=45)?'cau':'neu';
+    const why=t(`Trading ${aboveAvg?'above':'below'} its recent average, ${rangePos.toFixed(0)}% up its 1-year range.`,`يتداول ${aboveAvg?'فوق':'تحت'} متوسطه الأخير، عند ${rangePos.toFixed(0)}% من نطاق السنة.`);
+    reads.push({key:'mom',label:t('Momentum','الزخم'),value:rangePos.toFixed(0)+'%',sub:t('of 1yr range','من نطاق السنة'),dir,why});
+  })();
+
+  // 5) Financial Health view (revenue, margin, FCF trend)
+  (function(){
+    const f=d.financials;
+    if(!Array.isArray(f)||f.length<2){ reads.push({key:'health',label:t('Financial Health','الصحة المالية'),value:'—',dir:'na',why:t('Not enough financial history.','تاريخ مالي غير كافٍ.')}); return; }
+    const first=f[0], last=f[f.length-1];
+    let score=0,parts=[];
+    if(first.revenue!=null&&last.revenue!=null){ if(last.revenue>first.revenue){score++;parts.push(t('revenue rising','الإيرادات ترتفع'));} else {score--;parts.push(t('revenue flat/declining','الإيرادات ثابتة/تتراجع'));} }
+    if(first.netMargin!=null&&last.netMargin!=null){ if(last.netMargin>=first.netMargin-1){score++;parts.push(t('margins stable/expanding','الهوامش مستقرة/تتحسن'));} else {score--;parts.push(t('margins compressing','الهوامش تنكمش'));} }
+    if(last.freeCashFlow!=null){ if(last.freeCashFlow>0){score++;parts.push(t('positive free cash flow','تدفق نقدي حر إيجابي'));} else {score--;parts.push(t('negative free cash flow','تدفق نقدي حر سلبي'));} }
+    let dir = score>=2?'fav':score<=-1?'cau':'neu';
+    reads.push({key:'health',label:t('Financial Health','الصحة المالية'),value:last.netMargin!=null?last.netMargin.toFixed(0)+'% '+t('margin','هامش'):'—',dir,why:parts.join(' · ')});
+  })();
+
+  return reads;
 }
+
+// Agreement indicator from the reads → {key, color, label, sub}
+function _sigAgreement(reads, isAr){
+  const t=(en,ar)=>isAr?ar:en;
+  const valid=reads.filter(r=>r.dir!=='na');
+  const na=reads.length-valid.length;
+  // Too little data
+  if(valid.length<3 || na>=3){
+    return {key:'unclear',color:'var(--slate)',label:t('Not enough data','بيانات غير كافية'),sub:t("can't read clearly — too many gaps",'لا يمكن القراءة بوضوح — فجوات كثيرة')};
+  }
+  const fav=valid.filter(r=>r.dir==='fav').length;
+  const cau=valid.filter(r=>r.dir==='cau').length;
+  const neu=valid.filter(r=>r.dir==='neu').length;
+  const directional=fav+cau;
+  // Aligned: the directional reads overwhelmingly point one way
+  const dominant=Math.max(fav,cau);
+  if(directional>=2 && dominant>=directional*0.75 && Math.min(fav,cau)<=1){
+    const dirWord = fav>cau ? t('leaning favorable','تميل للإيجابية') : t('leaning cautious','تميل للحذر');
+    return {key:'align',color:'var(--violet)',label:t('Signals align','الإشارات متّفقة'),sub:t('methods mostly agree — ','الطرق متّفقة غالباً — ')+dirWord};
+  }
+  // Mixed
+  return {key:'mixed',color:'var(--gold-agree)',label:t('Mixed signals','إشارات مختلطة'),sub:t('they diverge — worth a closer look','تتباين — تستحق نظرة أدق')};
+}
+
+// Synthesis line — always names agreement/disagreement and explains both sides
+function _sigSynthesis(reads, agree, isAr){
+  const t=(en,ar)=>isAr?ar:en;
+  const by=k=>reads.find(r=>r.key===k)||{};
+  const dcf=by('dcf'), an=by('analyst'), val=by('val'), mom=by('mom'), health=by('health');
+
+  // Separate "is it a good business + momentum" from "is the price right"
+  const bizGood = (health.dir==='fav') || (mom.dir==='fav');
+  const bizWeak = (health.dir==='cau');
+  const priceDiverge = (dcf.dir && an.dir && dcf.dir!=='na' && an.dir!=='na' && dcf.dir!==an.dir);
+  const priceAgreeCautious = (dcf.dir==='cau' && (an.dir==='cau'||val.dir==='cau'));
+  const priceAgreeFav = (dcf.dir==='fav' && (an.dir==='fav'||val.dir==='fav'));
+
+  let parts=[];
+  // Business/quality sentence
+  if(health.dir==='fav' && mom.dir==='fav'){
+    parts.push(t('The business looks healthy (improving margins and cash flow) and price momentum is positive.','تبدو الشركة بصحة جيدة (هوامش وتدفقات نقدية تتحسن) وزخم السعر إيجابي.'));
+  } else if(health.dir==='fav'){
+    parts.push(t('The underlying business looks healthy on margins and cash flow.','يبدو نشاط الشركة الأساسي صحياً من حيث الهوامش والتدفقات النقدية.'));
+  } else if(health.dir==='cau'){
+    parts.push(t('The underlying financials show some strain worth examining.','تُظهر البيانات المالية بعض الضغط الذي يستحق الفحص.'));
+  }
+  // Price sentence — the heart of it
+  if(priceDiverge){
+    const dcfSide = dcf.dir==='cau' ? t('the DCF model sees it above intrinsic value (conservative cash-flow basis)','نموذج DCF يراه أعلى من قيمته الجوهرية (على أساس تدفقات متحفظة)') : t('the DCF model sees room above price','نموذج DCF يرى مجالاً فوق السعر');
+    const anSide = an.dir==='fav' ? t('while analysts see it near or below fair value (crediting growth and brand)','بينما يراه المحللون قرب أو دون القيمة العادلة (مع احتساب النمو والعلامة)') : t('while analysts are more cautious','بينما المحللون أكثر حذراً');
+    parts.push(t(`On price, the methods disagree: ${dcfSide}, ${anSide}. This divergence is itself the signal — worth understanding before you decide.`,
+                 `بخصوص السعر، تختلف الطرق: ${dcfSide}، ${anSide}. هذا التباين هو الإشارة بحد ذاتها — يستحق الفهم قبل أن تقرر.`));
+  } else if(priceAgreeCautious){
+    parts.push(t('On price, the methods agree it looks expensive — both the cash-flow model and the market reference point the same way. Agreement makes this read stronger.','بخصوص السعر، تتّفق الطرق على أنه يبدو مرتفعاً — نموذج التدفقات ومرجع السوق يشيران لنفس الاتجاه. الاتّفاق يقوّي هذه القراءة.'));
+  } else if(priceAgreeFav){
+    parts.push(t('On price, the methods agree there may be room above current levels — both point the same way. Agreement makes this read stronger.','بخصوص السعر، تتّفق الطرق على وجود مجال محتمل فوق المستويات الحالية — كلاهما يشير لنفس الاتجاه. الاتّفاق يقوّي هذه القراءة.'));
+  } else {
+    parts.push(t('On price, the signals are mixed or inconclusive — no clear consensus across methods.','بخصوص السعر، الإشارات مختلطة أو غير حاسمة — لا إجماع واضح بين الطرق.'));
+  }
+  return parts.join(' ');
+}
+
 
 // ── Derived: Volatility/Risk read ──
 function _lkRiskRead(d){
@@ -2896,23 +3004,6 @@ function _lkRiskRead(d){
   if(combined<0.75) return {key:'low', ar:'منخفض', en:'Low', color:'var(--green)'};
   if(combined<=1.5) return {key:'med', ar:'متوسط', en:'Medium', color:'var(--gold)'};
   return {key:'high', ar:'مرتفع', en:'High', color:'var(--red)'};
-}
-
-// ── Conviction gauge SVG ──
-function _lkGauge(pct){
-  const r=32, circ=2*Math.PI*r, off=circ*(1-pct/100);
-  let color = pct>=66?'var(--green)':pct>=40?'var(--gold)':'var(--red)';
-  return `<div class="lk-gauge"><svg width="74" height="74" viewBox="0 0 74 74">
-    <circle cx="37" cy="37" r="32" fill="none" stroke="var(--bg4)" stroke-width="6"/>
-    <circle cx="37" cy="37" r="32" fill="none" stroke="${color}" stroke-width="6" stroke-linecap="round"
-      stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 37 37)"/>
-    </svg><div class="lk-gauge-txt" style="color:${color}">${pct}%</div></div>`;
-}
-
-function _lkLean(pct, isAr){
-  if(pct>=66) return {txt: isAr?'تميل إيجابياً':'Leaning Positive', cls:'pos'};
-  if(pct>=40) return {txt: isAr?'محايدة':'Neutral', cls:'neu'};
-  return {txt: isAr?'تميل بحذر':'Leaning Cautious', cls:'cau'};
 }
 
 async function lookupStock() {
@@ -2939,24 +3030,15 @@ async function lookupStock() {
     const pctSign = (d.changePct>=0) ? '▲' : '▼';
     const upside = (d.targetMean && d.price) ? (((d.targetMean-d.price)/d.price)*100) : null;
     const dcfUpside = (d.dcfValue && d.price) ? (((d.dcfValue-d.price)/d.price)*100) : null;
-    const sig = _lkSignalRead(d);
+    const reads = _sigReads(d, isAr);
+    const agree = _sigAgreement(reads, isAr);
+    const synthesis = _sigSynthesis(reads, agree, isAr);
     const risk = _lkRiskRead(d);
-    const lean = _lkLean(sig.score, isAr);
     const updated = new Date().toLocaleString(isAr?'ar':'en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
 
-    // Tension detection: PEG cheap but price above target
-    let tension = '';
-    if(d.peg!=null && d.peg<1 && upside!=null && upside<5){
-      tension = isAr
-        ? 'نسبة PEG منخفضة (رخيص مقابل النمو) لكن السعر قريب من أهداف المحللين أو أعلى منها. هاتان الإشارتان تسحبان في اتجاهين متعاكسين — تستحق التأمل.'
-        : 'PEG is low (cheap vs growth) but price sits at or above analyst targets. These two pull in opposite directions — worth contemplating.';
-    } else if(dcfUpside!=null && upside!=null && ((dcfUpside>15 && upside<0)||(upside>15 && dcfUpside<0))){
-      tension = isAr
-        ? 'نموذج DCF وأهداف المحللين يختلفان في الاتجاه — أحدهما يرى صعوداً والآخر هبوطاً. لا إجماع واضح.'
-        : 'The DCF model and analyst targets disagree on direction — one sees upside, the other downside. No clear consensus.';
-    }
-
     const t = (en,ar)=> isAr?ar:en;
+    const dirColor = dr => dr==='fav'?'var(--green)':dr==='cau'?'var(--red)':dr==='na'?'var(--text3)':'var(--text2)';
+    const dirWord  = dr => dr==='fav'?t('favorable','إيجابي'):dr==='cau'?t('cautious','حذِر'):dr==='na'?t('no data','لا بيانات'):t('neutral','محايد');
 
     document.getElementById('lookup-data-card').innerHTML = `
       <!-- Header -->
@@ -2968,7 +3050,7 @@ async function lookupStock() {
         </div>
       </div>
 
-      <!-- Decision band -->
+      <!-- Top band: facts + agreement indicator (secondary) -->
       <div class="lk-band">
         <div class="lk-cell">
           <div class="lk-cell-label">${t('Symbol','رمز السهم')}</div>
@@ -2981,30 +3063,40 @@ async function lookupStock() {
           <div class="lk-cell-sub" style="color:${pctColor}">${pctSign} ${Math.abs(d.changePct ?? 0).toFixed(2)}% ${t('today','اليوم')}</div>
         </div>
         <div class="lk-cell">
-          <div class="lk-cell-label">${t('Fair Value · DCF','القيمة العادلة · DCF')} <span class="lk-info" data-tip="${t('FMP discounted-cash-flow estimate. One model, with its own assumptions.','تقدير نموذج DCF من FMP. نموذج واحد بافتراضاته الخاصة.')}">i</span></div>
+          <div class="lk-cell-label">${t('Fair Value · DCF','القيمة العادلة · DCF')} <span class="lk-info" data-tip="${t('One cash-flow model with its own assumptions — shown alongside the analyst view, not as the verdict.','نموذج تدفقات نقدية واحد بافتراضاته — يُعرض بجانب رأي المحللين، لا كحُكم نهائي.')}">i</span></div>
           <div class="lk-cell-val">${d.dcfValue ? '$'+d.dcfValue.toFixed(2) : '—'}</div>
           <div class="lk-cell-sub" style="color:${dcfUpside>=0?'var(--green)':'var(--red)'}">${dcfUpside!=null ? (dcfUpside>=0?'+':'')+dcfUpside.toFixed(1)+'% '+t('vs price','عن السعر') : '—'}</div>
         </div>
         <div class="lk-cell">
-          <div class="lk-cell-label">${t('Signal Read','قراءة الإشارات')} <span class="lk-info" data-tip="${t('Our composite: Consensus 30% + Upside 40% + Grades 30%. A sense of direction, not a verdict.','مؤشرنا المركّب: الإجماع 30% + الصعود 40% + الترقيات 30%. إحساس بالاتجاه، لا حكم.')}">i</span></div>
-          ${_lkGauge(sig.score)}
-          <div class="lk-lean ${lean.cls}">${lean.txt}</div>
+          <div class="lk-cell-label">${t('Signal Agreement','اتّفاق الإشارات')} <span class="lk-info" data-tip="${t('Whether the 5 reads concur — NOT a buy/sell verdict. Violet = align, amber = mixed, slate = unclear.','هل تتّفق القراءات الخمس — وليس حُكم شراء/بيع. بنفسجي = متّفقة، كهرماني = مختلطة، رمادي = غير واضحة.')}">i</span></div>
+          <div class="lk-agree-ring" style="border-color:${agree.color};color:${agree.color}">${agree.key==='align'?'✓':agree.key==='mixed'?'~':'?'}</div>
+          <div class="lk-agree-lbl" style="color:${agree.color}">${agree.label}</div>
         </div>
       </div>
 
-      <!-- Honest read note -->
+      <!-- 5-read signal panel -->
+      <div class="lk-sub-card" style="margin-bottom:14px;">
+        <div class="lk-card-title">${t('Five independent reads — each on its own','خمس قراءات مستقلة — كلٌّ على حدة')}</div>
+        ${reads.map(r=>`
+          <div class="sig-read">
+            <div class="sig-read-top">
+              <span class="sig-read-label">${r.label}</span>
+              <span class="sig-read-val">${r.value}${r.sub?` <span class="sig-read-sub">${r.sub}</span>`:''}</span>
+              <span class="sig-read-dir" style="color:${dirColor(r.dir)}">${dirWord(r.dir)}</span>
+            </div>
+            <div class="sig-read-why">${r.why}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- Synthesis — the honest read: how the reads relate -->
       <div class="lk-read">
-        <div class="lk-read-head">${t('What does this reading mean?','ماذا تعني هذه القراءة؟')}</div>
-        <div class="lk-read-txt">
-          ${t(
-            `The signals this week <strong>${lean.txt.toLowerCase()}</strong> — analyst consensus, upside potential, and recent grades mostly point the same way. Calculated from: Consensus (30%) + Upside (40%) + Grades (30%).`,
-            `الإشارات هذا الأسبوع <strong>${lean.txt}</strong> — إجماع المحللين، وفرص الصعود، والترقيات الأخيرة تشير معظمها إلى نفس الجهة. محسوبة من: الإجماع (30%) + الصعود (40%) + الترقيات (30%).`
-          )}
-        </div>
+        <div class="lk-read-head">${t('Reading the dots together','قراءة النقاط معاً')}</div>
+        <div class="lk-read-txt">${synthesis}</div>
         <div class="lk-read-caveat">
           ${t(
-            '⚠ This is not a recommendation or a confirmed fact — it is a sense of where the signals lean, with a wide margin of error. We gather, connect the dots, and explain; the decision stays yours.',
-            '⚠ هذه ليست توصية ولا حقيقة مؤكدة — إنها إحساس بميل الإشارات، بهامش خطأ كبير. نحن نجمع البيانات ونربط النقاط ونشرحها لك؛ القرار يبقى قرارك أنت.'
+            '⚠ These are five separate ways of looking — not a recommendation, and each carries a wide margin of error. We gather the data, connect the dots, and explain how they relate; the decision stays yours.',
+            '⚠ هذه خمس طرق منفصلة للنظر — ليست توصية، ولكلٍّ منها هامش خطأ كبير. نحن نجمع البيانات ونربط النقاط ونشرح كيف تتعلق ببعضها؛ القرار يبقى قرارك أنت.'
           )}
         </div>
       </div>
@@ -3017,7 +3109,7 @@ async function lookupStock() {
           ${_lkRow(t('Fair Value · DCF','القيمة العادلة · DCF'), t('Value estimate from future cash flows','تقدير القيمة بناءً على التدفقات النقدية المستقبلية'), d.dcfValue?'$'+d.dcfValue.toFixed(2):'—', dcfUpside!=null?(dcfUpside>=0?'+':'')+dcfUpside.toFixed(1)+'% '+t('potential','محتمل'):null, dcfUpside>=0)}
           ${_lkRow(t('P/E Ratio','مضاعف الربحية · P/E'), d.pe!=null?(d.pe.toFixed(1)+'x — '+t('reasonable for tech sector','معقول مقارنةً بقطاع التقنية')):t('Price to earnings','السعر إلى الأرباح'), d.pe!=null?d.pe.toFixed(1)+'x':'—', null)}
           ${_lkRow(t('PEG Ratio','نسبة PEG'), t('Below 1 = price cheap vs growth rate','أقل من 1 = السعر رخيص مقارنةً بمعدل النمو'), d.peg!=null?d.peg.toFixed(2):'—', d.peg!=null&&d.peg<1?t('relatively cheap','رخيص نسبياً'):null, true)}
-          ${tension ? `<div class="lk-tension"><div class="lk-tension-head">⚖ ${t('Conflicting signals — worth contemplating','إشارات متضاربة — تستحق التأمل')}</div><div class="lk-tension-txt">${tension}</div></div>` : ''}
+          ${''}
         </div>
 
         <div class="lk-sub-card">
@@ -5559,6 +5651,20 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 .cmd-big{font-size:32px!important;}
 /* Disclaimer text under decisions — readable */
 .disclaimer-text,.decisions-disclaimer{font-size:12.5px!important;color:var(--text2)!important;}
+
+/* ═══ Signal panel — 5 reads + agreement indicator ═══ */
+.lk-agree-ring{width:44px;height:44px;border-radius:50%;border:3px solid;display:grid;place-items:center;
+  margin:0 auto 8px;font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;}
+.lk-agree-lbl{font-size:12px;font-weight:700;}
+.sig-read{padding:14px 0;border-bottom:1px solid var(--border);}
+.sig-read:last-child{border-bottom:none;}
+.sig-read-top{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;}
+.sig-read-label{font-size:14px;font-weight:800;color:var(--text);min-width:120px;}
+.sig-read-val{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--text);flex:1;}
+.sig-read-sub{font-size:11px;color:var(--text3);font-weight:400;}
+.sig-read-dir{font-size:12px;font-weight:700;text-transform:lowercase;}
+.sig-read-why{font-size:13px;color:var(--text2);line-height:1.7;margin-top:5px;}
+[dir="rtl"] .sig-read-why,.firm-body:not(.en) .sig-read-why{text-align:right;}
 </style>
 
 <!-- Tooltip container -->
