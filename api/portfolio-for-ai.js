@@ -205,16 +205,18 @@ if (req.query.mode === 'lookup') {
   const sym = (req.query.sym || '').toUpperCase().trim();
   if (!sym) return res.status(400).json({ error: 'sym required' });
 
-  let quoteRaw, metrics, targets, grades, dcf, ratios, growth;
+  let quoteRaw, metrics, targets, grades, dcf, ratios, growth, dcfLevered, dcfCustom;
   try {
-    [quoteRaw, metrics, targets, grades, dcf, ratios, growth] = await Promise.all([
+    [quoteRaw, metrics, targets, grades, dcf, ratios, growth, dcfLevered, dcfCustom] = await Promise.all([
       fmpGet(`/quote?symbol=${sym}`),
       fmpGet(`/key-metrics-ttm?symbol=${sym}`),
       fmpGet(`/price-target-consensus?symbol=${sym}`),
       fmpGet(`/grades-latest?symbol=${sym}&limit=5`),
       fmpGet(`/discounted-cash-flow?symbol=${sym}`),
       fmpGet(`/ratios-ttm?symbol=${sym}`),
-      fmpGet(`/income-statement-growth?symbol=${sym}&limit=1`)
+      fmpGet(`/income-statement-growth?symbol=${sym}&limit=1`),
+      fmpGet(`/levered-discounted-cash-flow?symbol=${sym}`),
+      fmpGet(`/custom-discounted-cash-flow?symbol=${sym}`)
     ]);
   } catch(e) {
     return res.status(500).json({ error: 'Fetch error: ' + e.message });
@@ -228,6 +230,8 @@ const changePct = lq?.changesPercentage ?? null;
   const ld = Array.isArray(dcf) ? dcf[0] : (dcf || null);
   const lr = Array.isArray(ratios) ? ratios[0] : (ratios || null);
   const lg = Array.isArray(growth) ? growth[0] : (growth || null);
+  const ldLevered = Array.isArray(dcfLevered) ? dcfLevered[0] : (dcfLevered || null);
+  const ldCustom  = Array.isArray(dcfCustom)  ? dcfCustom[0]  : (dcfCustom  || null);
 
   const data = {
     symbol: sym,
@@ -237,12 +241,18 @@ const changePct = lq?.changesPercentage ?? null;
     pe: lr?.priceToEarningsRatioTTM ? +lr.priceToEarningsRatioTTM.toFixed(1) : null,
     peg: lr?.priceToEarningsGrowthRatioTTM ? +lr.priceToEarningsGrowthRatioTTM.toFixed(2) : null,
     roe: lm?.returnOnEquityTTM ? +(lm.returnOnEquityTTM).toFixed(1) : null,
-    revenueGrowth: lg?.growthRevenue != null ? +(lg.growthRevenue * 100).toFixed(1) : null,
+    revenueGrowth: lg?.growthRevenue != null ? +lg.growthRevenue.toFixed(4) : null,
     targetMean: lt?.targetConsensus ?? lt?.targetMedian ?? null,
     targetHigh: lt?.targetHigh ?? null,
     targetLow: lt?.targetLow ?? null,
     analystConsensus: ((lt?.analystRatingsStrongBuy||0)+(lt?.analystRatingsBuy||0)) > ((lt?.analystRatingsSell||0)+(lt?.analystRatingsStrongSell||0)) ? 'Bullish 📈' : 'Bearish 📉',
     dcfValue: ld?.dcf ?? null,
+    // TEMP DEBUG — compare the three FMP DCF variants for sanity-check, remove after picking one
+    _dcfDebug: {
+      standard: ld?.dcf ?? null,
+      levered: ldLevered?.dcf ?? null,
+      custom: ldCustom?.dcf ?? null
+    },
     grades: Array.isArray(grades) ? grades.slice(0,5) : []
   };
 
