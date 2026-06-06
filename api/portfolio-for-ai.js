@@ -134,6 +134,64 @@ async function fetchTechnicals(sym) {
   };
 }
 
+// ─── Lookup: financial history (last 3 fiscal years, oldest→newest) ──────────
+async function fetchFinancials(sym) {
+  const [incomeRaw, cashRaw] = await Promise.all([
+    fmpGet(`/income-statement?symbol=${sym}&period=annual&limit=3`),
+    fmpGet(`/cash-flow-statement?symbol=${sym}&period=annual&limit=3`)
+  ]);
+  if (!Array.isArray(incomeRaw) || incomeRaw.length === 0) return [];
+  // FMP returns newest→oldest; reverse to oldest→newest
+  const income = [...incomeRaw].reverse();
+  // Map FCF by fiscal year for matching
+  const fcfByYear = {};
+  if (Array.isArray(cashRaw)) {
+    cashRaw.forEach(c => {
+      const yr = c.fiscalYear ?? c.calendarYear ?? (c.date ? c.date.slice(0, 4) : null);
+      if (yr != null) fcfByYear[String(yr)] = c.freeCashFlow ?? null;
+    });
+  }
+  return income.map(r => {
+    const year = r.fiscalYear ?? r.calendarYear ?? (r.date ? r.date.slice(0, 4) : null);
+    const revenue = r.revenue ?? null;
+    const netIncome = r.netIncome ?? null;
+    const netMargin = (revenue && netIncome != null) ? +((netIncome / revenue) * 100).toFixed(1) : null;
+    return {
+      label: year != null ? String(year) : null,
+      year,
+      revenue,
+      netIncome,
+      netMargin,
+      freeCashFlow: fcfByYear[String(year)] ?? null
+    };
+  });
+}
+
+// ─── Lookup: 1yr daily price history, downsampled to ~52 weekly points ───────
+async function fetchPriceHistory(sym) {
+  const raw = await fmpGet(`/historical-price-eod/light?symbol=${sym}&from=${daysAgoUAE(365)}&to=${todayUAE()}`);
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+  // FMP returns newest→oldest; reverse to oldest→newest
+  const series = [...raw].reverse();
+  // Downsample to ~52 weekly points
+  const step = Math.max(1, Math.floor(series.length / 52));
+  const sampled = [];
+  for (let i = 0; i < series.length; i += step) sampled.push(series[i]);
+  const last = series[series.length - 1];
+  if (sampled[sampled.length - 1] !== last) sampled.push(last);
+  return sampled.map(p => ({ date: p.date, price: p.price ?? null }));
+}
+
+// ─── Lookup: company profile (name + beta) ───────────────────────────────────
+async function fetchProfile(sym) {
+  const raw = await fmpGet(`/profile?symbol=${sym}`);
+  const p = Array.isArray(raw) ? raw[0] : (raw || null);
+  return {
+    companyName: p?.companyName ?? null,
+    beta: p?.beta ?? null
+  };
+}
+
 // ─── main ────────────────────────────────────────────────────────────────────
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -187,6 +245,24 @@ const changePct = lq?.changesPercentage ?? null;
     dcfValue: ld?.dcf ?? null,
     grades: Array.isArray(grades) ? grades.slice(0,5) : []
   };
+
+  // ── New data sources: financial history, price history, profile ───────────
+  try {
+    const [financials, priceHistory, profileInfo] = await Promise.all([
+      fetchFinancials(sym),
+      fetchPriceHistory(sym),
+      fetchProfile(sym)
+    ]);
+    data.financials  = financials;
+    data.priceHistory = priceHistory;
+    data.companyName = profileInfo.companyName;
+    data.beta        = profileInfo.beta;
+  } catch (e) {
+    data.financials  = [];
+    data.priceHistory = [];
+    data.companyName = null;
+    data.beta        = null;
+  }
 
   let analysis = '';
   try {
