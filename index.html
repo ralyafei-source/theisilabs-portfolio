@@ -5524,6 +5524,41 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 .enh-row-val{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;}
 .enh-row-val.up{color:var(--green);}
 .enh-row-val.dn{color:var(--red);}
+
+/* ═══ Readability pass — darker headings + bigger card text ═══ */
+/* Section/card labels were --text3 (too faint on light). Darken them. */
+.card-title,.cmd-stitle,.cmd-lbl,.stat-label,.group-label,
+.section-sub,.lk-card-title,.lk-cell-label{
+  color:var(--text2)!important;font-weight:700;
+}
+[data-mode="light"] .card-title,
+[data-mode="light"] .cmd-stitle,
+[data-mode="light"] .cmd-lbl,
+[data-mode="light"] .stat-label,
+[data-mode="light"] .lk-card-title,
+[data-mode="light"] .lk-cell-label{
+  color:#4A4A5C!important;  /* clearly readable on light bg */
+}
+/* "WHAT HAPPENED TODAY", "MARKET NEWS", "SCORE BREAKDOWN" headers */
+.cmd-stitle{font-size:12px!important;}
+/* Dashboard event cards (What Happened Today) — bigger text */
+.event-body{font-size:14.5px!important;line-height:1.7!important;}
+.event-ticker{font-size:13px!important;font-weight:800!important;}
+/* Market news cards — bigger */
+.news-title{font-size:15.5px!important;line-height:1.55!important;}
+.news-summary{font-size:14px!important;}
+.news-meta,.news-src,.news-time{font-size:12px!important;}
+.news-sym{font-size:12px!important;}
+/* Today's decisions cards */
+.event-card{font-size:14.5px!important;}
+/* Score breakdown labels */
+.hlbl{font-size:13px!important;color:var(--text2)!important;}
+.hval{font-size:13px!important;}
+/* Stat card values a touch bigger */
+.stat-value{font-size:24px!important;}
+.cmd-big{font-size:32px!important;}
+/* Disclaimer text under decisions — readable */
+.disclaimer-text,.decisions-disclaimer{font-size:12.5px!important;color:var(--text2)!important;}
 </style>
 
 <!-- Tooltip container -->
@@ -7094,11 +7129,23 @@ async function initLiveData(){ await loadLiveNews();
       }catch(e){}
 
       let tv=0,tc=0;
-      h.forEach(x=>{const p=prices[x.sym]||x.cost;tv+=x.shares*p;tc+=x.shares*x.cost;});
-      const pl=tv-tc,plp=tc>0?(pl/tc*100):0;
+      h.forEach(x=>{
+        const shares=Number(x.shares)||0;
+        const cost=Number(x.cost)||0;
+        const p=Number(prices[x.sym])||cost;
+        // If shares missing but market value present, use mv directly
+        if((!shares || !p) && x.mv!=null){
+          tv+=Number(x.mv)||0;
+          tc+=Number(x.mv)||0; // no cost basis → treat as flat so P/L shows 0, not NaN
+        } else {
+          tv+=shares*p;
+          tc+=shares*cost;
+        }
+      });
+      const pl=tv-tc, plp=tc>0?(pl/tc*100):0;
       const ve=document.getElementById('cmd-value');
       const ce=document.getElementById('cmd-change');
-      if(ve)ve.textContent='$'+Number(tv).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+      if(ve)ve.textContent='$'+(Number(tv)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
       if(ce){ce.textContent=(pl>=0?'▲ +':'▼ ')+'$'+Math.abs(pl).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' · '+(pl>=0?'+':'')+plp.toFixed(2)+'% total';ce.className='cmd-sub '+(pl>=0?'up':'down');}
     }
   }catch(e){}
