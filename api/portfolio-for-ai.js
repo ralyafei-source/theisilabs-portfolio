@@ -286,6 +286,9 @@ ROE: ${data.roe != null ? data.roe+'%' : '—'}
 هدف المحللين: $${data.targetMean ?? '—'}
 DCF: $${data.dcfValue != null ? data.dcfValue.toFixed(0) : '—'}
 توجه المحللين: ${data.analystConsensus ?? 'لا تغطية'}
+القطاع: ${data.sector ?? '—'}
+نمو الإيرادات: ${data.revenueGrowth != null ? (data.revenueGrowth*100).toFixed(1)+'%' : '—'}
+بيتا: ${data.beta ?? '—'}
 
 قدم التحليل في هذا الشكل:
 
@@ -296,10 +299,10 @@ DCF: $${data.dcfValue != null ? data.dcfValue.toFixed(0) : '—'}
 [هل السهم رخيص أم غالٍ؟ مقارنة السعر بالهدف والـ DCF]
 
 ## نقاط القوة
-[3 نقاط إيجابية]
+[أبرز نقاط القوة الحقيقية — حتى 3 نقاط فقط إن وُجدت، لا تختلق نقاطاً]
 
 ## نقاط الضعف / المخاطر
-[3 مخاطر]
+[أبرز المخاطر الحقيقية — حتى 3 مخاطر فقط إن وُجدت، لا تختلق مخاطر]
 
 ## الحكم النهائي
 [شراء قوي / شراء / احتفظ / خفف / بيع] مع سبب موجز
@@ -315,7 +318,7 @@ DCF: $${data.dcfValue != null ? data.dcfValue.toFixed(0) : '—'}
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
+        max_tokens: 1500,
         messages: [{ role: 'user', content: prompt }]
       })
     });

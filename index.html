@@ -3426,7 +3426,7 @@ async function lookupStock() {
         const riskMatch=txt.match(/(نقاط الضعف|المخاطر)[\s\S]*?(?=---|$)/i);
         const extractBullets=(block)=>{
           if(!block)return null;
-          const lines=block.split('\n').filter(l=>l.trim().match(/^[-*•]|^\d+\./)).slice(0,3).map(l=>l.replace(/^[-*•]\s*|\d+\.\s*/,'').trim()).filter(l=>l.length>5);
+          const lines=block.split('\n').filter(l=>l.trim().match(/^[-*•]|^\d+\./)).slice(0,3).map(l=>l.replace(/^[-*•]\s*|\d+\.\s*/,'').replace(/\*\*/g,'').replace(/[🔴🟡🟢⚠️💪🏦⚡]/gu,'').trim()).filter(l=>l.length>5);
           return lines.length?lines:null;
         };
         const strengths=extractBullets(strengthMatch?.[0]);
@@ -3514,7 +3514,8 @@ function _lkRenderChart(hist, dcf, target, isAr, targetEl){
   const fvLine = dcf ? labels.map(()=>dcf) : null;
   const ds=[{label:t('Price','السعر'),data:prices,borderColor:'#38BDF8',backgroundColor:'rgba(56,189,248,0.05)',borderWidth:2,pointRadius:0,fill:true,tension:0.3}];
   if(fvLine) ds.push({label:t('Fair Value (DCF)','القيمة العادلة'),data:fvLine,borderColor:'#34D399',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false});
-  new Chart(document.getElementById(chartId),{type:'line',data:{labels,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{align:'start',labels:{color:'#9595A8',font:{size:10},usePointStyle:true,boxWidth:5,padding:8}}},scales:{x:{ticks:{color:'#5C5C70',font:{size:9},maxTicksLimit:6},grid:{display:false}},y:{ticks:{color:'#5C5C70',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+  setTimeout(()=>{ new Chart(document.getElementById(chartId),{type:'line',data:{labels,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{align:'start',labels:{color:'#9595A8',font:{size:10},usePointStyle:true,boxWidth:5,padding:8}}},scales:{x:{ticks:{color:'#5C5C70',font:{size:9},maxTicksLimit:6},grid:{display:false}},y:{ticks:{color:'#5C5C70',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+  },50);
 }
 
 
