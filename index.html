@@ -867,18 +867,18 @@ main{display:contents;}
 #mobile-bottom-nav { display: none; }
 
 /* ── Lookup Decision Panel ── */
-.lk-decision-panel{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;}
-.lk-dp-topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
-.lk-dp-topbar-right{display:flex;align-items:center;gap:12px;justify-content:flex-end;}
+.lk-decision-panel{background:linear-gradient(135deg,color-mix(in srgb,var(--cyan) 4%,transparent) 0%,color-mix(in srgb,var(--cyan) 1%,transparent) 100%);border:1px solid color-mix(in srgb,var(--cyan) 20%,transparent);border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 0 30px color-mix(in srgb,var(--cyan) 5%,transparent);}
+.lk-dp-topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:20px;padding:16px 8px;border-bottom:1px solid var(--border);gap:24px;}
+.lk-dp-topbar-right{display:flex;align-items:center;gap:12px;justify-content:flex-end;padding-right:8px;}
 .lk-dp-topbar-center{text-align:center;}
-.lk-dp-topbar-left{text-align:left;justify-self:start;}
+.lk-dp-topbar-left{text-align:left;justify-self:start;padding-left:8px;}
 .lk-dp-logo-wrap{flex:none;width:48px;height:48px;border-radius:12px;overflow:hidden;border:1px solid var(--border);}
 .lk-dp-logo{width:48px;height:48px;object-fit:contain;background:#fff;padding:4px;border-radius:12px;}
 .lk-dp-initials{width:48px;height:48px;border-radius:12px;background:var(--rose);color:#fff;font-size:16px;font-weight:800;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;}
 .lk-dp-symbol{font-size:20px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:var(--text);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .lk-dp-name{font-size:12px;color:var(--text2);margin-top:2px;}
 .lk-sector-tag{font-size:10px;font-weight:600;background:rgba(255,10,108,0.12);color:var(--rose);padding:2px 8px;border-radius:20px;border:1px solid rgba(255,10,108,0.2);}
-.lk-dp-ring{width:56px;height:56px;border-radius:50%;border:3px solid;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;margin:0 auto 4px;}
+.lk-dp-ring{width:64px;height:64px;border-radius:50%;border:3px solid;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;margin:0 auto 4px;}
 .lk-dp-ring-label{font-size:11px;font-weight:700;}
 .lk-dp-ring-sub{font-size:10px;color:var(--text2);}
 .lk-dp-tl-label{font-size:10px;color:var(--text2);}
@@ -894,9 +894,8 @@ main{display:contents;}
 .lk-dp-val-label{font-size:10px;color:var(--text2);font-weight:600;text-align:right;white-space:nowrap;}
 .lk-dp-val-big{font-size:15px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text);text-align:left;}
 .lk-dp-val-sub{font-size:10px;color:var(--text2);text-align:left;}
-.lk-dp-upside-card{border-width:2px !important;grid-column:span 2;}
-.lk-dp-upside-card{flex-direction:column !important;text-align:center;padding:14px !important;}
-.lk-dp-upside-big{font-size:22px;font-weight:800;font-family:'IBM Plex Mono',monospace;text-align:center;}
+.lk-dp-upside-card{border-width:2px !important;}
+.lk-dp-upside-big{font-size:17px;font-weight:800;font-family:'IBM Plex Mono',monospace;}
 .lk-dp-verdict-card{border-width:2px !important;}
 .lk-dp-text-box{font-size:13px;color:var(--text2);line-height:1.7;padding:12px;background:var(--bg3);border-radius:10px;border:1px solid var(--border);}
 .lk-dp-thesis{color:var(--text3);font-style:italic;}
@@ -3129,6 +3128,18 @@ async function lookupStock() {
     const res = await r.json();
     if (res.error) throw new Error(res.error);
     const d = res.data;
+    let descTranslated = null;
+    if (d.description) {
+      try {
+        const tRes = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: d.description.slice(0, 500), target: 'ar', date: 'lookup-desc' })
+        });
+        const tData = await tRes.json();
+        descTranslated = tData.translated || null;
+      } catch(e) { descTranslated = null; }
+    }
     window._lastLookupSym = sym;  // remember for language re-render
 
     const name = d.companyName || d.name || d.symbol;
@@ -3158,7 +3169,7 @@ async function lookupStock() {
     const logoUrl = d.website ? `https://logo.clearbit.com/${d.website.replace(/https?:\/\/(www\.)?/,'').split('/')[0]}` : null;
     const logoInitials = (d.symbol||'??').slice(0,2).toUpperCase();
     const agreeGlyph = agree.key==='align' ? '✓' : agree.key==='mixed' ? '~' : '?';
-    const descShort = d.description ? d.description.slice(0,400)+(d.description.length>400?'…':'') : null;
+    const descShort = descTranslated || (d.description ? d.description.slice(0,400)+(d.description.length>400?'…':'') : null);
 
     const decisionPanel = `
 <div class="lk-decision-panel" dir="rtl">
@@ -3205,7 +3216,7 @@ async function lookupStock() {
           <div class="lk-dp-val-sub" style="color:${upsideColor}">${dcfUpsideVal ? upsideArrow+' '+Math.abs(dcfUpsideVal)+'%' : '—'}</div>
         </div>
 
-        <div class="lk-dp-val-card lk-dp-upside-card" style="border-color:${upsideColor};grid-column:span 2">
+        <div class="lk-dp-val-card lk-dp-upside-card" style="border-color:${upsideColor}">
           <div class="lk-dp-val-label">إمكانية الصعود</div>
           <div class="lk-dp-upside-big" style="color:${upsideColor}">${dcfUpsideVal ? (dcfUpsideVal>0?'+':'')+dcfUpsideVal+'%' : '—'}</div>
           <div class="lk-dp-val-sub">مقابل السعر الحالي</div>
@@ -3251,7 +3262,7 @@ async function lookupStock() {
       <div class="lk-dp-text-box lk-dp-thesis">— سيتوفر قريباً (تحليل ذكاء اصطناعي)</div>
 
       <div class="lk-dp-section-title" style="margin-top:14px">🏢 نبذة عن الشركة (EN)</div>
-      <div class="lk-dp-text-box" dir="ltr" style="text-align:left">${descShort||'—'}</div>
+      <div class="lk-dp-text-box" dir="rtl" style="text-align:right">${descShort||'—'}</div>
 
       <div class="lk-dp-2col" style="margin-top:14px">
         <div class="lk-dp-box">
@@ -3458,7 +3469,7 @@ function _lkRenderChart(hist, dcf, target, isAr, targetEl){
   const t=(en,ar)=>isAr?ar:en;
   const wrap=targetEl||document.getElementById('lk-chart-wrap');
   if(!wrap||typeof Chart==='undefined') return;
-  wrap.innerHTML=`<div class="lk-sub-card" style="margin-top:14px;"><div class="lk-card-title">${t('Price vs Fair Value','السعر الفعلي مقابل القيمة العادلة')}</div><div style="position:relative;height:240px;"><canvas id="lkChart"></canvas></div></div>`;
+  wrap.innerHTML=`<div class="lk-sub-card" style="margin-top:14px;"><div class="lk-card-title">${t('Price vs Fair Value','السعر الفعلي مقابل القيمة العادلة')}</div><div style="position:relative;height:180px;"><canvas id="lkChart"></canvas></div></div>`;
   const labels=hist.map(p=>p.date);
   const prices=hist.map(p=>p.price);
   const fvLine = dcf ? labels.map(()=>dcf) : null;

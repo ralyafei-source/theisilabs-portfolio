@@ -16,6 +16,11 @@ module.exports = async (req, res) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) { res.status(500).json({ error: 'API key not configured' }); return; }
 
+  const target = req.body?.target || 'en';
+  const system = target === 'ar'
+    ? 'You are a financial translator. Translate the following English company description to clear, professional Arabic. Keep all stock symbols, percentages, and numbers exactly as they are. Output ONLY the translated Arabic text, nothing else.'
+    : 'You are a financial translator. Translate the following Arabic investment analysis to clear, professional English. Keep all stock symbols, percentages, and numbers exactly as they are. Preserve the structure and section headers. Output ONLY the translated text, nothing else.';
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -27,7 +32,7 @@ module.exports = async (req, res) => {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6', // Fast + cheap for translation
         max_tokens: 4000,
-        system: 'You are a financial translator. Translate the following Arabic investment analysis to clear, professional English. Keep all stock symbols, percentages, and numbers exactly as they are. Preserve the structure and section headers. Output ONLY the translated text, nothing else.',
+        system,
         messages: [{ role: 'user', content: text }]
       })
     });
