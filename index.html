@@ -813,7 +813,7 @@ main{display:contents;}
   .hstats { display:none !important; }
   header { padding: 0 14px; }
   .header-inner { height: 50px; flex-wrap: nowrap; gap: 8px; }
-  .hstat { display: none; }
+  .hstat { display: none !important; }
 
   /* 2. Hide the sticky top nav — we'll use bottom nav instead */
   nav { display: none !important; }
@@ -826,8 +826,8 @@ main{display:contents;}
     left: 0;
     right: 0;
     height: 60px;
-    background: var(--bg2);
-    border-top: 1px solid var(--border);
+    background: var(--bg3);
+    border-top: 2px solid var(--rose);
     z-index: 200;
     align-items: center;
     justify-content: space-around;
@@ -840,7 +840,7 @@ main{display:contents;}
     gap: 3px;
     font-size: 9px;
     font-weight: 700;
-    color: var(--text2);
+    color: var(--text);
     cursor: pointer;
     padding: 6px 12px;
     border-radius: 10px;
@@ -3445,6 +3445,10 @@ async function lookupStock() {
       analysisEl.className = 'firm-body' + (isAr?'':' en');
       analysisEl.innerHTML = (typeof mdToHtml==='function' && res.analysis) ? mdToHtml(res.analysis) : (res.analysis || t('No analysis available','لا يوجد تحليل متاح'));
       try{ enhanceAnalysis(analysisEl); }catch(e){}
+      if(typeof highlightGlossaryTerms==='function'){
+        analysisEl.dataset.glossaryDone='';
+        highlightGlossaryTerms(analysisEl);
+      }
     }
 
     document.getElementById('lookup-loading').style.display = 'none';
@@ -3931,6 +3935,10 @@ if(f==='scoring'){
         stale.textContent = '';
       }
     }
+    if(body && typeof highlightGlossaryTerms==='function'){
+      body.dataset.glossaryDone='';
+      highlightGlossaryTerms(body);
+    }
   });
 }
 function colorizePercent(text){
@@ -4050,7 +4058,7 @@ function renderSignals(text){
     }
 
     if(!matched && t){
-      html += `<div style="font-size:13px;color:var(--text2);padding:4px 8px;direction:rtl;text-align:right;line-height:1.7;">${colorizePercent(t)}</div>`;
+      html += `<div style="font-size:13px;color:var(--text2);padding:4px 8px;direction:rtl;text-align:right;line-height:1.7;">${colorizePercent(t.replace(/\*\*/g,'').replace(/\*/g,'').replace(/^[-•]\s*/,''))}</div>`;
     }
   });
 
@@ -6190,13 +6198,17 @@ const glossaryTooltip = {
   },
 
   position(x, y) {
-    const tw = 290, th = 100;
+    const tw = Math.min(290, window.innerWidth - 32);
+    const th = 100;
     let left = x + 12;
     let top  = y - th - 8;
     if (left + tw > window.innerWidth - 16) left = x - tw - 12;
+    if (left < 8) left = 8;
     if (top < 8) top = y + 16;
+    if (top + th > window.innerHeight - 8) top = y - th - 8;
     this.el.style.left = left + 'px';
     this.el.style.top  = top  + 'px';
+    this.el.style.maxWidth = tw + 'px';
   },
 
   async show(term, x, y) {
@@ -7653,7 +7665,7 @@ async function initLiveData(){ await loadLiveNews();
         const SIGWORDS=/شراء|بيع|إضافة|خروج|مراقبة|فرصة|إشارة|دعم|مقاومة|اختراق|تصحيح|ارتفاع|انخفاض|buy|sell|add|exit|watch|signal|support|resistance|breakout|opportunity|momentum/i;
         let lines=content.split('\n')
           .map(l=>l.replace(/^[#*\-]+\s*/g,'').replace(/[*_`]/g,'').trim())
-          .filter(l=>/\b[A-Z]{2,5}\b/.test(l)&&SIGWORDS.test(l)&&l.length>20)
+          .filter(l=>/\b[A-Z]{2,5}\b/.test(l)&&SIGWORDS.test(l)&&l.length>20&&!/═|SIGNALS|EARNINGS|MACRO|SCORING|SIGNALS|RADAR|MOMENTUM|HEALTH|EDGE|VIEW/.test(l))
           .slice(0,3);
         if(g){
           if(lines.length){
