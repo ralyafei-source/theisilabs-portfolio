@@ -190,7 +190,8 @@ async function fetchProfile(sym) {
     companyName: p?.companyName || null,
     beta: p?.beta ?? null,
     sector: p?.sector || null,
-    description: p?.description || null
+    description: p?.description || null,
+    website: p?.website || null
   };
 }
 
@@ -261,6 +262,7 @@ const changePct = lq?.changesPercentage ?? null;
     data.beta        = profileInfo.beta;
     data.sector      = profileInfo.sector;
     data.description = profileInfo.description;
+    data.website     = profileInfo.website;
   } catch (e) {
     data.financials  = [];
     data.priceHistory = [];
@@ -268,6 +270,7 @@ const changePct = lq?.changesPercentage ?? null;
     data.beta        = null;
     data.sector      = null;
     data.description = null;
+    data.website     = null;
   }
 
   let analysis = '';
