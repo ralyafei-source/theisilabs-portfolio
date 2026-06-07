@@ -6,8 +6,8 @@ const https = require('https');
 const crypto = require('crypto');
 
 const REPO = 'ralyafei-source/theisilabs-portfolio';
-const TELEGRAM_TOKEN = '8644558518:AAFMViTWxCm-mS5x8g9emnI-iDkAmH7iIzs';
-const ADMIN_CHAT_ID = '1365815413';
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
 
 // ── GitHub helpers ──
 async function ghGet(path, token) {
