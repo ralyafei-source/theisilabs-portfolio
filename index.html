@@ -865,6 +865,32 @@ main{display:contents;}
 
 /* Hide bottom nav on desktop */
 #mobile-bottom-nav { display: none; }
+
+/* ── Lookup Decision Panel ── */
+.lk-decision-panel{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;direction:rtl;}
+.lk-dp-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.lk-dp-logo-wrap{flex:none;width:48px;height:48px;border-radius:12px;overflow:hidden;border:1px solid var(--border);}
+.lk-dp-logo{width:48px;height:48px;object-fit:contain;background:#fff;padding:4px;border-radius:12px;}
+.lk-dp-initials{width:48px;height:48px;border-radius:12px;background:var(--rose);color:#fff;font-size:16px;font-weight:800;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;}
+.lk-dp-title-block{flex:1;}
+.lk-dp-symbol{font-size:20px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:var(--text);display:flex;align-items:center;gap:8px;}
+.lk-dp-name{font-size:13px;color:var(--text2);margin-top:2px;}
+.lk-dp-updated{font-size:11px;color:var(--text3);white-space:nowrap;}
+.lk-sector-tag{font-size:10px;font-weight:600;background:rgba(255,10,108,0.12);color:var(--rose);padding:2px 8px;border-radius:20px;border:1px solid rgba(255,10,108,0.2);}
+.lk-dp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+@media(max-width:600px){.lk-dp-stats{grid-template-columns:repeat(2,1fr);}}
+.lk-dp-stat{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;}
+.lk-dp-stat-label{font-size:10px;color:var(--text2);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+.lk-dp-stat-val{font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text);}
+.lk-dp-stat-sub{font-size:11px;color:var(--text2);margin-top:4px;}
+.lk-dp-agree-ring{font-size:22px;font-weight:800;color:var(--rose);font-family:'IBM Plex Mono',monospace;}
+.lk-dp-desc{font-size:13px;color:var(--text2);line-height:1.7;padding:14px;background:var(--bg3);border-radius:10px;margin-bottom:14px;border:1px solid var(--border);}
+.lk-dp-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+@media(max-width:600px){.lk-dp-2col{grid-template-columns:1fr;}}
+.lk-dp-box{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px;}
+.lk-dp-box-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;}
+.lk-dp-box-empty{font-size:12px;color:var(--text3);font-style:italic;}
+.lk-dp-divider{text-align:center;font-size:12px;color:var(--text3);padding:10px 0 4px;border-top:1px solid var(--border);margin-top:4px;}
 </style>
 </head>
 <body>
@@ -3105,6 +3131,83 @@ async function lookupStock() {
     const dirColor = dr => dr==='fav'?'var(--green)':dr==='cau'?'var(--red)':dr==='na'?'var(--text3)':'var(--text2)';
     const dirWord  = dr => dr==='fav'?t('favorable','إيجابي'):dr==='cau'?t('cautious','حذِر'):dr==='na'?t('no data','لا بيانات'):t('neutral','محايد');
 
+    // ── Decision Dashboard Panel ──────────────────────────────────────────
+    const logoUrl = d.website
+      ? `https://logo.clearbit.com/${d.website.replace(/https?:\/\/(www\.)?/,'').split('/')[0]}`
+      : null;
+    const logoInitials = (d.symbol||'??').slice(0,2).toUpperCase();
+    const sectorTag = d.sector ? `<span class="lk-sector-tag">${d.sector}</span>` : '';
+    const descText = d.description || '';
+    const betaText = d.beta != null ? d.beta.toFixed(2) : '—';
+    const dcfUpside2 = (d.dcfValue && d.price) ? (((d.dcfValue - d.price) / d.price) * 100).toFixed(1) : null;
+    const upsideColor2 = dcfUpside2 > 0 ? 'var(--green)' : 'var(--red)';
+    const upsideArrow2 = dcfUpside2 > 0 ? '↑' : '↓';
+    const changePctColor = d.changePct >= 0 ? 'var(--green)' : 'var(--red)';
+    const changePctSign = d.changePct >= 0 ? '▲' : '▼';
+    const verdictColor = d.analystConsensus && d.analystConsensus.includes('Bullish') ? 'var(--green)' : d.analystConsensus && d.analystConsensus.includes('Bearish') ? 'var(--red)' : 'var(--gold)';
+
+    const decisionPanel = `
+<div class="lk-decision-panel">
+
+  <!-- Header row -->
+  <div class="lk-dp-header">
+    <div class="lk-dp-logo-wrap">
+      <img class="lk-dp-logo" src="${logoUrl||''}"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+        ${logoUrl ? '' : 'style="display:none"'}>
+      <div class="lk-dp-initials" style="${logoUrl ? 'display:none' : 'display:flex'}">${logoInitials}</div>
+    </div>
+    <div class="lk-dp-title-block">
+      <div class="lk-dp-symbol">${d.symbol} ${sectorTag}</div>
+      <div class="lk-dp-name">${d.companyName || d.symbol}</div>
+    </div>
+    <div class="lk-dp-updated">🕐 ${new Date().toLocaleDateString('ar-AE')}</div>
+  </div>
+
+  <!-- 4 stat cards -->
+  <div class="lk-dp-stats">
+    <div class="lk-dp-stat">
+      <div class="lk-dp-stat-label">السعر الحالي</div>
+      <div class="lk-dp-stat-val">$${d.price?.toFixed(2)||'—'}</div>
+      <div class="lk-dp-stat-sub" style="color:${changePctColor}">${changePctSign} ${Math.abs(d.changePct||0).toFixed(2)}%</div>
+    </div>
+    <div class="lk-dp-stat">
+      <div class="lk-dp-stat-label">القيمة العادلة DCF</div>
+      <div class="lk-dp-stat-val">${d.dcfValue ? '$'+d.dcfValue.toFixed(2) : '—'}</div>
+      <div class="lk-dp-stat-sub" style="color:${upsideColor2}">${dcfUpside2 ? upsideArrow2+' '+Math.abs(dcfUpside2)+'%' : '—'}</div>
+    </div>
+    <div class="lk-dp-stat">
+      <div class="lk-dp-stat-label">توجه المحللين</div>
+      <div class="lk-dp-stat-val" style="color:${verdictColor};font-size:15px">${d.analystConsensus||'لا تغطية'}</div>
+      <div class="lk-dp-stat-sub">PEG: ${d.peg||'—'} · Beta: ${betaText}</div>
+    </div>
+    <div class="lk-dp-stat lk-dp-stat-signal">
+      <div class="lk-dp-stat-label">درجة الاتفاق</div>
+      <div class="lk-dp-agree-ring" style="color:${agree.color}">${agree.key==='align'?'✓':agree.key==='mixed'?'~':'?'}</div>
+    </div>
+  </div>
+
+  <!-- Description -->
+  ${descText ? `<div class="lk-dp-desc">${descText}</div>` : ''}
+
+  <!-- Strengths / Risks placeholders -->
+  <div class="lk-dp-2col">
+    <div class="lk-dp-box">
+      <div class="lk-dp-box-title">💪 نقاط القوة</div>
+      <div class="lk-dp-box-empty">— سيتوفر قريباً</div>
+    </div>
+    <div class="lk-dp-box">
+      <div class="lk-dp-box-title">⚠️ المخاطر</div>
+      <div class="lk-dp-box-empty">— سيتوفر قريباً</div>
+    </div>
+  </div>
+
+  <!-- Divider -->
+  <div class="lk-dp-divider">↓ التفاصيل الكاملة</div>
+
+</div>`;
+    // ── End Decision Dashboard Panel definitions ─────────────────────────
+
     document.getElementById('lookup-data-card').innerHTML = `
       <!-- Header -->
       <div class="lk-head">
@@ -3199,6 +3302,10 @@ async function lookupStock() {
       <!-- Price vs fair value chart placeholder -->
       <div id="lk-chart-wrap"></div>
     `;
+
+    // Prepend the decision panel above the card — AFTER innerHTML so it isn't overwritten
+    document.getElementById('lookup-data-card').insertAdjacentHTML('afterbegin', decisionPanel);
+    // ── End Decision Dashboard Panel ─────────────────────────────────────
 
     // Render financial history if the API provided it
     if(d.financials && d.financials.length){ _lkRenderFinancials(d.financials, isAr); }
