@@ -241,7 +241,7 @@ const changePct = lq?.changesPercentage ?? null;
     targetMean: lt?.targetConsensus ?? lt?.targetMedian ?? null,
     targetHigh: lt?.targetHigh ?? null,
     targetLow: lt?.targetLow ?? null,
-    analystConsensus: ((lt?.analystRatingsStrongBuy||0)+(lt?.analystRatingsBuy||0)) > ((lt?.analystRatingsSell||0)+(lt?.analystRatingsStrongSell||0)) ? 'Bullish 📈' : 'Bearish 📉',
+    analystConsensus: !lt ? null : (((lt?.analystRatingsStrongBuy||0)+(lt?.analystRatingsBuy||0)) === 0 && ((lt?.analystRatingsSell||0)+(lt?.analystRatingsStrongSell||0)) === 0) ? null : ((lt?.analystRatingsStrongBuy||0)+(lt?.analystRatingsBuy||0)) > ((lt?.analystRatingsSell||0)+(lt?.analystRatingsStrongSell||0)) ? 'Bullish 📈' : 'Bearish 📉',
     dcfValue: ld?.dcf ?? null,
     grades: Array.isArray(grades) ? grades.slice(0,5) : []
   };
@@ -276,7 +276,7 @@ PEG: ${data.peg ?? '—'}
 ROE: ${data.roe != null ? data.roe+'%' : '—'}
 هدف المحللين: $${data.targetMean ?? '—'}
 DCF: $${data.dcfValue != null ? data.dcfValue.toFixed(0) : '—'}
-توجه المحللين: ${data.analystConsensus}
+توجه المحللين: ${data.analystConsensus ?? 'لا تغطية'}
 
 قدم التحليل في هذا الشكل:
 
