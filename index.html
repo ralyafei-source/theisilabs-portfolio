@@ -345,7 +345,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .pin-dot.filled{background:var(--accent);border-color:var(--accent);}
 .pin-dot.error{background:var(--red);border-color:var(--red);}
 .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;}
-.numpad-btn{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 0;text-align:center;font-size:20px;font-weight:700;cursor:pointer;font-family:'IBM Plex Mono',monospace;color:var(--text);transition:all .15s;user-select:none;}
+.numpad-btn{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px 0;text-align:center;font-size:20px;font-weight:700;cursor:pointer;font-family:'IBM Plex Mono',monospace;color:var(--text);transition:all .15s;user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
 .numpad-btn:hover{background:var(--border);border-color:var(--accent);}
 .numpad-btn:active{transform:scale(0.94);background:rgba(0,212,255,0.1);}
 .numpad-btn.del{font-size:16px;color:var(--text2);}
@@ -925,18 +925,18 @@ main{display:contents;}
         <div class="pin-dot" id="si-d4"></div>
       </div>
       <div class="numpad" id="si-numpad">
-        <div class="numpad-btn" onclick="pinPress('si',1)">1</div>
-        <div class="numpad-btn" onclick="pinPress('si',2)">2</div>
-        <div class="numpad-btn" onclick="pinPress('si',3)">3</div>
-        <div class="numpad-btn" onclick="pinPress('si',4)">4</div>
-        <div class="numpad-btn" onclick="pinPress('si',5)">5</div>
-        <div class="numpad-btn" onclick="pinPress('si',6)">6</div>
-        <div class="numpad-btn" onclick="pinPress('si',7)">7</div>
-        <div class="numpad-btn" onclick="pinPress('si',8)">8</div>
-        <div class="numpad-btn" onclick="pinPress('si',9)">9</div>
+        <div class="numpad-btn" onclick="pinPress('si',1)" ontouchstart="event.preventDefault();pinPress('si',1)">1</div>
+        <div class="numpad-btn" onclick="pinPress('si',2)" ontouchstart="event.preventDefault();pinPress('si',2)">2</div>
+        <div class="numpad-btn" onclick="pinPress('si',3)" ontouchstart="event.preventDefault();pinPress('si',3)">3</div>
+        <div class="numpad-btn" onclick="pinPress('si',4)" ontouchstart="event.preventDefault();pinPress('si',4)">4</div>
+        <div class="numpad-btn" onclick="pinPress('si',5)" ontouchstart="event.preventDefault();pinPress('si',5)">5</div>
+        <div class="numpad-btn" onclick="pinPress('si',6)" ontouchstart="event.preventDefault();pinPress('si',6)">6</div>
+        <div class="numpad-btn" onclick="pinPress('si',7)" ontouchstart="event.preventDefault();pinPress('si',7)">7</div>
+        <div class="numpad-btn" onclick="pinPress('si',8)" ontouchstart="event.preventDefault();pinPress('si',8)">8</div>
+        <div class="numpad-btn" onclick="pinPress('si',9)" ontouchstart="event.preventDefault();pinPress('si',9)">9</div>
         <div class="numpad-btn empty"></div>
-        <div class="numpad-btn" onclick="pinPress('si',0)">0</div>
-        <div class="numpad-btn del" onclick="pinBack('si')">⌫</div>
+        <div class="numpad-btn" onclick="pinPress('si',0)" ontouchstart="event.preventDefault();pinPress('si',0)">0</div>
+        <div class="numpad-btn del" onclick="pinBack('si')" ontouchstart="event.preventDefault();pinBack('si')">⌫</div>
       </div>
       <div class="lockout-msg" id="si-lockout" style="display:none;"></div>
     </div>
@@ -982,18 +982,18 @@ main{display:contents;}
         <div class="pin-dot" id="su-d4"></div>
       </div>
       <div class="numpad">
-        <div class="numpad-btn" onclick="pinPress('su',1)">1</div>
-        <div class="numpad-btn" onclick="pinPress('su',2)">2</div>
-        <div class="numpad-btn" onclick="pinPress('su',3)">3</div>
-        <div class="numpad-btn" onclick="pinPress('su',4)">4</div>
-        <div class="numpad-btn" onclick="pinPress('su',5)">5</div>
-        <div class="numpad-btn" onclick="pinPress('su',6)">6</div>
-        <div class="numpad-btn" onclick="pinPress('su',7)">7</div>
-        <div class="numpad-btn" onclick="pinPress('su',8)">8</div>
-        <div class="numpad-btn" onclick="pinPress('su',9)">9</div>
+        <div class="numpad-btn" onclick="pinPress('su',1)" ontouchstart="event.preventDefault();pinPress('su',1)">1</div>
+        <div class="numpad-btn" onclick="pinPress('su',2)" ontouchstart="event.preventDefault();pinPress('su',2)">2</div>
+        <div class="numpad-btn" onclick="pinPress('su',3)" ontouchstart="event.preventDefault();pinPress('su',3)">3</div>
+        <div class="numpad-btn" onclick="pinPress('su',4)" ontouchstart="event.preventDefault();pinPress('su',4)">4</div>
+        <div class="numpad-btn" onclick="pinPress('su',5)" ontouchstart="event.preventDefault();pinPress('su',5)">5</div>
+        <div class="numpad-btn" onclick="pinPress('su',6)" ontouchstart="event.preventDefault();pinPress('su',6)">6</div>
+        <div class="numpad-btn" onclick="pinPress('su',7)" ontouchstart="event.preventDefault();pinPress('su',7)">7</div>
+        <div class="numpad-btn" onclick="pinPress('su',8)" ontouchstart="event.preventDefault();pinPress('su',8)">8</div>
+        <div class="numpad-btn" onclick="pinPress('su',9)" ontouchstart="event.preventDefault();pinPress('su',9)">9</div>
         <div class="numpad-btn empty"></div>
-        <div class="numpad-btn" onclick="pinPress('su',0)">0</div>
-        <div class="numpad-btn del" onclick="pinBack('su')">⌫</div>
+        <div class="numpad-btn" onclick="pinPress('su',0)" ontouchstart="event.preventDefault();pinPress('su',0)">0</div>
+        <div class="numpad-btn del" onclick="pinBack('su')" ontouchstart="event.preventDefault();pinBack('su')">⌫</div>
       </div>
     </div>
 
@@ -1007,18 +1007,18 @@ main{display:contents;}
         <div class="pin-dot" id="sc-d4"></div>
       </div>
       <div class="numpad">
-        <div class="numpad-btn" onclick="pinPress('sc',1)">1</div>
-        <div class="numpad-btn" onclick="pinPress('sc',2)">2</div>
-        <div class="numpad-btn" onclick="pinPress('sc',3)">3</div>
-        <div class="numpad-btn" onclick="pinPress('sc',4)">4</div>
-        <div class="numpad-btn" onclick="pinPress('sc',5)">5</div>
-        <div class="numpad-btn" onclick="pinPress('sc',6)">6</div>
-        <div class="numpad-btn" onclick="pinPress('sc',7)">7</div>
-        <div class="numpad-btn" onclick="pinPress('sc',8)">8</div>
-        <div class="numpad-btn" onclick="pinPress('sc',9)">9</div>
+        <div class="numpad-btn" onclick="pinPress('sc',1)" ontouchstart="event.preventDefault();pinPress('sc',1)">1</div>
+        <div class="numpad-btn" onclick="pinPress('sc',2)" ontouchstart="event.preventDefault();pinPress('sc',2)">2</div>
+        <div class="numpad-btn" onclick="pinPress('sc',3)" ontouchstart="event.preventDefault();pinPress('sc',3)">3</div>
+        <div class="numpad-btn" onclick="pinPress('sc',4)" ontouchstart="event.preventDefault();pinPress('sc',4)">4</div>
+        <div class="numpad-btn" onclick="pinPress('sc',5)" ontouchstart="event.preventDefault();pinPress('sc',5)">5</div>
+        <div class="numpad-btn" onclick="pinPress('sc',6)" ontouchstart="event.preventDefault();pinPress('sc',6)">6</div>
+        <div class="numpad-btn" onclick="pinPress('sc',7)" ontouchstart="event.preventDefault();pinPress('sc',7)">7</div>
+        <div class="numpad-btn" onclick="pinPress('sc',8)" ontouchstart="event.preventDefault();pinPress('sc',8)">8</div>
+        <div class="numpad-btn" onclick="pinPress('sc',9)" ontouchstart="event.preventDefault();pinPress('sc',9)">9</div>
         <div class="numpad-btn empty"></div>
-        <div class="numpad-btn" onclick="pinPress('sc',0)">0</div>
-        <div class="numpad-btn del" onclick="pinBack('sc')">⌫</div>
+        <div class="numpad-btn" onclick="pinPress('sc',0)" ontouchstart="event.preventDefault();pinPress('sc',0)">0</div>
+        <div class="numpad-btn del" onclick="pinBack('sc')" ontouchstart="event.preventDefault();pinBack('sc')">⌫</div>
       </div>
     </div>
 
