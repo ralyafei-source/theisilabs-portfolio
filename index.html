@@ -7566,18 +7566,25 @@ async function initLiveData(){ await loadLiveNews();
         const nick=localStorage.getItem(AUTH_NICK_KEY)||'';
         const prUrl=nick?`/api/prices?symbols=${encodeURIComponent(h.map(x=>x.sym).join(','))}`:`/api/portfolio`;
         const pr=await fetch(prUrl);
-        if(pr.ok){const pd=await pr.json();prices=pd.prices||{};}
+        if(pr.ok){
+          const pd=await pr.json();
+          const raw=pd.prices||{};
+          prices=typeof raw==='string' ? JSON.parse(raw) : raw;
+        }
       }catch(e){}
 
       let tv=0,tc=0;
       h.forEach(x=>{
         const shares=Number(x.shares)||0;
         const cost=Number(x.cost)||0;
-        const p=Number(prices[x.sym])||cost;
+        const pv=prices[x.sym];
+        const p=Number(typeof pv === 'object' && pv ? pv.price : pv)||cost;
         // If shares missing but market value present, use mv directly
         if((!shares || !p) && x.mv!=null){
           tv+=Number(x.mv)||0;
-          tc+=Number(x.mv)||0; // no cost basis → treat as flat so P/L shows 0, not NaN
+          // Use actual cost basis if available, otherwise fall back to mv (flat P/L)
+          const costBasis = (shares && cost) ? shares*cost : (Number(x.cost_basis)||Number(x.mv)||0);
+          tc+=costBasis;
         } else {
           tv+=shares*p;
           tc+=shares*cost;
