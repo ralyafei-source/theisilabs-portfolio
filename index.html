@@ -5914,6 +5914,8 @@ function clearChat() {
 }
 #glossaryTooltip .gt-def { color: var(--text2); }
 #glossaryTooltip .gt-ar { color: var(--text); margin-top: 4px; font-family: 'Almarai', sans-serif; }
+.gt-scale{font-size:10px;color:var(--cyan);margin-top:6px;padding-top:6px;border-top:1px solid var(--border);direction:rtl;text-align:right;}
+.gt-scale:empty{display:none;}
 .glossary-term {
   border-bottom: 1px dotted var(--accent);
   cursor: help;
@@ -6036,21 +6038,21 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 <script>
 // ═══ FINANCIAL GLOSSARY ═══
 const GLOSSARY = {
-  "P/E":         {en:"Price-to-Earnings ratio. Stock price divided by earnings per share. Lower may mean cheaper vs peers.", ar:"نسبة السعر إلى الأرباح. انخفاضها قد يعني أن السهم أرخص نسبياً."},
+  "P/E":         {en:"Price-to-Earnings ratio. Stock price divided by earnings per share. Lower may mean cheaper vs peers.", ar:"نسبة السعر إلى الأرباح. انخفاضها قد يعني أن السهم أرخص نسبياً.", scale:'< 15 رخيص · 15–30 معتدل · > 30 مرتفع'},
   "P/S":         {en:"Price-to-Sales ratio. Valuation relative to revenue. Common for unprofitable growth companies.", ar:"نسبة السعر إلى المبيعات. تُستخدم لتقييم شركات النمو غير الرابحة."},
-  "DCF":         {en:"Discounted Cash Flow. Values a company by estimating future cash flows in present-day dollars.", ar:"التدفق النقدي المخصوم. يقيّم الشركة بناءً على تدفقاتها النقدية المستقبلية."},
+  "DCF":         {en:"Discounted Cash Flow. Values a company by estimating future cash flows in present-day dollars.", ar:"التدفق النقدي المخصوم. يقيّم الشركة بناءً على تدفقاتها النقدية المستقبلية.", scale:'سعر < DCF = مقيّم بأقل · سعر > DCF = مقيّم بأكثر'},
   "EPS":         {en:"Earnings Per Share. Net profit divided by shares outstanding. Core profitability metric.", ar:"ربحية السهم. صافي الأرباح مقسوماً على عدد الأسهم المتداولة."},
   "EBITDA":      {en:"Earnings Before Interest, Taxes, Depreciation and Amortization. Measures core operating profitability.", ar:"الأرباح قبل الفوائد والضرائب والاستهلاك. مقياس الربحية التشغيلية."},
   "Free Cash Flow":{en:"Cash generated after capital expenditures. The real money available to shareholders.", ar:"النقد المتبقي بعد النفقات الرأسمالية. المال الحقيقي المتاح للمساهمين."},
   "Upside":      {en:"Potential percentage gain to a price target. 30% upside means target is 30% above current price.", ar:"نسبة الارتفاع المحتمل نحو السعر المستهدف."},
   "Downside":    {en:"Potential percentage loss if the investment thesis is wrong. The risk side of risk/reward.", ar:"نسبة الانخفاض المحتمل. الجانب السلبي من تحليل المخاطر/العائد."},
-  "RSI":         {en:"Relative Strength Index (0-100). Above 70 = overbought, may fall. Below 30 = oversold, may rise.", ar:"مؤشر القوة النسبية. فوق 70 = ذروة شراء. تحت 30 = ذروة بيع."},
+  "RSI":         {en:"Relative Strength Index (0-100). Above 70 = overbought, may fall. Below 30 = oversold, may rise.", ar:"مؤشر القوة النسبية. فوق 70 = ذروة شراء. تحت 30 = ذروة بيع.", scale:'< 30 ذروة بيع · 30–70 محايد · > 70 ذروة شراء'},
   "Stop-Loss":   {en:"A pre-set price to automatically sell if a stock falls, limiting maximum loss.", ar:"سعر البيع التلقائي عند الانخفاض. يحدد الحد الأقصى للخسارة المقبولة."},
   "Stop Loss":   {en:"A pre-set price to automatically sell if a stock falls, limiting maximum loss.", ar:"سعر البيع التلقائي عند الانخفاض. يحدد الحد الأقصى للخسارة المقبولة."},
   "Momentum":    {en:"A stock tendency to continue in its current direction. Strong momentum means trend likely continues.", ar:"ميل السهم للاستمرار في اتجاهه الحالي. الزخم القوي يعني استمرار الاتجاه."},
   "Mean Reversion":{en:"Tendency for prices to return to their historical average after extreme moves.", ar:"ميل الأسعار للعودة إلى متوسطها التاريخي بعد التحركات المتطرفة."},
-  "Beta":        {en:"Volatility vs the market. Beta 1.5 means the stock moves 1.5x more than the market.", ar:"تقلب السهم مقارنة بالسوق. بيتا 1.5 تعني تحركات أكبر بمقدار 1.5 مرة."},
-  "Short Interest":{en:"Percentage of shares being shorted. High short interest means many traders expect the price to fall.", ar:"نسبة الأسهم التي يراهن عليها المتداولون بالانخفاض."},
+  "Beta":        {en:"Volatility vs the market. Beta 1.5 means the stock moves 1.5x more than the market.", ar:"تقلب السهم مقارنة بالسوق. بيتا 1.5 تعني تحركات أكبر بمقدار 1.5 مرة.", scale:'< 1 أقل تذبذباً · 1–2 معتدل · > 2 عالي المخاطرة'},
+  "Short Interest":{en:"Percentage of shares being shorted. High short interest means many traders expect the price to fall.", ar:"نسبة الأسهم التي يراهن عليها المتداولون بالانخفاض.", scale:'< 5% طبيعي · 5–15% مرتفع · > 15% خطر'},
   "Short Squeeze":{en:"When a heavily shorted stock rises sharply, forcing short sellers to buy back, accelerating the rise.", ar:"ارتفاع حاد يجبر المراهنين على الهبوط للشراء، مما يسرّع الصعود."},
   "ARR":         {en:"Annual Recurring Revenue. Predictable yearly revenue from subscriptions. Key SaaS metric.", ar:"الإيرادات السنوية المتكررة. الإيرادات الثابتة من الاشتراكات."},
   "NRR":         {en:"Net Revenue Retention. Above 100% means existing customers spend more each year. 120% is excellent.", ar:"صافي الاحتفاظ بالإيرادات. فوق 100% يعني أن العملاء الحاليين ينفقون أكثر سنوياً."},
@@ -6070,12 +6072,12 @@ const GLOSSARY = {
   "ذروة شراء":  {en:"Overbought. RSI above 70 — stock may be overpriced and due for a pullback.", ar:"حالة يكون فيها السهم مرتفعاً أكثر من اللازم. RSI فوق 70."},
   "ذروة بيع":   {en:"Oversold. RSI below 30 — stock may be underpriced and due for a rebound.", ar:"حالة يكون فيها السهم منخفضاً أكثر من اللازم. RSI تحت 30."},
   "الخندق التنافسي":{en:"Competitive moat. A sustainable advantage that protects a company from competition.", ar:"الميزة التنافسية المستدامة التي تحمي الشركة من المنافسين."},
-  "FCF":              {en:"Free Cash Flow. Cash remaining after capital expenditures.", ar:"التدفق النقدي الحر بعد النفقات الرأسمالية."},
+  "FCF":              {en:"Free Cash Flow. Cash remaining after capital expenditures.", ar:"التدفق النقدي الحر بعد النفقات الرأسمالية.", scale:'موجب = صحة مالية جيدة · سالب = يحرق النقد'},
 "FCF Yield":        {en:"Free Cash Flow divided by market cap. Higher = better value.", ar:"نسبة التدفق النقدي الحر إلى القيمة السوقية."},
-"ROIC":             {en:"Return on Invested Capital. How efficiently a company uses its capital.", ar:"العائد على رأس المال المستثمر. مدى كفاءة الشركة في استخدام رأس المال."},
+"ROIC":             {en:"Return on Invested Capital. How efficiently a company uses its capital.", ar:"العائد على رأس المال المستثمر. مدى كفاءة الشركة في استخدام رأس المال.", scale:'< 5% ضعيف · 5–10% معتدل · > 10% ممتاز'},
 "WACC":             {en:"Weighted Average Cost of Capital. The minimum return a company must earn.", ar:"متوسط تكلفة رأس المال المرجح."},
-"PEG":              {en:"Price/Earnings to Growth ratio. P/E divided by growth rate. Under 1 = undervalued.", ar:"نسبة السعر إلى الأرباح مقسومة على معدل النمو. أقل من 1 يعني سعراً جيداً."},
-"ROE":              {en:"Return on Equity. Net income divided by shareholder equity.", ar:"العائد على حقوق الملكية."},
+"PEG":              {en:"Price/Earnings to Growth ratio. P/E divided by growth rate. Under 1 = undervalued.", ar:"نسبة السعر إلى الأرباح مقسومة على معدل النمو. أقل من 1 يعني سعراً جيداً.", scale:'< 1 ممتاز · 1–2 معتدل · > 2 مرتفع'},
+"ROE":              {en:"Return on Equity. Net income divided by shareholder equity.", ar:"العائد على حقوق الملكية.", scale:'< 5% ضعيف · 5–15% معتدل · > 15% ممتاز'},
 "ROA":              {en:"Return on Assets. Net income divided by total assets.", ar:"العائد على الأصول."},
 "ROI":              {en:"Return on Investment. Profit relative to cost of investment.", ar:"العائد على الاستثمار."},
 "CAGR":             {en:"Compound Annual Growth Rate. Steady yearly growth rate over a period.", ar:"معدل النمو السنوي المركب."},
@@ -6093,10 +6095,10 @@ const GLOSSARY = {
 "AUM":              {en:"Assets Under Management. Total value managed by a fund.", ar:"إجمالي الأصول المدارة."},
 "NAV":              {en:"Net Asset Value. Total assets minus liabilities. Used for funds and ETFs.", ar:"صافي قيمة الأصول."},
 "EV":               {en:"Enterprise Value. Market cap plus debt minus cash. True company value.", ar:"قيمة المؤسسة. القيمة السوقية مضافاً إليها الدين ناقصاً النقد."},
-"EV/EBITDA":        {en:"Enterprise Value divided by EBITDA. Common valuation multiple.", ar:"نسبة قيمة المؤسسة إلى الأرباح قبل الفوائد والضرائب والاستهلاك."},
-"Gross Margin":     {en:"Revenue minus cost of goods as a percentage. Higher means more efficient.", ar:"هامش الربح الإجمالي كنسبة من الإيرادات."},
+"EV/EBITDA":        {en:"Enterprise Value divided by EBITDA. Common valuation multiple.", ar:"نسبة قيمة المؤسسة إلى الأرباح قبل الفوائد والضرائب والاستهلاك.", scale:'< 10x رخيص · 10–20x معتدل · > 20x مرتفع'},
+"Gross Margin":     {en:"Revenue minus cost of goods as a percentage. Higher means more efficient.", ar:"هامش الربح الإجمالي كنسبة من الإيرادات.", scale:'< 30% منخفض · 30–50% معتدل · > 50% ممتاز'},
 "Operating Margin": {en:"Operating profit as a percentage of revenue.", ar:"هامش الربح التشغيلي كنسبة من الإيرادات."},
-"Net Margin":       {en:"Net profit as a percentage of revenue. Bottom line profitability.", ar:"هامش الربح الصافي كنسبة من الإيرادات."},
+"Net Margin":       {en:"Net profit as a percentage of revenue. Bottom line profitability.", ar:"هامش الربح الصافي كنسبة من الإيرادات.", scale:'< 10% منخفض · 10–20% معتدل · > 20% ممتاز'},
 "Rule of 40":       {en:"SaaS health metric. Revenue growth % + profit margin % should be 40%+.", ar:"قاعدة الـ40 لشركات SaaS: نمو الإيرادات + هامش الربح يجب أن يساوي 40% أو أكثر."},
 "Rule of 72":       {en:"Divide 72 by annual return % to find years to double your money.", ar:"قسّم 72 على معدل العائد لتعرف سنوات مضاعفة الاستثمار."},
 "Asset Turnover":   {en:"Revenue divided by total assets. Measures how efficiently assets generate sales.", ar:"الإيرادات مقسومة على الأصول. مدى كفاءة الأصول في توليد المبيعات."},
@@ -6109,7 +6111,7 @@ const GLOSSARY = {
 "ATL":              {en:"All-Time Low. The lowest price a stock has ever reached.", ar:"أدنى سعر وصل إليه السهم على الإطلاق."},
 "52W High":         {en:"Highest price over the past 52 weeks.", ar:"أعلى سعر خلال الـ52 أسبوعاً الماضية."},
 "52W Low":          {en:"Lowest price over the past 52 weeks.", ar:"أدنى سعر خلال الـ52 أسبوعاً الماضية."},
-"MACD":             {en:"Moving Average Convergence Divergence. Momentum indicator showing trend changes.", ar:"مؤشر تقارب وتباعد المتوسطات المتحركة. يُظهر تغيرات الزخم."},
+"MACD":             {en:"Moving Average Convergence Divergence. Momentum indicator showing trend changes.", ar:"مؤشر تقارب وتباعد المتوسطات المتحركة. يُظهر تغيرات الزخم.", scale:'فوق الصفر = زخم صاعد · تحت الصفر = زخم هابط'},
 "Bollinger Bands":  {en:"Volatility bands around a moving average. Price near upper = overbought.", ar:"نطاقات التقلب حول المتوسط المتحرك."},
 "Moving Average":   {en:"Average price over a set period. Smooths out price fluctuations.", ar:"متوسط السعر خلال فترة محددة لتنعيم التقلبات."},
 "Support":          {en:"Price level where a stock tends to stop falling and bounce back up.", ar:"مستوى السعر الذي يميل عنده السهم للتوقف عن الانخفاض والارتداد."},
@@ -6120,7 +6122,7 @@ const GLOSSARY = {
 "Liquidity":        {en:"How easily an asset can be bought or sold without affecting its price.", ar:"مدى سهولة شراء أو بيع أصل دون التأثير على سعره."},
 "Volatility":       {en:"Degree of price fluctuation. High volatility = bigger swings up and down.", ar:"درجة تقلب الأسعار. ارتفاعها يعني تحركات أكبر صعوداً وهبوطاً."},
 "Dividend":         {en:"Cash payment to shareholders from company profits.", ar:"توزيع نقدي للمساهمين من أرباح الشركة."},
-"Dividend Yield":   {en:"Annual dividend divided by stock price. Shows income return.", ar:"نسبة توزيعات الأرباح السنوية إلى سعر السهم."},
+"Dividend Yield":   {en:"Annual dividend divided by stock price. Shows income return.", ar:"نسبة توزيعات الأرباح السنوية إلى سعر السهم.", scale:'< 2% منخفض · 2–5% معتدل · > 5% مرتفع'},
 "Payout Ratio":     {en:"Percentage of earnings paid as dividends. High ratio may be unsustainable.", ar:"نسبة الأرباح الموزعة. نسبة مرتفعة قد تكون غير مستدامة."},
 "Catalyst":         {en:"Event that could trigger a significant move in a stock's price.", ar:"حدث قد يُحرك سعر السهم بشكل كبير."},
 "Guidance":         {en:"Company's own forecast for future revenue or earnings.", ar:"توقعات الشركة لإيراداتها أو أرباحها المستقبلية."},
@@ -6214,6 +6216,8 @@ const glossaryTooltip = {
       this.termEl.textContent = term;
       this.defEl.textContent = entry.en;
       this.arEl.textContent = entry.ar;
+      const scaleEl = document.getElementById('gtScale');
+      if(scaleEl) scaleEl.textContent = entry.scale ? '📊 ' + entry.scale : '';
       this.position(x, y);
       this.el.classList.add('visible');
       return;
@@ -6226,6 +6230,7 @@ const glossaryTooltip = {
       this.termEl.textContent = term;
       this.defEl.textContent = cached.en;
       this.arEl.textContent = cached.ar;
+      if(document.getElementById('gtScale')) document.getElementById('gtScale').textContent = entry?.scale ? '📊 ' + entry.scale : '';
       this.position(x, y);
       this.el.classList.add('visible');
       return;
@@ -6236,6 +6241,7 @@ const glossaryTooltip = {
     this.termEl.textContent = term;
     this.defEl.textContent = '⏳ جاري البحث...';
     this.arEl.textContent = '';
+    if(document.getElementById('gtScale')) document.getElementById('gtScale').textContent = entry?.scale ? '📊 ' + entry.scale : '';
     this.position(x, y);
     this.el.classList.add('visible');
     this._currentTerm = term;
@@ -6271,12 +6277,14 @@ AR: [same definition in Arabic, max 20 words]`,
       if (this._currentTerm === term && this.el.classList.contains('visible')) {
         this.defEl.textContent = enDef;
         this.arEl.textContent = arDef;
+        if(document.getElementById('gtScale')) document.getElementById('gtScale').textContent = entry?.scale ? '📊 ' + entry.scale : '';
       }
     } catch(e) {
       glossaryCache[term] = { en: 'Definition unavailable.', ar: 'التعريف غير متاح.' };
       if (this._currentTerm === term) {
         this.defEl.textContent = 'Definition unavailable.';
         this.arEl.textContent = '';
+        if(document.getElementById('gtScale')) document.getElementById('gtScale').textContent = entry?.scale ? '📊 ' + entry.scale : '';
       }
     }
   },
@@ -7825,6 +7833,7 @@ function switchTab(tabId, btn) {
   <div class="gt-term" id="gtTerm"></div>
   <div class="gt-def" id="gtDef"></div>
   <div class="gt-ar" id="gtAr"></div>
+  <div class="gt-scale" id="gtScale"></div>
 </div>
 </body>
 </html>
