@@ -198,10 +198,14 @@ module.exports = async (req, res) => {
 
     // Daily — no fallback between users
     let dailyData = null;
-    if (nick) {
-      dailyData = await readFile(`data/analysis-daily-${nick}-${today}.json`);
-    } else {
-      dailyData = await readFile(`data/analysis-daily-${today}.json`);
+    for (let i = 0; i <= 7; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const data = nick
+        ? await readFile(`data/analysis-daily-${nick}-${dateStr}.json`)
+        : await readFile(`data/analysis-daily-${dateStr}.json`);
+      if (data) { dailyData = data; break; }
     }
 
     // Weekly — no fallback between users

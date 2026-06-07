@@ -7640,7 +7640,7 @@ async function initLiveData(){ await loadLiveNews();
     }
   }catch(e){}
   try{
-    const nick=localStorage.getItem('theisilabs_nick')||'rashed';
+    const nick=localStorage.getItem('theisilabs_nick')||'';
     const date=new Date().toISOString().split('T')[0];
     const r=await fetch(`/api/analysis?date=${date}&nickname=${encodeURIComponent(nick)}`);
     const g=document.getElementById('cmd-decisions');
