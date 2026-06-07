@@ -3276,6 +3276,8 @@ async function lookupStock() {
       </div>
 
       <div id="lk-chart-wrap-dp"></div>
+      <div class="lk-dp-section-title" style="margin-top:10px">📊 أبرز المؤشرات المالية</div>
+      <div id="lk-financials-dp"></div>
     </div>
 
     <div class="lk-dp-col-left">
@@ -3300,8 +3302,6 @@ async function lookupStock() {
     </div>
 
   </div>
-
-  <div id="lk-financials-dp"></div>
 
   <div class="lk-dp-divider">↓ التفاصيل الكاملة</div>
 
@@ -3487,13 +3487,13 @@ function _lkRenderFinancials(fin, isAr, targetEl){
   // fin = [{year, revenue, netIncome, netMargin, freeCashFlow}, ...] oldest→newest, last = TTM
   let html=`<div class="lk-sub-card" style="margin-top:14px;"><div class="lk-card-title">${t('Financial History','أبرز المؤشرات المالية')}</div>
     <div class="lk-fin-wrap"><table class="lk-fin" style="width:100%;border-collapse:collapse;font-size:11px;">
-    <thead><tr><th style="padding:5px 8px;">${t('Metric','المؤشر')}</th><th class="num" style="padding:5px 8px;">${t('3Y CAGR','نمو 3 سنوات')}</th><th class="num" style="padding:5px 8px;">${t('Trend','الاتجاه')}</th></tr></thead><tbody>`;
+    <thead><tr><th style="padding:5px 8px;">${t('Metric','المؤشر')}</th><th class="num" style="padding:5px 8px;">${fin[fin.length-1]?.label||'آخر سنة'}</th><th class="num" style="padding:5px 8px;">${t('3Y CAGR','نمو 3 سنوات')}</th><th class="num" style="padding:5px 8px;">${t('Trend','الاتجاه')}</th></tr></thead><tbody>`;
   rows.forEach(row=>{
     const vals=fin.map(f=>f[row.key]).filter(v=>v!=null);
     const cagr = (vals.length>=2 && vals[0]>0) ? (Math.pow(vals[vals.length-1]/vals[0], 1/(vals.length-1))-1)*100 : null;
     // sparkline
     const spark=_lkSpark(vals);
-    html+=`<tr><td style="padding:5px 8px;">${row.label}</td><td class="num" style="color:${cagr>=0?'var(--green)':'var(--red)'};padding:5px 8px;">${cagr!=null?(cagr>=0?'+':'')+cagr.toFixed(1)+'%':'—'}</td><td class="num" style="padding:5px 8px;">${spark}</td></tr>`;
+    html+=`<tr><td style="padding:5px 8px;">${row.label}</td><td class="num" style="padding:5px 8px;">${fin[fin.length-1]?.[row.key]!=null?row.fmt(fin[fin.length-1][row.key]):'—'}</td><td class="num" style="color:${cagr>=0?'var(--green)':'var(--red)'};padding:5px 8px;">${cagr!=null?(cagr>=0?'+':'')+cagr.toFixed(1)+'%':'—'}</td><td class="num" style="padding:5px 8px;">${spark}</td></tr>`;
   });
   html+=`</tbody></table></div></div>`;
   wrap.innerHTML=html;

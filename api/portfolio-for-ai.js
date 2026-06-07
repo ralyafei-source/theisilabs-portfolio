@@ -321,7 +321,7 @@ DCF: $${data.dcfValue != null ? data.dcfValue.toFixed(0) : '—'}
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1500,
+        max_tokens: 2500,
         messages: [{ role: 'user', content: prompt }]
       })
     });
