@@ -157,7 +157,7 @@ async function fetchFinancials(sym) {
     const netIncome = r.netIncome ?? null;
     const netMargin = (revenue && netIncome != null) ? +((netIncome / revenue) * 100).toFixed(1) : null;
     return {
-      label: year != null ? String(year) : null,
+      label: year ? `FY${year}` : String(r.date||'').slice(0,4),
       year,
       revenue,
       netIncome,
@@ -179,7 +179,7 @@ async function fetchPriceHistory(sym) {
   for (let i = 0; i < series.length; i += step) sampled.push(series[i]);
   const last = series[series.length - 1];
   if (sampled[sampled.length - 1] !== last) sampled.push(last);
-  return sampled.map(p => ({ date: p.date, price: p.price ?? null }));
+  return sampled.map(p => ({ date: p.date, price: p.price ?? p.close ?? null })).filter(p => p.price != null);
 }
 
 // ─── Lookup: company profile (name + beta) ───────────────────────────────────
@@ -187,8 +187,10 @@ async function fetchProfile(sym) {
   const raw = await fmpGet(`/profile?symbol=${sym}`);
   const p = Array.isArray(raw) ? raw[0] : (raw || null);
   return {
-    companyName: p?.companyName ?? null,
-    beta: p?.beta ?? null
+    companyName: p?.companyName || null,
+    beta: p?.beta ?? null,
+    sector: p?.sector || null,
+    description: p?.description || null
   };
 }
 
@@ -257,11 +259,15 @@ const changePct = lq?.changesPercentage ?? null;
     data.priceHistory = priceHistory;
     data.companyName = profileInfo.companyName;
     data.beta        = profileInfo.beta;
+    data.sector      = profileInfo.sector;
+    data.description = profileInfo.description;
   } catch (e) {
     data.financials  = [];
     data.priceHistory = [];
     data.companyName = null;
     data.beta        = null;
+    data.sector      = null;
+    data.description = null;
   }
 
   let analysis = '';
