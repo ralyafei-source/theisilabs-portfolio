@@ -1,25 +1,5 @@
 [
   {
-    "ts": "2026-06-03T17:31:39.556Z",
-    "type": "daily",
-    "nickname": "tester",
-    "status": "failed",
-    "checks": {
-      "writeOk": true,
-      "contentLength": 366,
-      "scoresFound": 2,
-      "sectionsFound": [
-        "DAILY SIGNALS",
-        "EARNINGS & EVENTS",
-        "MACRO TODAY"
-      ],
-      "sectionsMissing": [],
-      "totalSentinels": 0,
-      "sentinelHits": {}
-    },
-    "note": "content too short"
-  },
-  {
     "ts": "2026-06-03T17:33:59.790Z",
     "type": "daily",
     "nickname": "tester",
@@ -620,6 +600,73 @@
       "sectionsMissing": [],
       "totalSentinels": 0,
       "sentinelHits": {}
+    },
+    "note": "all healthy"
+  },
+  {
+    "ts": "2026-06-07T03:05:08.952Z",
+    "type": "market-data",
+    "nickname": null,
+    "status": "failed",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 42865,
+      "scoresFound": 0,
+      "sectionsFound": [],
+      "sectionsMissing": [
+        "DAILY SIGNALS",
+        "EARNINGS & EVENTS",
+        "MACRO TODAY"
+      ],
+      "totalSentinels": 5,
+      "sentinelHits": {
+        "null": 5
+      }
+    },
+    "note": "3 section(s) missing; 5 unavailable field(s)"
+  },
+  {
+    "ts": "2026-06-07T04:39:37.016Z",
+    "type": "weekly",
+    "nickname": "rashed",
+    "status": "ok",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 25645,
+      "scoresFound": 75,
+      "sectionsFound": [
+        "═══ RISK RADAR",
+        "═══ FAIR VALUE",
+        "═══ MOMENTUM"
+      ],
+      "sectionsMissing": [],
+      "totalSentinels": 8,
+      "sentinelHits": {
+        "غير متوفر": 6,
+        "N/A": 2
+      }
+    },
+    "note": "all healthy"
+  },
+  {
+    "ts": "2026-06-07T04:48:12.498Z",
+    "type": "weekly",
+    "nickname": "ahmed",
+    "status": "ok",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 25558,
+      "scoresFound": 43,
+      "sectionsFound": [
+        "═══ RISK RADAR",
+        "═══ FAIR VALUE",
+        "═══ MOMENTUM"
+      ],
+      "sectionsMissing": [],
+      "totalSentinels": 1,
+      "sentinelHits": {
+        "غير متوفر": 1
+      }
     },
     "note": "all healthy"
   }
