@@ -3485,16 +3485,15 @@ function _lkRenderFinancials(fin, isAr, targetEl){
     {key:'freeCashFlow', label:t('Free Cash Flow (USD bn)','التدفق النقدي الحر (مليار $)'), fmt:v=>(v/1e9).toFixed(1)},
   ];
   // fin = [{year, revenue, netIncome, netMargin, freeCashFlow}, ...] oldest→newest, last = TTM
-  const cols = fin.map(f=>f.label||f.year);
   let html=`<div class="lk-sub-card" style="margin-top:14px;"><div class="lk-card-title">${t('Financial History','أبرز المؤشرات المالية')}</div>
     <div class="lk-fin-wrap"><table class="lk-fin" style="width:100%;border-collapse:collapse;font-size:11px;">
-    <thead><tr><th style="padding:5px 8px;">${t('Metric','المؤشر')}</th>${cols.map(c=>`<th class="num" style="padding:5px 8px;">${c}</th>`).join('')}<th class="num" style="padding:5px 8px;">${t('3Y CAGR','نمو 3 سنوات')}</th><th class="num" style="padding:5px 8px;">${t('Trend','الاتجاه')}</th></tr></thead><tbody>`;
+    <thead><tr><th style="padding:5px 8px;">${t('Metric','المؤشر')}</th><th class="num" style="padding:5px 8px;">${t('3Y CAGR','نمو 3 سنوات')}</th><th class="num" style="padding:5px 8px;">${t('Trend','الاتجاه')}</th></tr></thead><tbody>`;
   rows.forEach(row=>{
     const vals=fin.map(f=>f[row.key]).filter(v=>v!=null);
     const cagr = (vals.length>=2 && vals[0]>0) ? (Math.pow(vals[vals.length-1]/vals[0], 1/(vals.length-1))-1)*100 : null;
     // sparkline
     const spark=_lkSpark(vals);
-    html+=`<tr><td style="padding:5px 8px;">${row.label}</td>${fin.map(f=>`<td class="num" style="padding:5px 8px;">${f[row.key]!=null?row.fmt(f[row.key]):'—'}</td>`).join('')}<td class="num" style="color:${cagr>=0?'var(--green)':'var(--red)'};padding:5px 8px;">${cagr!=null?(cagr>=0?'+':'')+cagr.toFixed(1)+'%':'—'}</td><td class="num" style="padding:5px 8px;">${spark}</td></tr>`;
+    html+=`<tr><td style="padding:5px 8px;">${row.label}</td><td class="num" style="color:${cagr>=0?'var(--green)':'var(--red)'};padding:5px 8px;">${cagr!=null?(cagr>=0?'+':'')+cagr.toFixed(1)+'%':'—'}</td><td class="num" style="padding:5px 8px;">${spark}</td></tr>`;
   });
   html+=`</tbody></table></div></div>`;
   wrap.innerHTML=html;
@@ -3513,13 +3512,15 @@ function _lkRenderChart(hist, dcf, target, isAr, targetEl){
   const wrap=targetEl||document.getElementById('lk-chart-wrap');
   if(!wrap||typeof Chart==='undefined') return;
   const chartId='lkChart-'+Date.now();
-  wrap.innerHTML=`<div class="lk-sub-card" style="margin-top:14px;"><div class="lk-card-title">${t('Price vs Fair Value','السعر الفعلي مقابل القيمة العادلة')}</div><div style="position:relative;height:140px;"><canvas id="${chartId}"></canvas></div></div>`;
+  wrap.innerHTML=`<div class="lk-sub-card" style="margin-top:14px;padding:10px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><div class="lk-card-title" style="margin-bottom:0">${t('Price vs Fair Value','السعر الفعلي مقابل القيمة العادلة')}</div><div id="${chartId}-legend" style="font-size:9px;color:var(--text2);display:flex;gap:8px;"></div></div><div style="position:relative;height:130px;"><canvas id="${chartId}"></canvas></div></div>`;
   const labels=hist.map(p=>p.date);
   const prices=hist.map(p=>p.price);
   const fvLine = dcf ? labels.map(()=>dcf) : null;
   const ds=[{label:t('Price','السعر'),data:prices,borderColor:'#38BDF8',backgroundColor:'rgba(56,189,248,0.05)',borderWidth:2,pointRadius:0,fill:true,tension:0.3}];
   if(fvLine) ds.push({label:t('Fair Value (DCF)','القيمة العادلة'),data:fvLine,borderColor:'#34D399',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false});
-  setTimeout(()=>{ new Chart(document.getElementById(chartId),{type:'line',data:{labels,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{align:'start',labels:{color:'#9595A8',font:{size:10},usePointStyle:true,boxWidth:5,padding:8}}},scales:{x:{ticks:{color:'#5C5C70',font:{size:9},maxTicksLimit:6},grid:{display:false}},y:{ticks:{color:'#5C5C70',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+  setTimeout(()=>{ new Chart(document.getElementById(chartId),{type:'line',data:{labels,datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#5C5C70',font:{size:9},maxTicksLimit:6},grid:{display:false}},y:{ticks:{color:'#5C5C70',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+    const legendDiv=wrap.querySelector(`#${chartId}-legend`);
+    if(legendDiv){legendDiv.innerHTML=ds.map(d=>`<span style="display:inline-flex;align-items:center;gap:3px;"><span style="width:7px;height:7px;border-radius:50%;background:${d.borderColor};display:inline-block"></span><span>${d.label}</span></span>`).join('');}
   },50);
 }
 
