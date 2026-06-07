@@ -622,5 +622,27 @@
       "sentinelHits": {}
     },
     "note": "all healthy"
+  },
+  {
+    "ts": "2026-06-07T03:05:08.952Z",
+    "type": "market-data",
+    "nickname": null,
+    "status": "failed",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 42865,
+      "scoresFound": 0,
+      "sectionsFound": [],
+      "sectionsMissing": [
+        "DAILY SIGNALS",
+        "EARNINGS & EVENTS",
+        "MACRO TODAY"
+      ],
+      "totalSentinels": 5,
+      "sentinelHits": {
+        "null": 5
+      }
+    },
+    "note": "3 section(s) missing; 5 unavailable field(s)"
   }
 ]
