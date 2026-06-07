@@ -3185,7 +3185,7 @@ async function lookupStock() {
     const logoUrl = d.website ? `https://logo.clearbit.com/${d.website.replace(/https?:\/\/(www\.)?/,'').split('/')[0]}` : null;
     const logoInitials = (d.symbol||'??').slice(0,2).toUpperCase();
     const agreeGlyph = agree.key==='align' ? '✓' : agree.key==='mixed' ? '~' : '?';
-    const descShort = descTranslated || (d.description ? d.description.slice(0,400)+(d.description.length>400?'…':'') : null);
+    const descShort = descTranslated || (d.description ? d.description.slice(0,120)+(d.description.length>120?'…':'') : null);
 
     const decisionPanel = `
 <div class="lk-decision-panel" dir="rtl">
@@ -3435,6 +3435,10 @@ async function lookupStock() {
         const riskEl=document.querySelector('.lk-dp-box:last-child .lk-dp-box-empty');
         if(strengthEl&&strengths){strengthEl.innerHTML=strengths.map(s=>`<div class="lk-dp-bullet">• ${s}</div>`).join('');strengthEl.className='lk-dp-bullets';}
         if(riskEl&&risks){riskEl.innerHTML=risks.map(r=>`<div class="lk-dp-bullet lk-dp-bullet-risk">• ${r}</div>`).join('');riskEl.className='lk-dp-bullets';}
+        const thesisMatch = txt.match(/##\s*الاستثمارية[\s\S]*?(?=##|$)/i);
+        const thesisText = thesisMatch ? thesisMatch[0].replace(/##\s*الاستثمارية/i,'').replace(/\*\*/g,'').trim() : null;
+        const thesisEl = document.querySelector('.lk-dp-thesis');
+        if(thesisEl && thesisText){ thesisEl.textContent = thesisText; thesisEl.className = 'lk-dp-text-box'; }
       }catch(e){}
     }
     if(analysisEl){
