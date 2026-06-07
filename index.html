@@ -806,19 +806,65 @@ main{display:contents;}
 .gen-arrow{font-size:9px;opacity:0.45;}
 .th-sort-active .gen-arrow{opacity:1;}
 
-/* Mobile: compact nav tabs */
+/* ═══ MOBILE FIXES (max-width: 600px) ═══ */
 @media(max-width:600px){
-  nav { top: 54px !important; }
-  .nav-inner { padding: 0 10px; }
-  .nav-tab { padding: 10px 12px; font-size: 11px; }
-  .hstats { display: none !important; }
+
+  /* 1. Simplify header — hide stats and non-essential buttons */
+  .hstats { display:none !important; }
+  header { padding: 0 14px; }
+  .header-inner { height: 50px; flex-wrap: nowrap; gap: 8px; }
+  .hstat { display: none; }
+
+  /* 2. Hide the sticky top nav — we'll use bottom nav instead */
+  nav { display: none !important; }
+
+  /* 3. Bottom navigation bar */
+  #mobile-bottom-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    z-index: 200;
+    align-items: center;
+    justify-content: space-around;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .mob-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text2);
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 10px;
+    background: none;
+    border: none;
+    font-family: 'Cairo', sans-serif;
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .mob-nav-btn.active { color: var(--rose); }
+  .mob-nav-btn span { font-size: 18px; line-height: 1; }
+
+  /* 4. Add bottom padding to main so content clears the bottom nav */
+  main { padding-bottom: 80px !important; }
+
+  /* 5. Table fix — horizontal scroll within card */
+  .card { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 12px; }
+  table { min-width: 420px; font-size: 12px; }
+  td, th { padding: 8px 10px !important; }
 }
 
-/* Mobile/tablet: horizontal table scroll */
-@media(max-width:768px){
-  table { min-width: 500px; }
-  .card, .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-}
+/* Hide bottom nav on desktop */
+#mobile-bottom-nav { display: none; }
 </style>
 </head>
 <body>
@@ -7484,6 +7530,44 @@ document.addEventListener('DOMContentLoaded',function(){
   document.addEventListener('DOMContentLoaded',function(){tbDate();tbMkt();});
   setInterval(tbMkt,60000);
 })();
+</script>
+
+<div id="mobile-bottom-nav">
+  <button class="mob-nav-btn active" onclick="switchTab('dashboard',this)">
+    <span>📊</span>Dashboard
+  </button>
+  <button class="mob-nav-btn" onclick="switchTab('portfolio',this)">
+    <span>💼</span>Portfolio
+  </button>
+  <button class="mob-nav-btn" onclick="switchTab('advisor',this)">
+    <span>🏦</span>Advisor
+  </button>
+  <button class="mob-nav-btn" onclick="switchTab('lookup',this)">
+    <span>🔍</span>Lookup
+  </button>
+  <button class="mob-nav-btn" onclick="switchTab('transactions',this)">
+    <span>📝</span>Trades
+  </button>
+</div>
+
+<script>
+function switchTab(tabId, btn) {
+  // Delegate to the existing handler so each tab loads/renders its data
+  // (initLiveData, renderTxTable, loadAnalysis, initSortableTables, etc.).
+  const topTab = document.getElementById('nav-' + tabId);
+  if (typeof showTab === 'function') {
+    showTab(tabId, topTab);
+  } else {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    const target = document.getElementById('tab-' + tabId);
+    if (target) target.classList.add('active');
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    if (topTab) topTab.classList.add('active');
+  }
+  document.querySelectorAll('.mob-nav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  window.scrollTo(0,0);
+}
 </script>
 </body>
 </html>
