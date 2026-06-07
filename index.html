@@ -805,6 +805,20 @@ main{display:contents;}
 .th-sort-active{color:var(--rose)!important;}
 .gen-arrow{font-size:9px;opacity:0.45;}
 .th-sort-active .gen-arrow{opacity:1;}
+
+/* Mobile: compact nav tabs */
+@media(max-width:600px){
+  nav { top: 54px !important; }
+  .nav-inner { padding: 0 10px; }
+  .nav-tab { padding: 10px 12px; font-size: 11px; }
+  .hstats { display: none !important; }
+}
+
+/* Mobile/tablet: horizontal table scroll */
+@media(max-width:768px){
+  table { min-width: 500px; }
+  .card, .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
 </style>
 </head>
 <body>
