@@ -3186,7 +3186,7 @@ async function lookupStock() {
     const logoInitials = (d.symbol||'??').slice(0,2).toUpperCase();
     const agreeGlyph = agree.key==='align' ? '✓' : agree.key==='mixed' ? '~' : '?';
     const _desc = descTranslated || d.description || null;
-    const descShort = _desc ? _desc.slice(0,120)+(_desc.length>120?'…':'') : null;
+    const descShort = _desc ? _desc.slice(0,200)+(_desc.length>200?'…':'') : null;
 
     const decisionPanel = `
 <div class="lk-decision-panel" dir="rtl">
@@ -3276,7 +3276,6 @@ async function lookupStock() {
       </div>
 
       <div id="lk-chart-wrap-dp"></div>
-      <div class="lk-dp-section-title" style="margin-top:10px">📊 أبرز المؤشرات المالية</div>
       <div id="lk-financials-dp"></div>
     </div>
 
@@ -3436,7 +3435,7 @@ async function lookupStock() {
         const riskEl=document.querySelector('.lk-dp-box:last-child .lk-dp-box-empty');
         if(strengthEl&&strengths){strengthEl.innerHTML=strengths.map(s=>`<div class="lk-dp-bullet">• ${s}</div>`).join('');strengthEl.className='lk-dp-bullets';}
         if(riskEl&&risks){riskEl.innerHTML=risks.map(r=>`<div class="lk-dp-bullet lk-dp-bullet-risk">• ${r}</div>`).join('');riskEl.className='lk-dp-bullets';}
-        const thesisMatch = txt.match(/##\s*الاستثمارية([\s\S]*?)(?=##\s|\n⚠️|$)/i);
+        const thesisMatch = txt.match(/##\s*الاستثمارية([\s\S]*?)(?=\n##|\n⚠️|$)/i);
         const thesisText = thesisMatch ? thesisMatch[1].replace(/\*\*/g,'').trim() : null;
         const thesisEl = document.querySelector('.lk-dp-thesis');
         if(thesisEl && thesisText){ thesisEl.textContent = thesisText; thesisEl.className = 'lk-dp-text-box'; }
