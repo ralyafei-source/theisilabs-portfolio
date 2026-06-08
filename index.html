@@ -31,8 +31,10 @@
   --cyan:#38BDF8; --cyan-dim:rgba(56,189,248,0.10);
   --violet:#A78BFA; --violet-dim:rgba(167,139,250,0.14); --gold-agree:#FBBF24; --gold-agree-dim:rgba(251,191,36,0.14); --slate:#9B9BAE; --slate-dim:rgba(155,155,174,0.14);
   --accent2:#34D399; --accent3:#FB923C;
+  /* Chart trend lines — muted vs badge greens/reds, theme-aware (design system §5) */
+  --chart-up:#2BA85C; --chart-down:#D6504A;
   /* Text — strict 3-level hierarchy */
-  --text:#F4F4F6; --text2:#9595A8; --text3:#5C5C70;
+  --text:#F4F4F6; --text2:#9595A8; --text3:#82829A;
   /* Effects */
   --shadow-sm:0 1px 2px rgba(0,0,0,0.4);
   --shadow:0 4px 16px rgba(0,0,0,0.3);
@@ -51,7 +53,8 @@
   --gold:#D97706; --gold-dim:rgba(217,119,6,0.08);
   --cyan:#0284C7; --cyan-dim:rgba(2,132,199,0.08);
   --violet:#7C3AED; --violet-dim:rgba(124,58,237,0.10); --gold-agree:#D97706; --gold-agree-dim:rgba(217,119,6,0.10); --slate:#6B6B7E; --slate-dim:rgba(107,107,126,0.10);
-  --text:#16161D; --text2:#5E5E70; --text3:#9A9AAC;
+  --chart-up:#059669; --chart-down:#DC2626;
+  --text:#16161D; --text2:#5E5E70; --text3:#6E6E82;
   --shadow-sm:0 1px 3px rgba(16,16,29,0.08);
   --shadow:0 2px 12px rgba(16,16,29,0.07);
   --shadow-lg:0 16px 48px rgba(16,16,29,0.14);
@@ -2515,11 +2518,15 @@ function getTFontSz(){return tSize==='sm'?8:9;}
 // Chart theme colors — axes/grid must stay visible in both light and dark mode
 function getChartThemeColors(){
   const isLight = document.documentElement.getAttribute('data-mode') === 'light';
+  const cs = getComputedStyle(document.documentElement);
+  const up = (cs.getPropertyValue('--chart-up').trim()) || '#2BA85C';
+  const down = (cs.getPropertyValue('--chart-down').trim()) || '#D6504A';
   return {
     axDraw:   isLight ? 'rgba(40,40,55,0.65)' : 'rgba(255,255,255,0.3)',
     gridDraw: isLight ? 'rgba(40,40,55,0.10)' : 'rgba(255,255,255,0.04)',
     axModal:   isLight ? 'rgba(40,40,55,0.75)' : 'rgba(255,255,255,0.4)',
-    gridModal: isLight ? 'rgba(40,40,55,0.12)' : 'rgba(255,255,255,0.06)'
+    gridModal: isLight ? 'rgba(40,40,55,0.12)' : 'rgba(255,255,255,0.06)',
+    up, down
   };
 }
 function drawChart(stock,cid,height){
@@ -2539,8 +2546,8 @@ function drawChart(stock,cid,height){
   tCharts[cid]=new Chart(canvas,{
     type:'line',
     data:{labels,datasets:[
-      {label:'above',data:data.map(v=>v>=cost?v:null),borderColor:'#1a8a4a',borderWidth:1.5,pointRadius:0,tension:0.35,fill:false,spanGaps:true},
-      {label:'below',data:data.map(v=>v<cost?v:null),borderColor:'#c0392b',borderWidth:1.5,pointRadius:0,tension:0.35,fill:false,spanGaps:true},
+      {label:'above',data:data.map(v=>v>=cost?v:null),borderColor:_ct.up,borderWidth:1.5,pointRadius:0,tension:0.35,fill:false,spanGaps:true},
+      {label:'below',data:data.map(v=>v<cost?v:null),borderColor:_ct.down,borderWidth:1.5,pointRadius:0,tension:0.35,fill:false,spanGaps:true},
       {label:'cost',data:Array(cfg.pts).fill(cost),borderColor:dashC,borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false}
     ]},
     options:{
@@ -2727,8 +2734,8 @@ function drawModalChart(){
   modalChartInst=new Chart(canvas,{
     type:'line',
     data:{labels,datasets:[
-      {label:'above',data:data.map(v=>v>=cost?v:null),borderColor:'#22aa55',borderWidth:2.5,pointRadius:0,tension:0.4,fill:{target:{value:cost},above:'rgba(34,170,85,0.08)',below:'transparent'},spanGaps:true},
-      {label:'below',data:data.map(v=>v<cost?v:null),borderColor:'#dd3333',borderWidth:2.5,pointRadius:0,tension:0.4,fill:{target:{value:cost},below:'rgba(221,51,51,0.08)',above:'transparent'},spanGaps:true},
+      {label:'above',data:data.map(v=>v>=cost?v:null),borderColor:_ct.up,borderWidth:2.5,pointRadius:0,tension:0.4,fill:{target:{value:cost},above:'rgba(34,170,85,0.08)',below:'transparent'},spanGaps:true},
+      {label:'below',data:data.map(v=>v<cost?v:null),borderColor:_ct.down,borderWidth:2.5,pointRadius:0,tension:0.4,fill:{target:{value:cost},below:'rgba(221,51,51,0.08)',above:'transparent'},spanGaps:true},
       {label:'cost',data:Array(cfg.pts).fill(cost),borderColor:dashC,borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false}
     ]},
     options:{
