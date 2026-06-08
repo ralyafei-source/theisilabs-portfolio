@@ -1,27 +1,5 @@
 [
   {
-    "ts": "2026-06-03T17:50:55.315Z",
-    "type": "market-data",
-    "nickname": null,
-    "status": "failed",
-    "checks": {
-      "writeOk": true,
-      "contentLength": 44874,
-      "scoresFound": 0,
-      "sectionsFound": [],
-      "sectionsMissing": [
-        "DAILY SIGNALS",
-        "EARNINGS & EVENTS",
-        "MACRO TODAY"
-      ],
-      "totalSentinels": 6,
-      "sentinelHits": {
-        "null": 6
-      }
-    },
-    "note": "3 section(s) missing; 6 unavailable field(s)"
-  },
-  {
     "ts": "2026-06-03T18:06:49.571Z",
     "type": "daily",
     "nickname": null,
@@ -674,5 +652,25 @@
       }
     },
     "note": "25 unavailable field(s)"
+  },
+  {
+    "ts": "2026-06-08T04:43:15.976Z",
+    "type": "monthly",
+    "nickname": "ahmed",
+    "status": "ok",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 20533,
+      "scoresFound": 0,
+      "sectionsFound": [
+        "COMPETITIVE EDGE",
+        "LONG VIEW",
+        "PORTFOLIO HEALTH"
+      ],
+      "sectionsMissing": [],
+      "totalSentinels": 0,
+      "sentinelHits": {}
+    },
+    "note": "all healthy"
   }
 ]
