@@ -2420,9 +2420,7 @@ async function loadBriefing(){
   const isAr=(typeof lang!=='undefined' && lang==='ar');
   box.innerHTML=`<div class="briefing-loading"><div class="briefing-dot"></div><span>${T[lang].briefLoadingTxt}</span></div>`;
   try{
-   const nick=localStorage.getItem('theisilabs_nick')||'rashed';
-const r=await fetch('/api/briefing?nickname='+nick);
-    
+    const r=await fetch('/api/briefing');
     const d=await r.json();
     // Extract text — handles string, array [{type:"text",text:"..."}], or object {text:"..."}
     let text='';
@@ -2435,7 +2433,7 @@ const r=await fetch('/api/briefing?nickname='+nick);
     }
     if(text.trim()){
       const body = (typeof mdToHtml==='function') ? mdToHtml(text) : text.replace(/\n/g,'<br>');
-      <button class="reminder-btn" id="reminder-btn" onclick="openWelcomeModal()">Set Up Portfolio →</button>
+      box.innerHTML=`${_briefGreeting(isAr)}<div class="brief-body firm-body${isAr?'':' en'}">${body}</div><div class="briefing-ts">${d.date||'Just now'}</div>`;
     } else {
       box.innerHTML=`<div class="briefing-box" style="direction:ltr;text-align:left;color:var(--text2);font-size:12px;">
         No briefing available yet.<br><br>
@@ -7872,8 +7870,7 @@ async function initLiveData(){ await loadLiveNews();
     }
   }catch(e){}
   try{
-   const nick=localStorage.getItem('theisilabs_nick')||'rashed';
-const r=await fetch('/api/briefing?nickname='+nick);
+    const r=await fetch('/api/briefing');
     if(r.ok){
       const d=await r.json();
       let text='';
