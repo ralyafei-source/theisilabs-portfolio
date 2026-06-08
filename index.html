@@ -141,7 +141,7 @@ main{padding:24px 0;}
 .sec-mining{background:rgba(255,215,0,.12);color:var(--gold);}
 .sec-spec{background:rgba(255,68,68,.12);color:var(--red);}
 
-.w-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;}
+.w-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:8px;}
 .w-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
 .w-name{font-size:13px;font-weight:600;}
 .w-pct{font-size:18px;font-weight:900;font-family:'IBM Plex Mono',monospace;color:var(--accent);}
@@ -157,7 +157,7 @@ main{padding:24px 0;}
 .w-ok{color:var(--green);}
 .w-warn{color:var(--red);}
 
-.alert-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px;border-right:3px solid transparent;}
+.alert-item{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:8px;display:flex;align-items:flex-start;gap:8px;border-right:3px solid transparent;}
 .alert-item.high{border-right-color:var(--red);}
 .alert-item.med{border-right-color:var(--gold);}
 .alert-item.low{border-right-color:var(--green);}
@@ -204,7 +204,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .tg-sm{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));}
 .tg-md{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));}
 .tg-lg{grid-template-columns:repeat(auto-fill,minmax(380px,1fr));}
-.s-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px;cursor:pointer;user-select:none;transition:border-color .15s,transform .15s;position:relative;}
+.s-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;user-select:none;transition:border-color 0.25s ease,background-color 0.25s ease;position:relative;}
 .s-card:hover{border-color:rgba(0,212,255,.5);transform:translateY(-1px);}
 .s-card.dragging{opacity:.4;cursor:grabbing;}
 .s-card.drag-over{border-color:var(--accent);border-width:2px;}
@@ -440,8 +440,8 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 /* ═══ HOLDINGS TABLE — Apple-clarity ═══ */
 .ptable{width:100%;border-collapse:collapse;}
 .ptable thead th{
-  text-align:left;padding:11px 14px;font-size:10px;font-weight:700;
-  color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;
+  text-align:left;padding:8px 16px;font-size:11px;font-weight:700;
+  color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;
   border-bottom:1px solid var(--border2);background:transparent;
   cursor:pointer;user-select:none;white-space:nowrap;
 }
@@ -449,7 +449,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .ptable thead th:hover{color:var(--text2);}
 .ptable thead th.sort-active{color:var(--rose);}
 .ptable tbody td{
-  padding:13px 14px;font-size:13px;border-bottom:1px solid var(--border);
+  padding:12px 16px;font-size:13px;border-bottom:1px solid var(--border);
   vertical-align:middle;
 }
 .ptable tbody td.num{text-align:right;}
@@ -659,24 +659,24 @@ main{display:contents;}
 
 /* ═══ CARDS ═══ */
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);
-  padding:20px 22px;margin-bottom:16px;}
+  padding:24px;margin-bottom:16px;transition:border-color 0.25s ease,background-color 0.25s ease;}
 .card-title{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
   color:var(--text3);margin-bottom:16px;}
-.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;
-  flex-wrap:wrap;gap:10px;}
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;
+  flex-wrap:wrap;gap:8px;}
 .section-title{font-size:17px;font-weight:800;color:var(--text);letter-spacing:-0.01em;}
 .section-sub{font-size:12px;color:var(--text2);margin-top:3px;}
 
 /* Grids */
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px;}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
 @media(max-width:900px){.grid-4{grid-template-columns:1fr 1fr;}.grid-2,.grid-3{grid-template-columns:1fr;}}
 @media(max-width:560px){.grid-4{grid-template-columns:1fr;}}
 
 /* ═══ STAT CARDS — quiet, one number per card ═══ */
 .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);
-  padding:18px;position:relative;overflow:hidden;transition:border-color 0.15s;}
+  padding:16px;position:relative;overflow:hidden;transition:border-color 0.25s ease,background-color 0.25s ease;}
 .stat-card:hover{border-color:var(--border3);}
 .stat-card::before{content:'';position:absolute;top:0;inset-inline-start:0;width:100%;height:2px;opacity:0.8;}
 .stat-card.blue::before{background:var(--cyan);}
@@ -6060,7 +6060,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 /* ═══ STAGE 4 — Larger, more readable fonts ═══ */
 /* Holdings table */
 .ptable thead th{font-size:11px;}
-.ptable tbody td{font-size:14.5px;padding:15px 14px;}
+.ptable tbody td{font-size:14.5px;padding:12px 16px;}
 .hold-sym{font-size:14px;}
 .hold-name{font-size:13.5px;}
 .hold-sector{font-size:12.5px;}
