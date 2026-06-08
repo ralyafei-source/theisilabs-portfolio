@@ -640,27 +640,14 @@
     "note": "3 section(s) missing"
   },
   {
-    "ts": "2026-06-08T09:25:03.882Z",
-    "type": "market-data",
+    "ts": "2026-06-08T09:25:05.143Z",
+    "type": "collector-status",
     "nickname": null,
-    "status": "degraded",
+    "status": "failed",
+    "note": "rejected: content too short (302 chars)",
     "checks": {
-      "writeOk": true,
-      "contentLength": 33945,
-      "scoresFound": 0,
-      "sectionsFound": [
-        "EARNINGS & EVENTS"
-      ],
-      "sectionsMissing": [
-        "DAILY SIGNALS",
-        "MACRO TODAY"
-      ],
-      "totalSentinels": 123,
-      "sentinelHits": {
-        "N/A": 68,
-        "null": 55
-      }
-    },
-    "note": "2 section(s) missing; 123 unavailable field(s)"
+      "writeOk": false,
+      "contentLength": 302
+    }
   }
 ]
