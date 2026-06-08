@@ -12,6 +12,7 @@ function getFilePath(type, date, week, month, nickname) {
   const nick = nickname ? `-${nickname}` : '';
   const safeDate = date || new Date().toISOString().slice(0, 10);
   if (type === 'market-data') return `data/market-data-${date}.json`;
+  if (type === 'collector-status') return `data/system/collector-status.json`;
   if (type === 'weekly')  return `data/analysis-weekly${nick}-${week || safeDate.slice(0,7)}.json`;
   if (type === 'monthly') return `data/analysis-monthly${nick}-${month || safeDate.slice(0,7)}.json`;
   return `data/analysis-daily${nick}-${safeDate}.json`;
@@ -264,7 +265,7 @@ module.exports = async (req, res) => {
 
     // Content length guard — reject empty/garbage responses before they overwrite good analysis
     const contentStr = typeof content === 'string' ? content : String(content);
-    if (contentStr.trim().length < 500) {
+    if (type !== 'collector-status' && contentStr.trim().length < 500) {
       try {
         await appendHealthLog({ ts: new Date().toISOString(), type: type || 'daily', nickname: nickname || null, status: 'failed', note: `rejected: content too short (${contentStr.trim().length} chars)`, checks: { writeOk: false, contentLength: contentStr.trim().length } });
       } catch(e) { /* never block the response */ }
