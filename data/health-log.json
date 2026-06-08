@@ -1,72 +1,5 @@
 [
   {
-    "ts": "2026-06-03T18:06:49.571Z",
-    "type": "daily",
-    "nickname": null,
-    "status": "degraded",
-    "checks": {
-      "writeOk": true,
-      "contentLength": 11876,
-      "scoresFound": 0,
-      "sectionsFound": [
-        "DAILY SIGNALS",
-        "EARNINGS & EVENTS",
-        "MACRO TODAY"
-      ],
-      "sectionsMissing": [],
-      "totalSentinels": 17,
-      "sentinelHits": {
-        "غير متوفر": 17
-      }
-    },
-    "note": "17 unavailable field(s)"
-  },
-  {
-    "ts": "2026-06-03T18:16:41.766Z",
-    "type": "daily",
-    "nickname": null,
-    "status": "degraded",
-    "checks": {
-      "writeOk": true,
-      "contentLength": 12163,
-      "scoresFound": 0,
-      "sectionsFound": [
-        "DAILY SIGNALS",
-        "EARNINGS & EVENTS"
-      ],
-      "sectionsMissing": [
-        "MACRO TODAY"
-      ],
-      "totalSentinels": 35,
-      "sentinelHits": {
-        "غير متوفر": 35
-      }
-    },
-    "note": "1 section(s) missing; 35 unavailable field(s)"
-  },
-  {
-    "ts": "2026-06-03T18:27:15.177Z",
-    "type": "daily",
-    "nickname": null,
-    "status": "degraded",
-    "checks": {
-      "writeOk": true,
-      "contentLength": 12444,
-      "scoresFound": 0,
-      "sectionsFound": [
-        "DAILY SIGNALS",
-        "EARNINGS & EVENTS",
-        "MACRO TODAY"
-      ],
-      "sectionsMissing": [],
-      "totalSentinels": 23,
-      "sentinelHits": {
-        "غير متوفر": 23
-      }
-    },
-    "note": "23 unavailable field(s)"
-  },
-  {
     "ts": "2026-06-03T18:33:30.722Z",
     "type": "daily",
     "nickname": null,
@@ -674,5 +607,47 @@
       }
     },
     "note": "all healthy"
+  },
+  {
+    "ts": "2026-06-08T09:11:25.215Z",
+    "type": "market-data",
+    "nickname": null,
+    "status": "failed",
+    "note": "rejected: content too short (124 chars)",
+    "checks": {
+      "writeOk": false,
+      "contentLength": 124
+    }
+  },
+  {
+    "ts": "2026-06-08T09:18:51.619Z",
+    "type": "market-data",
+    "nickname": null,
+    "status": "failed",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 6006,
+      "scoresFound": 0,
+      "sectionsFound": [],
+      "sectionsMissing": [
+        "DAILY SIGNALS",
+        "EARNINGS & EVENTS",
+        "MACRO TODAY"
+      ],
+      "totalSentinels": 0,
+      "sentinelHits": {}
+    },
+    "note": "3 section(s) missing"
+  },
+  {
+    "ts": "2026-06-08T09:25:05.143Z",
+    "type": "collector-status",
+    "nickname": null,
+    "status": "failed",
+    "note": "rejected: content too short (302 chars)",
+    "checks": {
+      "writeOk": false,
+      "contentLength": 302
+    }
   }
 ]
