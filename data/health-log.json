@@ -642,23 +642,14 @@
     }
   },
   {
-    "ts": "2026-06-08T09:18:20.116Z",
+    "ts": "2026-06-08T09:18:27.527Z",
     "type": "market-data",
     "nickname": null,
     "status": "failed",
+    "note": "rejected: content too short (455 chars)",
     "checks": {
-      "writeOk": true,
-      "contentLength": 546,
-      "scoresFound": 0,
-      "sectionsFound": [],
-      "sectionsMissing": [
-        "DAILY SIGNALS",
-        "EARNINGS & EVENTS",
-        "MACRO TODAY"
-      ],
-      "totalSentinels": 0,
-      "sentinelHits": {}
-    },
-    "note": "3 section(s) missing"
+      "writeOk": false,
+      "contentLength": 455
+    }
   }
 ]
