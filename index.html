@@ -3233,7 +3233,7 @@ function _lkRiskRead(d){
 async function lookupStock() {
   const sym = document.getElementById('lookup-input').value.trim().toUpperCase();
   if (!sym) return;
-  const isAr = (typeof lang!=='undefined' && lang==='ar');
+  const isAr = true; // Lookup panel always renders in Arabic regardless of page language
 
   document.getElementById('lookup-loading').style.display = 'block';
   document.getElementById('lookup-result').style.display = 'none';
@@ -3387,7 +3387,7 @@ async function lookupStock() {
       <div class="lk-dp-section-title">⚡ الاستثمارية</div>
       <div class="lk-dp-text-box lk-dp-thesis">— سيتوفر قريباً (تحليل ذكاء اصطناعي)</div>
 
-      <div class="lk-dp-section-title" style="margin-top:14px">🏢 نبذة عن الشركة (EN)</div>
+      <div class="lk-dp-section-title" style="margin-top:14px">🏢 نبذة عن الشركة</div>
       <div class="lk-dp-text-box" dir="rtl" style="text-align:right">${descShort||'—'}</div>
 
       <div class="lk-dp-2col" style="margin-top:14px">
