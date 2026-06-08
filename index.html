@@ -396,7 +396,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
   .up,.text-up{color:var(--up)} .down,.text-down{color:var(--red)}
   /* Auth overlay above header */
   body.auth-open header, body.auth-open nav{z-index:1!important}
-  #authBlur{z-index:9999!important} #authOverlay{z-index:10000!important}
+  #authBlur{z-index:9999!important} #authOverlay{z-index:10000!important} #authOverlay[style*="display: none"]{pointer-events:none!important;} #authBlur[style*="display: none"]{pointer-events:none!important;}
   /* ═══ END SKIN ═══ */
 
 
@@ -8276,6 +8276,8 @@ function switchTab(tabId, btn) {
     </div>
 </body>
 </html>
+
+
 
 
 
