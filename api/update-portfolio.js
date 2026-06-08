@@ -2,7 +2,7 @@
 // Handles buy/sell/add/remove trades and updates portfolio.json on GitHub
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const BRIEFING_API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
+const BRIEFING_API_KEY = process.env.BRIEFING_API_KEY;
 const REPO = 'ralyafei-source/theisilabs-portfolio';
 const FILE_PATH = 'data/portfolio.json';
 

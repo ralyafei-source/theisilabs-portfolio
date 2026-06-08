@@ -109,7 +109,8 @@ function generateTempPin() {
 
 async function hashPin(pin) {
   const hash = crypto.createHash('sha256');
-  hash.update(pin + 'theisilabs2026salt');
+  const PIN_SALT = process.env.PIN_SALT || 'theisi-pin-salt-v1';
+  hash.update(pin + PIN_SALT);
   return hash.digest('hex');
 }
 

@@ -174,7 +174,7 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const githubToken = process.env.GITHUB_TOKEN;
-  const BRIEFING_API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
+  const BRIEFING_API_KEY = process.env.BRIEFING_API_KEY;
 
   // ── top-tickers: accessible via api_key (for Make.com) or admin session ──
   if (req.method === 'GET' && req.query && req.query.action === 'top-tickers') {

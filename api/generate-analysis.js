@@ -2,7 +2,7 @@
 const REPO = 'ralyafei-source/theisilabs-portfolio';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
+const API_KEY = process.env.BRIEFING_API_KEY;
 
 async function ghRead(path) {
   const r = await fetch(
