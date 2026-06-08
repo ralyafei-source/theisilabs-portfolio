@@ -1,27 +1,5 @@
 [
   {
-    "ts": "2026-06-03T18:27:15.177Z",
-    "type": "daily",
-    "nickname": null,
-    "status": "degraded",
-    "checks": {
-      "writeOk": true,
-      "contentLength": 12444,
-      "scoresFound": 0,
-      "sectionsFound": [
-        "DAILY SIGNALS",
-        "EARNINGS & EVENTS",
-        "MACRO TODAY"
-      ],
-      "sectionsMissing": [],
-      "totalSentinels": 23,
-      "sentinelHits": {
-        "غير متوفر": 23
-      }
-    },
-    "note": "23 unavailable field(s)"
-  },
-  {
     "ts": "2026-06-03T18:33:30.722Z",
     "type": "daily",
     "nickname": null,
@@ -660,5 +638,29 @@
       "sentinelHits": {}
     },
     "note": "3 section(s) missing"
+  },
+  {
+    "ts": "2026-06-08T09:23:10.963Z",
+    "type": "market-data",
+    "nickname": null,
+    "status": "degraded",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 35706,
+      "scoresFound": 0,
+      "sectionsFound": [
+        "EARNINGS & EVENTS"
+      ],
+      "sectionsMissing": [
+        "DAILY SIGNALS",
+        "MACRO TODAY"
+      ],
+      "totalSentinels": 88,
+      "sentinelHits": {
+        "N/A": 33,
+        "null": 55
+      }
+    },
+    "note": "2 section(s) missing; 88 unavailable field(s)"
   }
 ]
