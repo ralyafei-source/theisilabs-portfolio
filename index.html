@@ -990,6 +990,29 @@ main{display:contents;}
   text-align: right;
   direction: rtl;
 }
+
+/* ── Premium polish layer (additive, safe) ── */
+:root {
+  --card-radius: 16px;
+  --card-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* Crisper text rendering on desktop */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Soft transitions on interactive elements — no layout-shifting hover, no transform */
+.card, .mob-nav-btn {
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Minor heading refinement (limited effect — most headings are styled divs) */
+h1, h2, h3 {
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
