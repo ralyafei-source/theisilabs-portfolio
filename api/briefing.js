@@ -2,18 +2,26 @@ const BRIEFING_API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const REPO = 'ralyafei-source/theisilabs-portfolio';
 
-// ── Helper: resolve file path by nickname ────────────────────────────────────
-// Per-user:  data/briefing-ahmed-2026-06-08.json
-// Rashed:    data/briefing-rashed-2026-06-08.json
-// Legacy:    data/briefing.json  (read-only fallback for old saved briefs)
 function getTodayUAE() {
   return new Date(Date.now() + 4 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
+function getDateDaysAgo(n) {
+  return new Date(Date.now() + 4 * 3600 * 1000 - n * 86400000).toISOString().slice(0, 10);
+}
+
 function getFilePath(nickname, date) {
   const d = date || getTodayUAE();
-  if (!nickname || nickname === '') return `data/briefing.json`; // legacy fallback
+  if (!nickname || nickname === '') return `data/briefing.json`;
   return `data/briefing-${nickname.toLowerCase()}-${d}.json`;
+}
+
+async function fetchFromGitHub(path) {
+  const r = await fetch(
+    `https://raw.githubusercontent.com/${REPO}/main/${path}?t=${Date.now()}`
+  );
+  if (!r.ok) return null;
+  return await r.json();
 }
 
 module.exports = async function handler(req, res) {
@@ -23,32 +31,28 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // ── GET — load brief for a user ─────────────────────────────────────────
+  // ── GET — load brief for a user, fall back up to 7 days ─────────────────
   if (req.method === 'GET') {
     const nickname = req.query.nickname || '';
     const date = req.query.date || getTodayUAE();
-    const filePath = getFilePath(nickname, date);
 
     try {
-      const r = await fetch(
-        `https://raw.githubusercontent.com/${REPO}/main/${filePath}?t=${Date.now()}`
-      );
-
-      // If per-user file not found, try legacy file as fallback (only for rashed)
-      if (!r.ok) {
-        if (nickname === 'rashed' || nickname === '') {
-          const legacy = await fetch(
-            `https://raw.githubusercontent.com/${REPO}/main/data/briefing.json?t=${Date.now()}`
-          );
-          if (!legacy.ok) return res.status(200).json({ content: null });
-          const data = await legacy.json();
-          return res.status(200).json(data);
-        }
-        return res.status(200).json({ content: null });
+      // Try today first, then look back up to 7 days
+      const daysToTry = [0, 1, 2, 3, 4, 5, 6, 7];
+      for (const daysAgo of daysToTry) {
+        const tryDate = daysAgo === 0 ? date : getDateDaysAgo(daysAgo);
+        const filePath = getFilePath(nickname, tryDate);
+        const data = await fetchFromGitHub(filePath);
+        if (data && data.content) return res.status(200).json(data);
       }
 
-      const data = await r.json();
-      return res.status(200).json(data);
+      // Final fallback — legacy briefing.json (for rashed or empty nickname)
+      if (nickname === 'rashed' || nickname === '') {
+        const legacy = await fetchFromGitHub('data/briefing.json');
+        if (legacy) return res.status(200).json(legacy);
+      }
+
+      return res.status(200).json({ content: null });
     } catch (e) {
       return res.status(200).json({ content: null });
     }
@@ -56,7 +60,6 @@ module.exports = async function handler(req, res) {
 
   // ── POST — save brief for a user ─────────────────────────────────────────
   if (req.method === 'POST') {
-    // Auth: accept both x-api-key header and Authorization Bearer header
     const apiKey =
       req.headers['x-api-key'] ||
       (req.headers['authorization'] || '').replace('Bearer ', '').trim() ||
@@ -70,14 +73,11 @@ module.exports = async function handler(req, res) {
     const nickname = (req.body && req.body.nickname) || '';
     const date = (req.body && req.body.date) || getTodayUAE();
 
-    // Handle case where content is a JSON string with type/text structure
     try {
       const parsed = JSON.parse(content);
       if (parsed.text) content = parsed.text;
       if (parsed.content) content = parsed.content;
-    } catch (e) {
-      // content is already plain text, keep as is
-    }
+    } catch (e) {}
 
     if (!content) return res.status(400).json({ error: 'No content' });
 
@@ -92,7 +92,6 @@ module.exports = async function handler(req, res) {
       };
       const encoded = Buffer.from(JSON.stringify(fileData)).toString('base64');
 
-      // Get current file SHA (if exists)
       const getRes = await fetch(
         `https://api.github.com/repos/${REPO}/contents/${filePath}`,
         {
@@ -104,7 +103,6 @@ module.exports = async function handler(req, res) {
       );
       const getSha = getRes.ok ? (await getRes.json()).sha : null;
 
-      // Write to GitHub
       const putRes = await fetch(
         `https://api.github.com/repos/${REPO}/contents/${filePath}`,
         {
