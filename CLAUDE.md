@@ -11,6 +11,22 @@ with how/what/caveat shown, never as fact or instruction. (Condensed copy lives 
 theisi-brand skill so it's always in context.)
 
 
+🎨 DESIGN SYSTEM (highest authority on concrete visual/UX tokens)
+Before any design or UI build on dashboard, website, app, or new screens, check
+THEISI_DESIGN_SYSTEM_v2.md. It is the source of truth — colors, the 8px
+spacing grid, fonts (Almarai + IBM Plex Mono), the 3-tier type hierarchy, motion
+timings, RTL rules, mobile behavior, the validated palette with measured WCAG
+contrast, and the migration roadmap. Every item is tagged [AS-BUILT] (true today)
+or TARGET (planned, not yet shipped) — check the tag before assuming a feature
+exists. Follow the Add-a-Token protocol (§10) when introducing any new token.
+Rule: when philosophy docs (prompt_11_theisi_design_director.txt) and the as-built
+spec disagree on a concrete VALUE, the design-system doc wins for web/dashboard pixels;
+the philosophy doc governs intent. Social/video (Instagram, Creatomate) may legitimately
+differ — see its §8 Platform Variations. Some values are flagged NEEDS CONSOLIDATION
+(e.g. .card is defined 3×, line 661 wins) — never "fix" these without a deliberate,
+tested refactor, and always confirm the COMPUTED value in the inspector.
+
+
 WHAT THIS PROJECT IS
 An Arabic financial intelligence platform for a UAE investor (Rashed).
 It monitors the US market, scores the portfolio, and publishes Arabic content
