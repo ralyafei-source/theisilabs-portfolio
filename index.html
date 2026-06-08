@@ -4591,7 +4591,7 @@ const API_KEY = 'theisilabs2026';
 let tradeAction = 'BUY';
 let selectedSym = '';
 
-function openTradeModal(){
+function openTradeModal(){document.body.appendChild(document.getElementById('tradeModal'));
   // Populate stock dropdown from current stocks array
   const sel = document.getElementById('tradeSymSelect');
   sel.innerHTML = '<option value="">— Select existing stock —</option>';
@@ -8276,6 +8276,7 @@ function switchTab(tabId, btn) {
     </div>
 </body>
 </html>
+
 
 
 
