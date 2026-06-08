@@ -921,6 +921,43 @@ main{display:contents;}
 .lk-dp-bullets{display:flex;flex-direction:column;gap:5px;}
 .lk-dp-bullet{font-size:10px;color:var(--text2);line-height:1.5;}
 .lk-dp-bullet-risk{color:var(--red);}
+
+/* ── BiDi / numeric / theme fixes (scoped) ── */
+/* Fix 1 — RTL/LTR inline conflict for mixed Arabic/English content */
+.briefing-box, .analysis-content, .card-content {
+  direction: rtl;
+  unicode-bidi: plaintext;
+  text-align: right;
+}
+/* Fix 2 — Inline English tickers/symbols inside Arabic text (scoped to .ticker-inline only — does NOT touch global b/strong) */
+.ticker-inline {
+  direction: ltr;
+  display: inline-block;
+  unicode-bidi: isolate;
+}
+/* Fix 3 — Tabular numbers for financial data (scoped to financial classes, not bare td) */
+.mv, .gl, .price, .pct, .stock-value, .portfolio-num, .lk-fin td {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" on, "lnum" on;
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+}
+/* Fix 4 — Light-mode text contrast (manual [data-mode] selector, not prefers-color-scheme) */
+[data-mode="light"] body, body[data-mode="light"],
+[data-mode="light"] .card,
+[data-mode="light"] .briefing-box {
+  color: #1a1a2e;
+}
+/* Fix 5 — Financial table column alignment (scoped to .lk-fin only) */
+.lk-fin td:not(:first-child) {
+  text-align: left;
+  direction: ltr;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" on, "lnum" on;
+}
+.lk-fin td:first-child {
+  text-align: right;
+  direction: rtl;
+}
 </style>
 </head>
 <body>
@@ -3798,6 +3835,12 @@ function mdToHtml(text){
   }
 
   function inlineFormat(t){
+    // Wrap English tickers and percentages to prevent RTL/LTR shift in Arabic text.
+    // Exclusion list keeps glossary terms / common metric abbreviations unwrapped
+    // (so highlightGlossaryTerms can handle them and we avoid double-wrapping).
+    const _NON_TICKERS = new Set(['DCF','RSI','PEG','PE','PS','ROE','ROA','ROI','ROIC','EPS','EBITDA','EBIT','FCF','EV','WACC','CAGR','GDP','CPI','PCE','PMI','NFP','QE','QT','TAM','SAM','YOY','QOQ','MOM','IPO','SBC','CAC','LTV','NWC','AUM','NAV','ATH','ATL','MACD','ATR','OBV','VAR','DCA','ARR','NRR','SAAS','HBM','CUDA','GPU','ETF','USD','AI','CEO','CFO','AR','EN','OK','NaN']);
+    t = t.replace(/\b([A-Z]{2,5})\b/g, (m, p1) => _NON_TICKERS.has(p1) ? m : '<span class="ticker-inline">' + p1 + '</span>');
+    t = t.replace(/([\+\-]?\d+\.?\d*%)/g, '<span style="direction:ltr;display:inline-block;unicode-bidi:isolate;">$1</span>');
     t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     t = t.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
     // Signal pills — subtle, semantic
