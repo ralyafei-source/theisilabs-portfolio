@@ -1016,6 +1016,56 @@ h1, h2, h3 {
   letter-spacing: -0.02em;
   font-weight: 700;
 }
+
+/* ── PHASE 4 MOTION SYSTEM ──────────────────────────────────────────────
+   Rule: motion serves understanding. Numbers count up. Cards fade in.
+   Never animate for spectacle. All durations ≤ 400ms.
+   Respects prefers-reduced-motion. ─────────────────────────────────── */
+
+/* Tab content fade-in on switch */
+@keyframes tabFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.tab-content.active {
+  animation: tabFadeIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Stat card stagger entrance — applied via JS on first paint */
+@keyframes cardReveal {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.stat-card.motion-reveal {
+  animation: cardReveal 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Number count-up flash — brief accent pulse when a number settles */
+@keyframes numSettle {
+  0%   { opacity: 0.4; }
+  60%  { opacity: 1; }
+  100% { opacity: 1; }
+}
+.stat-value.counting {
+  animation: numSettle 0.35s ease both;
+}
+
+/* Portfolio value header — same settle */
+#portfolio-val.counting {
+  animation: numSettle 0.35s ease both;
+}
+
+/* Reduced motion — respect system preference */
+@media (prefers-reduced-motion: reduce) {
+  .tab-content.active,
+  .stat-card.motion-reveal,
+  .stat-value.counting,
+  #portfolio-val.counting {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -8021,6 +8071,206 @@ function switchTab(tabId, btn) {
   <div class="gt-ar" id="gtAr"></div>
   <div class="gt-scale" id="gtScale"></div>
 </div>
+
+<!-- ── PHASE 4 MOTION ENGINE ─────────────────────────────────────────────
+     Additive only — no existing behaviour modified.
+     Three systems: count-up numbers, tab fade, card stagger entrance.
+  ──────────────────────────────────────────────────────────────────── -->
+<script>
+(function(){
+  'use strict';
+
+  // ── 1. NUMBER COUNT-UP ──────────────────────────────────────────────
+  // Intercepts stat card and portfolio-val writes and animates the number.
+  // Parses the existing format ($612K, +24.5%, NVDA, etc.) and counts only
+  // the leading numeric part; non-numeric strings (symbol names) just flash.
+
+  function parseNumeric(str) {
+    // Returns { prefix, number, suffix } or null if no leading number found
+    if (!str || str === '—' || str === '$0') return null;
+    const m = str.match(/^([^0-9\-]*)(-?[\d,]+\.?\d*)(.*)$/);
+    if (!m) return null;
+    const num = parseFloat(m[2].replace(/,/g, ''));
+    if (isNaN(num)) return null;
+    return { prefix: m[1], number: num, suffix: m[3] };
+  }
+
+  function formatLike(orig, num) {
+    // Reproduce the original formatting: commas, decimal places
+    const hasComma = orig.includes(',');
+    const decMatch = orig.match(/\.(\d+)/);
+    const decimals = decMatch ? decMatch[1].length : 0;
+    let s = decimals > 0 ? num.toFixed(decimals) : Math.round(num).toString();
+    if (hasComma && num >= 1000) {
+      s = parseFloat(s).toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+    return s;
+  }
+
+  // Easing: ease-out cubic
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+  function animateNumber(el, targetText, duration) {
+    // Skip if privacy mode is on
+    if (typeof privacyOn !== 'undefined' && privacyOn) {
+      el.textContent = targetText;
+      return;
+    }
+
+    const parsed = parseNumeric(targetText);
+    if (!parsed) {
+      // Non-numeric (e.g. symbol name like "NVDA") — just flash in
+      el.textContent = targetText;
+      el.classList.remove('counting');
+      void el.offsetWidth; // reflow
+      el.classList.add('counting');
+      setTimeout(() => el.classList.remove('counting'), 400);
+      return;
+    }
+
+    const { prefix, number: target, suffix } = parsed;
+    const start = 0;
+    const startTime = performance.now();
+
+    el.classList.remove('counting');
+    void el.offsetWidth;
+    el.classList.add('counting');
+
+    function step(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = easeOut(progress);
+      const current = start + (target - start) * eased;
+      el.textContent = prefix + formatLike(targetText.replace(prefix, '').replace(suffix, ''), current) + suffix;
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        el.textContent = targetText; // ensure final value is exact
+        setTimeout(() => el.classList.remove('counting'), 200);
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  // Patch the specific stat elements that get written by updateStatCards()
+  // We watch for textContent changes using a MutationObserver on each element.
+  const ANIMATED_IDS = ['stat-total', 'stat-best', 'stat-worst', 'stat-largest', 'portfolio-val'];
+  const COUNT_DURATION = 800; // ms — fast enough to feel instant, slow enough to read
+
+  function attachCountUp(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    // Mark it so we don't double-attach
+    if (el._motionAttached) return;
+    el._motionAttached = true;
+
+    const observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(m) {
+        if (m.type === 'characterData' || m.type === 'childList') {
+          const newText = el.textContent.trim();
+          // Avoid animating placeholder dashes or dots
+          if (newText === '—' || newText === '••••' || newText === '') return;
+          // Avoid re-triggering during animation (el is mid-count)
+          if (el._counting) return;
+          el._counting = true;
+          const snapshot = newText;
+          animateNumber(el, snapshot, COUNT_DURATION);
+          setTimeout(() => { el._counting = false; }, COUNT_DURATION + 100);
+        }
+      });
+    });
+
+    observer.observe(el, { characterData: true, childList: true, subtree: true });
+  }
+
+  // Attach after DOM is ready
+  function attachAll() {
+    ANIMATED_IDS.forEach(attachCountUp);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachAll);
+  } else {
+    attachAll();
+  }
+
+  // ── 2. TAB FADE-IN ──────────────────────────────────────────────────
+  // The CSS @keyframes tabFadeIn does the work. We just need to ensure the
+  // animation re-triggers on every tab switch (CSS won't re-run on an element
+  // that already has .active). We do this by temporarily removing/adding the
+  // class in the existing showTab hook.
+
+  // Patch showTab to force animation replay
+  const _origShowTab = typeof showTab === 'function' ? showTab : null;
+  if (_origShowTab) {
+    window.showTab = function(name, el) {
+      // Remove active from all tab contents BEFORE the original call
+      // so that when original adds .active back, CSS animation fires fresh
+      document.querySelectorAll('.tab-content').forEach(function(t) {
+        // Remove then force reflow so CSS re-triggers
+        t.style.animationName = 'none';
+      });
+      _origShowTab(name, el);
+      // Restore animation name on the now-active tab
+      requestAnimationFrame(function() {
+        const target = document.getElementById('tab-' + name);
+        if (target) {
+          target.style.animationName = '';
+        }
+      });
+    };
+  }
+
+  // ── 3. STAT CARD STAGGER ENTRANCE ───────────────────────────────────
+  // On first dashboard load, cards enter with a staggered delay.
+  // Only runs once (tracks via _staggerDone flag).
+
+  let _staggerDone = false;
+
+  function staggerCards() {
+    if (_staggerDone) return;
+    _staggerDone = true;
+
+    const cards = document.querySelectorAll('.grid-4 .stat-card');
+    cards.forEach(function(card, i) {
+      card.style.opacity = '0';
+      card.style.animationDelay = (i * 60) + 'ms';
+      card.classList.add('motion-reveal');
+      // Clean up after animation completes
+      card.addEventListener('animationend', function() {
+        card.style.opacity = '';
+        card.style.animationDelay = '';
+        card.classList.remove('motion-reveal');
+      }, { once: true });
+    });
+  }
+
+  // Trigger stagger when dashboard tab becomes visible (after auth clears)
+  // We watch for the auth overlay disappearing as the signal
+  const authObs = new MutationObserver(function() {
+    const overlay = document.getElementById('authOverlay');
+    if (overlay && overlay.style.display === 'none') {
+      setTimeout(staggerCards, 120);
+      authObs.disconnect();
+    }
+  });
+
+  const authEl = document.getElementById('authOverlay');
+  if (authEl) {
+    authObs.observe(authEl, { attributes: true, attributeFilter: ['style'] });
+  } else {
+    // No auth overlay — stagger immediately
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(staggerCards, 300);
+    });
+  }
+
+})();
+</script>
 </body>
 </html>
 
