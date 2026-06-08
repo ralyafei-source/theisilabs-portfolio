@@ -2435,7 +2435,7 @@ const r=await fetch('/api/briefing?nickname='+nick);
     }
     if(text.trim()){
       const body = (typeof mdToHtml==='function') ? mdToHtml(text) : text.replace(/\n/g,'<br>');
-      box.innerHTML=`${_briefGreeting(isAr)}<div class="brief-body firm-body" dir="rtl" style="direction:rtl;unicode-bidi:plaintext;">${body}</div><div class="briefing-ts">${d.date||'Just now'}</div>`;
+      <button class="reminder-btn" id="reminder-btn" onclick="openAddStocksModal(localStorage.getItem('theisilabs_nick')||'')">Set Up Portfolio →</button>
     } else {
       box.innerHTML=`<div class="briefing-box" style="direction:ltr;text-align:left;color:var(--text2);font-size:12px;">
         No briefing available yet.<br><br>
