@@ -1,28 +1,5 @@
 [
   {
-    "ts": "2026-06-03T18:33:30.722Z",
-    "type": "daily",
-    "nickname": null,
-    "status": "degraded",
-    "checks": {
-      "writeOk": true,
-      "contentLength": 11604,
-      "scoresFound": 0,
-      "sectionsFound": [
-        "DAILY SIGNALS",
-        "EARNINGS & EVENTS"
-      ],
-      "sectionsMissing": [
-        "MACRO TODAY"
-      ],
-      "totalSentinels": 18,
-      "sentinelHits": {
-        "غير متوفر": 18
-      }
-    },
-    "note": "1 section(s) missing; 18 unavailable field(s)"
-  },
-  {
     "ts": "2026-06-03T18:40:55.447Z",
     "type": "daily",
     "nickname": null,
@@ -649,5 +626,25 @@
       "writeOk": false,
       "contentLength": 302
     }
+  },
+  {
+    "ts": "2026-06-08T09:35:11.493Z",
+    "type": "collector-status",
+    "nickname": null,
+    "status": "failed",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 302,
+      "scoresFound": 0,
+      "sectionsFound": [],
+      "sectionsMissing": [
+        "DAILY SIGNALS",
+        "EARNINGS & EVENTS",
+        "MACRO TODAY"
+      ],
+      "totalSentinels": 0,
+      "sentinelHits": {}
+    },
+    "note": "3 section(s) missing; content too short"
   }
 ]
