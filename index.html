@@ -2420,7 +2420,9 @@ async function loadBriefing(){
   const isAr=(typeof lang!=='undefined' && lang==='ar');
   box.innerHTML=`<div class="briefing-loading"><div class="briefing-dot"></div><span>${T[lang].briefLoadingTxt}</span></div>`;
   try{
-    const r=await fetch('/api/briefing');
+   const nick=localStorage.getItem('theisi_nick')||'rashed';
+const r=await fetch('/api/briefing?nickname='+nick);
+    
     const d=await r.json();
     // Extract text — handles string, array [{type:"text",text:"..."}], or object {text:"..."}
     let text='';
@@ -7870,7 +7872,8 @@ async function initLiveData(){ await loadLiveNews();
     }
   }catch(e){}
   try{
-    const r=await fetch('/api/briefing');
+   const nick=localStorage.getItem('theisi_nick')||'rashed';
+const r=await fetch('/api/briefing?nickname='+nick);
     if(r.ok){
       const d=await r.json();
       let text='';
