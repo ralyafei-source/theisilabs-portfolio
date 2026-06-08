@@ -5348,34 +5348,7 @@ loadBriefing();
 loadTxFromStorage();
 fetchLivePrices();
 </script>
-<!-- ===== TRADE MODAL ===== -->
-<div id="tradeModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:10001;align-items:center;justify-content:center;">
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;width:420px;max-width:95vw;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
 
-    <!-- Header -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-      <div style="font-size:16px;font-weight:900;">📝 Record Trade</div>
-      <button onclick="closeTradeModal()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;">✕</button>
-    </div>
-
-    <!-- Action Toggle -->
-    <div style="display:flex;gap:8px;margin-bottom:18px;">
-      <button id="btn-buy"  onclick="setTradeAction('BUY')"  style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--green);background:rgba(0,200,100,.15);color:var(--green);font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">📈 BUY</button>
-      <button id="btn-sell" onclick="setTradeAction('SELL')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">📉 SELL</button>
-      <button id="btn-remove" onclick="setTradeAction('REMOVE')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">🗑 REMOVE</button>
-    </div>
-
-    <!-- Stock Symbol -->
-    <div style="margin-bottom:14px;">
-      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">STOCK SYMBOL</label>
-      <div style="display:flex;gap:8px;">
-        <select id="tradeSymSelect" onchange="onSymSelect(this.value)" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Almarai',sans-serif;font-size:13px;">
-          <option value="">— Select existing stock —</option>
-        </select>
-        <span style="color:var(--text2);line-height:38px;">or</span>
-        <input id="tradeSymNew" placeholder="New: TSLA" style="width:100px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;" oninput="onNewSym(this.value)">
-      </div>
-    </div>
 
     <!-- New Stock Details (hidden unless new) -->
     <div id="newStockFields" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
@@ -8273,8 +8246,38 @@ function switchTab(tabId, btn) {
 
 })();
 </script>
+<!-- TRADE MODAL MOVED --> -->
+<div id="tradeModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:10001;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;width:420px;max-width:95vw;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div style="font-size:16px;font-weight:900;">📝 Record Trade</div>
+      <button onclick="closeTradeModal()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;">✕</button>
+    </div>
+
+    <!-- Action Toggle -->
+    <div style="display:flex;gap:8px;margin-bottom:18px;">
+      <button id="btn-buy"  onclick="setTradeAction('BUY')"  style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--green);background:rgba(0,200,100,.15);color:var(--green);font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">📈 BUY</button>
+      <button id="btn-sell" onclick="setTradeAction('SELL')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">📉 SELL</button>
+      <button id="btn-remove" onclick="setTradeAction('REMOVE')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">🗑 REMOVE</button>
+    </div>
+
+    <!-- Stock Symbol -->
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">STOCK SYMBOL</label>
+      <div style="display:flex;gap:8px;">
+        <select id="tradeSymSelect" onchange="onSymSelect(this.value)" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Almarai',sans-serif;font-size:13px;">
+          <option value="">— Select existing stock —</option>
+        </select>
+        <span style="color:var(--text2);line-height:38px;">or</span>
+        <input id="tradeSymNew" placeholder="New: TSLA" style="width:100px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;" oninput="onNewSym(this.value)">
+      </div>
+    </div>
 </body>
 </html>
+
+
 
 
 
