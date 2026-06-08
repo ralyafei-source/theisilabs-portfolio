@@ -857,10 +857,36 @@ main{display:contents;}
   /* 4. Add bottom padding to main so content clears the bottom nav */
   main { padding-bottom: 80px !important; }
 
-  /* 5. Table fix — horizontal scroll within card */
-  .card { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 12px; }
-  table { min-width: 420px; font-size: 12px; }
-  td, th { padding: 8px 10px !important; }
+  /* 5. Table fix — flip rows into stacked cards (no horizontal scroll) */
+  .card { overflow-x: visible; padding: 12px; }
+  #pBody, #pBody tr, #pBody td { display: block; width: 100%; }
+  table thead { display: none; }
+  table { min-width: 0; font-size: 13px; }
+  #pBody tr {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: var(--bg3);
+  }
+  #pBody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0 !important;
+    border: none !important;
+    text-align: right;
+  }
+  #pBody td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  #pBody td:last-child { justify-content: flex-end; gap: 8px; }
+  #pBody td:last-child::before { display: none; }
 }
 
 /* Hide bottom nav on desktop */
@@ -921,6 +947,12 @@ main{display:contents;}
 .lk-dp-bullets{display:flex;flex-direction:column;gap:5px;}
 .lk-dp-bullet{font-size:10px;color:var(--text2);line-height:1.5;}
 .lk-dp-bullet-risk{color:var(--red);}
+
+/* Live price flash on changed rows */
+@keyframes priceFlashUp { 0% { background-color: rgba(0,200,100,0.22); } 100% { background-color: transparent; } }
+@keyframes priceFlashDn { 0% { background-color: rgba(255,68,68,0.22); } 100% { background-color: transparent; } }
+.flash-up { animation: priceFlashUp 1.2s ease-out; }
+.flash-dn { animation: priceFlashDn 1.2s ease-out; }
 
 /* ── BiDi / numeric / theme fixes (scoped) ── */
 /* Fix 1 — RTL/LTR inline conflict for mixed Arabic/English content */
@@ -2253,13 +2285,13 @@ function renderPortfolio(){
 
     const purchaseDateStr = s.purchaseDate ? s.purchaseDate.slice(0,10) : '—';
     return `<tr>
-      <td><span class="hold-sym">${s.sym}</span></td>
-      <td><span class="hold-name">${name}</span></td>
-      <td><span class="hold-sector">${sLabel}</span></td>
-      <td class="num"><span class="hold-mv">$${s.mv.toLocaleString()}</span></td>
-      <td class="num"><span class="hold-gl ${up?'up':'dn'}">${up?'+':'−'}${Math.abs(s.gl).toFixed(2)}%</span></td>
-      <td class="num">${status}</td>
-      <td class="num"><span class="hold-date">${purchaseDateStr}</span></td>
+      <td data-label="${lang==='ar'?'الرمز':'Symbol'}"><span class="hold-sym">${s.sym}</span></td>
+      <td data-label="${lang==='ar'?'الاسم':'Name'}"><span class="hold-name">${name}</span></td>
+      <td data-label="${lang==='ar'?'القطاع':'Sector'}"><span class="hold-sector">${sLabel}</span></td>
+      <td class="num" data-label="${lang==='ar'?'القيمة':'Value'}"><span class="hold-mv" id="mv-${s.sym}">$${s.mv.toLocaleString()}</span></td>
+      <td class="num" data-label="${lang==='ar'?'الربح/الخسارة':'Gain/Loss'}"><span class="hold-gl ${up?'up':'dn'}" id="gl-${s.sym}">${up?'+':'−'}${Math.abs(s.gl).toFixed(2)}%</span></td>
+      <td class="num" data-label="${lang==='ar'?'الحالة':'Status'}">${status}</td>
+      <td class="num" data-label="${lang==='ar'?'التاريخ':'Date'}"><span class="hold-date">${purchaseDateStr}</span></td>
       <td class="num" style="white-space:nowrap;">
         <button class="row-act edit" onclick="openEditStockModal('${s.sym}')" title="Edit">✎</button>
         <button class="row-act del" onclick="deleteStock('${s.sym}')" title="Delete">🗑</button>
@@ -2457,6 +2489,16 @@ function generateData(stock,cfg){
 function getTCardH(){return{sm:60,md:90,lg:135}[tSize];}
 function getTFontSz(){return tSize==='sm'?8:9;}
 
+// Chart theme colors — axes/grid must stay visible in both light and dark mode
+function getChartThemeColors(){
+  const isLight = document.documentElement.getAttribute('data-mode') === 'light';
+  return {
+    axDraw:   isLight ? 'rgba(40,40,55,0.65)' : 'rgba(255,255,255,0.3)',
+    gridDraw: isLight ? 'rgba(40,40,55,0.10)' : 'rgba(255,255,255,0.04)',
+    axModal:   isLight ? 'rgba(40,40,55,0.75)' : 'rgba(255,255,255,0.4)',
+    gridModal: isLight ? 'rgba(40,40,55,0.12)' : 'rgba(255,255,255,0.06)'
+  };
+}
 function drawChart(stock,cid,height){
   if(tCharts[cid]){try{tCharts[cid].destroy();}catch(e){} delete tCharts[cid];}
   const canvas=document.getElementById(cid);
@@ -2465,8 +2507,9 @@ function drawChart(stock,cid,height){
   const data=generateData(stock,cfg);
   const labels=Array.from({length:cfg.pts},(_,i)=>cfg.lbl(i));
   const cost=stock.cost;
-  const axC='rgba(255,255,255,0.3)';
-  const gridC='rgba(255,255,255,0.04)';
+  const _ct = getChartThemeColors();
+  const axC = _ct.axDraw;
+  const gridC = _ct.gridDraw;
   // Cost line: gold/amber, clearly visible
   const dashC='rgba(255,200,50,0.55)';
   const fs=getTFontSz();
@@ -2652,8 +2695,9 @@ function drawModalChart(){
   const data=generateData(s,cfg);
   const labels=Array.from({length:cfg.pts},(_,i)=>cfg.lbl(i));
   const cost=s.cost;
-  const axC='rgba(255,255,255,0.4)';
-  const gridC='rgba(255,255,255,0.06)';
+  const _ct = getChartThemeColors();
+  const axC = _ct.axModal;
+  const gridC = _ct.gridModal;
   const dashC='rgba(255,200,50,0.65)';
   const canvas=document.getElementById('modalChart');
   if(!canvas) return;
@@ -4284,7 +4328,29 @@ if(hStocks) hStocks.textContent = secCount;
     if(pSub) pSub.textContent = secCount + ' securities — as of ' + today;
 
     updateStatCards();
-    renderPortfolio();
+    // Targeted DOM update — patch only changed cells, flash the row, full-render only if a row is missing
+    let needsFullRender = false;
+    stocks.forEach(s=>{
+      const mvEl = document.getElementById('mv-'+s.sym);
+      const glEl = document.getElementById('gl-'+s.sym);
+      if(!mvEl || !glEl){ needsFullRender = true; return; }
+      const up = s.gl>=0;
+      const newMv = '$'+s.mv.toLocaleString();
+      const newGl = (up?'+':'−')+Math.abs(s.gl).toFixed(2)+'%';
+      const changed = mvEl.textContent !== newMv;
+      mvEl.textContent = newMv;
+      glEl.textContent = newGl;
+      glEl.className = 'hold-gl '+(up?'up':'dn');
+      if(changed){
+        const row = mvEl.closest('tr');
+        if(row){
+          row.classList.remove('flash-up','flash-dn');
+          void row.offsetWidth;
+          row.classList.add(up ? 'flash-up' : 'flash-dn');
+        }
+      }
+    });
+    if(needsFullRender) renderPortfolio();
     renderTrends();
 
   } catch(e){
