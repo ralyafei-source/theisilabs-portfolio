@@ -1,28 +1,5 @@
 [
   {
-    "ts": "2026-06-03T18:16:41.766Z",
-    "type": "daily",
-    "nickname": null,
-    "status": "degraded",
-    "checks": {
-      "writeOk": true,
-      "contentLength": 12163,
-      "scoresFound": 0,
-      "sectionsFound": [
-        "DAILY SIGNALS",
-        "EARNINGS & EVENTS"
-      ],
-      "sectionsMissing": [
-        "MACRO TODAY"
-      ],
-      "totalSentinels": 35,
-      "sentinelHits": {
-        "غير متوفر": 35
-      }
-    },
-    "note": "1 section(s) missing; 35 unavailable field(s)"
-  },
-  {
     "ts": "2026-06-03T18:27:15.177Z",
     "type": "daily",
     "nickname": null,
@@ -662,6 +639,17 @@
     "checks": {
       "writeOk": false,
       "contentLength": 124
+    }
+  },
+  {
+    "ts": "2026-06-08T09:14:58.104Z",
+    "type": "market-data",
+    "nickname": null,
+    "status": "failed",
+    "note": "rejected: content too short (159 chars)",
+    "checks": {
+      "writeOk": false,
+      "contentLength": 159
     }
   }
 ]
