@@ -2516,6 +2516,41 @@ function getTCardH(){return{sm:60,md:90,lg:135}[tSize];}
 function getTFontSz(){return tSize==='sm'?8:9;}
 
 // Chart theme colors — axes/grid must stay visible in both light and dark mode
+// Full date for chart tooltips — "21 May 26" (time for 1D), Arabic months in AR mode
+function chartFullDate(period, i, pts){
+  const enM=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const arM=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const M=(typeof lang!=='undefined'&&lang==='ar')?arM:enM;
+  if(period==='1D'){ const h=9+i; const ap=h>=12?'pm':'am'; const hh=h>12?h-12:h; return hh+':00 '+ap; }
+  const anchor=new Date(2026,4,21);
+  const d=new Date(anchor);
+  if(period==='7D') d.setDate(anchor.getDate()-(6-i));
+  else if(period==='6M') d.setDate(anchor.getDate()-((pts-1)-i)*7);
+  else if(period==='1Y') d.setDate(anchor.getDate()-((pts-1)-i)*7);
+  else d.setDate(anchor.getDate()-((pts-1)-i));
+  const yy=String(d.getFullYear()).slice(-2);
+  return d.getDate()+' '+M[d.getMonth()]+' '+yy;
+}
+// Vertical crosshair that follows the hovered point
+const crosshairPlugin={
+  id:'crosshair',
+  afterDraw(chart){
+    const act=chart.tooltip&&chart.tooltip.getActiveElements&&chart.tooltip.getActiveElements();
+    if(!act||!act.length) return;
+    const x=act[0].element.x;
+    const isLight=document.documentElement.getAttribute('data-mode')==='light';
+    const ctx=chart.ctx;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x,chart.chartArea.top); ctx.lineTo(x,chart.chartArea.bottom);
+    ctx.lineWidth=1;
+    ctx.strokeStyle=isLight?'rgba(40,40,55,0.35)':'rgba(255,255,255,0.25)';
+    ctx.setLineDash([4,3]);
+    ctx.stroke();
+    ctx.restore();
+  }
+};
+if(typeof Chart!=='undefined' && Chart.register){ try{ Chart.register(crosshairPlugin); }catch(e){} }
 function getChartThemeColors(){
   const isLight = document.documentElement.getAttribute('data-mode') === 'light';
   const cs = getComputedStyle(document.documentElement);
@@ -2536,6 +2571,7 @@ function drawChart(stock,cid,height){
   const cfg=periodCfg[tPeriod];
   const data=generateData(stock,cfg);
   const labels=Array.from({length:cfg.pts},(_,i)=>cfg.lbl(i));
+  const fullDates=Array.from({length:cfg.pts},(_,i)=>chartFullDate(tPeriod,i,cfg.pts));
   const cost=stock.cost;
   const _ct = getChartThemeColors();
   const axC = _ct.axDraw;
@@ -2555,8 +2591,9 @@ function drawChart(stock,cid,height){
       layout:{padding:{right:4,top:3}},
       plugins:{
         legend:{display:false},
+        crosshair:{},
         tooltip:{mode:'index',intersect:false,callbacks:{
-          title:ctx=>ctx[0].label,
+          title:ctx=>fullDates[ctx[0].dataIndex]||ctx[0].label,
           label:ctx=>{
             if(ctx.datasetIndex===2) return (lang==='ar'?'سعر الشراء':'Cost')+': $'+cost.toFixed(2);
             const v=ctx.parsed.y;if(v===null) return null;
@@ -2724,6 +2761,7 @@ function drawModalChart(){
   const cfg=periodCfg[modalPeriod];
   const data=generateData(s,cfg);
   const labels=Array.from({length:cfg.pts},(_,i)=>cfg.lbl(i));
+  const fullDates=Array.from({length:cfg.pts},(_,i)=>chartFullDate(modalPeriod,i,cfg.pts));
   const cost=s.cost;
   const _ct = getChartThemeColors();
   const axC = _ct.axModal;
@@ -2743,8 +2781,9 @@ function drawModalChart(){
       layout:{padding:{right:8,top:8,bottom:4}},
       plugins:{
         legend:{display:false},
+        crosshair:{},
         tooltip:{mode:'index',intersect:false,callbacks:{
-          title:ctx=>ctx[0].label,
+          title:ctx=>fullDates[ctx[0].dataIndex]||ctx[0].label,
           label:ctx=>{
             if(ctx.datasetIndex===2) return 'Cost Basis: $'+cost.toFixed(2);
             const v=ctx.parsed.y;if(v===null) return null;
@@ -7708,6 +7747,14 @@ function toggleMode(){
   var _mi=document.getElementById('modeicon'); if(_mi) _mi.textContent = isLight ? '🌙' : '☀️';
   var _mt=document.getElementById('modetxt'); if(_mt) _mt.textContent = isLight ? 'Dark' : 'Light';
   _updateLogo();
+  // Recolor charts immediately for the new theme
+  try{ if(typeof renderTrends==='function') renderTrends(); }catch(e){}
+  try{
+    const _modal=document.getElementById('chartModal');
+    if(_modal && _modal.classList.contains('open') && modalStock && typeof drawModalChart==='function'){
+      drawModalChart();
+    }
+  }catch(e){}
 }
 
 function toggleTheme(){
