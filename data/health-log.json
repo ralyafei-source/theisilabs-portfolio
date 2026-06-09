@@ -623,25 +623,25 @@
     "note": "3 section(s) missing; content too short"
   },
   {
-    "ts": "2026-06-09T04:34:41.012Z",
-    "type": "monthly",
+    "ts": "2026-06-09T04:39:28.097Z",
+    "type": "weekly",
     "nickname": "rashed",
-    "status": "ok",
+    "status": "degraded",
     "checks": {
       "writeOk": true,
-      "contentLength": 21042,
-      "scoresFound": 0,
+      "contentLength": 25933,
+      "scoresFound": 60,
       "sectionsFound": [
-        "COMPETITIVE EDGE",
-        "LONG VIEW",
-        "PORTFOLIO HEALTH"
+        "═══ RISK RADAR",
+        "═══ FAIR VALUE",
+        "═══ MOMENTUM"
       ],
       "sectionsMissing": [],
-      "totalSentinels": 2,
+      "totalSentinels": 18,
       "sentinelHits": {
-        "غير متوفر": 2
+        "N/A": 18
       }
     },
-    "note": "all healthy"
+    "note": "18 unavailable field(s)"
   }
 ]
