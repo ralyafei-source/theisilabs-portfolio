@@ -1,0 +1,63 @@
+
+<!-- ═══════════════════════════════════════════════════════════════
+     HEALTH TAB — INSERT 1 of 2
+     Add this nav tab inside <div class="nav-inner" id="navInner">
+     after the Setup tab line (line 523).
+     The style="display:none" hides it for non-admin users.
+     showAdminButton() calls revealHealthTab() after login.
+     ═══════════════════════════════════════════════════════════════ -->
+      <div class="nav-tab" onclick="showTab('health',this)" id="healthNavTab" style="display:none">🩺 <span class="nt">Health</span></div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     HEALTH TAB — INSERT 2 of 2
+     Add this full tab content panel after the closing </div> of
+     tab-prompt (around line 1173), before the first <script> tag.
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="tab-health" class="tab-content">
+  <div class="card">
+    <div class="section-hdr" style="margin-bottom:20px;">
+      <div>
+        <div class="section-title" id="health-title">🩺 System Health Log</div>
+        <div class="section-sub" id="health-sub">Last 30 analysis runs — source quality and write verification</div>
+      </div>
+      <button class="btn btn-outline" style="font-size:11px;padding:5px 12px;" onclick="loadHealthLog()">↺ Refresh</button>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="grid-4" id="healthSummary" style="margin-bottom:20px;">
+      <div class="stat-card blue"><div class="stat-label">Total runs</div><div class="stat-value" id="hl-total" style="color:var(--accent)">—</div></div>
+      <div class="stat-card green"><div class="stat-label">OK</div><div class="stat-value" id="hl-ok" style="color:var(--accent2)">—</div></div>
+      <div class="stat-card gold"><div class="stat-label">Degraded</div><div class="stat-value" id="hl-degraded" style="color:var(--gold)">—</div></div>
+      <div class="stat-card orange"><div class="stat-label">Failed</div><div class="stat-value" id="hl-failed" style="color:var(--red)">—</div></div>
+    </div>
+
+    <!-- Filter buttons -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+      <button class="t-btn active" onclick="hlFilter('all',this)">All</button>
+      <button class="t-btn" onclick="hlFilter('ok',this)">OK ✅</button>
+      <button class="t-btn" onclick="hlFilter('degraded',this)">Degraded ⚠️</button>
+      <button class="t-btn" onclick="hlFilter('failed',this)">Failed ✗</button>
+    </div>
+
+    <!-- Log table -->
+    <div style="overflow-x:auto;">
+      <table class="ptable" id="healthTable">
+        <thead><tr>
+          <th>Time (UAE)</th>
+          <th>Type</th>
+          <th>User</th>
+          <th>Status</th>
+          <th>Note</th>
+          <th class="num">Size</th>
+          <th class="num">Sections</th>
+          <th class="num">Unavailable</th>
+          <th class="num">Write</th>
+        </tr></thead>
+        <tbody id="healthBody">
+          <tr><td colspan="9" style="text-align:center;color:var(--text2);padding:30px;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

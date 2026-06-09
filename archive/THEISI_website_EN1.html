@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theisi Labs — Arabic Finance Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Fraunces:opsz,ital,wght@9..144,0,400;9..144,0,500;9..144,0,600;9..144,1,500&family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f2ec;          /* warm bone */
+    --bg-1:#fffdfa;        /* near-white card */
+    --bg-2:#f0e7dd;        /* deeper sand */
+    --ink:#1c1014;         /* warm near-black text */
+    --ink-2:#3a2a30;
+    --rose:#ff0a6c;
+    --rose-deep:#d10057;
+    --rose-soft:#ff4d92;
+    --gold:#b08527;
+    --gold-soft:#c9a24b;
+    --wine:#3d0a1e;
+    --muted:rgba(28,16,20,.62);
+    --muted-2:rgba(28,16,20,.40);
+    --line:rgba(28,16,20,.12);
+    --line-soft:rgba(28,16,20,.07);
+  }
+  [data-theme="violet"]{
+    --rose:#dc00ff;
+    --rose-deep:#a00060;
+    --rose-soft:#c44dff;
+    --gold:#9a7bbf;
+    --gold-soft:#b89fd6;
+    --wine:#2a0838;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.65}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 36px}
+  a{color:inherit;text-decoration:none}
+  .serif{font-family:'Fraunces',serif}
+  .it{font-style:italic}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px);background:rgba(247,242,236,.8);border-bottom:1px solid var(--line-soft)}
+  .nav-in{display:flex;align-items:center;gap:30px;height:74px}
+  .nav-logo{height:26px;width:auto}
+  .nav-links{display:flex;gap:30px;margin-left:auto;font-size:13px;font-weight:500;letter-spacing:.02em;color:var(--muted)}
+  .nav-links a:hover{color:var(--ink)}
+  .nav-cta{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:10px 20px;border-radius:2px;background:var(--ink);color:var(--bg)}
+
+  /* hero */
+  .hero{position:relative;text-align:center;padding:120px 0 96px;overflow:hidden}
+  .hero::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(800px 460px at 50% -10%, rgba(255,10,108,.07), transparent 62%);}
+  .hero-in{position:relative;z-index:1}
+  .kicker{display:inline-flex;align-items:center;gap:12px;font-size:11px;font-weight:600;letter-spacing:.32em;text-transform:uppercase;color:var(--gold);margin-bottom:36px}
+  .kicker::before,.kicker::after{content:"";width:26px;height:1px;background:var(--gold-soft)}
+  .hero h1{font-size:clamp(40px,6.4vw,76px);font-weight:500;letter-spacing:-.025em;line-height:1.05;margin-bottom:26px;color:var(--ink)}
+  .hero h1 em{font-style:italic;color:var(--rose-deep)}
+  .hero p{font-size:clamp(16px,1.9vw,19px);color:var(--muted);max-width:600px;margin:0 auto 42px}
+  .hero-cta{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;align-items:center}
+  .btn{display:inline-flex;align-items:center;gap:11px;font-family:'Montserrat';cursor:pointer;font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:16px 32px;border-radius:2px;border:0;transition:.2s}
+  .btn.primary{background:var(--rose);color:#fff}
+  .btn.primary:hover{background:var(--rose-deep)}
+  .btn.line{background:transparent;border:1px solid var(--line);color:var(--ink)}
+  .btn.line:hover{border-color:var(--ink)}
+  .hero-note{margin-top:24px;font-size:12px;letter-spacing:.04em;color:var(--muted-2)}
+
+  /* stats hairline */
+  .stats{border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);background:var(--bg-2)}
+  .stats-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .stat{padding:38px 24px;text-align:center;border-right:1px solid var(--line-soft)}
+  .stat:last-child{border-right:0}
+  .stat .num{font-family:'Fraunces',serif;font-size:36px;font-weight:500;color:var(--ink)}
+  .stat .num span{color:var(--rose-deep)}
+  .stat .cap{font-size:12px;letter-spacing:.03em;color:var(--muted);margin-top:7px}
+
+  section{padding:100px 0}
+  .eyebrow{font-size:11px;font-weight:600;letter-spacing:.30em;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:18px}
+  .sec-title{font-family:'Fraunces',serif;font-size:clamp(30px,4.2vw,46px);font-weight:500;letter-spacing:-.01em;text-align:center;line-height:1.12;margin-bottom:18px;color:var(--ink)}
+  .sec-title em{font-style:italic;color:var(--rose-deep)}
+  .sec-lede{font-size:17px;color:var(--muted);text-align:center;max-width:600px;margin:0 auto 60px}
+
+  /* MOAT row — three differentiators lead */
+  .moat{background:var(--bg-1);border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)}
+  .moat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+  @media(max-width:820px){.moat-grid{grid-template-columns:1fr}}
+  .moat-cell{padding:54px 40px;border-right:1px solid var(--line-soft)}
+  .moat-cell:last-child{border-right:0}
+  @media(max-width:820px){.moat-cell{border-right:0;border-bottom:1px solid var(--line-soft)}}
+  .moat-cell .mk{font-family:'Fraunces',serif;font-style:italic;font-size:15px;color:var(--gold);margin-bottom:16px}
+  .moat-cell h3{font-size:21px;font-weight:600;letter-spacing:-.01em;margin-bottom:12px}
+  .moat-cell p{font-size:14px;color:var(--muted);line-height:1.7}
+
+  /* features */
+  .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0;border-top:1px solid var(--line-soft)}
+  .feat{padding:38px 34px;border-bottom:1px solid var(--line-soft);border-right:1px solid var(--line-soft)}
+  .feat:hover{background:var(--bg-1)}
+  .feat .n{font-family:'Fraunces',serif;font-size:15px;color:var(--gold);margin-bottom:18px}
+  .feat h3{font-size:18px;font-weight:600;margin-bottom:10px;letter-spacing:-.01em}
+  .feat p{font-size:14px;color:var(--muted);line-height:1.7}
+
+  /* engine — light card with subtle wine accent */
+  .engine{background:var(--bg-2);border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)}
+  .engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+  @media(max-width:880px){.engine-grid{grid-template-columns:1fr;gap:42px}}
+  .engine h2{font-family:'Fraunces',serif;font-size:clamp(28px,3.6vw,42px);font-weight:500;letter-spacing:-.01em;line-height:1.14;margin-bottom:20px}
+  .engine h2 em{font-style:italic;color:var(--rose-deep)}
+  .engine .lede{font-size:16px;color:var(--muted);margin-bottom:28px}
+  .layer{display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--line-soft);font-size:14px}
+  .layer:last-child{border:0}
+  .layer .pct{font-family:'Fraunces',serif;font-size:17px;font-weight:500;color:var(--gold);min-width:42px}
+  .layer .bar{flex:1;height:3px;background:var(--line);position:relative;border-radius:3px}
+  .layer .bar i{position:absolute;left:0;top:0;height:100%;background:var(--rose);border-radius:3px}
+  .layer .nm{color:var(--ink-2);min-width:110px;text-align:right;font-weight:500}
+
+  .widget{background:var(--bg-1);border:1px solid var(--line);border-radius:6px;padding:32px;box-shadow:0 24px 60px -34px rgba(61,10,30,.3)}
+  .w-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--line-soft)}
+  .w-head .t{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  .w-head .live{font-size:11px;color:var(--muted-2);letter-spacing:.04em}
+  .w-score{display:flex;align-items:center;gap:20px;margin-bottom:24px}
+  .ring{width:84px;height:84px;border-radius:50%;flex:none;display:grid;place-items:center;background:conic-gradient(var(--rose) 0 82%,var(--line) 82% 100%)}
+  .ring span{width:66px;height:66px;border-radius:50%;background:var(--bg-1);display:grid;place-items:center;font-family:'Fraunces',serif;font-weight:500;font-size:27px;color:var(--ink)}
+  .w-score .lab b{display:block;font-size:16px;font-weight:600;margin-bottom:4px}
+  .w-score .lab small{color:var(--muted);font-size:13px}
+  .w-row{display:flex;justify-content:space-between;font-size:13px;padding:10px 0;border-bottom:1px solid var(--line-soft)}
+  .w-row:last-child{border:0}
+  .w-row .lbl{color:var(--muted)}
+  .w-row .v{font-weight:600;color:var(--ink)}
+  .w-row .vg{color:var(--gold);font-weight:600}
+
+  /* bilingual — now prominent, mid-page */
+  .bi-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  @media(max-width:760px){.bi-grid{grid-template-columns:1fr}}
+  .bi{background:var(--bg-1);border:1px solid var(--line);border-radius:6px;padding:34px;border-top:3px solid var(--rose)}
+  .bi.ar{direction:rtl;text-align:right;border-top-color:var(--gold);font-family:'Noto Kufi Arabic',sans-serif}
+  .bi .tag{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:18px}
+  .bi.ar .tag{font-family:'Montserrat'}
+  .bi p{font-size:15px;color:var(--ink-2);line-height:1.95}
+  .bi.ar p{line-height:2.2;font-size:15px}
+
+  /* heritage */
+  .heritage{text-align:center;background:var(--bg-1);border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)}
+  .crest{width:66px;height:66px;margin:0 auto 28px;border:1px solid var(--gold-soft);border-radius:50%;display:grid;place-items:center}
+  .crest svg{width:30px;height:30px}
+  .heritage h2{font-family:'Fraunces',serif;font-size:clamp(26px,3.6vw,40px);font-weight:500;font-style:italic;margin-bottom:18px;color:var(--ink)}
+  .heritage p{font-size:16px;color:var(--muted);max-width:660px;margin:0 auto}
+  .heritage .gold-rule{width:56px;height:1px;background:var(--gold);margin:34px auto 0}
+
+  /* close — single dark moment for contrast */
+  .close{text-align:center;position:relative;overflow:hidden;background:var(--wine);color:#f4ece4}
+  .close::before{content:"";position:absolute;inset:0;background:radial-gradient(640px 380px at 50% 50%,rgba(255,10,108,.16),transparent 65%);z-index:0}
+  .close-in{position:relative;z-index:1}
+  .close .eyebrow{color:var(--gold-soft);margin-bottom:24px}
+  .close h2{font-family:'Fraunces',serif;font-size:clamp(32px,5vw,56px);font-weight:500;letter-spacing:-.02em;margin-bottom:20px;color:#f4ece4}
+  .close h2 em{font-style:italic;color:var(--rose-soft)}
+  .close p{font-size:17px;color:rgba(244,236,228,.6);margin-bottom:38px}
+
+  footer{border-top:1px solid var(--line-soft);padding:46px 0;background:var(--bg)}
+  .foot-in{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
+  .foot-logo{height:24px;margin-bottom:14px}
+  .foot-copy{font-size:11px;color:var(--muted-2);line-height:1.7;letter-spacing:.02em}
+  .foot-links{display:flex;gap:24px;font-size:12px;letter-spacing:.04em;color:var(--muted)}
+  .disc{font-size:11px;color:var(--muted-2);text-align:center;margin-top:30px;max-width:680px;margin-left:auto;margin-right:auto;line-height:1.6}
+
+  /* theme toggle */
+  .theme-toggle{display:inline-flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin-left:14px}
+  .theme-toggle button{font-family:'Montserrat';font-size:11px;font-weight:600;letter-spacing:.04em;padding:7px 14px;border:0;background:transparent;color:var(--muted);cursor:pointer;transition:.2s}
+  .theme-toggle button.on{background:var(--rose);color:#fff}
+  .lang-link{font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--muted);margin-left:14px;border-bottom:1px solid var(--line)}
+  .lang-link:hover{color:var(--ink)}
+
+  /* ===== tranquil motion ===== */
+  @keyframes drift1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(6%,4%) scale(1.12)}100%{transform:translate(0,0) scale(1)}}
+  @keyframes drift2{0%{transform:translate(0,0) scale(1.05)}50%{transform:translate(-5%,-3%) scale(1)}100%{transform:translate(0,0) scale(1.05)}}
+  @keyframes breathe{0%,100%{opacity:.5}50%{opacity:.85}}
+  .aurora{position:absolute;inset:-20% -10%;z-index:0;pointer-events:none;overflow:hidden}
+  .aurora b{position:absolute;border-radius:50%;filter:blur(70px);will-change:transform,opacity}
+  .aurora .a1{width:46vw;height:46vw;left:-6%;top:-12%;background:radial-gradient(circle, color-mix(in srgb, var(--rose) 26%, transparent), transparent 70%);animation:drift1 26s ease-in-out infinite, breathe 14s ease-in-out infinite}
+  .aurora .a2{width:40vw;height:40vw;right:-8%;top:6%;background:radial-gradient(circle, color-mix(in srgb, var(--gold) 22%, transparent), transparent 70%);animation:drift2 32s ease-in-out infinite, breathe 18s ease-in-out infinite}
+  .aurora .a3{width:38vw;height:38vw;left:30%;bottom:-18%;background:radial-gradient(circle, color-mix(in srgb, var(--rose-soft) 20%, transparent), transparent 70%);animation:drift1 38s ease-in-out infinite reverse, breathe 22s ease-in-out infinite}
+  #particles{position:fixed;inset:0;z-index:0;pointer-events:none}
+  .reveal{opacity:0;transform:translateY(24px);transition:opacity 1.1s cubic-bezier(.22,.61,.36,1), transform 1.1s cubic-bezier(.22,.61,.36,1)}
+  .reveal.in{opacity:1;transform:none}
+  /* reduced-motion: keep gentle aurora + constellation visible; only ease the scroll fade */
+  @media (prefers-reduced-motion: reduce){
+    .reveal{opacity:1 !important;transform:none !important;transition:none}
+  }
+
+  /* constellation canvas — connecting the dots, page-wide */
+  #constellation{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.9}
+  /* keep aurora for depth but make it a touch stronger so motion reads */
+  @keyframes drift1{0%{transform:translate(0,0) scale(1)}50%{transform:translate(8%,5%) scale(1.15)}100%{transform:translate(0,0) scale(1)}}
+  @keyframes drift2{0%{transform:translate(0,0) scale(1.08)}50%{transform:translate(-7%,-4%) scale(1)}100%{transform:translate(0,0) scale(1.08)}}
+  @keyframes breathe{0%,100%{opacity:.45}50%{opacity:.8}}
+</style>
+</head>
+<body>
+<canvas id="constellation"></canvas>
+
+<nav><div class="wrap nav-in">
+  <img class="nav-logo" id="navlogo" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIwIiBoZWlnaHQ9IjEwODAiIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2aWV3Qm94PSIwIDAgMTkyMCAxMDgwIj4KICA8ZGVmcz4KICAgIDxzdHlsZT4KICAgICAgLmNscy0xIHsKICAgICAgICBmaWxsOiB1cmwoI2xpbmVhci1ncmFkaWVudCk7CiAgICAgIH0KCiAgICAgIC5jbHMtMSwgLmNscy0yLCAuY2xzLTMsIC5jbHMtNCB7CiAgICAgICAgc3Ryb2tlLXdpZHRoOiAwcHg7CiAgICAgIH0KCiAgICAgIC5jbHMtMiB7CiAgICAgICAgb3BhY2l0eTogLjQ0OwogICAgICB9CgogICAgICAuY2xzLTMgewogICAgICAgIGZpbGw6ICMxYzEwMTQ7CiAgICAgIH0KCiAgICAgIC5jbHMtNCB7CiAgICAgICAgZmlsbDogdXJsKCNsaW5lYXItZ3JhZGllbnQtMik7CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImxpbmVhci1ncmFkaWVudCIgeDE9IjE0NzQuNjQiIHkxPSIzNDMuMzIiIHgyPSIxMzk0LjgyIiB5Mj0iNTc4LjEiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZDEwMDU3Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iLjQ4IiBzdG9wLWNvbG9yPSIjZmYwYTZjIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iLjgyIiBzdG9wLWNvbG9yPSIjZmY0ZDkyIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJsaW5lYXItZ3JhZGllbnQtMiIgeDE9IjEwODcuMjYiIHkxPSIyMzcuNyIgeDI9IjEzODQuNDciIHkyPSI3MDYuNjciIHhsaW5rOmhyZWY9IiNsaW5lYXItZ3JhZGllbnQiLz4KICA8L2RlZnM+CiAgPGc+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik02MTYuNSw0MzQuNTZoLTE1Ny4zN2MtNy41MSwwLTEzLjU5LDYuMDgtMTMuNTksMTMuNTl2MTkuMzhjMCw3LjUsNi4wOCwxMy41OSwxMy41OSwxMy41OWgzNi4wNGM3LjUsMCwxMy41OSw2LjA4LDEzLjU5LDEzLjU5djE3Ny43NmMwLDcuNTEsNi4wOCwxMy42LDEzLjU5LDEzLjZoMzAuOTRjNy41MSwwLDEzLjU5LTYuMDksMTMuNTktMTMuNnYtMTc3Ljc2YzAtNy41MSw2LjA5LTEzLjU5LDEzLjYtMTMuNTloMzYuMDNjNy41MSwwLDEzLjU5LTYuMDksMTMuNTktMTMuNTl2LTE5LjM4YzAtNy41MS02LjA4LTEzLjU5LTEzLjU5LTEzLjU5WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0zIiBkPSJNODI4LjIzLDUxNS45NWMtMTMuMTQtMTQuMzgtMzAuNTgtMjEuNTgtNTIuMzQtMjEuNTgtMTIuNjksMC0yNC4xMywyLjQ5LTM0LjMzLDcuNDctMTAuMiw0Ljk5LTE4LjI0LDExLjY4LTI0LjEzLDIwLjA2di03My4yNmMwLTcuNzgtNi4zLTE0LjA4LTE0LjA4LTE0LjA4aC0yOS45NWMtNy43OCwwLTE0LjA4LDYuMy0xNC4wOCwxNC4wOHYyMjAuOWMwLDkuMTIsNy40LDE2LjUyLDE2LjUyLDE2LjUyaDI1LjA3YzkuMTIsMCwxNi41Mi03LjQsMTYuNTItMTYuNTJ2LTg2LjQ3YzAtMTIuNjksMy4yOC0yMi41NCw5Ljg2LTI5LjU3LDYuNTYtNy4wMiwxNS40LTEwLjUzLDI2LjUxLTEwLjUzczE5Ljk0LDMuNTEsMjYuNTEsMTAuNTNjNi41Niw3LjAzLDkuODUsMTYuODgsOS44NSwyOS41N3Y4Ni40N2MwLDkuMTIsNy40LDE2LjUyLDE2LjUyLDE2LjUyaDI0LjczYzkuMTIsMCwxNi41Mi03LjQsMTYuNTItMTYuNTJ2LTk0LjI5YzAtMjUuMTQtNi41Ny00NC45MS0xOS43Mi01OS4zMVoiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMyIgZD0iTTEwNTUuMzUsNTM3Ljk2Yy04LjA0LTE0LjI3LTE5LjItMjUuMjYtMzMuNDgtMzIuOTYtMTQuMjctNy43MS0zMC41OS0xMS41Ny00OC45NC0xMS41N3MtMzUuNDYsMy45Ny00OS45NiwxMS45Yy0xNC41LDcuOTQtMjUuNzgsMTkuMjYtMzMuODIsMzMuOTktOC4wNCwxNC43Mi0xMi4wNiwzMS45NS0xMi4wNiw1MS42NXM0LjA3LDM2Ljk0LDEyLjIzLDUxLjY2YzguMTUsMTQuNzMsMTkuNDgsMjYuMDcsMzMuOTgsMzMuOTksMTQuNSw3LjkzLDMxLjA1LDExLjg5LDQ5LjYzLDExLjg5LDE1LjQsMCwyOS4zNS0yLjgyLDQxLjgtOC41LDEyLjQ3LTUuNjYsMjIuODItMTMuNDgsMzEuMTEtMjMuNDUsNS41LTYuNjMsOS44OC0xMy44MywxMy4xMy0yMS41OCwyLjQtNS43My0xLjg3LTEyLjA3LTguMDktMTIuMDdoLTQ0LjU1Yy0zLjA3LDAtNS44NiwxLjY1LTcuNDgsNC4yNC01LjkyLDkuNDEtMTUuMjQsMTQuMTItMjcuOTUsMTQuMTItOS43NSwwLTE3Ljk2LTMuMTEtMjQuNjUtOS4zNS02LjY4LTYuMjMtMTAuNDgtMTUuMjQtMTEuMzgtMjcuMDJoMTE4LjU0YzcuNTEsMCwxMy43Ni01Ljk2LDEzLjk2LTEzLjQ2LjA0LTEuMi4wNS0yLjM3LjA1LTMuNTQsMC0xOS4wMy00LjAzLTM1LjY4LTEyLjA3LTQ5Ljk2Wk05MzUuMiw1NzIuNjNjMS41OS0xMC40Miw1LjcyLTE4LjQ3LDEyLjQtMjQuMTMsNi42OC01LjY2LDE0Ljg5LTguNSwyNC42NS04LjVzMTguNjksMi45NSwyNS40OSw4LjgzYzYuNzksNS44OSwxMC4yLDEzLjgyLDEwLjIsMjMuOGgtNzIuNzNaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik0xMTAwLjk4LDQ2Ny42OWM2LjQ2LDYuMDEsMTQuNzgsOS4wMSwyNC45OCw5LjAxczE4LjE4LTMsMjQuNjQtOS4wMWM2LjQ2LTYsOS42OS0xMy40Miw5LjY5LTIyLjI2cy0zLjIzLTE2LjYtOS42OS0yMi42Yy02LjQ2LTYtMTQuNjctOS4wMS0yNC42NC05LjAxcy0xOC41MiwzLjAxLTI0Ljk4LDkuMDFjLTYuNDYsNi4wMS05LjY5LDEzLjU0LTkuNjksMjIuNnMzLjIzLDE2LjI2LDkuNjksMjIuMjZaIi8+CiAgICA8cmVjdCBjbGFzcz0iY2xzLTMiIHg9IjEwOTYuNzMiIHk9IjQ5Ni40MSIgd2lkdGg9IjU4LjEyIiBoZWlnaHQ9IjE4OS42NSIgcng9IjIzLjUxIiByeT0iMjMuNTEiLz4KICA8L2c+CiAgPGc+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xNDE1LjE1LDQ2Ny42OWM2LjQ2LDYuMDEsMTQuNzgsOS4wMSwyNC45OCw5LjAxczE4LjE4LTMsMjQuNjQtOS4wMWM2LjQ2LTYsOS42OS0xMy40Miw5LjY5LTIyLjI2cy0zLjIzLTE2LjYtOS42OS0yMi42Yy02LjQ2LTYtMTQuNjctOS4wMS0yNC42NC05LjAxcy0xOC41MiwzLjAxLTI0Ljk4LDkuMDFjLTYuNDYsNi4wMS05LjY5LDEzLjU0LTkuNjksMjIuNnMzLjIzLDE2LjI2LDkuNjksMjIuMjZaIi8+CiAgICA8cmVjdCBjbGFzcz0iY2xzLTMiIHg9IjE0MTAuOSIgeT0iNDk2LjQxIiB3aWR0aD0iNTguMTIiIGhlaWdodD0iMTg5LjY1IiByeD0iMjMuNTEiIHJ5PSIyMy41MSIvPgogIDwvZz4KICA8Zz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtNCIgZD0iTTEzNTEuODQsNjI4LjAzbC0xNTUuMjYsODIuOCw3NS4zNS0xMTQuOTYsNi4yNS05LjUzLjI4LS40NC0yMS43MS0xMy44NWgwcy00Ni45OC0yOS45NS00Ni45OC0yOS45NWMtMjUuODctMjAuNzUtMjUuMzYtNjAuMjgsMS4wNC04MC4zNWwxNTAuMjktOTIuNTYtODUuNjQsMTM0LjUtLjAyLjA1LDEuNDEsMS4wMSwyOC45OSwyMC43MSw1MC4zNywzNS45NWMyMy43MSwxNi45NSwyMS4zNyw1Mi45MS00LjM1LDY2LjYzWiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0yIiBkPSJNMTI3OC40Nyw1ODUuODloMGwtMjEuNzEtMTMuODVoMGMtMi4yOS0xMS40OS0zLjk4LTMyLjQ5LDcuMzctNTMuMDYsMy40Mi02LjIsNy40MS0xMS4yNSwxMS4zMy0xNS4zMWwzMC4zNywyMS43N2MtMS43OCwxNC4wOC03LjcyLDM0LjI5LTI3LjM2LDYwLjQ0WiIvPgogIDwvZz4KPC9zdmc+" alt="Theisi Labs">
+  <div class="nav-links">
+    <a href="#moat">Why Theisi</a>
+    <a href="#engine">Scoring Engine</a>
+    <a href="#heritage">The Name</a>
+  </div>
+  <div class="theme-toggle">
+    <button id="t-mag" class="on" onclick="setTheme('magenta')">Magenta</button>
+    <button id="t-vio" onclick="setTheme('violet')">Violet</button>
+  </div>
+  <a class="lang-link" href="THEISI_website_AR.html">العربية</a>
+  <a class="nav-cta" href="#">Dashboard</a>
+</div></nav>
+
+<header class="hero"><div class="aurora"><b class="a1"></b><b class="a2"></b><b class="a3"></b></div><div class="wrap hero-in">
+  <span class="kicker">Arabic Finance Intelligence</span>
+  <h1 class="serif">Markets move fast.<br>Theisi <em>sees first.</em></h1>
+  <p>A private intelligence system that scores every position, watches every signal, and delivers a clear decision — in Arabic, before the market opens.</p>
+  <div class="hero-cta">
+    <button class="btn primary">See the system</button>
+    <button class="btn line">How scoring works</button>
+  </div>
+  <div class="hero-note">By invitation · Updated daily before market open</div>
+</div></header>
+
+<div class="stats"><div class="wrap"><div class="stats-in">
+  <div class="stat"><div class="num"><span>5</span></div><div class="cap">Intelligence layers per score</div></div>
+  <div class="stat"><div class="num"><span>10</span></div><div class="cap">Analysis modules</div></div>
+  <div class="stat"><div class="num serif">7<span>AM</span></div><div class="cap">Daily brief, every market day</div></div>
+  <div class="stat"><div class="num"><span>24/7</span></div><div class="cap">Signal monitoring</div></div>
+</div></div></div>
+
+<!-- MOAT leads: the three things competitors don't do -->
+<section class="moat" id="moat"><div class="wrap">
+  <div class="eyebrow">Why Theisi is different</div>
+  <h2 class="sec-title">Not another stock score.<br><em>An intelligence system that acts.</em></h2>
+  <p class="sec-lede">Most tools hand you a number and stop. Theisi tells you what to do, in the language you think in.</p>
+</div>
+<div class="moat-grid">
+  <div class="moat-cell"><div class="mk">i.</div><h3>Arabic, natively</h3><p>Not translated — built bilingual from the ground up. Your morning brief and every decision arrive in clear, decisive Arabic on Telegram.</p></div>
+  <div class="moat-cell"><div class="mk">ii.</div><h3>It tells you what to do</h3><p>Exact shares, exact price, and where freed capital should go. Not "this looks good" — an actual instruction you can act on.</p></div>
+  <div class="moat-cell"><div class="mk">iii.</div><h3>Grounded in the masters</h3><p>Every call cites the rule behind it — Graham's margin of safety, Lynch's growth test, Bridgewater's concentration limits. Logic you can audit.</p></div>
+</div></section>
+
+<section id="system"><div class="wrap reveal">
+  <div class="eyebrow">What it does</div>
+  <h2 class="sec-title">One system, <em>the whole decision</em></h2>
+  <p class="sec-lede">Theisi reads the market the way an analyst would — across every layer that matters.</p>
+  <div class="features">
+    <div class="feat"><div class="n">01</div><h3>Daily intelligence</h3><p>Every morning before the open: signals, earnings, and macro shifts — read against your specific holdings.</p></div>
+    <div class="feat"><div class="n">02</div><h3>Scoring engine</h3><p>Every stock earns a 1–10 "act now" score from five weighted layers of analysis.</p></div>
+    <div class="feat"><div class="n">03</div><h3>Live alerts</h3><p>Price moves and signal changes reach you the moment they happen — not the next morning.</p></div>
+    <div class="feat"><div class="n">04</div><h3>Capital routing</h3><p>Every sell answers where the money goes — freed capital matched to better risk and reward.</p></div>
+    <div class="feat"><div class="n">05</div><h3>Risk radar</h3><p>Concentration, drawdowns, and broken theses surfaced early — before they become the loss.</p></div>
+    <div class="feat"><div class="n">06</div><h3>Long-view memory</h3><p>The system remembers your theses and revisits them, so nothing quietly drifts off course.</p></div>
+  </div>
+</div></section>
+
+<section class="engine" id="engine"><div class="wrap reveal"><div class="engine-grid">
+  <div>
+    <div class="eyebrow" style="text-align:left">The scoring engine</div>
+    <h2 class="serif">A score that means <em>"act now"</em> — not "is this good."</h2>
+    <p class="lede">Five layers, each weighted, resolved into a single number with a clear action — and the institutional rule behind it.</p>
+    <div class="layer"><span class="pct">30</span><span class="bar"><i style="width:100%"></i></span><span class="nm">Valuation</span></div>
+    <div class="layer"><span class="pct">25</span><span class="bar"><i style="width:83%"></i></span><span class="nm">Fundamental</span></div>
+    <div class="layer"><span class="pct">20</span><span class="bar"><i style="width:66%"></i></span><span class="nm">Technical</span></div>
+    <div class="layer"><span class="pct">15</span><span class="bar"><i style="width:50%"></i></span><span class="nm">Position</span></div>
+    <div class="layer"><span class="pct">10</span><span class="bar"><i style="width:33%"></i></span><span class="nm">External</span></div>
+  </div>
+  <div class="widget">
+    <div class="w-head"><span class="t">Live score</span><span class="live">Updated 07:02</span></div>
+    <div class="w-score">
+      <div class="ring"><span>8.2</span></div>
+      <div class="lab"><b>شراء — Buy</b><small>Valuation + momentum aligned · confidence high</small></div>
+    </div>
+    <div class="w-row"><span class="lbl">Margin of safety</span><span class="vg">+18%</span></div>
+    <div class="w-row"><span class="lbl">RSI</span><span class="v">42 · neutral</span></div>
+    <div class="w-row"><span class="lbl">Action</span><span class="v">Add 18 shares @ $94</span></div>
+    <div class="w-row"><span class="lbl">Rule cited</span><span class="v">Graham · margin of safety</span></div>
+  </div>
+</div></div></section>
+
+<section><div class="wrap reveal">
+  <div class="eyebrow">Built bilingual</div>
+  <h2 class="sec-title">English to think in. <em>Arabic to act on.</em></h2>
+  <p class="sec-lede">The same intelligence, delivered the way you read it — the difference no Western tool offers.</p>
+  <div class="bi-grid">
+    <div class="bi"><div class="tag">English · Dashboard</div><p>NVDA scores 8.2 / 10 — a strong buy setup. Valuation shows an 18% margin of safety with momentum confirming. Suggested action: add 18 shares at $94.</p></div>
+    <div class="bi ar"><div class="tag">العربية · تلغرام</div><p>سهم NVDA حصل على درجة ٨٫٢ من ١٠ — إشارة شراء قوية. التقييم يظهر هامش أمان ١٨٪ مع تأكيد الزخم. الإجراء المقترح: أضف ١٨ سهماً عند سعر ٩٤ دولاراً.</p></div>
+  </div>
+</div></section>
+
+<section class="heritage" id="heritage"><div class="wrap reveal">
+  <div class="crest"><svg viewBox="0 0 100 100" fill="none"><path d="M62 28 L40 52 L54 52 L42 74 L70 44 L54 44 Z" fill="var(--rose)"/><circle cx="72" cy="34" r="6" fill="var(--rose)"/></svg></div>
+  <div class="eyebrow">The name</div>
+  <h2 class="serif">Theisi — "they see"</h2>
+  <p>The mark is drawn from ancient South Arabian Musnad letters — ʿAyn and Nun — that spell the word "eye." The bolt rising into a peak is a market trend arrow. Vision, heritage, and foresight, in a single symbol.</p>
+  <div class="gold-rule"></div>
+</div></section>
+
+<section class="close"><div class="aurora"><b class="a1"></b><b class="a2"></b><b class="a3"></b></div><div class="wrap close-in">
+  <div class="eyebrow">They See</div>
+  <h2 class="serif">See what <em>Theisi.</em></h2>
+  <p>The full intelligence system — by invitation.</p>
+  <button class="btn primary" style="padding:18px 40px">Request access</button>
+</div></section>
+
+<footer><div class="wrap">
+  <div class="foot-in">
+    <div>
+      <img class="foot-logo" id="footlogo" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIwIiBoZWlnaHQ9IjEwODAiIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2aWV3Qm94PSIwIDAgMTkyMCAxMDgwIj4KICA8ZGVmcz4KICAgIDxzdHlsZT4KICAgICAgLmNscy0xIHsKICAgICAgICBmaWxsOiB1cmwoI2xpbmVhci1ncmFkaWVudCk7CiAgICAgIH0KCiAgICAgIC5jbHMtMSwgLmNscy0yLCAuY2xzLTMsIC5jbHMtNCB7CiAgICAgICAgc3Ryb2tlLXdpZHRoOiAwcHg7CiAgICAgIH0KCiAgICAgIC5jbHMtMiB7CiAgICAgICAgb3BhY2l0eTogLjQ0OwogICAgICB9CgogICAgICAuY2xzLTMgewogICAgICAgIGZpbGw6ICMxYzEwMTQ7CiAgICAgIH0KCiAgICAgIC5jbHMtNCB7CiAgICAgICAgZmlsbDogdXJsKCNsaW5lYXItZ3JhZGllbnQtMik7CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImxpbmVhci1ncmFkaWVudCIgeDE9IjE0NzQuNjQiIHkxPSIzNDMuMzIiIHgyPSIxMzk0LjgyIiB5Mj0iNTc4LjEiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZDEwMDU3Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iLjQ4IiBzdG9wLWNvbG9yPSIjZmYwYTZjIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iLjgyIiBzdG9wLWNvbG9yPSIjZmY0ZDkyIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJsaW5lYXItZ3JhZGllbnQtMiIgeDE9IjEwODcuMjYiIHkxPSIyMzcuNyIgeDI9IjEzODQuNDciIHkyPSI3MDYuNjciIHhsaW5rOmhyZWY9IiNsaW5lYXItZ3JhZGllbnQiLz4KICA8L2RlZnM+CiAgPGc+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik02MTYuNSw0MzQuNTZoLTE1Ny4zN2MtNy41MSwwLTEzLjU5LDYuMDgtMTMuNTksMTMuNTl2MTkuMzhjMCw3LjUsNi4wOCwxMy41OSwxMy41OSwxMy41OWgzNi4wNGM3LjUsMCwxMy41OSw2LjA4LDEzLjU5LDEzLjU5djE3Ny43NmMwLDcuNTEsNi4wOCwxMy42LDEzLjU5LDEzLjZoMzAuOTRjNy41MSwwLDEzLjU5LTYuMDksMTMuNTktMTMuNnYtMTc3Ljc2YzAtNy41MSw2LjA5LTEzLjU5LDEzLjYtMTMuNTloMzYuMDNjNy41MSwwLDEzLjU5LTYuMDksMTMuNTktMTMuNTl2LTE5LjM4YzAtNy41MS02LjA4LTEzLjU5LTEzLjU5LTEzLjU5WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0zIiBkPSJNODI4LjIzLDUxNS45NWMtMTMuMTQtMTQuMzgtMzAuNTgtMjEuNTgtNTIuMzQtMjEuNTgtMTIuNjksMC0yNC4xMywyLjQ5LTM0LjMzLDcuNDctMTAuMiw0Ljk5LTE4LjI0LDExLjY4LTI0LjEzLDIwLjA2di03My4yNmMwLTcuNzgtNi4zLTE0LjA4LTE0LjA4LTE0LjA4aC0yOS45NWMtNy43OCwwLTE0LjA4LDYuMy0xNC4wOCwxNC4wOHYyMjAuOWMwLDkuMTIsNy40LDE2LjUyLDE2LjUyLDE2LjUyaDI1LjA3YzkuMTIsMCwxNi41Mi03LjQsMTYuNTItMTYuNTJ2LTg2LjQ3YzAtMTIuNjksMy4yOC0yMi41NCw5Ljg2LTI5LjU3LDYuNTYtNy4wMiwxNS40LTEwLjUzLDI2LjUxLTEwLjUzczE5Ljk0LDMuNTEsMjYuNTEsMTAuNTNjNi41Niw3LjAzLDkuODUsMTYuODgsOS44NSwyOS41N3Y4Ni40N2MwLDkuMTIsNy40LDE2LjUyLDE2LjUyLDE2LjUyaDI0LjczYzkuMTIsMCwxNi41Mi03LjQsMTYuNTItMTYuNTJ2LTk0LjI5YzAtMjUuMTQtNi41Ny00NC45MS0xOS43Mi01OS4zMVoiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMyIgZD0iTTEwNTUuMzUsNTM3Ljk2Yy04LjA0LTE0LjI3LTE5LjItMjUuMjYtMzMuNDgtMzIuOTYtMTQuMjctNy43MS0zMC41OS0xMS41Ny00OC45NC0xMS41N3MtMzUuNDYsMy45Ny00OS45NiwxMS45Yy0xNC41LDcuOTQtMjUuNzgsMTkuMjYtMzMuODIsMzMuOTktOC4wNCwxNC43Mi0xMi4wNiwzMS45NS0xMi4wNiw1MS42NXM0LjA3LDM2Ljk0LDEyLjIzLDUxLjY2YzguMTUsMTQuNzMsMTkuNDgsMjYuMDcsMzMuOTgsMzMuOTksMTQuNSw3LjkzLDMxLjA1LDExLjg5LDQ5LjYzLDExLjg5LDE1LjQsMCwyOS4zNS0yLjgyLDQxLjgtOC41LDEyLjQ3LTUuNjYsMjIuODItMTMuNDgsMzEuMTEtMjMuNDUsNS41LTYuNjMsOS44OC0xMy44MywxMy4xMy0yMS41OCwyLjQtNS43My0xLjg3LTEyLjA3LTguMDktMTIuMDdoLTQ0LjU1Yy0zLjA3LDAtNS44NiwxLjY1LTcuNDgsNC4yNC01LjkyLDkuNDEtMTUuMjQsMTQuMTItMjcuOTUsMTQuMTItOS43NSwwLTE3Ljk2LTMuMTEtMjQuNjUtOS4zNS02LjY4LTYuMjMtMTAuNDgtMTUuMjQtMTEuMzgtMjcuMDJoMTE4LjU0YzcuNTEsMCwxMy43Ni01Ljk2LDEzLjk2LTEzLjQ2LjA0LTEuMi4wNS0yLjM3LjA1LTMuNTQsMC0xOS4wMy00LjAzLTM1LjY4LTEyLjA3LTQ5Ljk2Wk05MzUuMiw1NzIuNjNjMS41OS0xMC40Miw1LjcyLTE4LjQ3LDEyLjQtMjQuMTMsNi42OC01LjY2LDE0Ljg5LTguNSwyNC42NS04LjVzMTguNjksMi45NSwyNS40OSw4LjgzYzYuNzksNS44OSwxMC4yLDEzLjgyLDEwLjIsMjMuOGgtNzIuNzNaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik0xMTAwLjk4LDQ2Ny42OWM2LjQ2LDYuMDEsMTQuNzgsOS4wMSwyNC45OCw5LjAxczE4LjE4LTMsMjQuNjQtOS4wMWM2LjQ2LTYsOS42OS0xMy40Miw5LjY5LTIyLjI2cy0zLjIzLTE2LjYtOS42OS0yMi42Yy02LjQ2LTYtMTQuNjctOS4wMS0yNC42NC05LjAxcy0xOC41MiwzLjAxLTI0Ljk4LDkuMDFjLTYuNDYsNi4wMS05LjY5LDEzLjU0LTkuNjksMjIuNnMzLjIzLDE2LjI2LDkuNjksMjIuMjZaIi8+CiAgICA8cmVjdCBjbGFzcz0iY2xzLTMiIHg9IjEwOTYuNzMiIHk9IjQ5Ni40MSIgd2lkdGg9IjU4LjEyIiBoZWlnaHQ9IjE4OS42NSIgcng9IjIzLjUxIiByeT0iMjMuNTEiLz4KICA8L2c+CiAgPGc+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xNDE1LjE1LDQ2Ny42OWM2LjQ2LDYuMDEsMTQuNzgsOS4wMSwyNC45OCw5LjAxczE4LjE4LTMsMjQuNjQtOS4wMWM2LjQ2LTYsOS42OS0xMy40Miw5LjY5LTIyLjI2cy0zLjIzLTE2LjYtOS42OS0yMi42Yy02LjQ2LTYtMTQuNjctOS4wMS0yNC42NC05LjAxcy0xOC41MiwzLjAxLTI0Ljk4LDkuMDFjLTYuNDYsNi4wMS05LjY5LDEzLjU0LTkuNjksMjIuNnMzLjIzLDE2LjI2LDkuNjksMjIuMjZaIi8+CiAgICA8cmVjdCBjbGFzcz0iY2xzLTMiIHg9IjE0MTAuOSIgeT0iNDk2LjQxIiB3aWR0aD0iNTguMTIiIGhlaWdodD0iMTg5LjY1IiByeD0iMjMuNTEiIHJ5PSIyMy41MSIvPgogIDwvZz4KICA8Zz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtNCIgZD0iTTEzNTEuODQsNjI4LjAzbC0xNTUuMjYsODIuOCw3NS4zNS0xMTQuOTYsNi4yNS05LjUzLjI4LS40NC0yMS43MS0xMy44NWgwcy00Ni45OC0yOS45NS00Ni45OC0yOS45NWMtMjUuODctMjAuNzUtMjUuMzYtNjAuMjgsMS4wNC04MC4zNWwxNTAuMjktOTIuNTYtODUuNjQsMTM0LjUtLjAyLjA1LDEuNDEsMS4wMSwyOC45OSwyMC43MSw1MC4zNywzNS45NWMyMy43MSwxNi45NSwyMS4zNyw1Mi45MS00LjM1LDY2LjYzWiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0yIiBkPSJNMTI3OC40Nyw1ODUuODloMGwtMjEuNzEtMTMuODVoMGMtMi4yOS0xMS40OS0zLjk4LTMyLjQ5LDcuMzctNTMuMDYsMy40Mi02LjIsNy40MS0xMS4yNSwxMS4zMy0xNS4zMWwzMC4zNywyMS43N2MtMS43OCwxNC4wOC03LjcyLDM0LjI5LTI3LjM2LDYwLjQ0WiIvPgogIDwvZz4KPC9zdmc+" alt="Theisi Labs">
+      <p class="foot-copy">Copyright © 2026 Theisi Labs. All Rights Reserved.<br>Arabic Finance Intelligence System.</p>
+    </div>
+    <div class="foot-links">
+      <a href="#moat">Why Theisi</a>
+      <a href="#engine">Engine</a>
+      <a href="#heritage">The Name</a>
+    </div>
+  </div>
+  <p class="disc">Theisi Labs provides informational analysis only and is not financial advice. Investing carries risk, including loss of capital. Decisions remain your own.</p>
+</div></footer>
+
+
+<script>
+const LOGO_MAG = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIwIiBoZWlnaHQ9IjEwODAiIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2aWV3Qm94PSIwIDAgMTkyMCAxMDgwIj4KICA8ZGVmcz4KICAgIDxzdHlsZT4KICAgICAgLmNscy0xIHsKICAgICAgICBmaWxsOiB1cmwoI2xpbmVhci1ncmFkaWVudCk7CiAgICAgIH0KCiAgICAgIC5jbHMtMSwgLmNscy0yLCAuY2xzLTMsIC5jbHMtNCB7CiAgICAgICAgc3Ryb2tlLXdpZHRoOiAwcHg7CiAgICAgIH0KCiAgICAgIC5jbHMtMiB7CiAgICAgICAgb3BhY2l0eTogLjQ0OwogICAgICB9CgogICAgICAuY2xzLTMgewogICAgICAgIGZpbGw6ICMxYzEwMTQ7CiAgICAgIH0KCiAgICAgIC5jbHMtNCB7CiAgICAgICAgZmlsbDogdXJsKCNsaW5lYXItZ3JhZGllbnQtMik7CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImxpbmVhci1ncmFkaWVudCIgeDE9IjE0NzQuNjQiIHkxPSIzNDMuMzIiIHgyPSIxMzk0LjgyIiB5Mj0iNTc4LjEiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZDEwMDU3Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iLjQ4IiBzdG9wLWNvbG9yPSIjZmYwYTZjIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iLjgyIiBzdG9wLWNvbG9yPSIjZmY0ZDkyIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJsaW5lYXItZ3JhZGllbnQtMiIgeDE9IjEwODcuMjYiIHkxPSIyMzcuNyIgeDI9IjEzODQuNDciIHkyPSI3MDYuNjciIHhsaW5rOmhyZWY9IiNsaW5lYXItZ3JhZGllbnQiLz4KICA8L2RlZnM+CiAgPGc+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik02MTYuNSw0MzQuNTZoLTE1Ny4zN2MtNy41MSwwLTEzLjU5LDYuMDgtMTMuNTksMTMuNTl2MTkuMzhjMCw3LjUsNi4wOCwxMy41OSwxMy41OSwxMy41OWgzNi4wNGM3LjUsMCwxMy41OSw2LjA4LDEzLjU5LDEzLjU5djE3Ny43NmMwLDcuNTEsNi4wOCwxMy42LDEzLjU5LDEzLjZoMzAuOTRjNy41MSwwLDEzLjU5LTYuMDksMTMuNTktMTMuNnYtMTc3Ljc2YzAtNy41MSw2LjA5LTEzLjU5LDEzLjYtMTMuNTloMzYuMDNjNy41MSwwLDEzLjU5LTYuMDksMTMuNTktMTMuNTl2LTE5LjM4YzAtNy41MS02LjA4LTEzLjU5LTEzLjU5LTEzLjU5WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0zIiBkPSJNODI4LjIzLDUxNS45NWMtMTMuMTQtMTQuMzgtMzAuNTgtMjEuNTgtNTIuMzQtMjEuNTgtMTIuNjksMC0yNC4xMywyLjQ5LTM0LjMzLDcuNDctMTAuMiw0Ljk5LTE4LjI0LDExLjY4LTI0LjEzLDIwLjA2di03My4yNmMwLTcuNzgtNi4zLTE0LjA4LTE0LjA4LTE0LjA4aC0yOS45NWMtNy43OCwwLTE0LjA4LDYuMy0xNC4wOCwxNC4wOHYyMjAuOWMwLDkuMTIsNy40LDE2LjUyLDE2LjUyLDE2LjUyaDI1LjA3YzkuMTIsMCwxNi41Mi03LjQsMTYuNTItMTYuNTJ2LTg2LjQ3YzAtMTIuNjksMy4yOC0yMi41NCw5Ljg2LTI5LjU3LDYuNTYtNy4wMiwxNS40LTEwLjUzLDI2LjUxLTEwLjUzczE5Ljk0LDMuNTEsMjYuNTEsMTAuNTNjNi41Niw3LjAzLDkuODUsMTYuODgsOS44NSwyOS41N3Y4Ni40N2MwLDkuMTIsNy40LDE2LjUyLDE2LjUyLDE2LjUyaDI0LjczYzkuMTIsMCwxNi41Mi03LjQsMTYuNTItMTYuNTJ2LTk0LjI5YzAtMjUuMTQtNi41Ny00NC45MS0xOS43Mi01OS4zMVoiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMyIgZD0iTTEwNTUuMzUsNTM3Ljk2Yy04LjA0LTE0LjI3LTE5LjItMjUuMjYtMzMuNDgtMzIuOTYtMTQuMjctNy43MS0zMC41OS0xMS41Ny00OC45NC0xMS41N3MtMzUuNDYsMy45Ny00OS45NiwxMS45Yy0xNC41LDcuOTQtMjUuNzgsMTkuMjYtMzMuODIsMzMuOTktOC4wNCwxNC43Mi0xMi4wNiwzMS45NS0xMi4wNiw1MS42NXM0LjA3LDM2Ljk0LDEyLjIzLDUxLjY2YzguMTUsMTQuNzMsMTkuNDgsMjYuMDcsMzMuOTgsMzMuOTksMTQuNSw3LjkzLDMxLjA1LDExLjg5LDQ5LjYzLDExLjg5LDE1LjQsMCwyOS4zNS0yLjgyLDQxLjgtOC41LDEyLjQ3LTUuNjYsMjIuODItMTMuNDgsMzEuMTEtMjMuNDUsNS41LTYuNjMsOS44OC0xMy44MywxMy4xMy0yMS41OCwyLjQtNS43My0xLjg3LTEyLjA3LTguMDktMTIuMDdoLTQ0LjU1Yy0zLjA3LDAtNS44NiwxLjY1LTcuNDgsNC4yNC01LjkyLDkuNDEtMTUuMjQsMTQuMTItMjcuOTUsMTQuMTItOS43NSwwLTE3Ljk2LTMuMTEtMjQuNjUtOS4zNS02LjY4LTYuMjMtMTAuNDgtMTUuMjQtMTEuMzgtMjcuMDJoMTE4LjU0YzcuNTEsMCwxMy43Ni01Ljk2LDEzLjk2LTEzLjQ2LjA0LTEuMi4wNS0yLjM3LjA1LTMuNTQsMC0xOS4wMy00LjAzLTM1LjY4LTEyLjA3LTQ5Ljk2Wk05MzUuMiw1NzIuNjNjMS41OS0xMC40Miw1LjcyLTE4LjQ3LDEyLjQtMjQuMTMsNi42OC01LjY2LDE0Ljg5LTguNSwyNC42NS04LjVzMTguNjksMi45NSwyNS40OSw4LjgzYzYuNzksNS44OSwxMC4yLDEzLjgyLDEwLjIsMjMuOGgtNzIuNzNaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik0xMTAwLjk4LDQ2Ny42OWM2LjQ2LDYuMDEsMTQuNzgsOS4wMSwyNC45OCw5LjAxczE4LjE4LTMsMjQuNjQtOS4wMWM2LjQ2LTYsOS42OS0xMy40Miw5LjY5LTIyLjI2cy0zLjIzLTE2LjYtOS42OS0yMi42Yy02LjQ2LTYtMTQuNjctOS4wMS0yNC42NC05LjAxcy0xOC41MiwzLjAxLTI0Ljk4LDkuMDFjLTYuNDYsNi4wMS05LjY5LDEzLjU0LTkuNjksMjIuNnMzLjIzLDE2LjI2LDkuNjksMjIuMjZaIi8+CiAgICA8cmVjdCBjbGFzcz0iY2xzLTMiIHg9IjEwOTYuNzMiIHk9IjQ5Ni40MSIgd2lkdGg9IjU4LjEyIiBoZWlnaHQ9IjE4OS42NSIgcng9IjIzLjUxIiByeT0iMjMuNTEiLz4KICA8L2c+CiAgPGc+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xNDE1LjE1LDQ2Ny42OWM2LjQ2LDYuMDEsMTQuNzgsOS4wMSwyNC45OCw5LjAxczE4LjE4LTMsMjQuNjQtOS4wMWM2LjQ2LTYsOS42OS0xMy40Miw5LjY5LTIyLjI2cy0zLjIzLTE2LjYtOS42OS0yMi42Yy02LjQ2LTYtMTQuNjctOS4wMS0yNC42NC05LjAxcy0xOC41MiwzLjAxLTI0Ljk4LDkuMDFjLTYuNDYsNi4wMS05LjY5LDEzLjU0LTkuNjksMjIuNnMzLjIzLDE2LjI2LDkuNjksMjIuMjZaIi8+CiAgICA8cmVjdCBjbGFzcz0iY2xzLTMiIHg9IjE0MTAuOSIgeT0iNDk2LjQxIiB3aWR0aD0iNTguMTIiIGhlaWdodD0iMTg5LjY1IiByeD0iMjMuNTEiIHJ5PSIyMy41MSIvPgogIDwvZz4KICA8Zz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtNCIgZD0iTTEzNTEuODQsNjI4LjAzbC0xNTUuMjYsODIuOCw3NS4zNS0xMTQuOTYsNi4yNS05LjUzLjI4LS40NC0yMS43MS0xMy44NWgwcy00Ni45OC0yOS45NS00Ni45OC0yOS45NWMtMjUuODctMjAuNzUtMjUuMzYtNjAuMjgsMS4wNC04MC4zNWwxNTAuMjktOTIuNTYtODUuNjQsMTM0LjUtLjAyLjA1LDEuNDEsMS4wMSwyOC45OSwyMC43MSw1MC4zNywzNS45NWMyMy43MSwxNi45NSwyMS4zNyw1Mi45MS00LjM1LDY2LjYzWiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0yIiBkPSJNMTI3OC40Nyw1ODUuODloMGwtMjEuNzEtMTMuODVoMGMtMi4yOS0xMS40OS0zLjk4LTMyLjQ5LDcuMzctNTMuMDYsMy40Mi02LjIsNy40MS0xMS4yNSwxMS4zMy0xNS4zMWwzMC4zNywyMS43N2MtMS43OCwxNC4wOC03LjcyLDM0LjI5LTI3LjM2LDYwLjQ0WiIvPgogIDwvZz4KPC9zdmc+";
+const LOGO_VIO = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIwIiBoZWlnaHQ9IjEwODAiIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2aWV3Qm94PSIwIDAgMTkyMCAxMDgwIj4KICA8ZGVmcz4KICAgIDxzdHlsZT4KICAgICAgLmNscy0xIHsKICAgICAgICBmaWxsOiB1cmwoI2xpbmVhci1ncmFkaWVudCk7CiAgICAgIH0KCiAgICAgIC5jbHMtMSwgLmNscy0yLCAuY2xzLTMsIC5jbHMtNCB7CiAgICAgICAgc3Ryb2tlLXdpZHRoOiAwcHg7CiAgICAgIH0KCiAgICAgIC5jbHMtMiB7CiAgICAgICAgb3BhY2l0eTogLjQ0OwogICAgICB9CgogICAgICAuY2xzLTMgewogICAgICAgIGZpbGw6ICMxYzEwMTQ7CiAgICAgIH0KCiAgICAgIC5jbHMtNCB7CiAgICAgICAgZmlsbDogdXJsKCNsaW5lYXItZ3JhZGllbnQtMik7CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImxpbmVhci1ncmFkaWVudCIgeDE9IjE0NzQuNjQiIHkxPSIzNDMuMzIiIHgyPSIxMzk0LjgyIiB5Mj0iNTc4LjEiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjYTAwMDYwIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iLjQ4IiBzdG9wLWNvbG9yPSIjZGMwMGZmIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iLjgyIiBzdG9wLWNvbG9yPSIjYWYwMDhkIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJsaW5lYXItZ3JhZGllbnQtMiIgeDE9IjEwODcuMjYiIHkxPSIyMzcuNyIgeDI9IjEzODQuNDciIHkyPSI3MDYuNjciIHhsaW5rOmhyZWY9IiNsaW5lYXItZ3JhZGllbnQiLz4KICA8L2RlZnM+CiAgPGc+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik02MTYuNSw0MzQuNTZoLTE1Ny4zN2MtNy41MSwwLTEzLjU5LDYuMDgtMTMuNTksMTMuNTl2MTkuMzhjMCw3LjUsNi4wOCwxMy41OSwxMy41OSwxMy41OWgzNi4wNGM3LjUsMCwxMy41OSw2LjA4LDEzLjU5LDEzLjU5djE3Ny43NmMwLDcuNTEsNi4wOCwxMy42LDEzLjU5LDEzLjZoMzAuOTRjNy41MSwwLDEzLjU5LTYuMDksMTMuNTktMTMuNnYtMTc3Ljc2YzAtNy41MSw2LjA5LTEzLjU5LDEzLjYtMTMuNTloMzYuMDNjNy41MSwwLDEzLjU5LTYuMDksMTMuNTktMTMuNTl2LTE5LjM4YzAtNy41MS02LjA4LTEzLjU5LTEzLjU5LTEzLjU5WiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0zIiBkPSJNODI4LjIzLDUxNS45NWMtMTMuMTQtMTQuMzgtMzAuNTgtMjEuNTgtNTIuMzQtMjEuNTgtMTIuNjksMC0yNC4xMywyLjQ5LTM0LjMzLDcuNDctMTAuMiw0Ljk5LTE4LjI0LDExLjY4LTI0LjEzLDIwLjA2di03My4yNmMwLTcuNzgtNi4zLTE0LjA4LTE0LjA4LTE0LjA4aC0yOS45NWMtNy43OCwwLTE0LjA4LDYuMy0xNC4wOCwxNC4wOHYyMjAuOWMwLDkuMTIsNy40LDE2LjUyLDE2LjUyLDE2LjUyaDI1LjA3YzkuMTIsMCwxNi41Mi03LjQsMTYuNTItMTYuNTJ2LTg2LjQ3YzAtMTIuNjksMy4yOC0yMi41NCw5Ljg2LTI5LjU3LDYuNTYtNy4wMiwxNS40LTEwLjUzLDI2LjUxLTEwLjUzczE5Ljk0LDMuNTEsMjYuNTEsMTAuNTNjNi41Niw3LjAzLDkuODUsMTYuODgsOS44NSwyOS41N3Y4Ni40N2MwLDkuMTIsNy40LDE2LjUyLDE2LjUyLDE2LjUyaDI0LjczYzkuMTIsMCwxNi41Mi03LjQsMTYuNTItMTYuNTJ2LTk0LjI5YzAtMjUuMTQtNi41Ny00NC45MS0xOS43Mi01OS4zMVoiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMyIgZD0iTTEwNTUuMzUsNTM3Ljk2Yy04LjA0LTE0LjI3LTE5LjItMjUuMjYtMzMuNDgtMzIuOTYtMTQuMjctNy43MS0zMC41OS0xMS41Ny00OC45NC0xMS41N3MtMzUuNDYsMy45Ny00OS45NiwxMS45Yy0xNC41LDcuOTQtMjUuNzgsMTkuMjYtMzMuODIsMzMuOTktOC4wNCwxNC43Mi0xMi4wNiwzMS45NS0xMi4wNiw1MS42NXM0LjA3LDM2Ljk0LDEyLjIzLDUxLjY2YzguMTUsMTQuNzMsMTkuNDgsMjYuMDcsMzMuOTgsMzMuOTksMTQuNSw3LjkzLDMxLjA1LDExLjg5LDQ5LjYzLDExLjg5LDE1LjQsMCwyOS4zNS0yLjgyLDQxLjgtOC41LDEyLjQ3LTUuNjYsMjIuODItMTMuNDgsMzEuMTEtMjMuNDUsNS41LTYuNjMsOS44OC0xMy44MywxMy4xMy0yMS41OCwyLjQtNS43My0xLjg3LTEyLjA3LTguMDktMTIuMDdoLTQ0LjU1Yy0zLjA3LDAtNS44NiwxLjY1LTcuNDgsNC4yNC01LjkyLDkuNDEtMTUuMjQsMTQuMTItMjcuOTUsMTQuMTItOS43NSwwLTE3Ljk2LTMuMTEtMjQuNjUtOS4zNS02LjY4LTYuMjMtMTAuNDgtMTUuMjQtMTEuMzgtMjcuMDJoMTE4LjU0YzcuNTEsMCwxMy43Ni01Ljk2LDEzLjk2LTEzLjQ2LjA0LTEuMi4wNS0yLjM3LjA1LTMuNTQsMC0xOS4wMy00LjAzLTM1LjY4LTEyLjA3LTQ5Ljk2Wk05MzUuMiw1NzIuNjNjMS41OS0xMC40Miw1LjcyLTE4LjQ3LDEyLjQtMjQuMTMsNi42OC01LjY2LDE0Ljg5LTguNSwyNC42NS04LjVzMTguNjksMi45NSwyNS40OSw4LjgzYzYuNzksNS44OSwxMC4yLDEzLjgyLDEwLjIsMjMuOGgtNzIuNzNaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik0xMTAwLjk4LDQ2Ny42OWM2LjQ2LDYuMDEsMTQuNzgsOS4wMSwyNC45OCw5LjAxczE4LjE4LTMsMjQuNjQtOS4wMWM2LjQ2LTYsOS42OS0xMy40Miw5LjY5LTIyLjI2cy0zLjIzLTE2LjYtOS42OS0yMi42Yy02LjQ2LTYtMTQuNjctOS4wMS0yNC42NC05LjAxcy0xOC41MiwzLjAxLTI0Ljk4LDkuMDFjLTYuNDYsNi4wMS05LjY5LDEzLjU0LTkuNjksMjIuNnMzLjIzLDE2LjI2LDkuNjksMjIuMjZaIi8+CiAgICA8cmVjdCBjbGFzcz0iY2xzLTMiIHg9IjEwOTYuNzMiIHk9IjQ5Ni40MSIgd2lkdGg9IjU4LjEyIiBoZWlnaHQ9IjE4OS42NSIgcng9IjIzLjUxIiByeT0iMjMuNTEiLz4KICA8L2c+CiAgPGc+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xNDE1LjE1LDQ2Ny42OWM2LjQ2LDYuMDEsMTQuNzgsOS4wMSwyNC45OCw5LjAxczE4LjE4LTMsMjQuNjQtOS4wMWM2LjQ2LTYsOS42OS0xMy40Miw5LjY5LTIyLjI2cy0zLjIzLTE2LjYtOS42OS0yMi42Yy02LjQ2LTYtMTQuNjctOS4wMS0yNC42NC05LjAxcy0xOC41MiwzLjAxLTI0Ljk4LDkuMDFjLTYuNDYsNi4wMS05LjY5LDEzLjU0LTkuNjksMjIuNnMzLjIzLDE2LjI2LDkuNjksMjIuMjZaIi8+CiAgICA8cmVjdCBjbGFzcz0iY2xzLTMiIHg9IjE0MTAuOSIgeT0iNDk2LjQxIiB3aWR0aD0iNTguMTIiIGhlaWdodD0iMTg5LjY1IiByeD0iMjMuNTEiIHJ5PSIyMy41MSIvPgogIDwvZz4KICA8Zz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtNCIgZD0iTTEzNTEuODQsNjI4LjAzbC0xNTUuMjYsODIuOCw3NS4zNS0xMTQuOTYsNi4yNS05LjUzLjI4LS40NC0yMS43MS0xMy44NWgwcy00Ni45OC0yOS45NS00Ni45OC0yOS45NWMtMjUuODctMjAuNzUtMjUuMzYtNjAuMjgsMS4wNC04MC4zNWwxNTAuMjktOTIuNTYtODUuNjQsMTM0LjUtLjAyLjA1LDEuNDEsMS4wMSwyOC45OSwyMC43MSw1MC4zNywzNS45NWMyMy43MSwxNi45NSwyMS4zNyw1Mi45MS00LjM1LDY2LjYzWiIvPgogICAgPHBhdGggY2xhc3M9ImNscy0yIiBkPSJNMTI3OC40Nyw1ODUuODloMGwtMjEuNzEtMTMuODVoMGMtMi4yOS0xMS40OS0zLjk4LTMyLjQ5LDcuMzctNTMuMDYsMy40Mi02LjIsNy40MS0xMS4yNSwxMS4zMy0xNS4zMWwzMC4zNywyMS43N2MtMS43OCwxNC4wOC03LjcyLDM0LjI5LTI3LjM2LDYwLjQ0WiIvPgogIDwvZz4KPC9zdmc+";
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme', t === 'violet' ? 'violet' : '');
+  document.getElementById('t-mag').classList.toggle('on', t==='magenta');
+  document.getElementById('t-vio').classList.toggle('on', t==='violet');
+  const src = t==='violet' ? LOGO_VIO : LOGO_MAG;
+  const nl=document.getElementById('navlogo'); if(nl) nl.src=src;
+  const fl=document.getElementById('footlogo'); if(fl) fl.src=src;
+}
+</script>
+
+
+
+
+
+<script>
+// ===== Theisi unified constellation — one connected structure, always animating =====
+(function(){
+  const c=document.getElementById('constellation'); if(!c) return;
+  const x=c.getContext('2d'); let w,h,pts,DPR=Math.min(devicePixelRatio||1,2);
+  function size(){w=innerWidth;h=innerHeight;c.width=w*DPR;c.height=h*DPR;c.style.width=w+'px';c.style.height=h+'px';x.setTransform(DPR,0,0,DPR,0,0);}
+  function init(){
+    const density=Math.min(70,Math.floor((w*h)/18000));
+    pts=[];
+    for(let i=0;i<density;i++){
+      pts.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.32,vy:(Math.random()-.5)*.32,r:Math.random()*2+1.3});
+    }
+  }
+  function themeColor(){return (getComputedStyle(document.documentElement).getPropertyValue('--rose').trim())||'#ff0a6c';}
+  function hexToRgb(hex){hex=hex.replace('#','');if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');const n=parseInt(hex,16);return [(n>>16)&255,(n>>8)&255,n&255];}
+
+  function tick(){
+    x.clearRect(0,0,w,h);
+    const [r,g,b]=hexToRgb(themeColor());
+
+    // move
+    for(const p of pts){
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>w)p.vx*=-1;
+      if(p.y<0||p.y>h)p.vy*=-1;
+    }
+
+    // ONE connected structure: build a minimum-spanning-tree-like backbone
+    // Connect every point into a single network via nearest-unvisited (Prim-style).
+    const n=pts.length;
+    if(n>1){
+      const inTree=new Array(n).fill(false);
+      inTree[0]=true; let count=1;
+      x.lineWidth=1; 
+      while(count<n){
+        let bi=-1,bj=-1,bd=Infinity;
+        for(let i=0;i<n;i++){ if(!inTree[i])continue;
+          for(let j=0;j<n;j++){ if(inTree[j])continue;
+            const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=dx*dx+dy*dy;
+            if(d<bd){bd=d;bi=i;bj=j;}
+          }
+        }
+        if(bj<0)break;
+        // draw the backbone edge (always visible, this guarantees one whole structure)
+        const p=pts[bi], q=pts[bj];
+        x.strokeStyle='rgba('+r+','+g+','+b+',0.32)';
+        x.beginPath();x.moveTo(p.x,p.y);x.lineTo(q.x,q.y);x.stroke();
+        inTree[bj]=true; count++;
+      }
+      // plus faint extra links between close pairs for a richer web
+      for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
+        const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.hypot(dx,dy);
+        if(d<150){const a=(1-d/150)*0.22;x.strokeStyle='rgba('+r+','+g+','+b+','+a+')';x.beginPath();x.moveTo(pts[i].x,pts[i].y);x.lineTo(pts[j].x,pts[j].y);x.stroke();}
+      }
+    }
+    // nodes
+    for(const p of pts){x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fillStyle='rgba('+r+','+g+','+b+',0.8)';x.fill();}
+
+    requestAnimationFrame(tick);   // ALWAYS animates
+  }
+  size();init();tick();
+
+  // pointer interaction (desktop)
+  let mx=-999,my=-999;
+  addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+  setInterval(()=>{
+    for(const p of pts){
+      const dx=mx-p.x, dy=my-p.y, d=Math.hypot(dx,dy);
+      if(d<130&&d>0){p.vx+=dx/d*0.02;p.vy+=dy/d*0.02;}
+      p.vx*=0.99;p.vy*=0.99;
+      if(Math.hypot(p.vx,p.vy)<0.12){p.vx+=(Math.random()-.5)*.06;p.vy+=(Math.random()-.5)*.06;}
+    }
+  },60);
+  addEventListener('resize',()=>{size();init();});
+})();
+// scroll-reveal (still respects reduced motion for the fade only)
+(function(){
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(e=>io.observe(e));
+})();
+</script>
+</body>
+</html>

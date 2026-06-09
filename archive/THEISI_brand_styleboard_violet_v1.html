@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theisi Labs — Brand Style Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#151528;
+    --navy-2:#1d1d36;
+    --navy-3:#262648;
+    --mag-1:#a00060;
+    --mag-2:#dc00ff;
+    --mag-3:#af008d;
+    --mag-deep:#5e0050;
+    --mag-soft:#af008d;
+    --white:#ffffff;
+    --ink:#0d0d1a;
+    --muted:rgba(255,255,255,.62);
+    --muted-2:rgba(255,255,255,.40);
+    --line:rgba(255,255,255,.10);
+    --grad:linear-gradient(135deg,var(--mag-1),var(--mag-2) 55%,var(--mag-3));
+    --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Montserrat',sans-serif;
+    background:var(--navy);
+    color:var(--white);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.6;
+    padding:0 0 80px;
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:0 28px}
+
+  /* glow atmosphere */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(620px 420px at 78% 8%, rgba(220,0,255,.16), transparent 60%),
+      radial-gradient(520px 420px at 12% 88%, rgba(94,0,80,.22), transparent 60%);
+  }
+  .wrap, header{position:relative;z-index:1}
+
+  /* ===== hero ===== */
+  header{padding:64px 0 28px;text-align:center}
+  .logo-hero{
+    width:min(520px,82%);height:auto;display:block;margin:0 auto 30px;
+    border-radius:24px;
+    box-shadow:0 30px 80px -28px rgba(220,0,255,.42);
+  }
+  .eyebrow{
+    font-size:12px;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--mag-2);font-weight:600;margin-bottom:14px;
+  }
+  h1{
+    font-size:clamp(30px,5vw,52px);font-weight:800;letter-spacing:-.02em;
+    line-height:1.05;margin-bottom:16px;
+  }
+  h1 .accent{
+    background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .lede{font-size:17px;color:var(--muted);max-width:640px;margin:0 auto}
+  .pron{font-size:14px;color:var(--mag-2);margin-top:10px;font-weight:500;letter-spacing:.04em}
+
+  /* ===== section ===== */
+  section{margin-top:64px}
+  .sec-label{
+    display:flex;align-items:center;gap:14px;margin-bottom:26px;
+  }
+  .sec-label .n{
+    font-size:13px;font-weight:700;color:var(--navy);
+    background:var(--grad);width:30px;height:30px;border-radius:9px;
+    display:grid;place-items:center;flex:none;
+  }
+  .sec-label h2{font-size:20px;font-weight:700;letter-spacing:-.01em}
+  .sec-label .rule{flex:1;height:1px;background:var(--line)}
+
+  /* ===== color swatches ===== */
+  .swatches{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px}
+  .sw{
+    border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);
+    background:var(--navy-2);
+  }
+  .sw .chip{height:96px}
+  .sw .meta{padding:13px 15px}
+  .sw .nm{font-size:14px;font-weight:600}
+  .sw .hex{font-size:12px;color:var(--muted);font-family:ui-monospace,monospace;margin-top:3px;letter-spacing:.02em}
+  .sw .role{font-size:11px;color:var(--muted-2);margin-top:7px;line-height:1.4}
+
+  /* ===== type scale ===== */
+  .type-card{
+    background:var(--navy-2);border:1px solid var(--line);border-radius:var(--radius);
+    padding:30px 32px;
+  }
+  .type-row{padding:16px 0;border-bottom:1px solid var(--line);display:flex;align-items:baseline;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .type-row:last-child{border-bottom:0}
+  .type-row .spec{font-size:12px;color:var(--muted-2);font-family:ui-monospace,monospace;white-space:nowrap}
+  .t-display{font-size:40px;font-weight:800;letter-spacing:-.02em}
+  .t-h2{font-size:26px;font-weight:700}
+  .t-h3{font-size:19px;font-weight:600}
+  .t-body{font-size:16px;font-weight:400;color:var(--muted)}
+  .t-cap{font-size:12px;font-weight:600;letter-spacing:.28em;text-transform:uppercase;color:var(--mag-2)}
+
+  /* ===== components ===== */
+  .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+  .card{
+    background:var(--navy-2);border:1px solid var(--line);border-radius:var(--radius);
+    padding:24px;
+  }
+  .card.glow{box-shadow:0 20px 60px -34px rgba(220,0,255,.55);border-color:rgba(220,0,255,.30)}
+  .card h3{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2);font-weight:600;margin-bottom:18px}
+
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;font-family:inherit;cursor:pointer;
+    font-weight:600;font-size:14px;padding:12px 22px;border-radius:12px;border:0;
+    background:var(--grad);color:#fff;letter-spacing:.01em;
+  }
+  .btn.ghost{background:transparent;border:1.5px solid rgba(220,0,255,.5);color:var(--mag-2)}
+  .btn.solid-navy{background:var(--navy-3);color:#fff;border:1px solid var(--line)}
+  .btn-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:5px 12px;border-radius:999px;letter-spacing:.04em}
+  .pill.buy{background:rgba(45,212,140,.16);color:#34e0a0}
+  .pill.hold{background:rgba(255,184,0,.16);color:#ffc24d}
+  .pill.sell{background:rgba(220,0,255,.16);color:var(--mag-2)}
+
+  /* score tile mock */
+  .score{display:flex;align-items:center;gap:16px}
+  .score .ring{
+    width:62px;height:62px;border-radius:50%;flex:none;display:grid;place-items:center;
+    background:conic-gradient(var(--mag-2) 0 82%, var(--navy-3) 82% 100%);
+  }
+  .score .ring span{
+    width:48px;height:48px;border-radius:50%;background:var(--navy-2);display:grid;place-items:center;
+    font-weight:800;font-size:18px;
+  }
+  .score .lbl{font-size:13px;color:var(--muted)}
+  .score .lbl b{display:block;color:#fff;font-size:15px;font-weight:700;margin-bottom:2px}
+
+  .stat{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .stat:last-child{border:0}
+  .stat .v{font-weight:700}
+  .stat .up{color:#34e0a0}.stat .down{color:var(--mag-2)}
+
+  /* mini dashboard preview */
+  .dash{
+    background:var(--navy);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+  }
+  .dash-top{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--navy-2)}
+  .dash-logo{height:26px;width:auto}
+  .dash-tabs{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+  .dash-tab{font-size:12px;font-weight:600;padding:6px 13px;border-radius:8px;color:var(--muted)}
+  .dash-tab.on{background:var(--grad);color:#fff}
+  .dash-body{padding:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+
+  .ar{direction:rtl;font-size:15px;color:var(--muted);line-height:2}
+  footer{margin-top:70px;text-align:center;font-size:12px;color:var(--muted-2);letter-spacing:.04em}
+  .note{font-size:13px;color:var(--muted);margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <img class="logo-hero" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIwIiBoZWlnaHQ9IjEwODAiIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2aWV3Qm94PSIwIDAgMTkyMCAxMDgwIj4KICA8ZGVmcz4KICAgIDxzdHlsZT4KICAgICAgLmNscy0xIHsKICAgICAgICBmaWxsOiB1cmwoI2xpbmVhci1ncmFkaWVudCk7CiAgICAgIH0KCiAgICAgIC5jbHMtMSwgLmNscy0yLCAuY2xzLTMsIC5jbHMtNCwgLmNscy01IHsKICAgICAgICBzdHJva2Utd2lkdGg6IDBweDsKICAgICAgfQoKICAgICAgLmNscy0yIHsKICAgICAgICBmaWxsOiAjZmZmOwogICAgICB9CgogICAgICAuY2xzLTMgewogICAgICAgIGZpbGw6ICMxNTE1Mjg7CiAgICAgIH0KCiAgICAgIC5jbHMtNCB7CiAgICAgICAgZmlsbDogdXJsKCNsaW5lYXItZ3JhZGllbnQtMik7CiAgICAgIH0KCiAgICAgIC5jbHMtNSB7CiAgICAgICAgZmlsbDogdXJsKCNsaW5lYXItZ3JhZGllbnQtMyk7CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImxpbmVhci1ncmFkaWVudCIgeDE9IjE0NDEuMjgiIHkxPSIzNjkuNjciIHgyPSIxNDM3LjM0IiB5Mj0iNTk1Ljk2IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI2EwMDA2MCIvPgogICAgICA8c3RvcCBvZmZzZXQ9Ii4wNyIgc3RvcC1jb2xvcj0iI2EwMDA2MCIvPgogICAgICA8c3RvcCBvZmZzZXQ9Ii41MSIgc3RvcC1jb2xvcj0iI2RjMDBmZiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNhZjAwOGQiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImxpbmVhci1ncmFkaWVudC0yIiB4MT0iMTE4OC42MSIgeTE9IjM5Mi4zMSIgeDI9IjE1NDIuMDkiIHkyPSI5NjMuMiIgeGxpbms6aHJlZj0iI2xpbmVhci1ncmFkaWVudCIvPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJsaW5lYXItZ3JhZGllbnQtMyIgeDE9IjEzNDIuMjMiIHkxPSI0MzQuNjYiIHgyPSIxMTk1LjQiIHkyPSI2ODUuMjgiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjYTAwMDYwIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iLjQ3IiBzdG9wLWNvbG9yPSIjNWUwMDUwIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2FmMDA4ZCIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3QgY2xhc3M9ImNscy0zIiB3aWR0aD0iMTkyMCIgaGVpZ2h0PSIxMDgwIi8+CiAgPGc+CiAgICA8Zz4KICAgICAgPHBhdGggY2xhc3M9ImNscy0yIiBkPSJNNjE2LjUsNDM0LjU2aC0xNTcuMzdjLTcuNTEsMC0xMy41OSw2LjA4LTEzLjU5LDEzLjU5djE5LjM4YzAsNy41LDYuMDgsMTMuNTksMTMuNTksMTMuNTloMzYuMDRjNy41LDAsMTMuNTksNi4wOCwxMy41OSwxMy41OXYxNzcuNzZjMCw3LjUxLDYuMDgsMTMuNiwxMy41OSwxMy42aDMwLjk0YzcuNTEsMCwxMy41OS02LjA5LDEzLjU5LTEzLjZ2LTE3Ny43NmMwLTcuNTEsNi4wOS0xMy41OSwxMy42LTEzLjU5aDM2LjAzYzcuNTEsMCwxMy41OS02LjA5LDEzLjU5LTEzLjU5di0xOS4zOGMwLTcuNTEtNi4wOC0xMy41OS0xMy41OS0xMy41OVoiLz4KICAgICAgPHBhdGggY2xhc3M9ImNscy0yIiBkPSJNODI4LjIzLDUxNS45NWMtMTMuMTQtMTQuMzgtMzAuNTgtMjEuNTgtNTIuMzQtMjEuNTgtMTIuNjksMC0yNC4xMywyLjQ5LTM0LjMzLDcuNDctMTAuMiw0Ljk5LTE4LjI0LDExLjY4LTI0LjEzLDIwLjA2di03My4yNmMwLTcuNzgtNi4zLTE0LjA4LTE0LjA4LTE0LjA4aC0yOS45NWMtNy43OCwwLTE0LjA4LDYuMy0xNC4wOCwxNC4wOHYyMjAuOWMwLDkuMTIsNy40LDE2LjUyLDE2LjUyLDE2LjUyaDI1LjA3YzkuMTIsMCwxNi41Mi03LjQsMTYuNTItMTYuNTJ2LTg2LjQ3YzAtMTIuNjksMy4yOC0yMi41NCw5Ljg2LTI5LjU3LDYuNTYtNy4wMiwxNS40LTEwLjUzLDI2LjUxLTEwLjUzczE5Ljk0LDMuNTEsMjYuNTEsMTAuNTNjNi41Niw3LjAzLDkuODUsMTYuODgsOS44NSwyOS41N3Y4Ni40N2MwLDkuMTIsNy40LDE2LjUyLDE2LjUyLDE2LjUyaDI0LjczYzkuMTIsMCwxNi41Mi03LjQsMTYuNTItMTYuNTJ2LTk0LjI5YzAtMjUuMTQtNi41Ny00NC45MS0xOS43Mi01OS4zMVoiLz4KICAgICAgPHBhdGggY2xhc3M9ImNscy0yIiBkPSJNMTA1NS4zNSw1MzcuOTZjLTguMDQtMTQuMjctMTkuMi0yNS4yNi0zMy40OC0zMi45Ni0xNC4yNy03LjcxLTMwLjU5LTExLjU3LTQ4Ljk0LTExLjU3cy0zNS40NiwzLjk3LTQ5Ljk2LDExLjljLTE0LjUsNy45NC0yNS43OCwxOS4yNi0zMy44MiwzMy45OS04LjA0LDE0LjcyLTEyLjA2LDMxLjk1LTEyLjA2LDUxLjY1czQuMDcsMzYuOTQsMTIuMjMsNTEuNjZjOC4xNSwxNC43MywxOS40OCwyNi4wNywzMy45OCwzMy45OSwxNC41LDcuOTMsMzEuMDUsMTEuODksNDkuNjMsMTEuODksMTUuNCwwLDI5LjM1LTIuODIsNDEuOC04LjUsMTIuNDctNS42NiwyMi44Mi0xMy40OCwzMS4xMS0yMy40NSw1LjUtNi42Myw5Ljg4LTEzLjgzLDEzLjEzLTIxLjU4LDIuNC01LjczLTEuODctMTIuMDctOC4wOS0xMi4wN2gtNDQuNTVjLTMuMDcsMC01Ljg2LDEuNjUtNy40OCw0LjI0LTUuOTIsOS40MS0xNS4yNCwxNC4xMi0yNy45NSwxNC4xMi05Ljc1LDAtMTcuOTYtMy4xMS0yNC42NS05LjM1LTYuNjgtNi4yMy0xMC40OC0xNS4yNC0xMS4zOC0yNy4wMmgxMTguNTRjNy41MSwwLDEzLjc2LTUuOTYsMTMuOTYtMTMuNDYuMDQtMS4yLjA1LTIuMzcuMDUtMy41NCwwLTE5LjAzLTQuMDMtMzUuNjgtMTIuMDctNDkuOTZaTTkzNS4yLDU3Mi42M2MxLjU5LTEwLjQyLDUuNzItMTguNDcsMTIuNC0yNC4xMyw2LjY4LTUuNjYsMTQuODktOC41LDI0LjY1LTguNXMxOC42OSwyLjk1LDI1LjQ5LDguODNjNi43OSw1Ljg5LDEwLjIsMTMuODIsMTAuMiwyMy44aC03Mi43M1oiLz4KICAgICAgPHBhdGggY2xhc3M9ImNscy0yIiBkPSJNMTEwMC45OCw0NjcuNjljNi40Niw2LjAxLDE0Ljc4LDkuMDEsMjQuOTgsOS4wMXMxOC4xOC0zLDI0LjY0LTkuMDFjNi40Ni02LDkuNjktMTMuNDIsOS42OS0yMi4yNnMtMy4yMy0xNi42LTkuNjktMjIuNmMtNi40Ni02LTE0LjY3LTkuMDEtMjQuNjQtOS4wMXMtMTguNTIsMy4wMS0yNC45OCw5LjAxYy02LjQ2LDYuMDEtOS42OSwxMy41NC05LjY5LDIyLjZzMy4yMywxNi4yNiw5LjY5LDIyLjI2WiIvPgogICAgICA8cmVjdCBjbGFzcz0iY2xzLTIiIHg9IjEwOTYuNzMiIHk9IjQ5Ni40MSIgd2lkdGg9IjU4LjEyIiBoZWlnaHQ9IjE4OS42NSIgcng9IjIzLjUxIiByeT0iMjMuNTEiLz4KICAgIDwvZz4KICAgIDxnPgogICAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xNDE1LjE1LDQ2Ny42OWM2LjQ2LDYuMDEsMTQuNzgsOS4wMSwyNC45OCw5LjAxczE4LjE4LTMsMjQuNjQtOS4wMWM2LjQ2LTYsOS42OS0xMy40Miw5LjY5LTIyLjI2cy0zLjIzLTE2LjYtOS42OS0yMi42Yy02LjQ2LTYtMTQuNjctOS4wMS0yNC42NC05LjAxcy0xOC41MiwzLjAxLTI0Ljk4LDkuMDFjLTYuNDYsNi4wMS05LjY5LDEzLjU0LTkuNjksMjIuNnMzLjIzLDE2LjI2LDkuNjksMjIuMjZaIi8+CiAgICAgIDxyZWN0IGNsYXNzPSJjbHMtMiIgeD0iMTQxMC45IiB5PSI0OTYuNDEiIHdpZHRoPSI1OC4xMiIgaGVpZ2h0PSIxODkuNjUiIHJ4PSIyMy41MSIgcnk9IjIzLjUxIi8+CiAgICA8L2c+CiAgICA8Zz4KICAgICAgPHBhdGggY2xhc3M9ImNscy00IiBkPSJNMTM1My4wNSw2MjguMDNsLTE1NS4yNiw4Mi44LDc1LjM1LTExNC45Niw2LjI1LTkuNTMuMjgtLjQ0LTIxLjcxLTEzLjg1aDBzLTQ2Ljk4LTI5Ljk1LTQ2Ljk4LTI5Ljk1Yy0yNS44Ny0yMC43NS0yNS4zNi02MC4yOCwxLjA0LTgwLjM1bDE1MC4yOS05Mi41Ni04NS42NCwxMzQuNS0uMDIuMDUsMS40MSwxLjAxLDI4Ljk5LDIwLjcxLDUwLjM3LDM1Ljk1YzIzLjcxLDE2Ljk1LDIxLjM3LDUyLjkxLTQuMzUsNjYuNjNaIi8+CiAgICAgIDxwYXRoIGNsYXNzPSJjbHMtNSIgZD0iTTEyNzkuNjgsNTg1Ljg5aDBsLTIxLjcxLTEzLjg1aDBjLTIuMjktMTEuNDktMy45OC0zMi40OSw3LjM3LTUzLjA2LDMuNDItNi4yLDcuNDEtMTEuMjUsMTEuMzMtMTUuMzFsMzAuMzcsMjEuNzdjLTEuNzgsMTQuMDgtNy43MiwzNC4yOS0yNy4zNiw2MC40NFoiLz4KICAgIDwvZz4KICA8L2c+Cjwvc3ZnPg==" alt="Theisi Labs logo">
+    <div class="eyebrow">Brand Style Board · v1</div>
+    <h1>The <span class="accent">Theisi</span> visual system</h1>
+    <p class="lede">A dark, premium identity built around your logo — bright magenta energy on deep navy, with the lightning-bolt mark as the signature motif.</p>
+    <p class="pron">/ they-see / — vision · clarity · foresight</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- COLORS -->
+  <section>
+    <div class="sec-label"><span class="n">01</span><h2>Color palette</h2><span class="rule"></span></div>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#151528"></div><div class="meta"><div class="nm">Deep Navy</div><div class="hex">#151528</div><div class="role">Primary background. The canvas everything sits on.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#262648"></div><div class="meta"><div class="nm">Navy Surface</div><div class="hex">#262648</div><div class="role">Cards, panels, raised surfaces.</div></div></div>
+      <div class="sw"><div class="chip" style="background:linear-gradient(135deg,#a00060,#dc00ff 55%,#af008d)"></div><div class="meta"><div class="nm">Violet Gradient</div><div class="hex">#DC00FF core</div><div class="role">Signature accent. Buttons, highlights, the bolt.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#85003d"></div><div class="meta"><div class="nm">Violet Deep</div><div class="hex">#5E0050</div><div class="role">Shadow tone, depth, hover states.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#ffffff"></div><div class="meta"><div class="nm">White</div><div class="hex">#FFFFFF</div><div class="role">Wordmark, primary text on navy.</div></div></div>
+    </div>
+  </section>
+
+  <!-- TYPE -->
+  <section>
+    <div class="sec-label"><span class="n">02</span><h2>Typography — Montserrat</h2><span class="rule"></span></div>
+    <div class="type-card">
+      <div class="type-row"><span class="t-display">Theisi Labs</span><span class="spec">Display · 800 · -2% tracking</span></div>
+      <div class="type-row"><span class="t-h2">Daily market intelligence</span><span class="spec">H2 · 700</span></div>
+      <div class="type-row"><span class="t-h3">Portfolio health score</span><span class="spec">H3 · 600</span></div>
+      <div class="type-row"><span class="t-body">Body copy stays calm and readable in muted white, leaving the magenta to do the signalling.</span><span class="spec">Body · 400</span></div>
+      <div class="type-row"><span class="t-cap">Scoring engine</span><span class="spec">Caption · 600 · uppercase</span></div>
+    </div>
+  </section>
+
+  <!-- COMPONENTS -->
+  <section>
+    <div class="sec-label"><span class="n">03</span><h2>Components</h2><span class="rule"></span></div>
+    <div class="grid-2">
+
+      <div class="card">
+        <h3>Buttons</h3>
+        <div class="btn-row" style="margin-bottom:14px">
+          <button class="btn">Run analysis</button>
+          <button class="btn ghost">View report</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn solid-navy">Secondary</button>
+          <span class="pill buy">شراء · Buy</span>
+          <span class="pill hold">احتفظ · Hold</span>
+          <span class="pill sell">قلل · Reduce</span>
+        </div>
+      </div>
+
+      <div class="card glow">
+        <h3>Score tile</h3>
+        <div class="score">
+          <div class="ring"><span>8.2</span></div>
+          <div class="lbl"><b>📈 شراء — Strong setup</b>Valuation + momentum aligned. Confidence: high.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Holding snapshot</h3>
+        <div class="stat"><span>NVDA</span><span class="v up">+18.4%</span></div>
+        <div class="stat"><span>Portfolio weight</span><span class="v">6.2%</span></div>
+        <div class="stat"><span>WOLF</span><span class="v down">−97.1%</span></div>
+      </div>
+
+      <div class="card">
+        <h3>Arabic output</h3>
+        <p class="ar">صباح الخير راشد — محفظتك ترتفع اليوم بنسبة ٢٪. أقوى إشارة: NVDA عند درجة ٨٫٢ من ١٠.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- DASHBOARD PREVIEW -->
+  <section>
+    <div class="sec-label"><span class="n">04</span><h2>How it feels — dashboard preview</h2><span class="rule"></span></div>
+    <div class="dash">
+      <div class="dash-top">
+        <img class="dash-logo" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIwIiBoZWlnaHQ9IjEwODAiIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2aWV3Qm94PSIwIDAgMTkyMCAxMDgwIj4KICA8ZGVmcz4KICAgIDxzdHlsZT4KICAgICAgLmNscy0xIHsKICAgICAgICBmaWxsOiB1cmwoI2xpbmVhci1ncmFkaWVudCk7CiAgICAgIH0KCiAgICAgIC5jbHMtMSwgLmNscy0yLCAuY2xzLTMsIC5jbHMtNCwgLmNscy01IHsKICAgICAgICBzdHJva2Utd2lkdGg6IDBweDsKICAgICAgfQoKICAgICAgLmNscy0yIHsKICAgICAgICBmaWxsOiAjZmZmOwogICAgICB9CgogICAgICAuY2xzLTMgewogICAgICAgIGZpbGw6ICMxNTE1Mjg7CiAgICAgIH0KCiAgICAgIC5jbHMtNCB7CiAgICAgICAgZmlsbDogdXJsKCNsaW5lYXItZ3JhZGllbnQtMik7CiAgICAgIH0KCiAgICAgIC5jbHMtNSB7CiAgICAgICAgZmlsbDogdXJsKCNsaW5lYXItZ3JhZGllbnQtMyk7CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImxpbmVhci1ncmFkaWVudCIgeDE9IjE0NDEuMjgiIHkxPSIzNjkuNjciIHgyPSIxNDM3LjM0IiB5Mj0iNTk1Ljk2IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI2EwMDA2MCIvPgogICAgICA8c3RvcCBvZmZzZXQ9Ii4wNyIgc3RvcC1jb2xvcj0iI2EwMDA2MCIvPgogICAgICA8c3RvcCBvZmZzZXQ9Ii41MSIgc3RvcC1jb2xvcj0iI2RjMDBmZiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNhZjAwOGQiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImxpbmVhci1ncmFkaWVudC0yIiB4MT0iMTE4OC42MSIgeTE9IjM5Mi4zMSIgeDI9IjE1NDIuMDkiIHkyPSI5NjMuMiIgeGxpbms6aHJlZj0iI2xpbmVhci1ncmFkaWVudCIvPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJsaW5lYXItZ3JhZGllbnQtMyIgeDE9IjEzNDIuMjMiIHkxPSI0MzQuNjYiIHgyPSIxMTk1LjQiIHkyPSI2ODUuMjgiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjYTAwMDYwIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iLjQ3IiBzdG9wLWNvbG9yPSIjNWUwMDUwIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2FmMDA4ZCIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3QgY2xhc3M9ImNscy0zIiB3aWR0aD0iMTkyMCIgaGVpZ2h0PSIxMDgwIi8+CiAgPGc+CiAgICA8Zz4KICAgICAgPHBhdGggY2xhc3M9ImNscy0yIiBkPSJNNjE2LjUsNDM0LjU2aC0xNTcuMzdjLTcuNTEsMC0xMy41OSw2LjA4LTEzLjU5LDEzLjU5djE5LjM4YzAsNy41LDYuMDgsMTMuNTksMTMuNTksMTMuNTloMzYuMDRjNy41LDAsMTMuNTksNi4wOCwxMy41OSwxMy41OXYxNzcuNzZjMCw3LjUxLDYuMDgsMTMuNiwxMy41OSwxMy42aDMwLjk0YzcuNTEsMCwxMy41OS02LjA5LDEzLjU5LTEzLjZ2LTE3Ny43NmMwLTcuNTEsNi4wOS0xMy41OSwxMy42LTEzLjU5aDM2LjAzYzcuNTEsMCwxMy41OS02LjA5LDEzLjU5LTEzLjU5di0xOS4zOGMwLTcuNTEtNi4wOC0xMy41OS0xMy41OS0xMy41OVoiLz4KICAgICAgPHBhdGggY2xhc3M9ImNscy0yIiBkPSJNODI4LjIzLDUxNS45NWMtMTMuMTQtMTQuMzgtMzAuNTgtMjEuNTgtNTIuMzQtMjEuNTgtMTIuNjksMC0yNC4xMywyLjQ5LTM0LjMzLDcuNDctMTAuMiw0Ljk5LTE4LjI0LDExLjY4LTI0LjEzLDIwLjA2di03My4yNmMwLTcuNzgtNi4zLTE0LjA4LTE0LjA4LTE0LjA4aC0yOS45NWMtNy43OCwwLTE0LjA4LDYuMy0xNC4wOCwxNC4wOHYyMjAuOWMwLDkuMTIsNy40LDE2LjUyLDE2LjUyLDE2LjUyaDI1LjA3YzkuMTIsMCwxNi41Mi03LjQsMTYuNTItMTYuNTJ2LTg2LjQ3YzAtMTIuNjksMy4yOC0yMi41NCw5Ljg2LTI5LjU3LDYuNTYtNy4wMiwxNS40LTEwLjUzLDI2LjUxLTEwLjUzczE5Ljk0LDMuNTEsMjYuNTEsMTAuNTNjNi41Niw3LjAzLDkuODUsMTYuODgsOS44NSwyOS41N3Y4Ni40N2MwLDkuMTIsNy40LDE2LjUyLDE2LjUyLDE2LjUyaDI0LjczYzkuMTIsMCwxNi41Mi03LjQsMTYuNTItMTYuNTJ2LTk0LjI5YzAtMjUuMTQtNi41Ny00NC45MS0xOS43Mi01OS4zMVoiLz4KICAgICAgPHBhdGggY2xhc3M9ImNscy0yIiBkPSJNMTA1NS4zNSw1MzcuOTZjLTguMDQtMTQuMjctMTkuMi0yNS4yNi0zMy40OC0zMi45Ni0xNC4yNy03LjcxLTMwLjU5LTExLjU3LTQ4Ljk0LTExLjU3cy0zNS40NiwzLjk3LTQ5Ljk2LDExLjljLTE0LjUsNy45NC0yNS43OCwxOS4yNi0zMy44MiwzMy45OS04LjA0LDE0LjcyLTEyLjA2LDMxLjk1LTEyLjA2LDUxLjY1czQuMDcsMzYuOTQsMTIuMjMsNTEuNjZjOC4xNSwxNC43MywxOS40OCwyNi4wNywzMy45OCwzMy45OSwxNC41LDcuOTMsMzEuMDUsMTEuODksNDkuNjMsMTEuODksMTUuNCwwLDI5LjM1LTIuODIsNDEuOC04LjUsMTIuNDctNS42NiwyMi44Mi0xMy40OCwzMS4xMS0yMy40NSw1LjUtNi42Myw5Ljg4LTEzLjgzLDEzLjEzLTIxLjU4LDIuNC01LjczLTEuODctMTIuMDctOC4wOS0xMi4wN2gtNDQuNTVjLTMuMDcsMC01Ljg2LDEuNjUtNy40OCw0LjI0LTUuOTIsOS40MS0xNS4yNCwxNC4xMi0yNy45NSwxNC4xMi05Ljc1LDAtMTcuOTYtMy4xMS0yNC42NS05LjM1LTYuNjgtNi4yMy0xMC40OC0xNS4yNC0xMS4zOC0yNy4wMmgxMTguNTRjNy41MSwwLDEzLjc2LTUuOTYsMTMuOTYtMTMuNDYuMDQtMS4yLjA1LTIuMzcuMDUtMy41NCwwLTE5LjAzLTQuMDMtMzUuNjgtMTIuMDctNDkuOTZaTTkzNS4yLDU3Mi42M2MxLjU5LTEwLjQyLDUuNzItMTguNDcsMTIuNC0yNC4xMyw2LjY4LTUuNjYsMTQuODktOC41LDI0LjY1LTguNXMxOC42OSwyLjk1LDI1LjQ5LDguODNjNi43OSw1Ljg5LDEwLjIsMTMuODIsMTAuMiwyMy44aC03Mi43M1oiLz4KICAgICAgPHBhdGggY2xhc3M9ImNscy0yIiBkPSJNMTEwMC45OCw0NjcuNjljNi40Niw2LjAxLDE0Ljc4LDkuMDEsMjQuOTgsOS4wMXMxOC4xOC0zLDI0LjY0LTkuMDFjNi40Ni02LDkuNjktMTMuNDIsOS42OS0yMi4yNnMtMy4yMy0xNi42LTkuNjktMjIuNmMtNi40Ni02LTE0LjY3LTkuMDEtMjQuNjQtOS4wMXMtMTguNTIsMy4wMS0yNC45OCw5LjAxYy02LjQ2LDYuMDEtOS42OSwxMy41NC05LjY5LDIyLjZzMy4yMywxNi4yNiw5LjY5LDIyLjI2WiIvPgogICAgICA8cmVjdCBjbGFzcz0iY2xzLTIiIHg9IjEwOTYuNzMiIHk9IjQ5Ni40MSIgd2lkdGg9IjU4LjEyIiBoZWlnaHQ9IjE4OS42NSIgcng9IjIzLjUxIiByeT0iMjMuNTEiLz4KICAgIDwvZz4KICAgIDxnPgogICAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik0xNDE1LjE1LDQ2Ny42OWM2LjQ2LDYuMDEsMTQuNzgsOS4wMSwyNC45OCw5LjAxczE4LjE4LTMsMjQuNjQtOS4wMWM2LjQ2LTYsOS42OS0xMy40Miw5LjY5LTIyLjI2cy0zLjIzLTE2LjYtOS42OS0yMi42Yy02LjQ2LTYtMTQuNjctOS4wMS0yNC42NC05LjAxcy0xOC41MiwzLjAxLTI0Ljk4LDkuMDFjLTYuNDYsNi4wMS05LjY5LDEzLjU0LTkuNjksMjIuNnMzLjIzLDE2LjI2LDkuNjksMjIuMjZaIi8+CiAgICAgIDxyZWN0IGNsYXNzPSJjbHMtMiIgeD0iMTQxMC45IiB5PSI0OTYuNDEiIHdpZHRoPSI1OC4xMiIgaGVpZ2h0PSIxODkuNjUiIHJ4PSIyMy41MSIgcnk9IjIzLjUxIi8+CiAgICA8L2c+CiAgICA8Zz4KICAgICAgPHBhdGggY2xhc3M9ImNscy00IiBkPSJNMTM1My4wNSw2MjguMDNsLTE1NS4yNiw4Mi44LDc1LjM1LTExNC45Niw2LjI1LTkuNTMuMjgtLjQ0LTIxLjcxLTEzLjg1aDBzLTQ2Ljk4LTI5Ljk1LTQ2Ljk4LTI5Ljk1Yy0yNS44Ny0yMC43NS0yNS4zNi02MC4yOCwxLjA0LTgwLjM1bDE1MC4yOS05Mi41Ni04NS42NCwxMzQuNS0uMDIuMDUsMS40MSwxLjAxLDI4Ljk5LDIwLjcxLDUwLjM3LDM1Ljk1YzIzLjcxLDE2Ljk1LDIxLjM3LDUyLjkxLTQuMzUsNjYuNjNaIi8+CiAgICAgIDxwYXRoIGNsYXNzPSJjbHMtNSIgZD0iTTEyNzkuNjgsNTg1Ljg5aDBsLTIxLjcxLTEzLjg1aDBjLTIuMjktMTEuNDktMy45OC0zMi40OSw3LjM3LTUzLjA2LDMuNDItNi4yLDcuNDEtMTEuMjUsMTEuMzMtMTUuMzFsMzAuMzcsMjEuNzdjLTEuNzgsMTQuMDgtNy43MiwzNC4yOS0yNy4zNiw2MC40NFoiLz4KICAgIDwvZz4KICA8L2c+Cjwvc3ZnPg==" alt="Theisi">
+        <div class="dash-tabs">
+          <span class="dash-tab on">Signals</span>
+          <span class="dash-tab">Scoring</span>
+          <span class="dash-tab">Risk</span>
+          <span class="dash-tab">Long view</span>
+        </div>
+      </div>
+      <div class="dash-body">
+        <div class="card" style="margin:0"><h3>Today</h3><div class="score"><div class="ring"><span>7.4</span></div><div class="lbl"><b>Portfolio</b>3 actions</div></div></div>
+        <div class="card" style="margin:0"><h3>Top buy</h3><div class="stat" style="border:0;padding-top:0"><span>MU</span><span class="v up">8.6</span></div><span class="pill buy">شراء قوي</span></div>
+        <div class="card" style="margin:0"><h3>Watch</h3><div class="stat" style="border:0;padding-top:0"><span>WOLF</span><span class="v down">1.2</span></div><span class="pill sell">اخرج</span></div>
+      </div>
+    </div>
+    <p class="note">This is a feel preview, not the final layout — it shows how the navy + magenta system reads as a working app, with your logo anchoring the header.</p>
+  </section>
+
+  <footer>
+    Copyright © 2026 Theisi Labs. All Rights Reserved.<br>
+    Style board v1 · violet variant · from logo 03 · Montserrat · #151528 + #DC00FF
+  </footer>
+
+</div>
+</body>
+</html>
