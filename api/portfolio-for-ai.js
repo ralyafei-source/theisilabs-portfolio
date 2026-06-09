@@ -1,5 +1,11 @@
 // api/portfolio-for-ai.js
-// v8 — Fixed model name
+// v9 — Session 25 (2026-06-09)
+// Added on top of v8:
+//   - fetchTechnicals: +ATR(14), ADX(14), Aroon(14), OBV, Stoch(14,3), 52W price change
+//   - Pattern detection: ⚡ RECOVERY CANDIDATE, 🚀 BREAKOUT SETUP, 🔴 DISTRIBUTION WARNING
+//   - Dynamic weight context block (profile-driven + per-stock modifiers)
+// v8 already had: insider activity, DCF, historical P/E, earnings surprises,
+//   analyst consensus, cash flow, MACD (self-calc), Finnhub cross-check
 
 const REPO    = 'ralyafei-source/theisilabs-portfolio';
 const UA      = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
@@ -91,14 +97,21 @@ async function fetchLatestMarketData() {
 
 // ─── Fetch technicals for one symbol ─────────────────────────────────────────
 async function fetchTechnicals(sym) {
-  const [rsiRaw, ema12Raw, ema26Raw, sma50Raw, sma200Raw, ema20Raw, bbRaw] = await Promise.all([
+  const [rsiRaw, ema12Raw, ema26Raw, sma50Raw, sma200Raw, ema20Raw, bbRaw,
+         atrRaw, adxRaw, aroonRaw, obvRaw, stochRaw, priceChangeRaw] = await Promise.all([
     fmpGet(`/technical-indicators/rsi?symbol=${sym}&periodLength=14&timeframe=1day&limit=1`),
     fmpGet(`/technical-indicators/ema?symbol=${sym}&periodLength=12&timeframe=1day&limit=30`),
     fmpGet(`/technical-indicators/ema?symbol=${sym}&periodLength=26&timeframe=1day&limit=30`),
     fmpGet(`/technical-indicators/sma?symbol=${sym}&periodLength=50&timeframe=1day&limit=1`),
     fmpGet(`/technical-indicators/sma?symbol=${sym}&periodLength=200&timeframe=1day&limit=1`),
     fmpGet(`/technical-indicators/ema?symbol=${sym}&periodLength=20&timeframe=1day&limit=1`),
-    fmpGet(`/technical-indicators/standardDeviation?symbol=${sym}&periodLength=20&timeframe=1day&limit=1`)
+    fmpGet(`/technical-indicators/standardDeviation?symbol=${sym}&periodLength=20&timeframe=1day&limit=1`),
+    fmpGet(`/technical-indicators/atr?symbol=${sym}&periodLength=14&timeframe=1day&limit=1`),
+    fmpGet(`/technical-indicators/adx?symbol=${sym}&periodLength=14&timeframe=1day&limit=1`),
+    fmpGet(`/technical-indicators/aroon?symbol=${sym}&periodLength=14&timeframe=1day&limit=2`),
+    fmpGet(`/technical-indicators/obv?symbol=${sym}&timeframe=1day&limit=2`),
+    fmpGet(`/technical-indicators/stoch?symbol=${sym}&periodLength=14&smoothingPeriod=3&timeframe=1day&limit=1`),
+    fmpGet(`/stock-price-change?symbol=${sym}`)
   ]);
 
   let macd = null, signal = null, histogram = null;
@@ -121,6 +134,20 @@ async function fetchTechnicals(sym) {
     }
   }
 
+  // OBV direction: rising if latest > previous
+  let obvDir = null;
+  if (Array.isArray(obvRaw) && obvRaw.length >= 2) {
+    obvDir = obvRaw[0].obv > obvRaw[1].obv ? 'rising' : 'falling';
+  }
+
+  // Aroon trend freshness
+  const aroonUp   = Array.isArray(aroonRaw) && aroonRaw[0] ? aroonRaw[0].aroonUp   ?? null : null;
+  const aroonDown = Array.isArray(aroonRaw) && aroonRaw[0] ? aroonRaw[0].aroonDown ?? null : null;
+
+  // 52W price change
+  const priceChangePct = Array.isArray(priceChangeRaw) && priceChangeRaw[0]
+    ? priceChangeRaw[0]['1Y'] ?? null : null;
+
   return {
     sym,
     rsi:       latest(rsiRaw,   'rsi'),
@@ -130,7 +157,14 @@ async function fetchTechnicals(sym) {
     sma50:     latest(sma50Raw,  'sma'),
     sma200:    latest(sma200Raw, 'sma'),
     ema20:     latest(ema20Raw,  'ema'),
-    stddev:    latest(bbRaw,     'standardDeviation')
+    stddev:    latest(bbRaw,     'standardDeviation'),
+    atr:       latest(atrRaw,    'atr'),
+    adx:       latest(adxRaw,    'adx'),
+    aroonUp,
+    aroonDown,
+    obvDir,
+    stochK:    latest(stochRaw,  'stochK') ?? latest(stochRaw, 'k'),
+    priceChange1Y: priceChangePct
   };
 }
 
@@ -526,6 +560,13 @@ DCF: $${data.dcfValue != null ? data.dcfValue.toFixed(0) : '—'}
             sma50: t.sma50 !== null ? +t.sma50.toFixed(2) : null,
             sma200: t.sma200 !== null ? +t.sma200.toFixed(2) : null,
             ema20: t.ema20 !== null ? +t.ema20.toFixed(2) : null,
+            atr:   t.atr  !== null ? +t.atr.toFixed(2)  : null,
+            adx:   t.adx  !== null ? +t.adx.toFixed(1)  : null,
+            aroonUp:   t.aroonUp   !== null ? +t.aroonUp.toFixed(0)   : null,
+            aroonDown: t.aroonDown !== null ? +t.aroonDown.toFixed(0) : null,
+            obvDir: t.obvDir || null,
+            stochK: t.stochK !== null ? +t.stochK.toFixed(1) : null,
+            priceChange1Y: t.priceChange1Y !== null ? +t.priceChange1Y.toFixed(1) : null
           };
           if (t.stddev !== null && price) {
             entry.bb_upper = +(price + 2 * t.stddev).toFixed(2);
@@ -559,6 +600,45 @@ DCF: $${data.dcfValue != null ? data.dcfValue.toFixed(0) : '—'}
               signals.push(`BB ${pct}% (${entry.bb_lower}–${entry.bb_upper})`);
             }
           }
+          // New Session 25 indicators
+          if (entry.adx !== null) {
+            if (entry.adx >= 25) signals.push(`ADX ${entry.adx} — strong trend`);
+            else signals.push(`ADX ${entry.adx} — weak/no trend`);
+          }
+          if (entry.aroonUp !== null && entry.aroonDown !== null) {
+            if (entry.aroonUp > 70 && entry.aroonDown < 30)  signals.push(`Aroon bullish (up=${entry.aroonUp} dn=${entry.aroonDown})`);
+            if (entry.aroonDown > 70 && entry.aroonUp < 30)  signals.push(`Aroon bearish (up=${entry.aroonUp} dn=${entry.aroonDown})`);
+            if (entry.aroonUp > entry.aroonDown && entry.aroonUp > 50) signals.push(`Aroon turning up ↑`);
+          }
+          if (entry.obvDir) signals.push(`OBV ${entry.obvDir}`);
+          if (entry.stochK !== null) {
+            if (entry.stochK > 80) signals.push(`Stoch ${entry.stochK} — overbought`);
+            else if (entry.stochK < 20) signals.push(`Stoch ${entry.stochK} — oversold`);
+          }
+          if (entry.priceChange1Y !== null) {
+            signals.push(`52W change: ${entry.priceChange1Y >= 0 ? '+' : ''}${entry.priceChange1Y}%`);
+          }
+          if (entry.atr !== null && price) {
+            const atrPct = (entry.atr / price * 100).toFixed(1);
+            signals.push(`ATR $${entry.atr} (${atrPct}% daily range)`);
+          }
+
+          // Pattern detection
+          const patterns = [];
+          const isDown30 = entry.priceChange1Y !== null && entry.priceChange1Y < -30;
+          const aroonTurning = entry.aroonUp !== null && entry.aroonDown !== null && entry.aroonUp > entry.aroonDown && entry.aroonUp > 50;
+          const obvAccum = entry.obvDir === 'rising';
+          const adxStrong = entry.adx !== null && entry.adx >= 25;
+          const rsiMid = entry.rsi !== null && entry.rsi >= 50 && entry.rsi <= 68;
+          const rsiOverbought = entry.rsi !== null && entry.rsi > 70;
+          const obvFalling = entry.obvDir === 'falling';
+          const adxWeak = entry.adx !== null && entry.adx < 20;
+
+          if (isDown30 && aroonTurning && obvAccum) patterns.push('⚡ RECOVERY CANDIDATE');
+          if (adxStrong && rsiMid && obvAccum)       patterns.push('🚀 BREAKOUT SETUP');
+          if (rsiOverbought && obvFalling && adxWeak) patterns.push('🔴 DISTRIBUTION WARNING');
+
+          entry.patterns = patterns;
           entry.signals = signals;
           techMap[t.sym] = entry;
         }
@@ -752,6 +832,41 @@ DCF: $${data.dcfValue != null ? data.dcfValue.toFixed(0) : '—'}
       });
       text += `\nSIGNAL INTERPRETATION:\n`;
       top20tech.forEach(sym => { const t = techMap[sym]; if (t?.signals?.length) text += `${sym}: ${t.signals.join(' | ')}\n`; });
+      text += `\n`;
+
+      // Pattern detection output
+      const patternsFound = top20tech.filter(sym => techMap[sym]?.patterns?.length);
+      if (patternsFound.length) {
+        text += `PATTERN DETECTION:\n`;
+        patternsFound.forEach(sym => {
+          const t = techMap[sym];
+          text += `${sym.padEnd(7)} ${t.patterns.join(' + ')}\n`;
+        });
+        text += `\n`;
+      }
+
+      // Dynamic weight context block
+      text += `DYNAMIC WEIGHT CONTEXT (scoring modifiers this run):\n`;
+      text += `Base weights: L1=15% (macro) · L2=25% (fundamentals) · L3=30% (technicals) · L4=20% (sentiment) · L5=10% (risk)\n`;
+      text += `Profile: risk=${profile?.riskTolerance || 'low'} · horizon=${profile?.timeHorizon || 'long'}\n`;
+      // Profile-driven modifiers
+      const risk = (profile?.riskTolerance || 'low').toLowerCase();
+      const horizon = (profile?.timeHorizon || 'long').toLowerCase();
+      if (horizon === 'long' && risk === 'low')   text += `Profile modifier: L2+3% L3-3% (value over timing — long/low)\n`;
+      else if (risk === 'high' && horizon !== 'long') text += `Profile modifier: L3+7% L2-5% L4-2% (technicals dominate — high risk)\n`;
+      else text += `Profile modifier: base weights (medium profile)\n`;
+      // Per-stock context modifiers
+      const totalVal = enriched.reduce((s, h) => s + h.value, 0);
+      top20tech.forEach(sym => {
+        const h = enriched.find(x => x.sym === sym);
+        const t = techMap[sym];
+        if (!h || !t) return;
+        const mods = [];
+        if (t.patterns?.includes('⚡ RECOVERY CANDIDATE'))          mods.push('L3+5% L2-3% (recovery pattern)');
+        if (totalVal > 0 && (h.value / totalVal) > 0.08)           mods.push('L1+5% L3-3% (overweight >8%)');
+        if (t.priceChange1Y !== null && t.priceChange1Y > 20 && t.rsi !== null && t.rsi > 60) mods.push('L2+3% L3-3% (near 52W high)');
+        if (mods.length) text += `  ${sym.padEnd(7)} ${mods.join(' | ')}\n`;
+      });
       text += `\n`;
 
       text += `EARNINGS SURPRISES — last 4 quarters:\n`;
