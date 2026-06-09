@@ -1,28 +1,5 @@
 [
   {
-    "ts": "2026-06-03T23:45:58.890Z",
-    "type": "daily",
-    "nickname": "rashed",
-    "status": "degraded",
-    "checks": {
-      "writeOk": true,
-      "contentLength": 12054,
-      "scoresFound": 0,
-      "sectionsFound": [
-        "DAILY SIGNALS",
-        "EARNINGS & EVENTS"
-      ],
-      "sectionsMissing": [
-        "MACRO TODAY"
-      ],
-      "totalSentinels": 29,
-      "sentinelHits": {
-        "غير متوفر": 29
-      }
-    },
-    "note": "1 section(s) missing; 29 unavailable field(s)"
-  },
-  {
     "ts": "2026-06-04T00:11:25.703Z",
     "type": "daily",
     "nickname": "rashed",
@@ -644,5 +621,27 @@
     "note": "39 unavailable field(s)",
     "scenario": "255",
     "dataQuality": "═══ DATA_QUALITY ═══\nOKTA: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0\nNVDA: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0\nSEZL: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0\nMU: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0\nAMZN: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0\nPANW: ROE=✓ ROIC=✓ PE=✓ PEG=✗ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=1\nONTO: ROE=✓ ROIC=✓ PE=✓ PEG=✗ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=1\nDUOL: ROE=✗ ROIC=✗ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=2\nGOOGL: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0\nCRM: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0\nMSFT: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0\nCRWD: ROE=✓ ROIC=✓ PE=✗ PEG=✗ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=2\nNTLA: ROE=✓ ROIC=✓ PE=✗ PEG=✗ netMargin=✓ grossMargin=✓ DCF=✗ priceTarget=✗ | missing=4\nAPH: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0\nSIMO: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0\nIOT: ROE=✓ ROIC=✓ PE=✓ PEG=✗ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✗ | missing=2\nPLTR: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0\nCRDO: ROE=✓ ROIC=✓ PE=✗ PEG=✗ netMargin=✗ grossMargin=✗ DCF=✓ priceTarget=✓ | missing=4\nZETA: ROE=✓ ROIC=✓ PE=✗ PEG=✗ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=2\nMSTR: ROE=✓ ROIC=✓ PE=✗ PEG=✗ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=2\nSUMMARY: 20 stocks · 20 field(s) missing across 9 stock(s)\n═══ END DATA_QUALITY ═══\n\n═══ TRANSPARENCY ═══\nQUALITY SUMMARY: 13/20 fully covered\nDUOL: ⚠️ DUOL — Score analysis was done without: ROE, ROIC\nCRWD: ⚠️ CRWD — Score analysis was done without: P/E, PEG\nNTLA: 🔴 NTLA — Score analysis was done without: P/E, PEG, DCF, price target (low-confidence score)\nIOT: ⚠️ IOT — Score analysis was done without: PEG, price target\nCRDO: 🔴 CRDO — Score analysis was done without: P/E, PEG, net margin, gross margin (low-confidence score)\nZETA: ⚠️ ZETA — Score analysis was done without: P/E, PEG\nMSTR: ⚠️ MSTR — Score analysis was done without: P/E, PEG\n═══ END TRANSPARENCY ═══"
+  },
+  {
+    "ts": "2026-06-09T07:10:42.923Z",
+    "type": "market-data",
+    "nickname": null,
+    "status": "failed",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 54500,
+      "scoresFound": 0,
+      "sectionsFound": [],
+      "sectionsMissing": [
+        "DAILY SIGNALS",
+        "EARNINGS & EVENTS",
+        "MACRO TODAY"
+      ],
+      "totalSentinels": 3,
+      "sentinelHits": {
+        "null": 3
+      }
+    },
+    "note": "3 section(s) missing; 3 unavailable field(s)"
   }
 ]
