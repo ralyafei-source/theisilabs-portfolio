@@ -1,4 +1,5 @@
 {
+  "ignoreCommand": "git diff HEAD~1 --name-only | grep -qvE '^(data/|theisi_skills/)'",
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
