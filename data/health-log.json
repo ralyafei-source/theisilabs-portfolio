@@ -1,72 +1,5 @@
 [
   {
-    "ts": "2026-06-03T18:40:55.447Z",
-    "type": "daily",
-    "nickname": null,
-    "status": "degraded",
-    "checks": {
-      "writeOk": true,
-      "contentLength": 12299,
-      "scoresFound": 0,
-      "sectionsFound": [
-        "DAILY SIGNALS",
-        "EARNINGS & EVENTS",
-        "MACRO TODAY"
-      ],
-      "sectionsMissing": [],
-      "totalSentinels": 29,
-      "sentinelHits": {
-        "غير متوفر": 29
-      }
-    },
-    "note": "29 unavailable field(s)"
-  },
-  {
-    "ts": "2026-06-03T18:46:56.373Z",
-    "type": "daily",
-    "nickname": null,
-    "status": "degraded",
-    "checks": {
-      "writeOk": true,
-      "contentLength": 12072,
-      "scoresFound": 0,
-      "sectionsFound": [
-        "DAILY SIGNALS",
-        "EARNINGS & EVENTS"
-      ],
-      "sectionsMissing": [
-        "MACRO TODAY"
-      ],
-      "totalSentinels": 16,
-      "sentinelHits": {
-        "غير متوفر": 16
-      }
-    },
-    "note": "1 section(s) missing; 16 unavailable field(s)"
-  },
-  {
-    "ts": "2026-06-03T23:11:58.796Z",
-    "type": "daily",
-    "nickname": null,
-    "status": "degraded",
-    "checks": {
-      "writeOk": true,
-      "contentLength": 11922,
-      "scoresFound": 0,
-      "sectionsFound": [
-        "DAILY SIGNALS",
-        "EARNINGS & EVENTS",
-        "MACRO TODAY"
-      ],
-      "sectionsMissing": [],
-      "totalSentinels": 21,
-      "sentinelHits": {
-        "غير متوفر": 21
-      }
-    },
-    "note": "21 unavailable field(s)"
-  },
-  {
     "ts": "2026-06-03T23:29:48.357Z",
     "type": "daily",
     "nickname": "rashed",
@@ -646,5 +579,67 @@
       "sentinelHits": {}
     },
     "note": "3 section(s) missing; content too short"
+  },
+  {
+    "ts": "2026-06-09T01:00:33.549Z",
+    "type": "collector-status",
+    "nickname": null,
+    "status": "failed",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 302,
+      "scoresFound": 0,
+      "sectionsFound": [],
+      "sectionsMissing": [
+        "DAILY SIGNALS",
+        "EARNINGS & EVENTS",
+        "MACRO TODAY"
+      ],
+      "totalSentinels": 0,
+      "sentinelHits": {}
+    },
+    "note": "3 section(s) missing; content too short"
+  },
+  {
+    "ts": "2026-06-09T04:39:28.097Z",
+    "type": "weekly",
+    "nickname": "rashed",
+    "status": "degraded",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 25933,
+      "scoresFound": 60,
+      "sectionsFound": [
+        "═══ RISK RADAR",
+        "═══ FAIR VALUE",
+        "═══ MOMENTUM"
+      ],
+      "sectionsMissing": [],
+      "totalSentinels": 18,
+      "sentinelHits": {
+        "N/A": 18
+      }
+    },
+    "note": "18 unavailable field(s)"
+  },
+  {
+    "ts": "2026-06-09T04:47:58.843Z",
+    "type": "weekly",
+    "nickname": "ahmed",
+    "status": "ok",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 25654,
+      "scoresFound": 44,
+      "sectionsFound": [
+        "═══ RISK RADAR",
+        "═══ FAIR VALUE",
+        "═══ MOMENTUM"
+      ],
+      "sectionsMissing": [],
+      "totalSentinels": 0,
+      "sentinelHits": {}
+    },
+    "note": "all healthy"
   }
 ]
