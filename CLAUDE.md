@@ -56,6 +56,31 @@ non-technical — be specific and concrete.
 Commit after each working change so there's always a clean rollback point.
 
 
+PROTECTED FILES — NEVER move, delete, or rename these
+These files must always exist at exactly these paths. Any cleanup, archiving,
+or repo reorganisation must explicitly skip them.
+
+Root (must stay in root):
+  index.html              — the live dashboard. If missing, the site returns 404.
+  CLAUDE.md               — this file. Claude Code reads it at session start.
+  THEISI_SSOT.md          — single source of truth. Never archive.
+  THEISI_CORE_PRINCIPLE.md
+  vercel.json             — Vercel deployment config. Required.
+  package.json            — Node config. Required.
+
+api/ (all 12 functions — Vercel limit, do not delete any):
+  analysis.js · auth.js · admin.js · briefing.js · chat.js
+  generate-analysis.js · portfolio-for-ai.js · portfolio.js
+  prices.js · translate.js · update-portfolio.js · user-portfolio.js
+
+data/ (live data — never delete, only archive old dated files):
+  portfolio.json · users.json · invite-codes.json
+  health-log.json · portfolio-prices-cache.json · news.json
+
+If a cleanup task says "move everything old to archive/" — always verify
+index.html is NOT included before running any git mv command.
+
+
 SECRETS — DO NOT COMMIT
 Never put live secrets in this repo or in this file. They belong in Vercel
 environment variables only.
