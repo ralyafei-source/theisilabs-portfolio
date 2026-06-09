@@ -1,27 +1,5 @@
 [
   {
-    "ts": "2026-06-03T23:11:58.796Z",
-    "type": "daily",
-    "nickname": null,
-    "status": "degraded",
-    "checks": {
-      "writeOk": true,
-      "contentLength": 11922,
-      "scoresFound": 0,
-      "sectionsFound": [
-        "DAILY SIGNALS",
-        "EARNINGS & EVENTS",
-        "MACRO TODAY"
-      ],
-      "sectionsMissing": [],
-      "totalSentinels": 21,
-      "sentinelHits": {
-        "غير متوفر": 21
-      }
-    },
-    "note": "21 unavailable field(s)"
-  },
-  {
     "ts": "2026-06-03T23:29:48.357Z",
     "type": "daily",
     "nickname": "rashed",
@@ -643,5 +621,25 @@
       }
     },
     "note": "18 unavailable field(s)"
+  },
+  {
+    "ts": "2026-06-09T04:43:16.712Z",
+    "type": "monthly",
+    "nickname": "ahmed",
+    "status": "ok",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 18327,
+      "scoresFound": 0,
+      "sectionsFound": [
+        "COMPETITIVE EDGE",
+        "LONG VIEW",
+        "PORTFOLIO HEALTH"
+      ],
+      "sectionsMissing": [],
+      "totalSentinels": 0,
+      "sentinelHits": {}
+    },
+    "note": "all healthy"
   }
 ]
