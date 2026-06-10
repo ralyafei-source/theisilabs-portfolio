@@ -3340,15 +3340,22 @@ async function loadOpportunities(force){
     const todayUAE = new Date(Date.now() + 4*3600000).toISOString().slice(0,10);
     const t = Date.now();
     const [todayRes, scoredRes] = await Promise.all([
-      fetch(`${_OP_GH}today.json?t=${t}`),
-      fetch(`${_OP_GH}scored-${todayUAE}.json?t=${t}`)
-    ]);
-    if(!todayRes.ok || !scoredRes.ok) throw new Error('فشل تحميل البيانات من GitHub');
-    const todayData  = await todayRes.json();
-    const scoredData = await scoredRes.json();
+  fetch(`${_OP_GH}today.json?t=${t}`),
+  fetch(`${_OP_GH}scored-${todayUAE}.json?t=${t}`)
+]);
+if(!scoredRes.ok) throw new Error('فشل تحميل بيانات الأسهم من GitHub');
 
-    // today.json: { date, why_texts: {SYMBOL: "text"} }
-    const whyTexts = todayData.why_texts || {};
+// today.json may be malformed — handle gracefully
+let whyTexts = {};
+try {
+  const todayText = await todayRes.text();
+  const todayData = JSON.parse(todayText);
+  whyTexts = todayData.why_texts || {};
+} catch(e) {
+  console.warn('today.json parse failed — loading cards without Arabic text:', e.message);
+}
+
+const scoredData = await scoredRes.json();
 
     // scored-{date}.json: handle array or object map
     let allStocks = [];
