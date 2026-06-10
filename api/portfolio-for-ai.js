@@ -129,6 +129,497 @@ async function fetchIntelligence(symbols, limit = 10) {
   return { techMap, targets, grades, metrics, ratios, earnings };
 }
 
+// ── SCORING CONFIG (weights live here — change requires Scoring Standard amendment) ──
+const SCORE_CONFIG = {
+  DISPLAY_TOP:        50,    // top N displayed
+  HIGHLIGHT_TOP:       5,    // top N highlighted (hero cards)
+  DISPLAY_MIN_LAYERS:  3,    // Standard v1.1 §5.6: min layers for display_eligible
+  LAYERS: {
+    L1: { weight: 0.30, name: 'Technical'    },
+    L2: { weight: 0.20, name: 'Momentum'     },
+    L3: { weight: 0.20, name: 'External'     },
+    L4: { weight: 0.15, name: 'Valuation'    },
+    L5: { weight: 0.15, name: 'Fundamental'  },
+  },
+};
+
+// ── Percentile rank [0,1]: (rank-1)/(n-1), ascending ─────────────────────────
+// Higher raw value → higher percentile (monotonic-up orientation).
+// Caller negates the raw value before passing for monotonic-down indicators.
+function xsPercentileRanks(items) {
+  // items: [{ symbol, value }] — already filtered for non-null, finite values
+  const n = items.length;
+  if (n === 0) return {};
+  if (n === 1) return { [items[0].symbol]: 0.5 };
+  const sorted = [...items].sort((a, b) => a.value - b.value);   // ascending
+  const out = {};
+  sorted.forEach((item, i) => { out[item.symbol] = i / (n - 1); });
+  return out;
+}
+
+// ── Average of non-null, finite values; null if none ────────────────────────
+function avgNonNull(vals) {
+  const clean = vals.filter(v => v !== null && v !== undefined && isFinite(v));
+  if (clean.length === 0) return null;
+  return clean.reduce((a, b) => a + b, 0) / clean.length;
+}
+
+// ── Indicator raw-quality functions ─────────────────────────────────────────
+
+// #1 RSI: sweet-spot, trend-conditional (Standard §3.3)
+//    Uptrend (above both SMAs) → ideal 55; downtrend → ideal 38
+//    Linear decay: quality = 0 at ±25 from ideal
+function rsiQuality(rsi, above_sma50, above_sma200) {
+  if (rsi === null || rsi === undefined) return null;
+  const ideal = (above_sma50 && above_sma200) ? 55 : 38;
+  return Math.max(0, 1 - Math.abs(rsi - ideal) / 25);
+}
+
+// #2 Price vs SMA50: sweet-spot, ideal +1.5% (midpoint of 0%..+3%)
+//    Far above = extended; below = weak
+function sma50DistQuality(price, sma50) {
+  if (!price || !sma50 || sma50 === 0) return null;
+  const pct = (price - sma50) / sma50 * 100;
+  return Math.max(0, 1 - Math.abs(pct - 1.5) / 15);
+}
+
+// #5 5-day change: sweet-spot, ideal -2.5% (midpoint of -5%..0%)
+//    Crashing = falling knife; spiking = chasing
+function change5dQuality(change5d) {
+  if (change5d === null || change5d === undefined) return null;
+  return Math.max(0, 1 - Math.abs(change5d - (-2.5)) / 15);
+}
+
+// #11 PEG: sweet-spot, ideal ~1.0
+//     Negative or zero PEG = unreliable, treated as null
+function pegQuality(peg) {
+  if (peg === null || peg === undefined || peg <= 0) return null;
+  return Math.max(0, 1 - Math.abs(peg - 1.0) / 3);
+}
+
+// #6 Analyst upside: (target - price) / price × 100, capped at 60%
+//    Cap removes junk targets (100%+ = unreliable micro-cap noise)
+function analystUpsideRaw(analyst_target, price) {
+  if (!analyst_target || !price || price === 0) return null;
+  const pct = (analyst_target - price) / price * 100;
+  return Math.min(Math.max(pct, 0), 60);
+}
+
+// #7 Recent upgrade within 30 days (binary: 1 = yes, 0 = no)
+function recentUpgradeRaw(recent_grades) {
+  if (!Array.isArray(recent_grades) || recent_grades.length === 0) return null;
+  const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  const found = recent_grades.some(g => {
+    const action  = (g.action || g.ratingChange || g.change || '').toLowerCase();
+    const dateStr = g.date || g.gradingDate || '';
+    return dateStr >= cutoff &&
+      (action.includes('upgrade') || action.includes('initiated') || action === 'reiterated');
+  });
+  return found ? 1 : 0;
+}
+
+// #8 Analyst consensus tilt: fraction of bullish grades [0..1]
+function consensusTiltRaw(recent_grades) {
+  if (!Array.isArray(recent_grades) || recent_grades.length === 0) return null;
+  const bullish = recent_grades.filter(g => {
+    const r = (g.rating || g.newGrade || g.grade || '').toLowerCase();
+    return r.includes('buy') || r.includes('outperform') ||
+           r.includes('overweight') || r.includes('strong buy');
+  }).length;
+  return bullish / recent_grades.length;
+}
+
+// #9 Streak: appearances in last 20 trading days — handles multiple history formats
+function computeStreak(histEntry) {
+  if (histEntry === null || histEntry === undefined) return null;
+  if (typeof histEntry === 'number') return histEntry;
+  if (Array.isArray(histEntry)) return histEntry.length;
+  if (histEntry.appearances_in_window !== undefined) return histEntry.appearances_in_window;
+  if (histEntry.appearances !== undefined) return histEntry.appearances;
+  if (Array.isArray(histEntry.dates)) return histEntry.dates.length;
+  return null;
+}
+
+// ── GitHub helpers (scoring-specific) ────────────────────────────────────────
+async function ghReadScorer(repo, path) {
+  try {
+    const r = await fetch(
+      `https://raw.githubusercontent.com/${repo}/main/${path}?t=${Date.now()}`,
+      { headers: { 'Cache-Control': 'no-cache' } }
+    );
+    return r.ok ? r.json() : null;
+  } catch { return null; }
+}
+
+async function ghWriteScorer(repo, path, jsonContent, message, token) {
+  const encoded = Buffer.from(JSON.stringify(jsonContent, null, 2)).toString('base64');
+  // Get existing SHA (needed to update; absent on new file)
+  let sha = null;
+  try {
+    const r = await fetch(
+      `https://api.github.com/repos/${repo}/contents/${path}`,
+      { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json', 'User-Agent': 'theisi-scorer' } }
+    );
+    if (r.ok) sha = (await r.json()).sha;
+  } catch {}
+
+  const putRes = await fetch(
+    `https://api.github.com/repos/${repo}/contents/${path}`,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: `token ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/vnd.github.v3+json',
+        'User-Agent': 'theisi-scorer',
+      },
+      body: JSON.stringify({ message, content: encoded, ...(sha ? { sha } : {}) }),
+    }
+  );
+  if (!putRes.ok) throw new Error(`GitHub write failed (${putRes.status}): ${await putRes.text()}`);
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+//  handleScore — the main scoring function called by ?mode=score
+// ════════════════════════════════════════════════════════════════════════════════
+async function handleScore(req, res) {
+  const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+  if (!GITHUB_TOKEN) return res.status(500).json({ error: 'GITHUB_TOKEN env var not set in Vercel' });
+
+  const date = todayUAE();   // reuses the existing helper already in the file
+
+  // ── 1. Load all input files from GitHub ────────────────────────────────────
+  const [deepFile, universeFile, historyRaw, portfolioFile] = await Promise.all([
+    ghReadScorer(REPO, `data/market/deep-${date}.json`),
+    ghReadScorer(REPO, `data/market/universe-${date}.json`),
+    ghReadScorer(REPO, 'data/market/history.json'),    // may not exist yet → null
+    ghReadScorer(REPO, 'data/portfolio.json'),
+  ]);
+
+  // Guard: deep data must exist
+  if (!deepFile?.data) {
+    return res.status(404).json({ error: `deep-${date}.json not found or missing .data field. Has Step 2 run today?` });
+  }
+  // Guard: universe must exist
+  if (!universeFile?.data) {
+    return res.status(404).json({ error: `universe-${date}.json not found or missing .data field. Has Step 1 run today?` });
+  }
+  // STALENESS GUARD — Standard v1.1: universe.date must equal today
+  if (universeFile.date && universeFile.date !== date) {
+    return res.status(400).json({
+      error: `STALENESS: universe.date=${universeFile.date} !== today=${date}. Refusing to score. Re-run Step 1 and Step 2 first.`,
+    });
+  }
+
+  const deepData   = deepFile.data;                         // { SYM: { rsi, sma50, ... } }
+  const universeRaw = universeFile.data;                    // array OR object
+  const histStocks  = historyRaw?.stocks || historyRaw || {}; // handles both old + new formats
+  const holdings    = portfolioFile?.holdings || [];
+
+  // ── 2. Normalise universe to an array ──────────────────────────────────────
+  const universeArr = Array.isArray(universeRaw)
+    ? universeRaw
+    : Object.entries(universeRaw).map(([symbol, v]) =>
+        ({ symbol, ...(typeof v === 'object' && v ? v : {}) })
+      );
+
+  const portfolioSyms = new Set(holdings.map(h => h.sym));
+
+  // ── 3. Build working stock array ───────────────────────────────────────────
+  const stocks = [];
+  for (const u of universeArr) {
+    const sym = u.symbol || u.sym;
+    if (!sym) continue;
+    const d = deepData[sym] || {};
+
+    // Derive booleans if not already in deep data
+    const above_sma50  = d.above_sma50  ?? (d.price && d.sma50  ? d.price > d.sma50  : null);
+    const above_sma200 = d.above_sma200 ?? (d.price && d.sma200 ? d.price > d.sma200 : null);
+    const golden_cross = d.golden_cross ?? (d.sma50  && d.sma200 ? d.sma50 > d.sma200 : null);
+
+    stocks.push({
+      symbol:            sym,
+      sector:            u.sector || d.sector || null,
+      price:             d.price ?? null,
+      change5d:          d.change5d ?? null,
+      rsi:               d.rsi ?? null,
+      sma50:             d.sma50 ?? null,
+      sma200:            d.sma200 ?? null,
+      above_sma50,
+      above_sma200,
+      golden_cross,
+      adx:               d.adx ?? null,
+      williams:          d.williams ?? null,
+      from_52w_high_pct: d.from_52w_high_pct ?? null,
+      from_52w_low_pct:  d.from_52w_low_pct  ?? null,
+      volume_ratio_20d:  d.volume_ratio_20d  ?? null,
+      peg:               d.peg ?? null,
+      fcf_yield:         d.fcf_yield ?? null,
+      roic:              d.roic ?? null,
+      roe:               d.roe  ?? null,
+      debt_to_equity:    d.debt_to_equity ?? null,
+      analyst_target:    d.analyst_target ?? null,      // null until Step 5 adds analyst deep-chunk
+      recent_grades:     d.recent_grades  ?? null,      // null until Step 5
+      upcoming_earnings: d.upcoming_earnings ?? null,
+      _hist:             histStocks[sym] ?? null,
+    });
+  }
+
+  // ── 4. Compute raw indicator values ────────────────────────────────────────
+  stocks.forEach(s => {
+    s._raw = {
+      // ── L1 Technical ──────────────────────────────────────────────────────
+      rsi_q:         rsiQuality(s.rsi, s.above_sma50, s.above_sma200),   // sweet-spot conditional
+      sma50_dist_q:  sma50DistQuality(s.price, s.sma50),                  // sweet-spot
+      golden_cross:  s.golden_cross  === true ? 1 : (s.golden_cross  === false ? 0 : null),  // binary→up
+      above_sma200:  s.above_sma200  === true ? 1 : (s.above_sma200  === false ? 0 : null),  // binary→up
+      // ── L2 Momentum / Persistence ─────────────────────────────────────────
+      change5d_q:    change5dQuality(s.change5d),                          // sweet-spot
+      streak:        computeStreak(s._hist),                                // monotonic-up
+      // ── L3 External / Sentiment (NULL until analyst data added to deep-chunk) ──
+      analyst_upside: analystUpsideRaw(s.analyst_target, s.price),          // monotonic-up
+      recent_upgrade: recentUpgradeRaw(s.recent_grades),                     // binary→up
+      consensus_tilt: consensusTiltRaw(s.recent_grades),                     // monotonic-up
+      // ── L4 Valuation ──────────────────────────────────────────────────────
+      peg_q:         pegQuality(s.peg),                                     // sweet-spot
+      fcf_yield:     (s.fcf_yield !== null && s.fcf_yield !== undefined) ? s.fcf_yield : null,  // monotonic-up (decimal)
+      // ── L5 Fundamental ────────────────────────────────────────────────────
+      roic:          (s.roic !== null && s.roic !== undefined) ? s.roic : null,  // monotonic-up
+      roe:           (s.roe  !== null && s.roe  !== undefined) ? s.roe  : null,  // monotonic-up
+      de_neg:        (s.debt_to_equity !== null && s.debt_to_equity !== undefined)
+                       ? -s.debt_to_equity   // NEGATED: lower D/E → higher raw → higher rank
+                       : null,
+    };
+  });
+
+  // ── 5. Cross-sectional percentile rank per indicator ───────────────────────
+  // Build a {symbol → percentile} map for each indicator
+  function pctMap(rawField) {
+    const eligible = stocks
+      .filter(s => s._raw[rawField] !== null && s._raw[rawField] !== undefined && isFinite(s._raw[rawField]))
+      .map(s => ({ symbol: s.symbol, value: s._raw[rawField] }));
+    return xsPercentileRanks(eligible);
+  }
+
+  const pct = {
+    // L1 Technical
+    rsi:           pctMap('rsi_q'),
+    sma50_dist:    pctMap('sma50_dist_q'),
+    golden_cross:  pctMap('golden_cross'),
+    above_sma200:  pctMap('above_sma200'),
+    // L2 Momentum
+    change5d:      pctMap('change5d_q'),
+    streak:        pctMap('streak'),
+    // L3 External
+    analyst_up:    pctMap('analyst_upside'),
+    upgrade:       pctMap('recent_upgrade'),
+    consensus:     pctMap('consensus_tilt'),
+    // L4 Valuation
+    peg:           pctMap('peg_q'),
+    fcf_yield:     pctMap('fcf_yield'),
+    // L5 Fundamental
+    roic:          pctMap('roic'),
+    roe:           pctMap('roe'),
+    de:            pctMap('de_neg'),    // de_neg was already negated → higher = less debt = better
+  };
+
+  const IND_TOTAL = 14;   // indicators #1-15, excluding #10 (Fit — post-composite)
+
+  // ── 6. Layer scores + renormalized composite per stock ─────────────────────
+  stocks.forEach(s => {
+    const sym = s.symbol;
+
+    // Indicator percentiles for this stock (null if not ranked = data missing)
+    const p = {
+      rsi:          pct.rsi[sym]          ?? null,
+      sma50_dist:   pct.sma50_dist[sym]   ?? null,
+      golden_cross: pct.golden_cross[sym] ?? null,
+      above_sma200: pct.above_sma200[sym] ?? null,
+      change5d:     pct.change5d[sym]      ?? null,
+      streak:       pct.streak[sym]        ?? null,
+      analyst_up:   pct.analyst_up[sym]   ?? null,
+      upgrade:      pct.upgrade[sym]       ?? null,
+      consensus:    pct.consensus[sym]     ?? null,
+      peg:          pct.peg[sym]           ?? null,
+      fcf_yield:    pct.fcf_yield[sym]     ?? null,
+      roic:         pct.roic[sym]          ?? null,
+      roe:          pct.roe[sym]           ?? null,
+      de:           pct.de[sym]            ?? null,
+    };
+
+    // Layer scores = average of available (non-null) indicators within each layer
+    const L1 = avgNonNull([p.rsi, p.sma50_dist, p.golden_cross, p.above_sma200]);
+    const L2 = avgNonNull([p.change5d, p.streak]);
+    const L3 = avgNonNull([p.analyst_up, p.upgrade, p.consensus]);
+    const L4 = avgNonNull([p.peg, p.fcf_yield]);
+    const L5 = avgNonNull([p.roic, p.roe, p.de]);
+
+    const layerScores = { L1, L2, L3, L4, L5 };
+    const layers_used = Object.values(layerScores).filter(v => v !== null).length;
+
+    // Renormalized composite: Σ(weight × layer) / Σ(weight of non-null layers)
+    // This means a stock with only L1+L2 data gets scored honestly on those layers,
+    // not penalised for missing L3-L5. (Standard §5.3)
+    let wSum = 0, wTotal = 0;
+    Object.entries(SCORE_CONFIG.LAYERS).forEach(([k, cfg]) => {
+      if (layerScores[k] !== null) {
+        wSum   += cfg.weight * layerScores[k];
+        wTotal += cfg.weight;
+      }
+    });
+
+    // Scale to 0-100, 2 decimal places
+    const base_score = wTotal > 0
+      ? Math.round((wSum / wTotal) * 10000) / 100
+      : null;
+
+    const ind_available = Object.values(p).filter(v => v !== null).length;
+
+    s._score = {
+      base_score,
+      layers_used,
+      display_eligible:  layers_used >= SCORE_CONFIG.DISPLAY_MIN_LAYERS,
+      data_completeness: Math.round(ind_available / IND_TOTAL * 100),   // % of 14 indicators present
+      score_breakdown: {
+        indicators: p,
+        layers:     { L1, L2, L3, L4, L5 },
+        weights_applied: Object.fromEntries(
+          Object.entries(SCORE_CONFIG.LAYERS).map(([k, cfg]) => [k, layerScores[k] !== null ? cfg.weight : 0])
+        ),
+        total_weight_used: +wTotal.toFixed(4),   // < 1.0 when layers are missing
+      },
+      in_portfolio:      portfolioSyms.has(sym),          // code set-membership, not LLM
+      price_at_score:    s.price,                          // Standard v1.1 §5.7 — returns-log seed
+      upcoming_earnings: s.upcoming_earnings,
+    };
+  });
+
+  // ── 7. Sort: score desc, then symbol asc (deterministic tie-breaker, Standard v1.1) ──
+  // IMPORTANT: no Date.now() or Math.random() here — must be 100% deterministic
+  stocks.sort((a, b) => {
+    const sa = a._score.base_score ?? -Infinity;
+    const sb = b._score.base_score ?? -Infinity;
+    if (sb !== sa) return sb - sa;
+    return a.symbol < b.symbol ? -1 : 1;   // alphabetical on equal scores
+  });
+
+  // ── 8. Assign rank + display flags ────────────────────────────────────────
+  let displayRank = 0;
+  stocks.forEach((s, i) => {
+    s._score.rank = i + 1;
+    if (s._score.display_eligible && displayRank < SCORE_CONFIG.DISPLAY_TOP) {
+      displayRank++;
+      s._score.display_rank = displayRank;
+      s._score.display      = true;
+      s._score.highlight    = displayRank <= SCORE_CONFIG.HIGHLIGHT_TOP;
+    } else {
+      s._score.display_rank = null;
+      s._score.display      = false;
+      s._score.highlight    = false;
+    }
+  });
+
+  // ── 9. Pattern classification (basic — Step 5 will refine with Fit modifier) ──
+  stocks.forEach(s => {
+    const tags = [];
+    const h  = s.from_52w_high_pct;
+    const vr = s.volume_ratio_20d;
+    // Recovery: down 30-80% from 52w high, recovering
+    if (h !== null && h <= -30 && h >= -80) tags.push('Recovery');
+    // Breakout: near 52w high, volume surge, above SMAs
+    if (h !== null && h >= -10 && s.above_sma50 && s.above_sma200 && vr !== null && vr > 1.5) tags.push('Breakout');
+    // Momentum: confirmed trend + healthy RSI + strong ADX
+    if (s.above_sma50 && s.above_sma200 && s.rsi !== null && s.rsi >= 50 && s.rsi <= 70 && s.adx !== null && s.adx > 25) tags.push('Momentum');
+    s._score.pattern = tags;
+  });
+
+  // ── 10. Build output object ────────────────────────────────────────────────
+  const scoredData = {};
+  stocks.forEach(s => {
+    scoredData[s.symbol] = {
+      symbol:            s.symbol,
+      sector:            s.sector,
+      price_at_score:    s._score.price_at_score,
+      final_score:       s._score.base_score,
+      rank:              s._score.rank,
+      display:           s._score.display,
+      display_rank:      s._score.display_rank,
+      highlight:         s._score.highlight,
+      display_eligible:  s._score.display_eligible,
+      layers_used:       s._score.layers_used,
+      data_completeness: s._score.data_completeness,
+      in_portfolio:      s._score.in_portfolio,
+      pattern:           s._score.pattern,
+      upcoming_earnings: s._score.upcoming_earnings,
+      score_breakdown:   s._score.score_breakdown,
+    };
+  });
+
+  const output = {
+    date,
+    scored_at:      new Date().toISOString(),    // metadata only — not part of determinism test
+    engine_version: 'step4-v1',                  // bump when algo changes
+    count:          stocks.length,
+    display_eligible_count: stocks.filter(s => s._score.display_eligible).length,
+    data:           scoredData,
+  };
+
+  // ── 11. Write scored-{date}.json to GitHub ─────────────────────────────────
+  const outPath = `data/market/scored-${date}.json`;
+  await ghWriteScorer(
+    REPO,
+    outPath,
+    output,
+    `score: ${date} — ${stocks.length} stocks, ${stocks.filter(s => s._score.display_eligible).length} display-eligible`,
+    GITHUB_TOKEN
+  );
+
+  // ── 12. Return summary (not the full file — that's in GitHub) ──────────────
+  const top5 = stocks
+    .filter(s => s._score.highlight)
+    .map(s => ({
+      symbol:       s.symbol,
+      sector:       s.sector,
+      score:        s._score.base_score,
+      rank:         s._score.rank,
+      layers_used:  s._score.layers_used,
+      pattern:      s._score.pattern,
+      in_portfolio: s._score.in_portfolio,
+      completeness: s._score.data_completeness,
+    }));
+
+  return res.status(200).json({
+    status:           'ok',
+    date,
+    engine_version:   'step4-v1',
+    scored:           stocks.length,
+    display_eligible: stocks.filter(s => s._score.display_eligible).length,
+    file_written:     outPath,
+    top5,
+    layer_coverage: {
+      // Shows how many stocks had data for each indicator — L3 will be ~0 until analyst data added
+      L1_rsi:            Object.keys(pct.rsi).length,
+      L1_sma50_dist:     Object.keys(pct.sma50_dist).length,
+      L1_golden_cross:   Object.keys(pct.golden_cross).length,
+      L1_above_sma200:   Object.keys(pct.above_sma200).length,
+      L2_change5d:       Object.keys(pct.change5d).length,
+      L2_streak:         Object.keys(pct.streak).length,
+      L3_analyst_upside: Object.keys(pct.analyst_up).length,   // expect ~0 at Step 4
+      L3_upgrade:        Object.keys(pct.upgrade).length,       // expect ~0 at Step 4
+      L3_consensus:      Object.keys(pct.consensus).length,     // expect ~0 at Step 4
+      L4_peg:            Object.keys(pct.peg).length,
+      L4_fcf_yield:      Object.keys(pct.fcf_yield).length,
+      L5_roic:           Object.keys(pct.roic).length,
+      L5_roe:            Object.keys(pct.roe).length,
+      L5_de:             Object.keys(pct.de).length,
+    },
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ▲▲▲  END STEP 4 SCORING ENGINE — everything above goes BEFORE module.exports  ▲▲▲
+// ════════════════════════════════════════════════════════════════════════════
+
 // ─── main ────────────────────────────────────────────────────────────────────
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -140,6 +631,8 @@ module.exports = async (req, res) => {
   if (key && key !== API_KEY) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
+
+  if (req.query.mode === 'score') return handleScore(req, res);
 
   const { nickname, include, symbols: symbolsParam } = req.query;
   const wantIntelligence = include === 'intelligence';
