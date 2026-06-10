@@ -42,23 +42,34 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
 
   // ── MODE: build-universe ──────────────────────────────────────────────────
-  // Called by Make.com scenario 922 (POST ?mode=build-universe)
-  // Receives 3 FMP screener arrays, returns deduped+filtered universe JSON
-  // Build Spec v1.1 §2.1-2.3 · Session 28 · 2026-06-10
   if (req.method === 'POST' && req.query.mode === 'build-universe') {
     try {
-      const { large = [], mid = [], momentum = [], date } = req.body;
+      let { large = [], mid = [], momentum = [], date } = req.body;
 
-      const MIN_DOLLAR_VOLUME = 5_000_000;  // $5M/day liquidity floor
-      const MAX_UNIVERSE      = 800;        // tripwire — fail loud if exceeded
+      // Make.com may send arrays as strings (parseResponse=false) — parse them
+      if (typeof large   === 'string') try { large    = JSON.parse(large);    } catch { large    = []; }
+      if (typeof mid     === 'string') try { mid      = JSON.parse(mid);      } catch { mid      = []; }
+      if (typeof momentum === 'string') try { momentum = JSON.parse(momentum); } catch { momentum = []; }
+
+      // Make.com may wrap arrays as objects {1:{...},2:{...}} — normalize
+      if (!Array.isArray(large))    large    = Object.values(large    || {});
+      if (!Array.isArray(mid))      mid      = Object.values(mid      || {});
+      if (!Array.isArray(momentum)) momentum = Object.values(momentum || {});
+
+      const MIN_DOLLAR_VOLUME = 5_000_000;
+      const MAX_UNIVERSE      = 800;
 
       // Step 1: Union
       const all = [...large, ...mid, ...momentum];
       console.log(`build-universe: raw union=${all.length} (large:${large.length} mid:${mid.length} momentum:${momentum.length})`);
 
-      // Step 2: Dedupe by symbol
-      // Drop symbols with '.' (foreign listings: NVDA.NE, CRH.L)
-      // Keep higher-volume record when same symbol in multiple screeners
+      // Debug: log first stock to verify field names
+      if (all.length > 0) {
+        console.log(`build-universe: sample stock fields = ${Object.keys(all[0]).join(', ')}`);
+        console.log(`build-universe: sample price=${all[0].price} volume=${all[0].volume}`);
+      }
+
+      // Step 2: Dedupe by symbol (drop foreign listings with '.')
       const bySymbol = {};
       for (const stock of all) {
         const sym = stock.symbol;
@@ -77,7 +88,7 @@ module.exports = async (req, res) => {
       );
       console.log(`build-universe: after dollar-vol=${filtered.length}`);
 
-      // Step 4: Fail loud if oversized (gate broke)
+      // Step 4: Fail loud if oversized
       if (filtered.length > MAX_UNIVERSE) {
         console.error(`build-universe OVERSIZED: ${filtered.length} — gate too loose?`);
       }
@@ -88,7 +99,7 @@ module.exports = async (req, res) => {
         return d !== 0 ? d : (a.symbol || '').localeCompare(b.symbol || '');
       });
 
-      // Step 6: Clean output — only fields the scorer needs
+      // Step 6: Clean output
       const universe = filtered.slice(0, MAX_UNIVERSE).map(s => ({
         symbol:      s.symbol,
         companyName: s.companyName || '',
@@ -123,6 +134,7 @@ module.exports = async (req, res) => {
     }
   }
   // ─────────────────────────────────────────────────────────────────────────
+
 
   // Auth check
   const authHeader = req.headers['authorization'] || '';
