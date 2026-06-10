@@ -297,7 +297,7 @@ async function handleScore(req, res) {
   const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
   if (!GITHUB_TOKEN) return res.status(500).json({ error: 'GITHUB_TOKEN env var not set in Vercel' });
 
-  const date = todayUAE();   // reuses the existing helper already in the file
+  const date = '2026-06-10';   // TEMP (testing) — REVERT to: const date = todayUAE();
 
   // ── 1. Load all input files from GitHub ────────────────────────────────────
   const [deepFile, universeFile, historyRaw, portfolioFile] = await Promise.all([
