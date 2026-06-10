@@ -365,6 +365,7 @@ async function handleScore(req, res) {
       from_52w_low_pct:  d.from_52w_low_pct  ?? null,
       volume_ratio_20d:  d.volume_ratio_20d  ?? null,
       peg:               d.peg ?? null,
+      pe_ratio:          d.pe_ratio ?? null,
       fcf_yield:         d.fcf_yield ?? null,
       roic:              d.roic ?? null,
       roe:               d.roe  ?? null,
@@ -505,11 +506,58 @@ async function handleScore(req, res) {
     };
   });
 
+  // ── 6b. Fit modifier (Standard §5.4 — post-composite, personal) ────────────
+  // Compute portfolio sector weights.
+  // NOTE: `portfolioSectors` is built here (was not previously defined). Holdings
+  //       use `sec` (dashboard sector code) or `sector`; both handled, lowercased.
+  const portfolioSectors = {};
+  holdings.forEach(h => {
+    const hs = (h.sec || h.sector || '').toLowerCase();
+    if (hs) portfolioSectors[hs] = (portfolioSectors[hs] || 0) + 1;
+  });
+  const totalHoldings = holdings.length || 1;
+
+  // Apply Fit modifier per stock (Standard §5.4 — post-composite, personal)
+  // Maps FMP full sector names → portfolio dashboard codes
+  const SECTOR_MAP = {
+    'technology':               'tech',
+    'communication services':   'tech',
+    'consumer cyclical':        'spec',
+    'consumer defensive':       'spec',
+    'financial services':       'spec',
+    'real estate':              'spec',
+    'utilities':                'spec',
+    'industrials':              'spec',
+    'energy':                   'mining',
+    'basic materials':          'mining',
+    'healthcare':               'bio',
+  };
+
+  function fitAdjustment(stockSector) {
+    if (!stockSector) return 0;
+    const mapped = SECTOR_MAP[stockSector.toLowerCase()] || 'other';
+    const count = portfolioSectors[mapped] || 0;
+    const overlapPct = count / totalHoldings * 100;
+    if (overlapPct < 10)  return  5;
+    if (overlapPct < 20)  return  2;
+    if (overlapPct < 35)  return  0;
+    if (overlapPct < 50)  return -2;
+    return -5;
+  }
+
+  stocks.forEach(s => {
+    const adj = fitAdjustment(s.sector);
+    s._score.fit_adjustment = adj;
+    s._score.final_score = s._score.base_score !== null
+      ? Math.round(Math.min(100, Math.max(0, s._score.base_score + adj)) * 100) / 100
+      : null;
+  });
+
   // ── 7. Sort: score desc, then symbol asc (deterministic tie-breaker, Standard v1.1) ──
   // IMPORTANT: no Date.now() or Math.random() here — must be 100% deterministic
   stocks.sort((a, b) => {
-    const sa = a._score.base_score ?? -Infinity;
-    const sb = b._score.base_score ?? -Infinity;
+    const sa = a._score.final_score ?? -Infinity;
+    const sb = b._score.final_score ?? -Infinity;
     if (sb !== sa) return sb - sa;
     return a.symbol < b.symbol ? -1 : 1;   // alphabetical on equal scores
   });
@@ -530,7 +578,24 @@ async function handleScore(req, res) {
     }
   });
 
-  // ── 9. Pattern classification (basic — Step 5 will refine with Fit modifier) ──
+  // ── 9. Pattern classification ──────────────────────────────────────────────
+  // Medians for Value pattern
+  const fcfArr = stocks.filter(s => s.fcf_yield !== null).map(s => s.fcf_yield).sort((a,b)=>a-b);
+  const medianFcf = fcfArr.length ? fcfArr[Math.floor(fcfArr.length / 2)] : null;
+
+  const sectorPeMap = {};
+  stocks.forEach(s => {
+    if (s.sector && s.pe_ratio !== null && s.pe_ratio > 0) {
+      if (!sectorPeMap[s.sector]) sectorPeMap[s.sector] = [];
+      sectorPeMap[s.sector].push(s.pe_ratio);
+    }
+  });
+  const sectorMedianPe = {};
+  Object.entries(sectorPeMap).forEach(([sec, arr]) => {
+    arr.sort((a,b)=>a-b);
+    sectorMedianPe[sec] = arr[Math.floor(arr.length / 2)];
+  });
+
   stocks.forEach(s => {
     const tags = [];
     const h  = s.from_52w_high_pct;
@@ -541,6 +606,15 @@ async function handleScore(req, res) {
     if (h !== null && h >= -10 && s.above_sma50 && s.above_sma200 && vr !== null && vr > 1.5) tags.push('Breakout');
     // Momentum: confirmed trend + healthy RSI + strong ADX
     if (s.above_sma50 && s.above_sma200 && s.rsi !== null && s.rsi >= 50 && s.rsi <= 70 && s.adx !== null && s.adx > 25) tags.push('Momentum');
+    // Value: cheap on PEG + FCF yield above median + PE below sector median
+    if (s.peg !== null && s.peg < 1.2 &&
+        medianFcf !== null && s.fcf_yield !== null && s.fcf_yield > medianFcf &&
+        s.pe_ratio !== null && s.pe_ratio > 0 &&
+        sectorMedianPe[s.sector] && s.pe_ratio < sectorMedianPe[s.sector]) {
+      tags.push('Value');
+    }
+    // Growth: strong return on invested capital
+    if (s.roic !== null && s.roic > 0.15) tags.push('Growth');
     s._score.pattern = tags;
   });
 
@@ -551,7 +625,9 @@ async function handleScore(req, res) {
       symbol:            s.symbol,
       sector:            s.sector,
       price_at_score:    s._score.price_at_score,
-      final_score:       s._score.base_score,
+      base_score:        s._score.base_score,
+      fit_adjustment:    s._score.fit_adjustment,
+      final_score:       s._score.final_score,
       rank:              s._score.rank,
       display:           s._score.display,
       display_rank:      s._score.display_rank,
@@ -569,7 +645,7 @@ async function handleScore(req, res) {
   const output = {
     date,
     scored_at:      new Date().toISOString(),    // metadata only — not part of determinism test
-    engine_version: 'step4-v1',                  // bump when algo changes
+    engine_version: 'step5-v1',                  // bump when algo changes
     count:          stocks.length,
     display_eligible_count: stocks.filter(s => s._score.display_eligible).length,
     data:           scoredData,
@@ -584,6 +660,34 @@ async function handleScore(req, res) {
     `score: ${date} — ${stocks.length} stocks, ${stocks.filter(s => s._score.display_eligible).length} display-eligible`,
     GITHUB_TOKEN
   );
+
+  // Update history.json — rolling 28-day log of display stocks (enables streak)
+  try {
+    const cutoff = new Date(Date.now() - 28 * 86400000).toISOString().slice(0, 10);
+    const existingHistory = await ghReadScorer(REPO, 'data/market/history.json');
+    const historyStocks = existingHistory?.stocks || {};
+
+    // Add today's date to every display:true stock
+    stocks.filter(s => s._score.display).forEach(s => {
+      const sym = s.symbol;
+      if (!historyStocks[sym]) historyStocks[sym] = { dates: [], first_seen: date };
+      const entry = historyStocks[sym];
+      if (!entry.dates.includes(date)) entry.dates.push(date);
+      // Prune dates older than 28 calendar days
+      entry.dates = entry.dates.filter(d => d >= cutoff).sort();
+      entry.appearances_in_window = entry.dates.length;
+      entry.last_seen = date;
+    });
+
+    const newHistory = {
+      _meta: { last_updated: date, window_days: 28 },
+      stocks: historyStocks,
+    };
+    await ghWriteScorer(REPO, 'data/market/history.json', newHistory,
+      `history: ${date} — ${stocks.filter(s=>s._score.display).length} display stocks`, GITHUB_TOKEN);
+  } catch(e) {
+    console.error('history.json update failed (non-fatal):', e.message);
+  }
 
   // ── 12. Return summary (not the full file — that's in GitHub) ──────────────
   const top5 = stocks
@@ -602,7 +706,7 @@ async function handleScore(req, res) {
   return res.status(200).json({
     status:           'ok',
     date,
-    engine_version:   'step4-v1',
+    engine_version:   'step5-v1',
     scored:           stocks.length,
     display_eligible: stocks.filter(s => s._score.display_eligible).length,
     file_written:     outPath,
