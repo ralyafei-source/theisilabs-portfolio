@@ -3213,11 +3213,13 @@ let _opLoaded  = false;
 
 function _opScoreColor(s){ return s>=75?'#00c864':s>=55?'#ffd700':'#ff8c00'; }
 
-function _opFitInfo(p){
-  p = p||0;
-  if(p < 30) return {bar:'#00c864', pct:Math.max(8,100-p), label:'ملاءمة عالية ✓'};
-  if(p < 60) return {bar:'#ffd700', pct:100-p,              label:'ملاءمة متوسطة'};
-  return            {bar:'#ff6b35', pct:Math.max(5,100-p),  label:'تداخل قطاعي'};
+function _opFitInfo(adj){
+  adj = adj||0;
+  if(adj >= 3)  return {bar:'#00c864', pct:92, label:'ملاءمة عالية ✓'};
+  if(adj >= 1)  return {bar:'#00c864', pct:72, label:'ملاءمة جيدة'};
+  if(adj === 0) return {bar:'#888888', pct:50, label:'محايد'};
+  if(adj >= -2) return {bar:'#ffd700', pct:30, label:'ملاءمة متوسطة'};
+  return               {bar:'#ff6b35', pct:12, label:'تداخل قطاعي'};
 }
 
 function _opPatBadges(pats){
@@ -3249,15 +3251,16 @@ function _opLayerBar(sb){
   const defs = [['L1','التقني'],['L2','الزخم'],['L3','خارجي'],['L4','التقييم'],['L5','الأساسيات']];
   const bars = defs.map(([k,name])=>{
     const v = sb.layers[k];
-    const col = v ? (v>=70?'#00c864':v>=50?'#ffd700':'#ff8c00') : 'var(--border)';
-    const h = v ? 3 : 1;
+    const pct = (v != null) ? Math.round(v * 100) : null;
+    const col = pct ? (pct>=70?'#00c864':pct>=50?'#ffd700':'#ff8c00') : 'var(--border)';
+    const h = pct ? 3 : 1;
     return `<div style="text-align:center"><div style="height:${h}px;border-radius:2px;background:${col};opacity:${v?1:0.3}"></div><div style="font-size:8px;color:var(--text3);margin-top:2px">${k}</div></div>`;
   }).join('');
   return `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:8px">${bars}</div>`;
 }
 
 function _opBuildHeroCard(s){
-  const fit = _opFitInfo(s._fitPct);
+  const fit = _opFitInfo(s._fitAdj);
   const sc  = _opScoreColor(s.final_score);
   const rank = s.display_rank || s.rank || '—';
   return `<div class="op-hero-card">
