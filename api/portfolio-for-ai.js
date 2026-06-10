@@ -240,9 +240,11 @@ module.exports = async (req, res) => {
 
         // ── Compute 52w high/low pct from historical prices ─────────────────
         let from_52w_high_pct = null, from_52w_low_pct = null, volume_ratio_20d = null;
-        if (Array.isArray(histD) && histD.length > 0 && price) {
-          const prices = histD.map(d => d.close || d.adjClose).filter(Boolean);
-          const volumes = histD.map(d => d.volume).filter(v => v != null && v > 0);
+        // FMP historical endpoint returns {symbol, historical:[...]} not plain array
+        const histArr = Array.isArray(histD) ? histD : (histD?.historical || []);
+        if (histArr.length > 0 && price) {
+          const prices = histArr.map(d => d.close || d.adjClose).filter(Boolean);
+          const volumes = histArr.map(d => d.volume).filter(v => v != null && v > 0);
           if (prices.length > 0) {
             const high52 = Math.max(...prices);
             const low52  = Math.min(...prices);
