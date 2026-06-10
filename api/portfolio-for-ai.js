@@ -2,7 +2,7 @@
 // Returns portfolio as formatted plain text for Claude
 // Supports ?nickname=ahmed for per-user portfolios
 // Supports ?include=intelligence for smart FMP data (earnings, targets, grades, metrics, technicals)
-// Supports ?mode=build-universe (POST) — universe dedup/filter for scenario 922
+// Supports ?mode=build-universe (GET ?date=YYYY-MM-DD) — universe dedup/filter for scenario 922
 // Default (no nickname): reads Rashed's portfolio.json
 
 const REPO    = 'ralyafei-source/theisilabs-portfolio';
@@ -42,36 +42,37 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
 
   // ── MODE: build-universe ──────────────────────────────────────────────────
-  // Called by Make.com scenario 922 (POST ?mode=build-universe)
-  // Vercel fetches the 3 FMP screeners directly — no data transfer from Make.com
-  // Build Spec v1.1 §2.1-2.3 · Session 28 · 2026-06-10
-  if (req.method === 'POST' && req.query.mode === 'build-universe') {
+  if (req.query.mode === 'build-universe') {
     try {
-      const { date } = req.body || {};
-      const today = date || todayUAE();
+      const date = req.query.date || todayUAE();
+
+      // Read raw screener file that Make.com saved to GitHub
+      const rawUrl = `https://raw.githubusercontent.com/${REPO}/main/data/market/screener-raw-${date}.json?t=${Date.now()}`;
+      const rawRes = await fetch(rawUrl);
+      if (!rawRes.ok) {
+        console.error(`build-universe: screener-raw-${date}.json not found (${rawRes.status})`);
+        return res.status(404).json({ error: `screener-raw-${date}.json not found — run screener step first` });
+      }
+      const rawData = await rawRes.json();
+      let large    = Array.isArray(rawData.large)    ? rawData.large    : [];
+      let mid      = Array.isArray(rawData.mid)      ? rawData.mid      : [];
+      let momentum = Array.isArray(rawData.momentum) ? rawData.momentum : [];
+      console.log(`build-universe: read from GitHub — large:${large.length} mid:${mid.length} momentum:${momentum.length}`);
 
       const MIN_DOLLAR_VOLUME = 5_000_000;
       const MAX_UNIVERSE      = 800;
-      const BASE = `&exchange=NASDAQ,NYSE&country=US&priceMoreThan=5&betaLowerThan=5&isEtf=false&isFund=false&isActivelyTrading=true`;
-
-      // Fetch 3 screeners in parallel directly from FMP
-      const [large, mid, momentum] = await Promise.all([
-        fmpGet(`/company-screener?marketCapMoreThan=10000000000&volumeMoreThan=500000&limit=1000${BASE}`),
-        fmpGet(`/company-screener?marketCapMoreThan=2000000000&marketCapLowerThan=10000000000&volumeMoreThan=500000&limit=1000${BASE}`),
-        fmpGet(`/company-screener?marketCapMoreThan=2000000000&isAboveSma50=true&isAboveSma200=true&rsiMoreThan=50&rsiLessThan=70&volumeMoreThan=1000000&limit=1000${BASE}`)
-      ]);
-
-      const safeArr = v => Array.isArray(v) ? v : [];
-      const L = safeArr(large);
-      const M = safeArr(mid);
-      const Mo = safeArr(momentum);
-
-      console.log(`build-universe: fetched large=${L.length} mid=${M.length} momentum=${Mo.length}`);
 
       // Step 1: Union
-      const all = [...L, ...M, ...Mo];
+      const all = [...large, ...mid, ...momentum];
+      console.log(`build-universe: raw union=${all.length} (large:${large.length} mid:${mid.length} momentum:${momentum.length})`);
 
-      // Step 2: Dedupe by symbol — drop foreign listings, keep higher-volume
+      // Debug: log first stock to verify field names
+      if (all.length > 0) {
+        console.log(`build-universe: sample stock fields = ${Object.keys(all[0]).join(', ')}`);
+        console.log(`build-universe: sample price=${all[0].price} volume=${all[0].volume}`);
+      }
+
+      // Step 2: Dedupe by symbol (drop foreign listings with '.')
       const bySymbol = {};
       for (const stock of all) {
         const sym = stock.symbol;
@@ -95,7 +96,7 @@ module.exports = async (req, res) => {
         console.error(`build-universe OVERSIZED: ${filtered.length} — gate too loose?`);
       }
 
-      // Step 5: Sort stable — marketCap desc, ties A→Z
+      // Step 5: Sort stable — marketCap desc, ties broken alphabetically
       filtered.sort((a, b) => {
         const d = (b.marketCap || 0) - (a.marketCap || 0);
         return d !== 0 ? d : (a.symbol || '').localeCompare(b.symbol || '');
@@ -114,12 +115,17 @@ module.exports = async (req, res) => {
         exchange:    s.exchange    || ''
       }));
 
+      const today = date || todayUAE();
+
       return res.status(200).json({
         date:  today,
         count: universe.length,
         source_counts: {
-          large: L.length, mid: M.length, momentum: Mo.length,
-          raw_union: all.length, after_dedup: afterDedup.length,
+          large:            large.length,
+          mid:              mid.length,
+          momentum:         momentum.length,
+          raw_union:        all.length,
+          after_dedup:      afterDedup.length,
           after_dollar_vol: filtered.length
         },
         universe
@@ -131,7 +137,6 @@ module.exports = async (req, res) => {
     }
   }
   // ─────────────────────────────────────────────────────────────────────────
-
 
 
   // Auth check
