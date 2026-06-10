@@ -220,11 +220,15 @@ module.exports = async (req, res) => {
           }
         } catch { /* silent — timeout or error, price stays null */ }
 
-        // 5 FMP calls per symbol (down from 8) — all parallel
-        const [rsiD, sma50D, sma200D, ratiosD, metricsD] = await Promise.all([
-          fmpGet(`/technical-indicators/rsi?symbol=${s}&periodLength=14&timeframe=1day&limit=1`),
+        // 8 FMP calls per symbol — all parallel
+        // Includes Step 3 additions: ADX, Williams, 52w high/low, volume ratio
+        const [rsiD, sma50D, sma200D, adxD, williamsD, histD, ratiosD, metricsD] = await Promise.all([
+          fmpGet(`/technical-indicators/rsi?symbol=${s}&periodLength=14&timeframe=1day&limit=3`),
           fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=50&timeframe=1day&limit=1`),
           fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=200&timeframe=1day&limit=1`),
+          fmpGet(`/technical-indicators/adx?symbol=${s}&periodLength=14&timeframe=1day&limit=1`),
+          fmpGet(`/technical-indicators/williams?symbol=${s}&periodLength=14&timeframe=1day&limit=3`),
+          fmpGet(`/historical-price-eod/light?symbol=${s}&limit=252`),  // ~1 year of trading days
           fmpGet(`/ratios-ttm?symbol=${s}`),
           fmpGet(`/key-metrics-ttm?symbol=${s}`)
         ]);
@@ -233,6 +237,25 @@ module.exports = async (req, res) => {
         const sma200 = latest(sma200D, 'sma');
         const r = Array.isArray(ratiosD)  ? ratiosD[0]  : ratiosD;
         const m = Array.isArray(metricsD) ? metricsD[0] : metricsD;
+
+        // ── Compute 52w high/low pct from historical prices ─────────────────
+        let from_52w_high_pct = null, from_52w_low_pct = null, volume_ratio_20d = null;
+        if (Array.isArray(histD) && histD.length > 0 && price) {
+          const prices = histD.map(d => d.close || d.adjClose).filter(Boolean);
+          const volumes = histD.map(d => d.volume).filter(v => v != null && v > 0);
+          if (prices.length > 0) {
+            const high52 = Math.max(...prices);
+            const low52  = Math.min(...prices);
+            from_52w_high_pct = +((price - high52) / high52 * 100).toFixed(2);
+            from_52w_low_pct  = +((price - low52)  / low52  * 100).toFixed(2);
+          }
+          // Volume ratio: today vs 20-day average
+          if (volumes.length >= 20) {
+            const avg20 = volumes.slice(0, 20).reduce((a, b) => a + b, 0) / 20;
+            const todayVol = volumes[0];
+            if (avg20 > 0) volume_ratio_20d = +(todayVol / avg20).toFixed(3);
+          }
+        }
 
         return [s, {
           symbol:    s,
@@ -244,6 +267,12 @@ module.exports = async (req, res) => {
           above_sma50:  price && sma50  ? price > sma50  : null,
           above_sma200: price && sma200 ? price > sma200 : null,
           golden_cross: sma50 && sma200 ? sma50 > sma200 : null,
+          // Step 3 additions
+          adx:              latest(adxD,      'adx')     ?? null,
+          williams:         latest(williamsD, 'williams') ?? null,
+          from_52w_high_pct,
+          from_52w_low_pct,
+          volume_ratio_20d,
           // Ratios TTM
           pe_ratio:       r?.priceToEarningsRatioTTM        ?? null,
           peg:            r?.priceToEarningsGrowthRatioTTM  ?? null,
