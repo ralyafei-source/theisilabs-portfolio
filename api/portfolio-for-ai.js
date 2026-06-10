@@ -312,8 +312,8 @@ async function handleScore(req, res) {
     return res.status(404).json({ error: `deep-${date}.json not found or missing .data field. Has Step 2 run today?` });
   }
   // Guard: universe must exist
-  if (!universeFile?.data) {
-    return res.status(404).json({ error: `universe-${date}.json not found or missing .data field. Has Step 1 run today?` });
+  if (!universeFile?.data && !universeFile?.universe) {
+    return res.status(404).json({ error: `universe-${date}.json not found or missing data. Has Step 1 run today?` });
   }
   // STALENESS GUARD — Standard v1.1: universe.date must equal today
   if (universeFile.date && universeFile.date !== date) {
@@ -323,7 +323,7 @@ async function handleScore(req, res) {
   }
 
   const deepData   = deepFile.data;                         // { SYM: { rsi, sma50, ... } }
-  const universeRaw = universeFile.data;                    // array OR object
+  const universeRaw = universeFile.data || universeFile.universe;                    // array OR object
   const histStocks  = historyRaw?.stocks || historyRaw || {}; // handles both old + new formats
   const holdings    = portfolioFile?.holdings || [];
 
