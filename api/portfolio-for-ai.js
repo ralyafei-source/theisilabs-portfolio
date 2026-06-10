@@ -139,6 +139,226 @@ module.exports = async (req, res) => {
   // ─────────────────────────────────────────────────────────────────────────
 
 
+  // ── MODE: get-chunks ─────────────────────────────────────────────────────
+  // GET ?mode=get-chunks&date=YYYY-MM-DD
+  // Reads universe-{date}.json, returns array of 100-symbol batch strings
+  // Step 2 of Build Spec v1.1 — called once by Make.com before Iterator
+  if (req.query.mode === 'get-chunks') {
+    try {
+      const date = req.query.date || todayUAE();
+      const url = `https://raw.githubusercontent.com/${REPO}/main/data/market/universe-${date}.json?t=${Date.now()}`;
+      const r = await fetch(url);
+      if (!r.ok) return res.status(404).json({ error: `universe-${date}.json not found` });
+      const universe = await r.json();
+      const symbols = (universe.universe || []).map(s => s.symbol).filter(Boolean);
+      if (symbols.length === 0) return res.status(400).json({ error: 'universe is empty' });
+
+      const CHUNK_SIZE = 100;
+      const chunks = [];
+      for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
+        chunks.push(symbols.slice(i, i + CHUNK_SIZE).join(','));
+      }
+      console.log(`get-chunks: ${symbols.length} symbols → ${chunks.length} chunks of ${CHUNK_SIZE}`);
+      return res.status(200).json({ date, total_symbols: symbols.length, chunk_count: chunks.length, chunks });
+    } catch (err) {
+      console.error('get-chunks FATAL:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // ── MODE: deep-chunk ─────────────────────────────────────────────────────
+  // GET ?mode=deep-chunk&symbols=SYM1,...,SYM100&date=YYYY-MM-DD
+  // Fetches deep FMP data for one batch, merges into deep-{date}.json on GitHub
+  // Step 2 of Build Spec v1.1 — called once per chunk by Make.com Iterator
+  if (req.query.mode === 'deep-chunk') {
+    try {
+      const date      = req.query.date    || todayUAE();
+      const symbolsParam = req.query.symbols || '';
+      if (!symbolsParam) return res.status(400).json({ error: 'symbols parameter required' });
+
+      const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+      if (!GITHUB_TOKEN) return res.status(500).json({ error: 'GITHUB_TOKEN env var not set' });
+
+      const syms = symbolsParam.split(',').map(s => s.trim()).filter(Boolean);
+      console.log(`deep-chunk: fetching ${syms.length} symbols for ${date}`);
+
+      // ── Fetch all deep data for this batch in parallel ──────────────────
+      const [
+        rsiArr, sma50Arr, sma200Arr, ema20Arr, bbArr,
+        targetArr, gradesArr, metricsArr, ratiosArr, earningsArr,
+        priceArr
+      ] = await Promise.all([
+        Promise.all(syms.map(s => fmpGet(`/technical-indicators/rsi?symbol=${s}&periodLength=14&timeframe=1day&limit=3`)
+          .then(d => ({ s, rsi: latest(d, 'rsi') })))),
+        Promise.all(syms.map(s => fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=50&timeframe=1day&limit=1`)
+          .then(d => ({ s, sma50: latest(d, 'sma') })))),
+        Promise.all(syms.map(s => fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=200&timeframe=1day&limit=1`)
+          .then(d => ({ s, sma200: latest(d, 'sma') })))),
+        Promise.all(syms.map(s => fmpGet(`/technical-indicators/ema?symbol=${s}&periodLength=20&timeframe=1day&limit=1`)
+          .then(d => ({ s, ema20: latest(d, 'ema') })))),
+        Promise.all(syms.map(s => fmpGet(`/technical-indicators/standardDeviation?symbol=${s}&periodLength=20&timeframe=1day&limit=1`)
+          .then(d => ({ s, bb_stddev: latest(d, 'standardDeviation') })))),
+        Promise.all(syms.map(s => fmpGet(`/price-target-consensus?symbol=${s}`)
+          .then(d => ({ s, data: Array.isArray(d) ? d[0] : d })))),
+        Promise.all(syms.map(s => fmpGet(`/grades?symbol=${s}&limit=5`)
+          .then(d => ({ s, data: d })))),
+        Promise.all(syms.map(s => fmpGet(`/key-metrics-ttm?symbol=${s}`)
+          .then(d => ({ s, data: Array.isArray(d) ? d[0] : d })))),
+        Promise.all(syms.map(s => fmpGet(`/ratios-ttm?symbol=${s}`)
+          .then(d => ({ s, data: Array.isArray(d) ? d[0] : d })))),
+        Promise.all(syms.map(s => fmpGet(`/earnings?symbol=${s}&limit=1`)
+          .then(d => ({ s, data: Array.isArray(d) ? d[0] : d })))),
+        Promise.all(syms.map(async s => {
+          try {
+            const r = await fetch(
+              `https://query2.finance.yahoo.com/v8/finance/chart/${s}?interval=1d&range=5d`,
+              { headers: { 'User-Agent': UA } }
+            );
+            if (!r.ok) return { s, price: null, change5d: null };
+            const d = await r.json();
+            const result = d?.chart?.result?.[0];
+            const price = result?.meta?.regularMarketPrice || null;
+            const closes = result?.indicators?.quote?.[0]?.close || [];
+            const change5d = closes.length >= 2
+              ? +((closes[closes.length-1] - closes[0]) / closes[0] * 100).toFixed(2)
+              : null;
+            return { s, price, change5d };
+          } catch { return { s, price: null, change5d: null }; }
+        }))
+      ]);
+
+      // ── Build per-symbol map ─────────────────────────────────────────────
+      const batchData = {};
+      syms.forEach(s => { batchData[s] = { symbol: s }; });
+
+      priceArr.forEach(  ({ s, price, change5d }) => { if (batchData[s]) { batchData[s].price = price; batchData[s].change5d = change5d; } });
+      rsiArr.forEach(    ({ s, rsi })   => { if (batchData[s]) batchData[s].rsi = rsi; });
+      sma50Arr.forEach(  ({ s, sma50 }) => { if (batchData[s]) { batchData[s].sma50 = sma50; } });
+      sma200Arr.forEach( ({ s, sma200 })=> { if (batchData[s]) { batchData[s].sma200 = sma200; } });
+      ema20Arr.forEach(  ({ s, ema20 }) => { if (batchData[s]) batchData[s].ema20 = ema20; });
+      bbArr.forEach(     ({ s, bb_stddev }) => { if (batchData[s]) batchData[s].bb_stddev = bb_stddev; });
+
+      // Derived flags
+      syms.forEach(s => {
+        const d = batchData[s];
+        if (d.price && d.sma50)  d.above_sma50  = d.price > d.sma50;
+        if (d.price && d.sma200) d.above_sma200 = d.price > d.sma200;
+        if (d.sma50 && d.sma200) d.golden_cross = d.sma50 > d.sma200;
+      });
+
+      // Analyst targets
+      targetArr.forEach(({ s, data }) => {
+        if (!batchData[s] || !data) return;
+        const price = batchData[s].price;
+        batchData[s].analyst_target   = data.targetConsensus  || null;
+        batchData[s].analyst_high     = data.targetHigh       || null;
+        batchData[s].analyst_low      = data.targetLow        || null;
+        batchData[s].analyst_consensus = data.strongBuy != null
+          ? { strongBuy: data.strongBuy, buy: data.buy, hold: data.hold, sell: data.sell, strongSell: data.strongSell }
+          : null;
+        if (price && data.targetConsensus) {
+          batchData[s].analyst_upside_pct = +((data.targetConsensus - price) / price * 100).toFixed(2);
+        }
+      });
+
+      // Grades
+      gradesArr.forEach(({ s, data }) => {
+        if (batchData[s]) batchData[s].recent_grades = Array.isArray(data) ? data.slice(0, 5) : null;
+      });
+
+      // Key metrics TTM (ROIC, ROE, FCF yield etc)
+      metricsArr.forEach(({ s, data }) => {
+        if (!batchData[s] || !data) return;
+        batchData[s].roic         = data.returnOnInvestedCapitalTTM ?? null;
+        batchData[s].roe          = data.returnOnEquityTTM          ?? null;
+        batchData[s].roa          = data.returnOnAssetsTTM          ?? null;
+        batchData[s].fcf_yield    = data.freeCashFlowYieldTTM       ?? null;
+        batchData[s].earnings_yield = data.earningsYieldTTM         ?? null;
+        batchData[s].ev_ebitda    = data.evToEBITDATTM              ?? null;
+        batchData[s].net_debt_to_ebitda = data.netDebtToEBITDATTM  ?? null;
+      });
+
+      // Ratios TTM (PE, PEG, margins etc)
+      ratiosArr.forEach(({ s, data }) => {
+        if (!batchData[s] || !data) return;
+        batchData[s].pe_ratio     = data.priceToEarningsRatioTTM    ?? null;
+        batchData[s].peg          = data.priceToEarningsGrowthRatioTTM ?? null;
+        batchData[s].pb           = data.priceToBookRatioTTM        ?? null;
+        batchData[s].ps           = data.priceToSalesRatioTTM       ?? null;
+        batchData[s].net_margin   = data.netProfitMarginTTM         ?? null;
+        batchData[s].gross_margin = data.grossProfitMarginTTM       ?? null;
+        batchData[s].operating_margin = data.operatingProfitMarginTTM ?? null;
+        batchData[s].debt_to_equity = data.debtToEquityRatioTTM    ?? null;
+        batchData[s].current_ratio  = data.currentRatioTTM         ?? null;
+        batchData[s].interest_coverage = data.interestCoverageRatioTTM ?? null;
+      });
+
+      // Upcoming earnings
+      earningsArr.forEach(({ s, data }) => {
+        if (batchData[s]) batchData[s].upcoming_earnings = data || null;
+      });
+
+      // Log failures (fail loud — Build Spec v1.1 §3)
+      const nullCount = syms.filter(s => !batchData[s].price).length;
+      if (nullCount > 0) console.error(`deep-chunk: ${nullCount}/${syms.length} symbols missing price`);
+      console.log(`deep-chunk: batch fetched — ${syms.length} symbols, ${nullCount} missing price`);
+
+      // ── Read existing deep file from GitHub ──────────────────────────────
+      const deepPath = `data/market/deep-${date}.json`;
+      const ghUrl    = `https://api.github.com/repos/${REPO}/contents/${deepPath}`;
+      const ghRes    = await fetch(ghUrl, { headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}` } });
+
+      let existingData = {};
+      let sha = null;
+      if (ghRes.ok) {
+        const ghJson = await ghRes.json();
+        sha = ghJson.sha;
+        try {
+          const decoded = Buffer.from(ghJson.content.replace(/\n/g, ''), 'base64').toString('utf-8');
+          existingData = JSON.parse(decoded).data || {};
+        } catch (e) {
+          console.error('deep-chunk: could not parse existing deep file:', e.message);
+        }
+      }
+
+      // ── Merge and save ───────────────────────────────────────────────────
+      const merged = { ...existingData, ...batchData };
+      const outJson = JSON.stringify({ date, count: Object.keys(merged).length, data: merged });
+
+      const saveBody = {
+        message: `Deep data ${date} (${Object.keys(merged).length} symbols)`,
+        content:  Buffer.from(outJson).toString('base64'),
+        ...(sha ? { sha } : {})
+      };
+
+      const saveRes = await fetch(ghUrl, {
+        method:  'PUT',
+        headers: { 'Authorization': `Bearer ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
+        body:    JSON.stringify(saveBody)
+      });
+
+      if (!saveRes.ok) {
+        const errText = await saveRes.text();
+        console.error('deep-chunk: GitHub save failed:', errText.slice(0, 200));
+        return res.status(500).json({ error: 'GitHub save failed', detail: errText.slice(0, 200) });
+      }
+
+      return res.status(200).json({
+        ok:           true,
+        date,
+        batch_size:   syms.length,
+        total_so_far: Object.keys(merged).length
+      });
+
+    } catch (err) {
+      console.error('deep-chunk FATAL:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
+
   // Auth check
   const authHeader = req.headers['authorization'] || '';
   const key = authHeader.replace('Bearer ', '').trim();
