@@ -1,5 +1,5 @@
 {
-  "ignoreCommand": "git diff HEAD~1 --name-only | grep -qvE '^(data/|theisi_skills/)'",
+  "ignoreCommand": "! git diff HEAD~1 --name-only | grep -qE '^(api/|public/|vercel\\.json)'",
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
