@@ -645,7 +645,7 @@ async function handleScore(req, res) {
   const output = {
     date,
     scored_at:      new Date().toISOString(),    // metadata only — not part of determinism test
-    engine_version: 'step5-v1',                  // bump when algo changes
+    engine_version: 'step5-v1', // Step 5 live
     count:          stocks.length,
     display_eligible_count: stocks.filter(s => s._score.display_eligible).length,
     data:           scoredData,
