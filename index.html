@@ -3357,16 +3357,15 @@ try {
 
 const scoredData = await scoredRes.json();
 
-    // scored-{date}.json: handle array or object map
+   // scored-{date}.json: { date, data: { SYMBOL: {...} } }
     let allStocks = [];
     if(Array.isArray(scoredData)){
       allStocks = scoredData;
+    } else if(scoredData.data && typeof scoredData.data === 'object'){
+      allStocks = Object.values(scoredData.data);
     } else if(Array.isArray(scoredData.stocks)){
       allStocks = scoredData.stocks;
-    } else if(scoredData.stocks && typeof scoredData.stocks === 'object'){
-      allStocks = Object.values(scoredData.stocks);
     } else {
-      // might be a flat object map {SYMBOL: {...}}
       allStocks = Object.values(scoredData).filter(v => v && typeof v === 'object' && v.symbol);
     }
 
@@ -3378,16 +3377,12 @@ const scoredData = await scoredRes.json();
 
     // Merge why_text and helper fields
     _opStocks = display.map(s => {
-      const fitPct = s.score_breakdown?.fit_pct
-        || s.score_breakdown?.fitModifier !== undefined ? Math.abs((s.score_breakdown?.fitModifier||0)) * 10 : 0;
-      // Try to read sector overlap from score_breakdown or a direct field
-      const sectorOverlap = s._sector_overlap_pct || s.sector_overlap_pct || fitPct || 0;
       return {
         ...s,
-        _why:     whyTexts[s.symbol] || '',
-        _fitPct:  sectorOverlap,
-        _streak:  s._streak_count || s.streak_count || null,
-        _isHero:  s.highlight === true || (s.display_rank >= 1 && s.display_rank <= 5)
+        _why:    whyTexts[s.symbol] || '',
+        _fitAdj: s.fit_adjustment || 0,
+        _streak: s._streak_count || s.streak_count || null,
+        _isHero: s.highlight === true || (s.display_rank != null && s.display_rank <= 5)
       };
     });
 
