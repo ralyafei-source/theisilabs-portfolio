@@ -16,10 +16,18 @@ async function fmpGet(path) {
   try {
     const sep = path.includes('?') ? '&' : '?';
     const r = await fetch(`${FMP}${path}${sep}apikey=${FMP_KEY}`);
-    if (!r.ok) return null;
+    if (!r.ok) {
+      if (r.status === 429) console.error(`fmpGet 429 RATE LIMIT: ${path.split('?')[0]}`);
+      else if (r.status === 401) console.error(`fmpGet 401 INVALID KEY: ${path.split('?')[0]}`);
+      else console.error(`fmpGet ${r.status}: ${path.split('?')[0]}`);
+      return null;
+    }
     const d = await r.json();
     return Array.isArray(d) ? d : (d?.Error ? null : d);
-  } catch { return null; }
+  } catch (e) {
+    console.error(`fmpGet TIMEOUT/ERR: ${e.message} — ${path.split('?')[0]}`);
+    return null;
+  }
 }
 
 function todayUAE() {
@@ -153,7 +161,7 @@ module.exports = async (req, res) => {
       const symbols = (universe.universe || []).map(s => s.symbol).filter(Boolean);
       if (symbols.length === 0) return res.status(400).json({ error: 'universe is empty' });
 
-      const CHUNK_SIZE = parseInt(req.query.chunk_size || '25', 10);
+      const CHUNK_SIZE = parseInt(req.query.chunk_size || '10', 10);
       const chunks = [];
       for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
         chunks.push(symbols.slice(i, i + CHUNK_SIZE).join(','));
