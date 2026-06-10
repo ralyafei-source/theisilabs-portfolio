@@ -38,16 +38,20 @@ function latest(arr, field) {
 
 // ─── Fetch full FMP intelligence for a list of symbols ───────────────────────
 // Used by both portfolio mode and ?symbols= mode
-async function fetchIntelligence(symbols) {
+async function fetchIntelligence(symbols, limit = 10) {
   const ETF_LIST = new Set(['QQQ','SPY','VGT','SPUS','VOO','XLP','IVV','SMH','IBIT','QQQM']);
   const nonEtfs  = symbols.filter(s => !ETF_LIST.has(s));
-  const top10    = nonEtfs.slice(0, 10);
+  // Deep fundamentals/targets/grades cover the first `limit` non-ETF symbols.
+  // (?symbols= passes symbols.length to cover ALL requested; portfolio/intelligence path defaults to 10.)
+  // ETFs are intentionally excluded — they have no P/E, ROE, margins, etc.
+  const deep     = nonEtfs.slice(0, limit);
 
   const [
     earningsRaw,
     targetResults,
     gradeResults,
     metricResults,
+    ratioResults,
     rsiResults,
     macdResults,
     sma50Results,
@@ -56,9 +60,12 @@ async function fetchIntelligence(symbols) {
     bbResults
   ] = await Promise.all([
     fmpGet(`/earnings-calendar?from=${todayUAE()}&to=${daysAheadUAE(60)}&symbol=${symbols.join(',')}`),
-    Promise.all(top10.map(sym => fmpGet(`/price-target-consensus?symbol=${sym}`))),
-    Promise.all(top10.map(sym => fmpGet(`/grades?symbol=${sym}&limit=3`))),
-    Promise.all(top10.map(sym => fmpGet(`/key-metrics-ttm?symbol=${sym}`))),
+    Promise.all(deep.map(sym => fmpGet(`/price-target-consensus?symbol=${sym}`))),
+    Promise.all(deep.map(sym => fmpGet(`/grades?symbol=${sym}&limit=3`))),
+    // TODO(optimize): replace per-symbol fundamentals with /key-metrics-ttm-bulk + /ratios-ttm-bulk
+    //                 (2 calls vs up to ~200) once bulk endpoints are verified on our FMP plan.
+    Promise.all(deep.map(sym => fmpGet(`/key-metrics-ttm?symbol=${sym}`))),
+    Promise.all(deep.map(sym => fmpGet(`/ratios-ttm?symbol=${sym}`))),
     Promise.all(symbols.map(sym =>
       fmpGet(`/technical-indicators/rsi?symbol=${sym}&periodLength=14&timeframe=1day&limit=1`)
         .then(d => ({ sym, rsi: latest(d, 'rsi') }))
@@ -109,6 +116,7 @@ async function fetchIntelligence(symbols) {
   const targets = targetResults.flat().filter(Boolean);
   const grades  = gradeResults.flat().filter(Boolean);
   const metrics = metricResults.flat().filter(Boolean);
+  const ratios  = ratioResults.flat().filter(Boolean);
   const earnings = (earningsRaw || []).map(e => ({
     ...e,
     inPortfolio: symbols.includes(e.symbol)
@@ -118,7 +126,7 @@ async function fetchIntelligence(symbols) {
     return new Date(a.date) - new Date(b.date);
   });
 
-  return { techMap, targets, grades, metrics, earnings };
+  return { techMap, targets, grades, metrics, ratios, earnings };
 }
 
 // ─── main ────────────────────────────────────────────────────────────────────
@@ -136,14 +144,28 @@ module.exports = async (req, res) => {
   const { nickname, include, symbols: symbolsParam } = req.query;
   const wantIntelligence = include === 'intelligence';
 
+  // Hard cap on how many symbols get the deep per-symbol fundamental/target/grade fetches.
+  // 100 is aligned with B1's ~100-candidate opportunity-scan count.
+  const INTEL_MAX = 100;
+  // Optional ?limit= for the intelligence path (default 10). Reject loudly — never silently clamp.
+  let intelLimit = 10;
+  if (req.query.limit != null && req.query.limit !== '') {
+    intelLimit = parseInt(req.query.limit, 10);
+    if (isNaN(intelLimit) || intelLimit < 1 || intelLimit > INTEL_MAX) {
+      console.error(`[portfolio-for-ai] invalid ?limit=${req.query.limit} — must be an integer 1..${INTEL_MAX}`);
+      return res.status(400).json({ error: `Invalid limit: must be an integer 1..${INTEL_MAX}` });
+    }
+  }
+
   // ── NEW: ?symbols= mode — deep fetch for opportunity stocks ─────────────────
   if (symbolsParam) {
     const symbols = symbolsParam.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
     if (symbols.length === 0) {
       return res.status(400).json({ error: 'No symbols provided' });
     }
-    if (symbols.length > 150) {
-      return res.status(400).json({ error: 'Maximum 150 symbols per request' });
+    if (symbols.length > INTEL_MAX) {
+      console.error(`[portfolio-for-ai] ?symbols= request rejected: ${symbols.length} symbols exceeds hard max ${INTEL_MAX}`);
+      return res.status(400).json({ error: `Too many symbols: ${symbols.length} (hard max ${INTEL_MAX})` });
     }
 
     try {
@@ -175,7 +197,8 @@ module.exports = async (req, res) => {
       });
 
       // Fetch FMP intelligence for all symbols
-      const { techMap, targets, grades, metrics, earnings } = await fetchIntelligence(symbols);
+      // Cover ALL requested symbols (symbols.length ≤ INTEL_MAX, enforced above) — not just the first 10.
+      const { techMap, targets, grades, metrics, ratios, earnings } = await fetchIntelligence(symbols, symbols.length);
 
       // Build structured JSON output keyed by symbol
       const result = {};
@@ -183,6 +206,7 @@ module.exports = async (req, res) => {
         const t = techMap[sym] || {};
         const p = priceMap[sym] || {};
         const m = metrics.find(x => x.symbol === sym) || {};
+        const r = ratios.find(x => x.symbol === sym) || {};
         const tgt = targets.find(x => x.symbol === sym) || {};
         const gr = grades.filter(x => x.symbol === sym);
         const earn = earnings.filter(e => e.symbol === sym);
@@ -205,18 +229,33 @@ module.exports = async (req, res) => {
           above_sma200: t.sma200 && p.price ? p.price > t.sma200 : null,
           golden_cross: t.sma50 && t.sma200 ? t.sma50 > t.sma200 : null,
           macd_bullish: t.macd && t.signal ? t.macd > t.signal : null,
-          // Fundamentals
-          pe_ratio:        m.peRatio           || null,
-          forward_pe:      m.forwardPE          || null,
-          peg:             m.pegRatio           || null,
-          roe:             m.roe                || null,
-          roic:            m.roic               || null,
-          fcf_yield:       m.freeCashFlowYield  || null,
-          ev_ebitda:       m.evToEbitda         || null,
-          net_margin:      m.netProfitMargin    || null,
-          gross_margin:    m.grossProfitMargin  || null,
-          debt_to_equity:  m.debtToEquity       || null,
-          revenue_growth:  m.revenueGrowth      || null,
+          // ── Fundamentals — verified FMP /stable TTM field names (confirmed live, AAPL 2026-06-09) ──
+          // DECIMALS (e.g. 0.2715 = 27.15%): margins, roe, roic, roa, fcf_yield, earnings_yield — stored raw, do NOT multiply.
+          // RAW numbers: pe, peg, pb, ps, ev_ebitda, debt_to_equity, current_ratio.
+          // Uses ?? (not ||) so a legitimate 0 is preserved, not coerced to null.
+          // From /ratios-ttm:
+          pe_ratio:         r.priceToEarningsRatioTTM        ?? null,
+          forward_pe:       null, // not provided by TTM ratios/key-metrics endpoints
+          peg:              r.priceToEarningsGrowthRatioTTM  ?? null,
+          pb_ratio:         r.priceToBookRatioTTM            ?? null,
+          ps_ratio:         r.priceToSalesRatioTTM           ?? null,
+          net_margin:       r.netProfitMarginTTM             ?? null, // decimal
+          gross_margin:     r.grossProfitMarginTTM           ?? null, // decimal
+          operating_margin: r.operatingProfitMarginTTM       ?? null, // decimal
+          debt_to_equity:   r.debtToEquityRatioTTM           ?? null,
+          current_ratio:    r.currentRatioTTM                ?? null,
+          // From /key-metrics-ttm:
+          // Prefer ROIC as the quality signal — ROE is buyback-distorted (AAPL ROE ≈ 1.467 = 146%); ROE kept for context only.
+          roic:             m.returnOnInvestedCapitalTTM     ?? null, // decimal — primary quality signal
+          roe:              m.returnOnEquityTTM              ?? null, // decimal — context only (buyback-distorted)
+          roa:              m.returnOnAssetsTTM              ?? null, // decimal
+          fcf_yield:        m.freeCashFlowYieldTTM           ?? null, // decimal
+          earnings_yield:   m.earningsYieldTTM               ?? null, // decimal
+          ev_ebitda:        m.evToEBITDATTM                  ?? null, // key-metrics version (preferred)
+          net_debt_to_ebitda: m.netDebtToEBITDATTM           ?? null,
+          // TODO(follow-up): wire real revenue_growth via /financial-growth or /income-statement-growth
+          //                  — matters for the growth-investor profile.
+          revenue_growth:   null, // not on TTM endpoints
           // Analyst
           analyst_target:  tgt.targetConsensus  || null,
           analyst_high:    tgt.targetHigh       || null,
@@ -225,9 +264,10 @@ module.exports = async (req, res) => {
           recent_grades:   gr.slice(0, 3),
           // Earnings
           upcoming_earnings: earn.slice(0, 2),
-          // Sharia indicators (from fundamentals)
-          debt_to_equity_ratio: m.debtToEquity || null,
-          interest_coverage:    m.interestCoverage || null,
+          // Sharia / leverage indicators (from /ratios-ttm)
+          debt_to_equity_ratio: r.debtToEquityRatioTTM ?? null,
+          // interestCoverageRatioTTM returns 0 for cash-rich names (no debt) → treat 0 as null
+          interest_coverage:    (r.interestCoverageRatioTTM && r.interestCoverageRatioTTM !== 0) ? r.interestCoverageRatioTTM : null,
         };
       });
 
@@ -390,7 +430,7 @@ module.exports = async (req, res) => {
       } catch { /* market data not yet available — skip */ }
 
       const allSyms = [...new Set([...symbols, ...moverSyms])];
-      const { techMap, targets, grades, metrics, earnings } = await fetchIntelligence(allSyms);
+      const { techMap, targets, grades, metrics, earnings } = await fetchIntelligence(allSyms, intelLimit);
 
       // Add BB bands using price
       Object.entries(techMap).forEach(([sym, t]) => {
