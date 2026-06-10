@@ -304,7 +304,8 @@ module.exports = async (req, res) => {
   }
   // ─────────────────────────────────────────────────────────────────────────
 
-  // Auth checkader = req.headers['authorization'] || '';
+  // Auth check
+  const authHeader = req.headers['authorization'] || '';
   const key = authHeader.replace('Bearer ', '').trim();
   if (key && key !== API_KEY) {
     return res.status(401).json({ error: 'Unauthorized' });
