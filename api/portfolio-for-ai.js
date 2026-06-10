@@ -1,10 +1,10 @@
-// api/portfolio-for-ai.js  
+// api/portfolio-for-ai.js
 // Returns portfolio as formatted plain text for Claude
 // Supports ?nickname=ahmed for per-user portfolios
 // Supports ?include=intelligence for smart FMP data (earnings, targets, grades, metrics, technicals)
 // Supports ?mode=build-universe (GET ?date=YYYY-MM-DD) — universe dedup/filter for scenario 922
 // Default (no nickname): reads Rashed's portfolio.json
- 
+
 const REPO    = 'ralyafei-source/theisilabs-portfolio';
 const UA      = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
 const API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
@@ -242,8 +242,9 @@ module.exports = async (req, res) => {
         let from_52w_high_pct = null, from_52w_low_pct = null, volume_ratio_20d = null;
         // FMP historical endpoint returns {symbol, historical:[...]} not plain array
         const histArr = Array.isArray(histD) ? histD : (histD?.historical || []);
+        if (histArr.length > 0) console.log(`hist fields for ${s}:`, Object.keys(histArr[0]).join(','), '| close=', histArr[0].close, '| adjClose=', histArr[0].adjClose);
         if (histArr.length > 0 && price) {
-          const prices = histArr.map(d => d.close || d.adjClose).filter(Boolean);
+          const prices = histArr.map(d => d.close || d.adjClose || d.adjclose || d.price).filter(Boolean);
           const volumes = histArr.map(d => d.volume).filter(v => v != null && v > 0);
           if (prices.length > 0) {
             const high52 = Math.max(...prices);
