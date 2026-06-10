@@ -6,6 +6,7 @@
 // Default (no nickname): reads Rashed's portfolio.json
 
 
+
 const REPO    = 'ralyafei-source/theisilabs-portfolio';
 const UA      = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
 const API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
