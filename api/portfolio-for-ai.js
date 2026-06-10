@@ -8,7 +8,7 @@
 const REPO    = 'ralyafei-source/theisilabs-portfolio';
 const UA      = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
 const API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
-const FMP_KEY = 'pSwvmzs4KUzvmePFIbSF0ulu5KnxcrHj';
+const FMP_KEY = process.env.FMP_API_KEY || process.env.FMP_KEY || 'pSwvmzs4KUzvmePFIbSF0ulu5KnxcrHj';
 const FMP     = 'https://financialmodelingprep.com/stable';
 
 // ─── FMP helper ──────────────────────────────────────────────────────────────
@@ -161,7 +161,7 @@ module.exports = async (req, res) => {
       const symbols = (universe.universe || []).map(s => s.symbol).filter(Boolean);
       if (symbols.length === 0) return res.status(400).json({ error: 'universe is empty' });
 
-      const CHUNK_SIZE = parseInt(req.query.chunk_size || '10', 10);
+      const CHUNK_SIZE = parseInt(req.query.chunk_size || '25', 10);
       const chunks = [];
       for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
         chunks.push(symbols.slice(i, i + CHUNK_SIZE).join(','));
