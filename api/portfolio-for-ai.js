@@ -228,7 +228,13 @@ module.exports = async (req, res) => {
           fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=200&timeframe=1day&limit=1`),
           fmpGet(`/technical-indicators/adx?symbol=${s}&periodLength=14&timeframe=1day&limit=1`),
           fmpGet(`/technical-indicators/williams?symbol=${s}&periodLength=14&timeframe=1day&limit=3`),
-          fmpGet(`/historical-price-eod/light?symbol=${s}&limit=252`),  // ~1 year of trading days
+          (() => {
+            // Use explicit date range to get exactly 1 year of DAILY prices
+            // 'limit' on this endpoint counts weeks not days
+            const toDate = new Date(Date.now() + 4*3600*1000).toISOString().slice(0,10);
+            const fromDate = new Date(Date.now() + 4*3600*1000 - 365*86400*1000).toISOString().slice(0,10);
+            return fmpGet(`/historical-price-eod/light?symbol=${s}&from=${fromDate}&to=${toDate}`);
+          })(),  // ~1 year of trading days
           fmpGet(`/ratios-ttm?symbol=${s}`),
           fmpGet(`/key-metrics-ttm?symbol=${s}`)
         ]);
@@ -244,15 +250,20 @@ module.exports = async (req, res) => {
         const histArr = Array.isArray(histD) ? histD : (histD?.historical || []);
         if (histArr.length > 0 && price) {
           // FMP /historical-price-eod/light returns {symbol, date, price, volume}
-          // Filter out pre-split prices (< 10% of current price) to avoid distortion
-          const minPlausible = price * 0.1;
-          const prices = histArr.map(d => d.price).filter(p => p && p > minPlausible);
+          const allPrices = histArr.map(d => d.price).filter(p => p && p > 0);
           const volumes = histArr.map(d => d.volume).filter(v => v != null && v > 0);
-          if (prices.length > 0) {
-            const high52 = Math.max(...prices);
-            const low52  = Math.min(...prices);
-            from_52w_high_pct = +((price - high52) / high52 * 100).toFixed(2);
-            from_52w_low_pct  = +((price - low52)  / low52  * 100).toFixed(2);
+          if (allPrices.length > 0) {
+            // Use 2nd-98th percentile to exclude bad data points at both ends
+            const sorted = [...allPrices].sort((a, b) => a - b);
+            const p2  = sorted[Math.max(0, Math.floor(sorted.length * 0.02))];
+            const p98 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.98))];
+            const prices = sorted.filter(p => p >= p2 && p <= p98);
+            if (prices.length > 0) {
+              const high52 = Math.max(...prices);
+              const low52  = Math.min(...prices);
+              from_52w_high_pct = +((price - high52) / high52 * 100).toFixed(2);
+              from_52w_low_pct  = +((price - low52)  / low52  * 100).toFixed(2);
+            }
           }
           // Volume ratio: today vs 20-day average
           if (volumes.length >= 20) {
