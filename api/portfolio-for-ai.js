@@ -244,7 +244,9 @@ module.exports = async (req, res) => {
         const histArr = Array.isArray(histD) ? histD : (histD?.historical || []);
         if (histArr.length > 0 && price) {
           // FMP /historical-price-eod/light returns {symbol, date, price, volume}
-          const prices = histArr.map(d => d.price).filter(Boolean);
+          // Filter out pre-split prices (< 10% of current price) to avoid distortion
+          const minPlausible = price * 0.1;
+          const prices = histArr.map(d => d.price).filter(p => p && p > minPlausible);
           const volumes = histArr.map(d => d.volume).filter(v => v != null && v > 0);
           if (prices.length > 0) {
             const high52 = Math.max(...prices);
