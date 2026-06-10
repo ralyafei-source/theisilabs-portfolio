@@ -153,7 +153,7 @@ module.exports = async (req, res) => {
       const symbols = (universe.universe || []).map(s => s.symbol).filter(Boolean);
       if (symbols.length === 0) return res.status(400).json({ error: 'universe is empty' });
 
-      const CHUNK_SIZE = parseInt(req.query.chunk_size || '50', 10);
+      const CHUNK_SIZE = parseInt(req.query.chunk_size || '25', 10);
       const chunks = [];
       for (let i = 0; i < symbols.length; i += CHUNK_SIZE) {
         chunks.push(symbols.slice(i, i + CHUNK_SIZE).join(','));
@@ -183,21 +183,12 @@ module.exports = async (req, res) => {
       const syms = symbolsParam.split(',').map(s => s.trim()).filter(Boolean);
       console.log(`deep-chunk: fetching ${syms.length} symbols for ${date}`);
 
-      // ── Fetch only what the scorer needs — parallel per symbol ───────────
+      // ── Fetch scorer-critical fields only — 5 FMP calls per symbol ────────
+      // Keeping calls minimal to stay within Vercel 60s timeout
+      // Yahoo price fetched separately (non-FMP, fast)
       const results = await Promise.all(syms.map(async s => {
-        const [rsiD, sma50D, sma200D, ema20D, ratiosD, metricsD, targetD, gradesD] =
-          await Promise.all([
-            fmpGet(`/technical-indicators/rsi?symbol=${s}&periodLength=14&timeframe=1day&limit=1`),
-            fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=50&timeframe=1day&limit=1`),
-            fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=200&timeframe=1day&limit=1`),
-            fmpGet(`/technical-indicators/ema?symbol=${s}&periodLength=20&timeframe=1day&limit=1`),
-            fmpGet(`/ratios-ttm?symbol=${s}`),
-            fmpGet(`/key-metrics-ttm?symbol=${s}`),
-            fmpGet(`/price-target-consensus?symbol=${s}`),
-            fmpGet(`/grades?symbol=${s}&limit=3`)
-          ]);
 
-        // Price + 5d change from Yahoo
+        // Price + 5d change from Yahoo (fast, separate from FMP)
         let price = null, change5d = null;
         try {
           const yr = await fetch(
@@ -213,44 +204,46 @@ module.exports = async (req, res) => {
             if (validCloses.length >= 2)
               change5d = +((validCloses[validCloses.length-1] - validCloses[0]) / validCloses[0] * 100).toFixed(2);
           }
-        } catch { /* silent — price stays null */ }
+        } catch { /* silent */ }
+
+        // 5 FMP calls per symbol (down from 8) — all parallel
+        const [rsiD, sma50D, sma200D, ratiosD, metricsD] = await Promise.all([
+          fmpGet(`/technical-indicators/rsi?symbol=${s}&periodLength=14&timeframe=1day&limit=1`),
+          fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=50&timeframe=1day&limit=1`),
+          fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=200&timeframe=1day&limit=1`),
+          fmpGet(`/ratios-ttm?symbol=${s}`),
+          fmpGet(`/key-metrics-ttm?symbol=${s}`)
+        ]);
 
         const sma50  = latest(sma50D,  'sma');
         const sma200 = latest(sma200D, 'sma');
         const r = Array.isArray(ratiosD)  ? ratiosD[0]  : ratiosD;
         const m = Array.isArray(metricsD) ? metricsD[0] : metricsD;
-        const t = Array.isArray(targetD)  ? targetD[0]  : targetD;
 
         return [s, {
           symbol:    s,
           price,
           change5d,
-          rsi:       latest(rsiD,  'rsi'),
+          rsi:       latest(rsiD, 'rsi'),
           sma50,
           sma200,
-          ema20:     latest(ema20D, 'ema'),
           above_sma50:  price && sma50  ? price > sma50  : null,
           above_sma200: price && sma200 ? price > sma200 : null,
           golden_cross: sma50 && sma200 ? sma50 > sma200 : null,
           // Ratios TTM
-          pe_ratio:     r?.priceToEarningsRatioTTM        ?? null,
-          peg:          r?.priceToEarningsGrowthRatioTTM  ?? null,
-          pb:           r?.priceToBookRatioTTM            ?? null,
-          net_margin:   r?.netProfitMarginTTM             ?? null,
-          gross_margin: r?.grossProfitMarginTTM           ?? null,
-          debt_to_equity: r?.debtToEquityRatioTTM        ?? null,
-          current_ratio:  r?.currentRatioTTM             ?? null,
-          interest_coverage: r?.interestCoverageRatioTTM ?? null,
+          pe_ratio:       r?.priceToEarningsRatioTTM        ?? null,
+          peg:            r?.priceToEarningsGrowthRatioTTM  ?? null,
+          pb:             r?.priceToBookRatioTTM            ?? null,
+          net_margin:     r?.netProfitMarginTTM             ?? null,
+          gross_margin:   r?.grossProfitMarginTTM           ?? null,
+          debt_to_equity: r?.debtToEquityRatioTTM          ?? null,
+          current_ratio:  r?.currentRatioTTM               ?? null,
+          interest_coverage: r?.interestCoverageRatioTTM   ?? null,
           // Key metrics TTM
-          roic:         m?.returnOnInvestedCapitalTTM ?? null,
-          roe:          m?.returnOnEquityTTM          ?? null,
-          fcf_yield:    m?.freeCashFlowYieldTTM       ?? null,
-          ev_ebitda:    m?.evToEBITDATTM              ?? null,
-          // Analyst
-          analyst_target:    t?.targetConsensus ?? null,
-          analyst_upside_pct: (price && t?.targetConsensus)
-            ? +((t.targetConsensus - price) / price * 100).toFixed(2) : null,
-          recent_grades: Array.isArray(gradesD) ? gradesD.slice(0, 3) : null
+          roic:      m?.returnOnInvestedCapitalTTM ?? null,
+          roe:       m?.returnOnEquityTTM          ?? null,
+          fcf_yield: m?.freeCashFlowYieldTTM       ?? null,
+          ev_ebitda: m?.evToEBITDATTM              ?? null
         }];
       }));
 
