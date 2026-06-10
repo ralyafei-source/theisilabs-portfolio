@@ -569,6 +569,13 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
   font-family:'Almarai',sans-serif;transition:all 0.15s;}
 .firm-tab:hover{color:var(--text);border-color:var(--border3);background:var(--bg3);}
 .firm-tab.active{color:#fff;background:var(--rose);border-color:var(--rose);}
+.op-fpill{font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg2);color:var(--text3);cursor:pointer;transition:all .15s;font-family:'Almarai',sans-serif;}
+.op-fpill.active{background:var(--rose);border-color:var(--rose);color:#fff;}
+.op-fpill:hover:not(.active){border-color:var(--rose);color:var(--rose);}
+.op-hero-card{background:var(--bg2);border:1px solid var(--border);border-top:2px solid var(--rose);border-radius:12px;padding:14px;position:relative;transition:border-color .15s;}
+.op-hero-card:hover{border-color:var(--rose);}
+.op-mini-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px;transition:border-color .15s;}
+.op-mini-card:hover{border-color:var(--border2);}
 .tab-stale{font-size:9px;color:var(--text3);font-weight:400;margin-inline-start:4px;}
 
 /* Group labels */
@@ -1728,6 +1735,9 @@ WOLF remains at critical lows<br><br>
           <button class="firm-tab macro" onclick="showFirm('macro',this)">
             Macro Today<span class="tab-stale" id="stale-macro"></span>
           </button>
+          <button class="firm-tab opportunities" onclick="showFirm('opportunities',this)">
+            فرص السوق<span class="tab-stale" id="stale-opportunities"></span>
+          </button>
         </div>
       </div>
 
@@ -1920,6 +1930,51 @@ WOLF remains at critical lows<br><br>
         </div>
         <div class="firm-body" id="health-body"></div>
         <div class="advisor-ts" id="health-ts"></div>
+      </div>
+
+      <!-- ===== OPPORTUNITIES PANEL ===== -->
+      <div class="firm-content" id="firm-opportunities">
+        <div class="firm-header">
+          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--rose);font-size:11px;">فرص</div>
+          <div>
+            <div class="firm-title">فرص السوق</div>
+            <div class="firm-subtitle">أفضل 50 سهماً خارج محفظتك · مرتبة بالدرجة · تحديث يومي</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+          <div style="font-size:11px;color:var(--text3)" id="op-meta">جاري التحميل...</div>
+          <button class="btn btn-outline" onclick="loadOpportunities(true)" style="font-size:11px;padding:5px 12px;">↺ تحديث</button>
+        </div>
+
+        <!-- Hero Top 5 -->
+        <div style="font-size:10px;font-weight:600;color:var(--rose);letter-spacing:1.5px;margin-bottom:10px;font-family:'IBM Plex Mono',monospace;">⭐ أفضل 5 إشارات اليوم</div>
+        <div id="op-hero" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:22px;"></div>
+
+        <div style="height:1px;background:var(--border);margin-bottom:14px;"></div>
+
+        <!-- Filters + Sort -->
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="op-fpill active" onclick="opFilter('all',this)">الكل</button>
+            <button class="op-fpill" onclick="opFilter('Momentum',this)">زخم</button>
+            <button class="op-fpill" onclick="opFilter('Value',this)">قيمة</button>
+            <button class="op-fpill" onclick="opFilter('Recovery',this)">انتعاش</button>
+            <button class="op-fpill" onclick="opFilter('Breakout',this)">اختراق</button>
+            <button class="op-fpill" onclick="opFilter('Growth',this)">نمو</button>
+          </div>
+          <select onchange="opSort(this.value)" style="background:var(--bg2);border:1px solid var(--border);color:var(--text2);font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;font-family:'Almarai',sans-serif;">
+            <option value="rank">ترتيب الدرجة</option>
+            <option value="fit">الأفضل ملاءمةً</option>
+          </select>
+        </div>
+
+        <!-- Cards Grid -->
+        <div id="op-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;"></div>
+
+        <div style="margin-top:18px;padding:10px 14px;background:var(--bg3);border-radius:8px;font-size:10px;color:var(--text3);text-align:center;direction:rtl;border:1px solid var(--border);">
+          ⚠️ هذه الإشارات للاطلاع فقط — البيانات توجّه، لا تأمر. القرار قرارك أنت.
+        </div>
       </div>
 
     </div>
@@ -3141,10 +3196,214 @@ async function translateAnalysis(data){
   renderAnalysis(data);
 }
 
+// ═══════════════════════════════════════════════════
+// OPPORTUNITY ENGINE — Step 7
+// Reads scored-{date}.json + today.json from GitHub
+// Renders top-50 cards with Arabic why_text
+// ═══════════════════════════════════════════════════
+const _OP_GH = 'https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/market/';
+const _OP_PAT_LABEL = {Momentum:'زخم',Value:'قيمة',Recovery:'انتعاش',Breakout:'اختراق',Growth:'نمو'};
+const _OP_PAT_BG    = {Momentum:'rgba(0,200,100,0.12)',Value:'rgba(255,215,0,0.10)',Recovery:'rgba(0,200,255,0.12)',Breakout:'rgba(255,10,120,0.12)',Growth:'rgba(168,85,247,0.12)'};
+const _OP_PAT_TX    = {Momentum:'#00c864',Value:'#ffd700',Recovery:'#00c8ff',Breakout:'var(--rose)',Growth:'#a855f7'};
+
+let _opStocks  = [];
+let _opFilter  = 'all';
+let _opSort    = 'rank';
+let _opLoaded  = false;
+
+function _opScoreColor(s){ return s>=75?'#00c864':s>=55?'#ffd700':'#ff8c00'; }
+
+function _opFitInfo(p){
+  p = p||0;
+  if(p < 30) return {bar:'#00c864', pct:Math.max(8,100-p), label:'ملاءمة عالية ✓'};
+  if(p < 60) return {bar:'#ffd700', pct:100-p,              label:'ملاءمة متوسطة'};
+  return            {bar:'#ff6b35', pct:Math.max(5,100-p),  label:'تداخل قطاعي'};
+}
+
+function _opPatBadges(pats){
+  return (pats||[]).map(p=>{
+    const bg=_OP_PAT_BG[p]||'rgba(128,128,128,0.1)';
+    const tx=_OP_PAT_TX[p]||'var(--text3)';
+    const lb=_OP_PAT_LABEL[p]||p;
+    return `<span style="font-size:10px;padding:2px 7px;border-radius:12px;background:${bg};color:${tx};font-weight:600;border:1px solid ${tx}33">${lb}</span>`;
+  }).join('');
+}
+
+function _opEarningsBadge(s){
+  if(!s.upcoming_earnings) return '';
+  const days = Math.ceil((new Date(s.upcoming_earnings) - Date.now()) / 86400000);
+  if(days >= 0 && days <= 5){
+    const lbl = days===0?'أرباح اليوم':days===1?'أرباح غداً':`أرباح خلال ${days} أيام`;
+    return `<span style="font-size:9px;background:rgba(255,140,0,0.12);border:1px solid rgba(255,140,0,0.3);border-radius:5px;padding:2px 6px;color:#ff8c00">⚠ ${lbl}</span>`;
+  }
+  return '';
+}
+
+function _opStreakBadge(streak){
+  if(!streak) return '';
+  return `<span style="font-size:9px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:2px 6px;color:var(--text3)">↻ ${streak}/20 يوم</span>`;
+}
+
+function _opLayerBar(sb){
+  if(!sb || !sb.layers) return '';
+  const defs = [['L1','التقني'],['L2','الزخم'],['L3','خارجي'],['L4','التقييم'],['L5','الأساسيات']];
+  const bars = defs.map(([k,name])=>{
+    const v = sb.layers[k];
+    const col = v ? (v>=70?'#00c864':v>=50?'#ffd700':'#ff8c00') : 'var(--border)';
+    const h = v ? 3 : 1;
+    return `<div style="text-align:center"><div style="height:${h}px;border-radius:2px;background:${col};opacity:${v?1:0.3}"></div><div style="font-size:8px;color:var(--text3);margin-top:2px">${k}</div></div>`;
+  }).join('');
+  return `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:8px">${bars}</div>`;
+}
+
+function _opBuildHeroCard(s){
+  const fit = _opFitInfo(s._fitPct);
+  const sc  = _opScoreColor(s.final_score);
+  const rank = s.display_rank || s.rank || '—';
+  return `<div class="op-hero-card">
+    <div style="position:absolute;top:10px;left:10px;width:20px;height:20px;background:var(--rose);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;line-height:1">${rank}</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--text);font-family:'IBM Plex Mono',monospace">${s.symbol}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:1px">${s.sector||''}</div>
+        <div style="font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:2px">$${(s.price_at_score||0).toFixed(2)}</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:6px 10px;text-align:center;border:1px solid var(--border);min-width:52px;">
+        <div style="font-size:22px;font-weight:900;color:${sc};font-family:'IBM Plex Mono',monospace;line-height:1">${Math.round(s.final_score)}</div>
+        <div style="font-size:8px;color:var(--text3)">/ 100</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;justify-content:flex-end">${_opPatBadges(s.pattern)}</div>
+    <div style="font-size:11px;color:var(--text2);line-height:1.65;background:var(--bg3);padding:8px 10px;border-radius:8px;margin-bottom:8px;direction:rtl;border-right:2px solid var(--border);">${s._why||'—'}</div>
+    ${_opLayerBar(s.score_breakdown)}
+    <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
+      <div style="flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;">
+        <div style="height:100%;width:${fit.pct}%;background:${fit.bar};border-radius:2px;transition:width .4s;"></div>
+      </div>
+      <div style="font-size:9px;color:var(--text3);white-space:nowrap">${fit.label}</div>
+    </div>
+    <div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap;">
+      ${_opStreakBadge(s._streak)}
+      ${_opEarningsBadge(s)}
+      ${s.in_portfolio?'<span style="font-size:9px;background:rgba(0,200,255,0.1);border:1px solid rgba(0,200,255,0.25);border-radius:5px;padding:2px 6px;color:#00c8ff">في محفظتك</span>':''}
+    </div>
+  </div>`;
+}
+
+function _opBuildMiniCard(s){
+  const sc = _opScoreColor(s.final_score);
+  return `<div class="op-mini-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);font-family:'IBM Plex Mono',monospace">${s.symbol}</div>
+        <div style="font-size:9px;color:var(--text3)">${s.sector||''}</div>
+      </div>
+      <div style="font-size:18px;font-weight:800;color:${sc};font-family:'IBM Plex Mono',monospace">${Math.round(s.final_score)}</div>
+    </div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;justify-content:flex-end">${_opPatBadges(s.pattern)}</div>
+    <div style="font-size:10px;color:var(--text3);line-height:1.55;direction:rtl">${(s._why||'').slice(0,100)}${(s._why||'').length>100?'...':''}</div>
+    <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">${_opStreakBadge(s._streak)}${_opEarningsBadge(s)}</div>
+  </div>`;
+}
+
+function opFilter(f, btn){
+  _opFilter = f;
+  document.querySelectorAll('.op-fpill').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  _opRenderGrid();
+}
+
+function opSort(v){ _opSort = v; _opRenderGrid(); }
+
+function _opRenderGrid(){
+  const grid = document.getElementById('op-grid');
+  if(!grid) return;
+  let stocks = _opStocks.filter(s => !s._isHero);
+  if(_opFilter !== 'all') stocks = stocks.filter(s => (s.pattern||[]).includes(_opFilter));
+  if(_opSort === 'fit') stocks.sort((a,b) => (a._fitPct||0) - (b._fitPct||0));
+  else stocks.sort((a,b) => (a.display_rank||a.rank||999) - (b.display_rank||b.rank||999));
+  grid.innerHTML = stocks.length
+    ? stocks.map(_opBuildMiniCard).join('')
+    : `<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px;direction:rtl">لا توجد أسهم تطابق هذا الفلتر اليوم</div>`;
+}
+
+async function loadOpportunities(force){
+  if(_opLoaded && !force) return;
+  const heroEl = document.getElementById('op-hero');
+  const gridEl = document.getElementById('op-grid');
+  const metaEl = document.getElementById('op-meta');
+  if(!heroEl) return;
+  heroEl.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:16px;direction:rtl">جاري تحميل البيانات...</div>';
+  if(gridEl) gridEl.innerHTML = '';
+  try{
+    // Get today's date in UAE timezone (UTC+4)
+    const todayUAE = new Date(Date.now() + 4*3600000).toISOString().slice(0,10);
+    const t = Date.now();
+    const [todayRes, scoredRes] = await Promise.all([
+      fetch(`${_OP_GH}today.json?t=${t}`),
+      fetch(`${_OP_GH}scored-${todayUAE}.json?t=${t}`)
+    ]);
+    if(!todayRes.ok || !scoredRes.ok) throw new Error('فشل تحميل البيانات من GitHub');
+    const todayData  = await todayRes.json();
+    const scoredData = await scoredRes.json();
+
+    // today.json: { date, why_texts: {SYMBOL: "text"} }
+    const whyTexts = todayData.why_texts || {};
+
+    // scored-{date}.json: handle array or object map
+    let allStocks = [];
+    if(Array.isArray(scoredData)){
+      allStocks = scoredData;
+    } else if(Array.isArray(scoredData.stocks)){
+      allStocks = scoredData.stocks;
+    } else if(scoredData.stocks && typeof scoredData.stocks === 'object'){
+      allStocks = Object.values(scoredData.stocks);
+    } else {
+      // might be a flat object map {SYMBOL: {...}}
+      allStocks = Object.values(scoredData).filter(v => v && typeof v === 'object' && v.symbol);
+    }
+
+    // Filter to display-eligible, sort by display_rank/rank
+    const display = allStocks
+      .filter(s => s.display === true || s.display_eligible === true)
+      .sort((a,b) => (a.display_rank||a.rank||9999) - (b.display_rank||b.rank||9999))
+      .slice(0, 50);
+
+    // Merge why_text and helper fields
+    _opStocks = display.map(s => {
+      const fitPct = s.score_breakdown?.fit_pct
+        || s.score_breakdown?.fitModifier !== undefined ? Math.abs((s.score_breakdown?.fitModifier||0)) * 10 : 0;
+      // Try to read sector overlap from score_breakdown or a direct field
+      const sectorOverlap = s._sector_overlap_pct || s.sector_overlap_pct || fitPct || 0;
+      return {
+        ...s,
+        _why:     whyTexts[s.symbol] || '',
+        _fitPct:  sectorOverlap,
+        _streak:  s._streak_count || s.streak_count || null,
+        _isHero:  s.highlight === true || (s.display_rank >= 1 && s.display_rank <= 5)
+      };
+    });
+
+    const heroes = _opStocks.filter(s => s._isHero).slice(0,5);
+    heroEl.innerHTML = heroes.length
+      ? heroes.map(_opBuildHeroCard).join('')
+      : '<div style="color:var(--text3);font-size:12px;padding:10px;direction:rtl">لا توجد بيانات مميزة اليوم</div>';
+
+    if(metaEl) metaEl.textContent = `${display.length} سهم · ${todayUAE}`;
+    _opLoaded = true;
+    _opRenderGrid();
+  } catch(e){
+    console.error('Opportunities load error:', e);
+    if(heroEl) heroEl.innerHTML = `<div style="color:var(--red);font-size:12px;padding:10px;direction:rtl">خطأ في التحميل: ${e.message}</div>`;
+    if(metaEl) metaEl.textContent = 'تعذّر التحميل';
+  }
+}
+// ═══ END OPPORTUNITY ENGINE ═══
+
 function showFirm(id,btn){
   // If in EN mode, trigger translation for the new tab's route type
   if(advisorLang==='en' && analysisData){
-    const typeMap={signals:'daily',earnings:'daily',macro:'daily',risk:'weekly',fairvalue:'weekly',momentum:'weekly',competitive:'monthly',longview:'monthly',health:'monthly'};
+    const typeMap={signals:'daily',earnings:'daily',macro:'daily',risk:'weekly',fairvalue:'weekly',momentum:'weekly',competitive:'monthly',longview:'monthly',health:'monthly',opportunities:'daily'};
     const type=typeMap[id]||'daily';
     const cacheKey=type+'-'+advisorDate;
     if(!translationCache[cacheKey]){
@@ -3160,6 +3419,8 @@ function showFirm(id,btn){
     const body = document.querySelector('#firm-'+id+' .firm-body');
     if(body && !body.dataset.glossaryDone){ highlightGlossaryTerms(body); body.dataset.glossaryDone='1'; }
   }, 200);
+  // Load opportunities data when that tab is opened
+  if(id==='opportunities') loadOpportunities(false);
 }
 
   // ===== STOCK LOOKUP =====
@@ -8276,24 +8537,3 @@ function switchTab(tabId, btn) {
     </div>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
