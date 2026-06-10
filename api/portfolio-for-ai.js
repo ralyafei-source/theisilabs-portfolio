@@ -1,4 +1,4 @@
-// api/portfolio-for-ai.js 
+// api/portfolio-for-ai.js  
 // Returns portfolio as formatted plain text for Claude
 // Supports ?nickname=ahmed for per-user portfolios
 // Supports ?include=intelligence for smart FMP data (earnings, targets, grades, metrics, technicals)
