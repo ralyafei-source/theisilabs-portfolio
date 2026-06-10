@@ -46,15 +46,19 @@ module.exports = async (req, res) => {
     try {
       let { large = [], mid = [], momentum = [], date } = req.body;
 
-      // Make.com may send arrays as strings (parseResponse=false) — parse them
-      if (typeof large   === 'string') try { large    = JSON.parse(large);    } catch { large    = []; }
-      if (typeof mid     === 'string') try { mid      = JSON.parse(mid);      } catch { mid      = []; }
-      if (typeof momentum === 'string') try { momentum = JSON.parse(momentum); } catch { momentum = []; }
-
-      // Make.com may wrap arrays as objects {1:{...},2:{...}} — normalize
-      if (!Array.isArray(large))    large    = Object.values(large    || {});
-      if (!Array.isArray(mid))      mid      = Object.values(mid      || {});
-      if (!Array.isArray(momentum)) momentum = Object.values(momentum || {});
+      // Make.com double-encodes arrays — parse up to 2 rounds until we get a real array
+      function toArray(val) {
+        for (let i = 0; i < 2; i++) {
+          if (Array.isArray(val)) return val;
+          if (typeof val === 'string') { try { val = JSON.parse(val); } catch { return []; } }
+          else if (val && typeof val === 'object') return Object.values(val);
+          else return [];
+        }
+        return Array.isArray(val) ? val : [];
+      }
+      large    = toArray(large);
+      mid      = toArray(mid);
+      momentum = toArray(momentum);
 
       const MIN_DOLLAR_VOLUME = 5_000_000;
       const MAX_UNIVERSE      = 800;
