@@ -15,7 +15,10 @@ const FMP     = 'https://financialmodelingprep.com/stable';
 async function fmpGet(path) {
   try {
     const sep = path.includes('?') ? '&' : '?';
-    const r = await fetch(`${FMP}${path}${sep}apikey=${FMP_KEY}`);
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 8000); // 8s timeout per FMP call
+    const r = await fetch(`${FMP}${path}${sep}apikey=${FMP_KEY}`, { signal: controller.signal });
+    clearTimeout(t);
     if (!r.ok) {
       if (r.status === 429) console.error(`fmpGet 429 RATE LIMIT: ${path.split('?')[0]}`);
       else if (r.status === 401) console.error(`fmpGet 401 INVALID KEY: ${path.split('?')[0]}`);
@@ -196,13 +199,16 @@ module.exports = async (req, res) => {
       // Yahoo price fetched separately (non-FMP, fast)
       const results = await Promise.all(syms.map(async s => {
 
-        // Price + 5d change from Yahoo (fast, separate from FMP)
+        // Price + 5d change from Yahoo — with 5s timeout to prevent hangs
         let price = null, change5d = null;
         try {
+          const controller = new AbortController();
+          const yahooTimeout = setTimeout(() => controller.abort(), 5000);
           const yr = await fetch(
             `https://query2.finance.yahoo.com/v8/finance/chart/${s}?interval=1d&range=5d`,
-            { headers: { 'User-Agent': UA } }
+            { headers: { 'User-Agent': UA }, signal: controller.signal }
           );
+          clearTimeout(yahooTimeout);
           if (yr.ok) {
             const yd = await yr.json();
             const result = yd?.chart?.result?.[0];
@@ -212,7 +218,7 @@ module.exports = async (req, res) => {
             if (validCloses.length >= 2)
               change5d = +((validCloses[validCloses.length-1] - validCloses[0]) / validCloses[0] * 100).toFixed(2);
           }
-        } catch { /* silent */ }
+        } catch { /* silent — timeout or error, price stays null */ }
 
         // 5 FMP calls per symbol (down from 8) — all parallel
         const [rsiD, sma50D, sma200D, ratiosD, metricsD] = await Promise.all([
