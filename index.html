@@ -2613,7 +2613,8 @@ const r=await fetch('https://raw.githubusercontent.com/ralyafei-source/theisilab
         url:n.url||n.link||'#',
         syms:n.syms||n.symbols||n.tickers||[],
         source:(n.source&&n.source.name?n.source.name:n.source)||'—',
-        time:n.time||n.published||n.publishedAt||''
+time:n.time||n.published||n.publishedAt||'',
+sentiment:n.sentiment||'neutral'
       }));
       newsIsLive=true;
       try{renderNews();}catch(e){}
@@ -2902,7 +2903,7 @@ function renderNews(){
     const sentiment=n.sentiment||'neutral';
 const arrow=sentiment==='bullish'?'↑':sentiment==='bearish'?'↓':'→';
 const arrowColor=sentiment==='bullish'?'#00d4aa':sentiment==='bearish'?'#ff4444':'#888';
-const linkIcon=`<span style="color:${arrowColor};font-weight:700;margin-left:4px">${arrow}</span>`+(hasUrl?`<span class="news-ext" title="${isAr?'فتح المقال':'Open article'}">↗</span>`:'');
+const linkIcon=`<span style="color:${arrowColor};font-weight:700;font-size:14px;margin-left:4px">${arrow}</span>`;
     const summary=n.summary?`<div class="news-summary">${n.summary}</div>`:'';
     return `<div class="news-item" ${clickable}>
       <div class="news-icon">${n.icon||'📰'}</div>
