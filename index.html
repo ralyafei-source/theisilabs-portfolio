@@ -3226,11 +3226,10 @@ const _OP_LAYER_LEGEND = [
 ];
 
 function _opOpenLegend(sym){
-  const stock = _opStocks.find(s=>s.symbol===sym)||{};
-  const scoresJson = stock.score_breakdown||{};
   _opCloseLegend();
   const panel = document.getElementById('op-lgd-'+sym);
   if(!panel) return;
+  document.body.appendChild(panel);
   let bd = document.getElementById('op-legend-bd');
   if(!bd){
     bd = document.createElement('div');
@@ -3242,19 +3241,13 @@ function _opOpenLegend(sym){
   bd.style.display = 'block';
   panel.style.display = 'block';
   panel.onclick = e => e.stopPropagation();
-  requestAnimationFrame(()=>{
-    panel.style.maxHeight = '700px';
-    panel.style.opacity = '1';
-    panel.style.transform = 'translateY(0)';
-  });
+  requestAnimationFrame(()=>{ panel.style.opacity = '1'; });
 }
 
 function _opCloseLegend(){
   document.querySelectorAll('.op-lgd-panel').forEach(p=>{
-    p.style.maxHeight = '0';
     p.style.opacity = '0';
-    p.style.transform = 'translateY(-8px)';
-    setTimeout(()=>{ p.style.display='none'; }, 320);
+    setTimeout(()=>{ p.style.display='none'; }, 280);
   });
   const bd = document.getElementById('op-legend-bd');
   if(bd) bd.style.display = 'none';
@@ -3289,10 +3282,13 @@ function _opBuildLegendPanel(sym, sb){
   }).join('');
   return `
   <div id="op-lgd-${sym}" class="op-lgd-panel"
-    style="display:none;max-height:0;opacity:0;transform:translateY(-8px);overflow:hidden;
-           transition:max-height 0.35s ease,opacity 0.28s ease,transform 0.28s ease;
+    style="display:none;opacity:0;
+           transition:opacity 0.25s ease;
            background:var(--bg2);border:1px solid var(--border);border-radius:12px;
-           padding:0 14px;margin-top:10px;position:relative;z-index:9989;">
+           padding:0 14px;
+           position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+           width:min(92vw,500px);max-height:85vh;overflow-y:auto;
+           z-index:9990;box-shadow:0 8px 40px rgba(0,0,0,0.55);">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0 8px;border-bottom:1px solid var(--border);">
       <div style="font-size:12px;font-weight:700;color:var(--text);font-family:'Almarai',sans-serif;">كيف تُحسب هذه الدرجة؟</div>
       <button onclick="_opCloseLegend()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;line-height:1;padding:0;">×</button>
