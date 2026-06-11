@@ -1082,6 +1082,39 @@ h1, h2, h3 {
     transform: none !important;
   }
 }
+
+/* ═══ P2: Toast notifications ═══ */
+#toastWrap{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;}
+.toast{background:var(--bg4);border:1px solid var(--border2);color:var(--text);font-size:13px;font-weight:600;padding:10px 20px;border-radius:10px;box-shadow:var(--shadow-lg);opacity:0;transform:translateY(10px);transition:opacity .25s,transform .25s;font-family:'Almarai',sans-serif;white-space:pre-line;max-width:min(440px,86vw);text-align:center;}
+.toast.in{opacity:1;transform:translateY(0);}
+.toast.ok{border-color:transparent;background:var(--green-dim);color:var(--green);}
+.toast.err{border-color:transparent;background:var(--red-dim);color:var(--red);}
+[data-mode="light"] .toast{box-shadow:var(--shadow-lg);}
+/* ═══ P2: Confirm sheet (replaces native confirm/alert) ═══ */
+.sheet-ov{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .2s;}
+.sheet-ov.in{opacity:1;}
+.sheet{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:22px;max-width:380px;width:100%;box-shadow:var(--shadow-lg);transform:translateY(8px) scale(.98);transition:transform .2s;}
+.sheet-ov.in .sheet{transform:none;}
+.sheet-msg{font-size:13.5px;color:var(--text);line-height:1.8;white-space:pre-line;font-family:'Almarai',sans-serif;}
+.sheet-btns{display:flex;gap:10px;margin-top:18px;justify-content:flex-end;}
+.sheet-btn{font-size:13px;font-weight:700;padding:9px 20px;border-radius:9px;cursor:pointer;font-family:'Almarai',sans-serif;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s;}
+.sheet-btn:hover{color:var(--text);border-color:var(--border3);}
+.sheet-btn.go{background:var(--rose);border-color:var(--rose);color:#fff;}
+.sheet-btn.go:hover{opacity:.9;}
+.sheet-btn.go.danger{background:var(--red);border-color:var(--red);}
+/* ═══ P2: Skeleton loaders ═══ */
+.skel{position:relative;overflow:hidden;background:var(--bg3);border-radius:6px;}
+.skel::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,0.05),transparent);animation:skelSweep 1.4s infinite;}
+[data-mode="light"] .skel::after{background:linear-gradient(90deg,transparent,rgba(0,0,0,0.04),transparent);}
+@keyframes skelSweep{100%{transform:translateX(100%);}}
+@media (prefers-reduced-motion:reduce){.skel::after{animation:none;}}
+/* ═══ P2: Unified table language — one component, all tables ═══ */
+.ptable,.tx-table,.md-table{width:100%;border-collapse:collapse;}
+.ptable th,.tx-table th,.md-table th{background:transparent;border-bottom:1px solid var(--border2);padding:10px 14px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;}
+.ptable td,.tx-table td,.md-table td{padding:12px 14px;font-size:12px;border-bottom:1px solid var(--border);}
+.ptable td.num,.ptable th.num,.tx-table td.num,.tx-table th.num{text-align:right;font-variant-numeric:tabular-nums;}
+.ptable tr:hover td,.tx-table tr:hover td,.md-table tr:hover td{background:var(--bg3);}
+.ptable tr:last-child td,.tx-table tr:last-child td{border-bottom:none;}
 </style>
 </head>
 <body>
@@ -1348,7 +1381,7 @@ h1, h2, h3 {
   </div>
   <div class="cmd-stitle" id="cmd-happened">What happened today</div>
   <div class="event-grid" id="cmd-events">
-    <div class="event-card neutral"><div class="event-ticker">Portfolio</div><div class="event-body">Loading today's briefing...</div></div>
+    <div class="event-card neutral"><div class="event-ticker">Portfolio</div><div class="event-body"><div class="skel" style="height:10px;width:85%;margin:4px 0"></div><div class="skel" style="height:10px;width:60%"></div></div></div>
     <div class="event-card neutral"><div class="event-ticker">Market</div><div class="event-body">Fetching latest analysis...</div></div>
     <div class="event-card neutral"><div class="event-ticker">Macro</div><div class="event-body">—</div></div>
     <div class="event-card neutral"><div class="event-ticker">Sector</div><div class="event-body">—</div></div>
@@ -1356,7 +1389,7 @@ h1, h2, h3 {
   <div class="cmd-stitle" id="cmd-decisions-title">Worth your attention <span id="cmd-decisions-sub" style="font-size:11px;font-weight:400;color:var(--text2);margin-left:6px">signals to look at — you decide</span></div>
   <p id="cmd-disclaimer" data-en="AI-generated signals for informational purposes only. Not financial advice. Do your own research before making investment decisions." data-ar="إشارات مُولّدة بالذكاء الاصطناعي لأغراض إعلامية فقط. هذه ليست نصيحة مالية. قم بإجراء بحثك الخاص قبل اتخاذ أي قرارات استثمارية." style="font-size:11px;color:var(--text2);margin:-4px 0 10px;line-height:1.5">AI-generated signals for informational purposes only. Not financial advice. Do your own research before making investment decisions.</p>
   <div class="action-grid" id="cmd-decisions">
-    <div class="action-card watch"><div class="ac-header"><span class="ac-rank">1</span><span class="ac-ticker">—</span></div><div class="ac-instruction">Loading signals...</div></div>
+    <div class="action-card watch"><div class="ac-header"><span class="ac-rank">1</span><span class="ac-ticker">—</span></div><div class="ac-instruction"><div class="skel" style="height:9px;width:90%;margin:3px 0"></div><div class="skel" style="height:9px;width:55%"></div></div></div>
     <div class="action-card watch"><div class="ac-header"><span class="ac-rank">2</span><span class="ac-ticker">—</span></div><div class="ac-instruction">—</div></div>
     <div class="action-card watch"><div class="ac-header"><span class="ac-rank">3</span><span class="ac-ticker">—</span></div><div class="ac-instruction">—</div></div>
   </div>
@@ -1374,7 +1407,7 @@ h1, h2, h3 {
     <div id="newsTooltipSyms" style="margin-top:10px;"></div>
   </div>
   <div class="news-grid" id="cmd-news">
-    <div class="news-card"><div class="news-meta"><span class="news-src">Loading</span><span class="news-time">—</span></div><div class="news-headline">Fetching latest market news...</div></div>
+    <div class="news-card"><div class="news-meta"><span class="news-src"><div class="skel" style="height:8px;width:54px"></div></span><span class="news-time">—</span></div><div class="news-headline"><div class="skel" style="height:10px;width:92%;margin:4px 0"></div><div class="skel" style="height:10px;width:70%"></div></div></div>
     <div class="news-card"><div class="news-meta"><span class="news-src">—</span><span class="news-time">—</span></div><div class="news-headline">—</div></div>
     <div class="news-card"><div class="news-meta"><span class="news-src">—</span><span class="news-time">—</span></div><div class="news-headline">—</div></div>
     <div class="news-card"><div class="news-meta"><span class="news-src">—</span><span class="news-time">—</span></div><div class="news-headline">—</div></div>
@@ -1391,7 +1424,7 @@ h1, h2, h3 {
   </div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
     <div id="live-price-indicator" style="font-size:11px;color:var(--text2);font-family:'IBM Plex Mono',monospace;">
-      ⏳ Loading live prices...
+      Loading live prices…
     </div>
     <div style="display:flex;gap:8px;">
       <button onclick="fetchLivePrices()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:4px 12px;border-radius:7px;cursor:pointer;font-size:11px;font-family:'Almarai',sans-serif;">↺ Refresh Prices</button>
@@ -2544,7 +2577,44 @@ function updateW(key,val){
   const el=document.getElementById('totalW');
   el.textContent=total+'%';el.className='total-w-num '+(total===100?'w-ok':'w-warn');
 }
-function saveW(){alert(lang==='ar'?'✅ تم حفظ الأوزان بنجاح':'✅ Weights saved successfully');}
+
+/* ═══ P2: in-app notifications replacing native alert()/confirm() ═══ */
+function _toast(msg, type){
+  var c = document.getElementById('toastWrap');
+  if(!c){ c = document.createElement('div'); c.id = 'toastWrap'; document.body.appendChild(c); }
+  var t = document.createElement('div');
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.textContent = msg;
+  c.appendChild(t);
+  requestAnimationFrame(function(){ t.classList.add('in'); });
+  setTimeout(function(){ t.classList.remove('in'); setTimeout(function(){ t.remove(); }, 300); }, 3400);
+}
+function _confirm(msg, opts){
+  opts = opts || {};
+  return new Promise(function(res){
+    var isAr = (typeof lang !== 'undefined' && lang === 'ar');
+    var ov = document.createElement('div'); ov.className = 'sheet-ov';
+    ov.innerHTML = '<div class="sheet" role="dialog" aria-modal="true"><div class="sheet-msg"></div>' +
+      '<div class="sheet-btns">' + (opts.noCancel ? '' : '<button class="sheet-btn cancel"></button>') +
+      '<button class="sheet-btn go"></button></div></div>';
+    ov.querySelector('.sheet-msg').textContent = msg;
+    var cancel = ov.querySelector('.cancel');
+    if(cancel) cancel.textContent = isAr ? 'إلغاء' : 'Cancel';
+    var go = ov.querySelector('.go');
+    go.textContent = opts.label || (opts.noCancel ? (isAr ? 'حسناً' : 'OK') : (isAr ? 'تأكيد' : 'Confirm'));
+    if(opts.danger) go.classList.add('danger');
+    function close(v){ ov.classList.remove('in'); setTimeout(function(){ ov.remove(); }, 200); res(v); }
+    if(cancel) cancel.onclick = function(){ close(false); };
+    go.onclick = function(){ close(true); };
+    ov.onclick = function(e){ if(e.target === ov) close(!!opts.noCancel); };
+    document.addEventListener('keydown', function esc(e){ if(e.key==='Escape'){ close(!!opts.noCancel); document.removeEventListener('keydown', esc); } });
+    document.body.appendChild(ov);
+    requestAnimationFrame(function(){ ov.classList.add('in'); });
+    go.focus();
+  });
+}
+function _notice(msg){ return _confirm(msg, {noCancel:true}); }
+function saveW(){_toast(lang==='ar'?'تم حفظ الأوزان بنجاح':'Weights saved successfully','ok');}
 function resetW(){
   indicators.forEach(ind=>{
     const el=document.getElementById('ws_'+ind.key);
@@ -2946,7 +3016,7 @@ function handleTxFile(e){
 
 function parseCSV(text){
   const lines=text.trim().split('\n');
-  if(lines.length<2){alert('File appears empty or invalid.');return;}
+  if(lines.length<2){_toast('File appears empty or invalid.','err');return;}
   const headers=lines[0].split(',').map(h=>h.trim().replace(/"/g,'').toLowerCase());
   const dateIdx=headers.findIndex(h=>h.includes('date'));
   const symIdx=headers.findIndex(h=>h.includes('symbol')||h.includes('ticker'));
@@ -3088,8 +3158,8 @@ function markAllNewAsRecorded(){
   txData.forEach(t=>{if(!t.isDup&&!t.recorded) t.recorded=true;});
   saveTxToStorage();renderTxTable();
 }
-function clearTransactions(){
-  if(confirm('Clear all transaction records?')){
+async function clearTransactions(){
+  if(await _confirm('Clear all transaction records?', {danger:true, label:'Clear'})){
     txData=[];saveTxToStorage();
     document.getElementById('txUploadArea').style.display='block';
     document.getElementById('txSummaryArea').style.display='none';
@@ -4803,7 +4873,7 @@ function renderPrompt(){
 }
 function copyPrompt(){
   const text=document.getElementById('promptBlock').textContent;
-  navigator.clipboard.writeText(text).then(()=>alert(lang==='ar'?'✅ تم النسخ':'✅ Copied!'));
+  navigator.clipboard.writeText(text).then(()=>_toast(lang==='ar'?'تم النسخ':'Copied','ok'));
 }
 
 
@@ -5695,7 +5765,7 @@ async function saveEditStock(sym) {
 }
 
 async function deleteStock(sym) {
-  if (!confirm(`Remove ${sym} from your portfolio? This cannot be undone.`)) return;
+  if (!await _confirm(`Remove ${sym} from your portfolio? This cannot be undone.`, {danger:true, label:'Remove'})) return;
 
   const idx = stocks.findIndex(s => s.sym === sym);
   if (idx < 0) return;
@@ -7687,7 +7757,7 @@ async function generateInvite() {
 
 async function resetPin(nickname) {
   const token = localStorage.getItem(AUTH_SESSION_KEY);
-  if (!confirm(`Reset PIN for ${nickname}?`)) return;
+  if (!await _confirm(`Reset PIN for ${nickname}?`, {label:'Reset PIN'})) return;
   try {
     const r = await fetch('/api/admin', {
       method: 'POST',
@@ -7696,7 +7766,7 @@ async function resetPin(nickname) {
     });
     const data = await r.json();
     if (r.ok) {
-      alert(`Temporary PIN for ${nickname}: ${data.tempPin}\n\nSend this to them privately.`);
+      _notice(`Temporary PIN for ${nickname}: ${data.tempPin}\n\nSend this to them privately.`);
       loadAdminData(token);
     }
   } catch(e) { console.error(e); }
@@ -7870,8 +7940,8 @@ async function blockUser(nickname) {
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
       body: JSON.stringify({ action: 'block-user', nickname, reason: reason || 'Blocked by admin' })
     });
-    if (r.ok) { alert(`✅ ${nickname} has been blocked`); loadAdminData(token); }
-    else { const d = await r.json(); alert('Error: ' + d.error); }
+    if (r.ok) { _toast(`${nickname} has been blocked`,'ok'); loadAdminData(token); }
+    else { const d = await r.json(); _toast('Error: ' + d.error,'err'); }
   } catch(e) { console.error(e); }
 }
 
@@ -7884,14 +7954,14 @@ async function unblockUser(nickname) {
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
       body: JSON.stringify({ action: 'unblock-user', nickname })
     });
-    if (r.ok) { alert(`✅ ${nickname} has been unblocked`); loadAdminData(token); }
-    else { const d = await r.json(); alert('Error: ' + d.error); }
+    if (r.ok) { _toast(`${nickname} has been unblocked`,'ok'); loadAdminData(token); }
+    else { const d = await r.json(); _toast('Error: ' + d.error,'err'); }
   } catch(e) { console.error(e); }
 }
 
 // ── Delete user ──
 async function deleteUser(nickname) {
-  if (!confirm(`⚠️ Permanently delete ${nickname}?\n\nThis will:\n• Remove their account\n• Delete their portfolio\n• Cannot be undone`)) return;
+  if (!await _confirm(`Permanently delete ${nickname}?\n\nThis will remove their account and portfolio. Cannot be undone.`, {danger:true, label:'Delete'})) return;
   const token = localStorage.getItem(AUTH_SESSION_KEY);
   try {
     const r = await fetch('/api/admin', {
@@ -7899,8 +7969,8 @@ async function deleteUser(nickname) {
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
       body: JSON.stringify({ action: 'delete-user', nickname })
     });
-    if (r.ok) { alert(`✅ ${nickname} has been deleted`); loadAdminData(token); }
-    else { const d = await r.json(); alert('Error: ' + d.error); }
+    if (r.ok) { _toast(`${nickname} has been deleted`,'ok'); loadAdminData(token); }
+    else { const d = await r.json(); _toast('Error: ' + d.error,'err'); }
   } catch(e) { console.error(e); }
 }
 
@@ -7932,11 +8002,11 @@ async function generateUserAnalysis(nickname) {
       btn.textContent = '❌ Failed';
       btn.style.color = 'var(--red)';
       setTimeout(() => { btn.textContent = origText; btn.style.color = ''; btn.disabled = false; }, 3000);
-      alert('Error: ' + (data.error || 'Unknown error'));
+      _toast('Error: ' + (data.error || 'Unknown error'),'err');
     }
   } catch(e) {
     btn.textContent = origText; btn.disabled = false;
-    alert('Error: ' + e.message);
+    _toast('Error: ' + e.message,'err');
   }
 }
 
@@ -7967,13 +8037,13 @@ async function setUserTier(nickname, tier) {
     });
     const data = await r.json();
     if (!r.ok || !data.success) {
-      alert('Error: ' + (data.error || 'Unknown error'));
+      _toast('Error: ' + (data.error || 'Unknown error'),'err');
       // Revert UI
       if (activeBtn)   { activeBtn.style.borderColor = ''; activeBtn.style.color = ''; activeBtn.style.fontWeight = ''; }
       if (inactiveBtn) { inactiveBtn.style.borderColor = tier==='deep' ? 'var(--accent2)' : '#818cf8'; inactiveBtn.style.color = tier==='deep' ? 'var(--accent2)' : '#818cf8'; inactiveBtn.style.fontWeight = '700'; }
     }
   } catch(e) {
-    alert('Error: ' + e.message);
+    _toast('Error: ' + e.message,'err');
   }
 }
 
