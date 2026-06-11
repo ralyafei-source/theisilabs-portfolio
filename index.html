@@ -2601,7 +2601,7 @@ let newsIsLive=false;
 // Fetch live news (Option B: static JSON written by Make.com to the repo).
 async function loadLiveNews(){
   try{const _now=new Date();const _uae=new Date(_now.getTime()+4*3600000);const _dateStr=_uae.toISOString().slice(0,10);
-const r=await fetch('/data/market/news-'+_dateStr+'.json?t='+Date.now());
+const r=await fetch('https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/market/news-'+_dateStr+'.json?t='+Date.now());
     if(!r.ok) return;
     const d=await r.json();
     const arr=Array.isArray(d)?d:(d.items||d.news||d.articles||[]);
