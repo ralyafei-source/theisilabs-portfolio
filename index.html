@@ -2600,11 +2600,11 @@ let newsItems=[];
 let newsIsLive=false;
 // Fetch live news (Option B: static JSON written by Make.com to the repo).
 async function loadLiveNews(){
-  try{
-    const r=await fetch('/data/news.json?t='+Date.now());
+  try{const _now=new Date();const _uae=new Date(_now.getTime()+4*3600000);const _dateStr=_uae.toISOString().slice(0,10);
+const r=await fetch('/data/market/news-'+_dateStr+'.json?t='+Date.now());
     if(!r.ok) return;
     const d=await r.json();
-    const arr=Array.isArray(d)?d:(d.items||d.news||[]);
+    const arr=Array.isArray(d)?d:(d.items||d.news||d.articles||[]);
     if(arr&&arr.length){
       newsItems=arr.map(n=>({
         icon:n.icon||'📰',
@@ -2612,8 +2612,8 @@ async function loadLiveNews(){
         summary:n.summary||n.description||'',
         url:n.url||n.link||'#',
         syms:n.syms||n.symbols||n.tickers||[],
-        source:n.source||'—',
-        time:n.time||n.published||''
+        source:(n.source&&n.source.name?n.source.name:n.source)||'—',
+        time:n.time||n.published||n.publishedAt||''
       }));
       newsIsLive=true;
       try{renderNews();}catch(e){}
