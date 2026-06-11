@@ -3226,10 +3226,14 @@ const _OP_LAYER_LEGEND = [
 ];
 
 function _opOpenLegend(sym){
-  _opCloseLegend();
+  // Immediately hide any OTHER open panels without scheduling a timeout
+  // (calling _opCloseLegend here would schedule a 280ms hide that kills our new panel)
+  document.querySelectorAll('.op-lgd-panel').forEach(p=>{
+    if(p.id !== 'op-lgd-'+sym){ p.style.display='none'; p.style.opacity='0'; }
+  });
   const panel = document.getElementById('op-lgd-'+sym);
   if(!panel) return;
-  document.body.appendChild(panel);
+  document.body.appendChild(panel); // escape hero card stacking context
   let bd = document.getElementById('op-legend-bd');
   if(!bd){
     bd = document.createElement('div');
@@ -3444,12 +3448,18 @@ async function loadOpportunities(force){
     // Get today's date in UAE timezone (UTC+4)
     const todayUAE = new Date(Date.now() + 4*3600000).toISOString().slice(0,10);
     const t = Date.now();
-    const [todayRes, scoredRes, shariaRes] = await Promise.all([
+    const [todayRes, shariaRes] = await Promise.all([
       fetch(`${_OP_GH}today.json?t=${t}`),
-      fetch(`${_OP_GH}scored-${todayUAE}.json?t=${t}`),
       fetch(`${_OP_GH}sharia-list.json?t=${t}`)
     ]);
-if(!scoredRes.ok) throw new Error('فشل تحميل بيانات الأسهم من GitHub');
+    // Try today's scored file; if not yet generated, fall back to yesterday
+    let scoredRes = await fetch(`${_OP_GH}scored-${todayUAE}.json?t=${t}`);
+    if(!scoredRes.ok){
+      const yesterUAE = new Date(Date.now() + 4*3600000 - 86400000).toISOString().slice(0,10);
+      console.warn(`scored-${todayUAE}.json not found, trying ${yesterUAE}`);
+      scoredRes = await fetch(`${_OP_GH}scored-${yesterUAE}.json?t=${t}`);
+    }
+    if(!scoredRes.ok) throw new Error('فشل تحميل بيانات الأسهم من GitHub');
     let _shariaSet = new Set();
     try {
       const shariaData = await shariaRes.json();
