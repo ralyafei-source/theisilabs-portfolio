@@ -3915,7 +3915,7 @@ function _opBuildMiniCard(s){
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;justify-content:flex-end">${_opPatBadges(s.pattern)}</div>
     <div style="font-size:10px;color:var(--text3);line-height:1.55;direction:rtl">${(s._why||'').slice(0,100)}${(s._why||'').length>100?'...':''}</div>
-    <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">${_opStreakBadge(s._streak)}${_opEarningsBadge(s)}${s._isSharia?'<span class="op-chip good">حلال</span>':''}</div>
+    <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">${_opStreakBadge(s._streak)}${_opEarningsBadge(s)}${s._isSharia?'<span class="op-chip good">متوافق مع الشريعة</span>':''}</div>
   </div>`;
 }
 
