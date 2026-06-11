@@ -2899,7 +2899,10 @@ function renderNews(){
     const symsHtml=(n.syms||[]).map(s=>`<span class="news-sym">${s}</span>`).join('');
     const hasUrl=n.url&&n.url!=='#';
     const clickable=hasUrl?`onclick="window.open('${n.url}','_blank','noopener')" style="cursor:pointer"`:'';
-    const linkIcon=hasUrl?`<span class="news-ext" title="${isAr?'فتح المقال':'Open article'}">↗</span>`:'';
+    const sentiment=n.sentiment||'neutral';
+const arrow=sentiment==='bullish'?'↑':sentiment==='bearish'?'↓':'→';
+const arrowColor=sentiment==='bullish'?'#00d4aa':sentiment==='bearish'?'#ff4444':'#888';
+const linkIcon=`<span style="color:${arrowColor};font-weight:700;margin-left:4px">${arrow}</span>`+(hasUrl?`<span class="news-ext" title="${isAr?'فتح المقال':'Open article'}">↗</span>`:'');
     const summary=n.summary?`<div class="news-summary">${n.summary}</div>`:'';
     return `<div class="news-item" ${clickable}>
       <div class="news-icon">${n.icon||'📰'}</div>
