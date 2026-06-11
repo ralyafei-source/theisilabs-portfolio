@@ -2608,8 +2608,8 @@ const r=await fetch('https://raw.githubusercontent.com/ralyafei-source/theisilab
     if(arr&&arr.length){
       newsItems=arr.map(n=>({
         icon:n.icon||'📰',
-        title:n.title||n.headline||'—',
-        summary:n.summary||n.description||'',
+        title:n.title_ar||n.title||n.headline||'—',
+        summary:n.insight_ar||n.summary||n.description||'',
         url:n.url||n.link||'#',
         syms:n.syms||n.symbols||n.tickers||[],
         source:(n.source&&n.source.name?n.source.name:n.source)||'—',
