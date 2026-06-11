@@ -576,6 +576,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .op-hero-card:hover{border-color:var(--rose);}
 .op-mini-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px;transition:border-color .15s;}
 .op-mini-card:hover{border-color:var(--border2);}
+.op-lgd-panel{will-change:max-height,opacity,transform;}
 .tab-stale{font-size:9px;color:var(--text3);font-weight:400;margin-inline-start:4px;}
 
 /* Group labels */
@@ -3206,6 +3207,101 @@ const _OP_PAT_LABEL = {Momentum:'زخم',Value:'قيمة',Recovery:'انتعاش
 const _OP_PAT_BG    = {Momentum:'rgba(0,200,100,0.12)',Value:'rgba(255,215,0,0.10)',Recovery:'rgba(0,200,255,0.12)',Breakout:'rgba(255,10,120,0.12)',Growth:'rgba(168,85,247,0.12)'};
 const _OP_PAT_TX    = {Momentum:'#00c864',Value:'#ffd700',Recovery:'#00c8ff',Breakout:'var(--rose)',Growth:'#a855f7'};
 
+const _OP_LAYER_LEGEND = [
+  { key:'L1', name:'التقني', weight:'30%', color:'#00c8ff',
+    text:'يحلل موقع السعر الحالي مقارنة بمتوسطاته التاريخية على مدى 50 و200 يوم، ويقيس قوة الاتجاه العام للسهم. السهم القوي تقنياً يكون سعره فوق هذه المتوسطات — وهذا يعني أن المشترين يتحكمون في السوق وليس البائعين. يضاف إلى ذلك مؤشر RSI الذي يكشف هل السهم في منطقة صحية للدخول، أم أنه وصل لذروة الشراء ويحتاج تصحيحاً، أم أنه في منطقة ضعف وانهيار. الهدف من هذه الطبقة ليس التنبؤ بالمستقبل — بل التأكد أن توقيت النظر في السهم منطقي وليس متأخراً جداً أو مبكراً جداً.',
+    disabled:false },
+  { key:'L2', name:'الزخم', weight:'20%', color:'#00c864',
+    text:'يقيس شيئين: جودة حركة السهم خلال الأسبوع الأخير، واستمرارية ظهوره كفرصة خلال 20 يوم تداول ماضية. السهم المثالي هنا لا يكون قد قفز 15% بالأمس — لأن ذلك يعني أنك تطارد السعر. والسهم المثالي أيضاً لا يكون في حالة انهيار مستمر. المثالي هو سهم تراجع تراجعاً خفيفاً بعد صعود، وظهر في قائمة الفرص بشكل متكرر — مما يعني أن الإشارة ليست مصادفة يوم واحد بل نمط متكرر يستحق الاهتمام.',
+    disabled:false },
+  { key:'L3', name:'الخارجي', weight:'20%', color:'#a855f7',
+    text:'يعكس رأي المحللين الماليين المؤسسيين المستقلين الذين يتابعون الشركة عن كثب — أهدافهم السعرية المتوقعة خلال 12 شهراً، وما إذا كانوا قاموا بترقية توصيتهم مؤخراً، ومدى إجماعهم على الشراء أو الاحتفاظ أو البيع. هؤلاء المحللون يملكون وصولاً مباشراً لإدارة الشركات وتقارير داخلية لا تتوفر للمستثمر العادي — لذلك رأيهم إشارة خارجية مستقلة تكمّل التحليل التقني والأساسي.',
+    disabled:true },
+  { key:'L4', name:'التقييم', weight:'15%', color:'#ffd700',
+    text:'يجيب على سؤال واحد مهم: هل أنت تدفع سعراً عادلاً مقابل ما تكسبه هذه الشركة فعلياً؟ يعتمد على عائد التدفق النقدي الحر — وهو السيولة الحقيقية التي تبقى في الشركة بعد كل المصاريف والاستثمارات — وعلى مضاعف PEG الذي يربط بين سعر السهم ومعدل نمو أرباحه. شركة بعائد تدفق نقدي حر مرتفع تعني أنها تولد سيولة حقيقية وليس أرباحاً محاسبية فقط — وهذا ما يهم المستثمر على المدى البعيد.',
+    disabled:false },
+  { key:'L5', name:'الأساسيات', weight:'15%', color:'#FF0A78',
+    text:'يقيس جودة الشركة من الداخل — بمعزل عن السعر والسوق. يركز على ثلاثة أشياء: العائد على رأس المال المستثمر وهو مقياس كفاءة الإدارة في تحويل كل دولار مستثمر إلى أرباح، والعائد على أموال المساهمين الذي يعكس قدرة الشركة على خلق قيمة لمن يملكها، ونسبة الديون التي تكشف هل الشركة تموّل نموها بسيولتها الخاصة أم باقتراض مفرط. الشركة القوية في هذه الطبقة تكسب أكثر مما تقترض وتُدار بكفاءة حقيقية.',
+    disabled:false }
+];
+
+function _opOpenLegend(sym, scoresJson){
+  _opCloseLegend();
+  const panel = document.getElementById('op-lgd-'+sym);
+  if(!panel) return;
+  let bd = document.getElementById('op-legend-bd');
+  if(!bd){
+    bd = document.createElement('div');
+    bd.id = 'op-legend-bd';
+    bd.style.cssText = 'position:fixed;inset:0;z-index:9988;background:rgba(0,0,0,0.45);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);';
+    bd.onclick = _opCloseLegend;
+    document.body.appendChild(bd);
+  }
+  bd.style.display = 'block';
+  panel.style.display = 'block';
+  panel.onclick = e => e.stopPropagation();
+  requestAnimationFrame(()=>{
+    panel.style.maxHeight = '700px';
+    panel.style.opacity = '1';
+    panel.style.transform = 'translateY(0)';
+  });
+}
+
+function _opCloseLegend(){
+  document.querySelectorAll('.op-lgd-panel').forEach(p=>{
+    p.style.maxHeight = '0';
+    p.style.opacity = '0';
+    p.style.transform = 'translateY(-8px)';
+    setTimeout(()=>{ p.style.display='none'; }, 320);
+  });
+  const bd = document.getElementById('op-legend-bd');
+  if(bd) bd.style.display = 'none';
+}
+
+function _opBuildLegendPanel(sym, sb){
+  const layers = sb?.layers || {};
+  const items = _OP_LAYER_LEGEND.map(l=>{
+    const raw = layers[l.key];
+    const pct = raw != null ? Math.round(raw * 100) : null;
+    const sc  = pct != null ? (pct>=70?'#00c864':pct>=50?'#ffd700':'#ff8c00') : 'var(--text3)';
+    const barW = pct != null ? pct : 0;
+    const scoreDisplay = pct != null ? pct : '—';
+    return `
+    <div style="padding:12px 0;border-bottom:1px solid var(--border);direction:rtl;${l.disabled?'opacity:0.55':''}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:34px;height:34px;border-radius:9px;background:${l.color}18;border:1px solid ${l.color}44;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:${l.color};font-family:'IBM Plex Mono',monospace;flex-shrink:0;">${l.key}</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);font-family:'Almarai',sans-serif;">${l.name}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:1px;">وزن ${l.weight} من الدرجة الكلية</div>
+          </div>
+        </div>
+        <div style="font-size:20px;font-weight:900;color:${sc};font-family:'IBM Plex Mono',monospace;min-width:32px;text-align:left;">${scoreDisplay}</div>
+      </div>
+      <div style="height:3px;background:var(--bg3);border-radius:2px;margin-bottom:10px;overflow:hidden;">
+        <div style="height:100%;width:${barW}%;background:${sc};border-radius:2px;transition:width 0.6s ease;"></div>
+      </div>
+      <div style="font-size:11.5px;color:var(--text2);line-height:1.75;font-family:'Almarai',sans-serif;">${l.text}</div>
+      ${l.disabled?`<div style="margin-top:8px;font-size:10px;color:#ff8c00;background:rgba(255,140,0,0.08);padding:5px 10px;border-radius:6px;border:1px solid rgba(255,140,0,0.2);font-family:'Almarai',sans-serif;">⚠️ البيانات غير متاحة حالياً — سيُفعَّل في تحديث قادم</div>`:''}
+    </div>`;
+  }).join('');
+  return `
+  <div id="op-lgd-${sym}" class="op-lgd-panel"
+    style="display:none;max-height:0;opacity:0;transform:translateY(-8px);overflow:hidden;
+           transition:max-height 0.35s ease,opacity 0.28s ease,transform 0.28s ease;
+           background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+           padding:0 14px;margin-top:10px;position:relative;z-index:9989;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0 8px;border-bottom:1px solid var(--border);">
+      <div style="font-size:12px;font-weight:700;color:var(--text);font-family:'Almarai',sans-serif;">كيف تُحسب هذه الدرجة؟</div>
+      <button onclick="_opCloseLegend()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;line-height:1;padding:0;">×</button>
+    </div>
+    ${items}
+    <div style="padding:10px 0;font-size:10px;color:var(--text3);text-align:center;font-family:'Almarai',sans-serif;">
+      كل رقم يمثل ترتيب السهم مقارنة بـ 768 سهم آخر اليوم — 85 يعني أفضل من 85% منهم
+    </div>
+  </div>`;
+}
+
 let _opStocks  = [];
 let _opFilter  = 'all';
 let _opSort    = 'rank';
@@ -3281,6 +3377,12 @@ function _opBuildHeroCard(s){
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;justify-content:flex-end">${_opPatBadges(s.pattern)}</div>
     <div style="font-size:11px;color:var(--text2);line-height:1.65;background:var(--bg3);padding:8px 10px;border-radius:8px;margin-bottom:8px;direction:rtl;border-right:2px solid var(--border);">${s._why||'—'}</div>
     ${_opLayerBar(s.score_breakdown)}
+    <button onclick="event.stopPropagation();_opOpenLegend('${s.symbol}',${JSON.stringify(s.score_breakdown||{})})"
+      style="background:none;border:none;color:var(--rose);font-size:10.5px;cursor:pointer;padding:5px 0 2px;font-family:'Almarai',sans-serif;direction:rtl;display:flex;align-items:center;gap:4px;opacity:0.85;transition:opacity .15s;"
+      onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.85'">
+      <span>ما معنى هذه المؤشرات؟</span><span style="font-size:12px;margin-right:2px">←</span>
+    </button>
+    ${_opBuildLegendPanel(s.symbol, s.score_breakdown)}
     <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
       <div style="flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;">
         <div style="height:100%;width:${fit.pct}%;background:${fit.bar};border-radius:2px;transition:width .4s;"></div>
