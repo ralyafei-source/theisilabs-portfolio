@@ -2385,7 +2385,7 @@ WOLF remains at critical lows<br><br>
           <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--rose);font-size:11px;">فرص</div>
           <div>
             <div class="firm-title">فرص السوق</div>
-            <div class="firm-subtitle">أفضل 50 سهماً خارج محفظتك · مرتبة بالدرجة · تحديث يومي</div>
+            <div class="firm-subtitle">أسهم واعده للبحث والدراسة الاستثمارية · تحديث يومي</div>
           </div>
         </div>
 
@@ -4018,7 +4018,7 @@ const scoredData = await scoredRes.json();
       ? heroes.map(_opBuildHeroCard).join('')
       : '<div style="color:var(--text3);font-size:12px;padding:10px;direction:rtl">لا توجد بيانات مميزة اليوم</div>';
 
-    if(metaEl) metaEl.textContent = `${display.length} سهم · ${todayUAE}`;
+    if(metaEl) metaEl.innerHTML = `${todayUAE}<br>${display.length} سهم`;
     _opLoaded = true;
     _opRenderGrid();
   } catch(e){
