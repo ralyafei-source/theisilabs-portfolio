@@ -1972,8 +1972,8 @@ WOLF remains at critical lows<br><br>
         <!-- Cards Grid -->
         <div id="op-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;"></div>
 
-        <div style="margin-top:18px;padding:10px 14px;background:var(--bg3);border-radius:8px;font-size:10px;color:var(--text3);text-align:center;direction:rtl;border:1px solid var(--border);">
-          ⚠️ هذه الإشارات للاطلاع فقط — البيانات توجّه، لا تأمر. القرار قرارك أنت.
+        <div style="margin-top:18px;padding:10px 14px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--text3);text-align:center;direction:rtl;border:1px solid var(--border);">
+           "هذه التقييمات نتاج منهجية بحثية خاصة، وهي ذات طبيعة اجتهادية تهدف إلى تصفية الأسهم لتقليص الجهد البحثي للمستثمر. لا تُعد هذه النتائج توصية استثمارية؛ لذا يُرجى ممارسة العناية الواجبة."
         </div>
       </div>
 
@@ -3291,11 +3291,11 @@ function _opBuildHeroCard(s){
       ${_opStreakBadge(s._streak)}
       ${_opEarningsBadge(s)}
       ${s.in_portfolio?'<span style="font-size:9px;background:rgba(0,200,255,0.1);border:1px solid rgba(0,200,255,0.25);border-radius:5px;padding:2px 6px;color:#00c8ff">في محفظتك</span>':''}
+      ${s._isSharia?'<span style="font-size:9px;background:rgba(0,200,100,0.12);border:1px solid rgba(0,200,100,0.3);border-radius:5px;padding:2px 6px;color:#00c864">حلال ✓</span>':''}
     </div>
   </div>`;
 }
-
-function _opBuildMiniCard(s){
+function _opBuildMiniCard{
   const sc = _opScoreColor(s.final_score);
   return `<div class="op-mini-card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
@@ -3307,7 +3307,7 @@ function _opBuildMiniCard(s){
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;justify-content:flex-end">${_opPatBadges(s.pattern)}</div>
     <div style="font-size:10px;color:var(--text3);line-height:1.55;direction:rtl">${(s._why||'').slice(0,100)}${(s._why||'').length>100?'...':''}</div>
-    <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">${_opStreakBadge(s._streak)}${_opEarningsBadge(s)}</div>
+    <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">${_opStreakBadge(s._streak)}${_opEarningsBadge(s)}${s._isSharia?'<span style="font-size:9px;background:rgba(0,200,100,0.12);border:1px solid rgba(0,200,100,0.3);border-radius:5px;padding:2px 6px;color:#00c864">حلال ✓</span>':''}</div>
   </div>`;
 }
 
@@ -3344,11 +3344,18 @@ async function loadOpportunities(force){
     // Get today's date in UAE timezone (UTC+4)
     const todayUAE = new Date(Date.now() + 4*3600000).toISOString().slice(0,10);
     const t = Date.now();
-    const [todayRes, scoredRes] = await Promise.all([
-  fetch(`${_OP_GH}today.json?t=${t}`),
-  fetch(`${_OP_GH}scored-${todayUAE}.json?t=${t}`)
-]);
+    const [todayRes, scoredRes, shariaRes] = await Promise.all([
+      fetch(`${_OP_GH}today.json?t=${t}`),
+      fetch(`${_OP_GH}scored-${todayUAE}.json?t=${t}`),
+      fetch(`${_OP_GH}sharia-list.json?t=${t}`)
+    ]);
 if(!scoredRes.ok) throw new Error('فشل تحميل بيانات الأسهم من GitHub');
+    let _shariaSet = new Set();
+    try {
+      const shariaData = await shariaRes.json();
+      const list = Array.isArray(shariaData) ? shariaData : (shariaData.list || []);
+      list.forEach(s => _shariaSet.add(s.symbol || s));
+    } catch(e) { console.warn('Sharia list not available'); }
 
 // today.json may be malformed — handle gracefully
 let whyTexts = {};
@@ -3387,7 +3394,8 @@ const scoredData = await scoredRes.json();
         _why:    whyTexts[s.symbol] || '',
         _fitAdj: s.fit_adjustment || 0,
         _streak: s._streak_count || s.streak_count || null,
-        _isHero: s.highlight === true || (s.display_rank != null && s.display_rank <= 5)
+        _isHero:   s.highlight === true || (s.display_rank != null && s.display_rank <= 5),
+        _isSharia: _shariaSet.has(s.symbol)
       };
     });
 
