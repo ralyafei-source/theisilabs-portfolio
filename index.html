@@ -3886,7 +3886,7 @@ function _opBuildHeroCard(s){
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 8px;direction:rtl">
       ${_opPatBadges(s.pattern)}
       <span class="op-chip ${fitCls}">${fit.label}</span>
-      ${s._isSharia?'<span class="op-chip good">حلال</span>':''}
+      ${s._isSharia?'<span class="op-chip good">متوافق مع الشريعة</span>':''}
     </div>
     <div style="font-size:11.5px;color:var(--text2);line-height:1.85;direction:rtl">${why1}</div>
     <button id="opt-${s.symbol}" class="op-toggle" style="direction:rtl;display:block" onclick="event.stopPropagation();_opToggleDetails('${s.symbol}')">التفاصيل</button>
