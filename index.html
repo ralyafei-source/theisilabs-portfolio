@@ -3225,8 +3225,9 @@ const _OP_LAYER_LEGEND = [
     disabled:false }
 ];
 
-function _opOpenLegend(sym, btn){
-  const scoresJson = btn ? JSON.parse(btn.dataset.sb||'{}') : {};
+function _opOpenLegend(sym){
+  const stock = _opStocks.find(s=>s.symbol===sym)||{};
+  const scoresJson = stock.score_breakdown||{};
   _opCloseLegend();
   const panel = document.getElementById('op-lgd-'+sym);
   if(!panel) return;
@@ -3378,8 +3379,7 @@ function _opBuildHeroCard(s){
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;justify-content:flex-end">${_opPatBadges(s.pattern)}</div>
     <div style="font-size:11px;color:var(--text2);line-height:1.65;background:var(--bg3);padding:8px 10px;border-radius:8px;margin-bottom:8px;direction:rtl;border-right:2px solid var(--border);">${s._why||'—'}</div>
     ${_opLayerBar(s.score_breakdown)}
-    <button onclick="event.stopPropagation();_opOpenLegend('${s.symbol}',this)"
-      data-sb='${JSON.stringify(s.score_breakdown||{}).replace(/'/g,"&#39;")}'
+    <button onclick="event.stopPropagation();_opOpenLegend('${s.symbol}')"
       style="background:none;border:none;color:var(--rose);font-size:10.5px;cursor:pointer;padding:5px 0 2px;font-family:'Almarai',sans-serif;direction:rtl;display:flex;align-items:center;gap:4px;opacity:0.85;transition:opacity .15s;"
       onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.85'">
       <span>ما معنى هذه المؤشرات؟</span><span style="font-size:12px;margin-right:2px">←</span>
