@@ -5568,11 +5568,15 @@ function _renderPortfolioSnapshot(total, largest){
 stocks.forEach(s=>{ s._origPrice=s.price; s._shares=s.mv/s.price; });
 
 // ===== TRADE MODAL =====
-const API_KEY = 'theisilabs2026';
+// Admin trades authenticate with the logged-in session token (no key in page source).
 let tradeAction = 'BUY';
 let selectedSym = '';
 
-function openTradeModal(){document.body.appendChild(document.getElementById('tradeModal'));
+function openTradeModal(){
+  // One modal for everyone: admin trades write to data/portfolio.json via
+  // /api/update-portfolio; regular users' trades are applied to THEIR stock
+  // list and saved to their own file via /api/user-portfolio (Bearer token).
+  document.body.appendChild(document.getElementById('tradeModal'));
   // Populate stock dropdown from current stocks array
   const sel = document.getElementById('tradeSymSelect');
   sel.innerHTML = '<option value="">— Select existing stock —</option>';
@@ -5681,6 +5685,38 @@ function updatePreview(){
   }
 }
 
+
+// Apply a trade to a user's stock list (pure function — same math as the
+// admin server path: weighted-average cost on buy, remove at <0.01 shares).
+function applyUserTrade(list, action, sym, shares, price, newStock){
+  const copy = list.map(s=>({ ...s }));
+  const idx = copy.findIndex(s=>s.sym===sym);
+  const held = idx>=0 ? (Number(copy[idx].shares!=null?copy[idx].shares:copy[idx]._shares)||0) : 0;
+  if(action==='BUY'){
+    if(idx>=0){
+      const newShares = held + shares;
+      const newCost = ((held*(Number(copy[idx].cost)||0)) + shares*price) / newShares;
+      copy[idx].shares = newShares; copy[idx]._shares = newShares;
+      copy[idx].cost = newCost;
+      copy[idx].mv = Math.round(newShares*(Number(copy[idx].price)||price));
+    } else {
+      copy.push({ sym, en:(newStock&&newStock.name)||sym, ar:(newStock&&newStock.name_ar)||sym,
+        cost:price, price:price, shares:shares, _shares:shares,
+        mv:Math.round(shares*price), gl:0, sec:(newStock&&newStock.sector)||'tech' });
+    }
+  } else if(action==='SELL'){
+    if(idx<0) return { error: sym+' is not in your portfolio' };
+    if(shares > held + 1e-9) return { error: 'Cannot sell '+shares+' — only '+held.toFixed(4)+' held' };
+    const rem = held - shares;
+    if(rem < 0.01) copy.splice(idx,1);
+    else { copy[idx].shares=rem; copy[idx]._shares=rem; copy[idx].mv=Math.round(rem*(Number(copy[idx].price)||price)); }
+  } else if(action==='REMOVE'){
+    if(idx<0) return { error: sym+' is not in your portfolio' };
+    copy.splice(idx,1);
+  }
+  return { list: copy };
+}
+
 async function submitTrade(){
   const sym = (selectedSym || document.getElementById('tradeSymNew').value).toUpperCase();
   const shares = parseFloat(document.getElementById('tradeShares').value);
@@ -5696,7 +5732,7 @@ async function submitTrade(){
   }
 
   // Build payload
-  const payload = { action:tradeAction, sym, shares, price, api_key: API_KEY };
+  const payload = { action:tradeAction, sym, shares, price };
 
   // New stock details
   const isNew = !stocks.find(s=>s.sym===sym);
@@ -5711,12 +5747,45 @@ async function submitTrade(){
   }
 
   btn.textContent='Saving...'; btn.disabled=true;
+
+  // ── Regular user: apply the trade to THEIR stocks and save their own file ──
+  if(localStorage.getItem('theisilabs_admin')!=='1'){
+    status.innerHTML='<span style="color:var(--text2)">⏳ Saving to your portfolio...</span>';
+    try{
+      const out = applyUserTrade(stocks, tradeAction, sym, shares, price, payload.newStock);
+      if(out.error){ status.innerHTML='<span style="color:var(--red)">❌ '+out.error+'</span>'; btn.textContent='Confirm Trade'; btn.disabled=false; return; }
+      const token = localStorage.getItem(AUTH_SESSION_KEY) || '';
+      const body = { stocks: out.list.map(s=>({ sym:s.sym, en:s.en||s.sym, ar:s.ar||s.sym, shares:(s.shares!=null?s.shares:s._shares)||0, cost:s.cost||0, sec:s.sec||'tech' })) };
+      const r2 = await fetch('/api/user-portfolio', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+        body: JSON.stringify(body)
+      });
+      const d2 = await r2.json().catch(()=>({}));
+      if(r2.ok && (d2.ok!==false)){
+        stocks.length=0; out.list.forEach(s=>stocks.push(s));
+        status.innerHTML='<span style="color:var(--green)">✅ Your portfolio is updated — '+stocks.length+' holdings</span>';
+        renderPortfolio();
+        try{ fetchLivePricesForUser(token, stocks.map(s=>s.sym)); }catch(e){}
+        try{ renderCalmZones(); }catch(e){}
+        setTimeout(closeTradeModal, 2000);
+      } else {
+        status.innerHTML='<span style="color:var(--red)">❌ '+(d2.message||d2.error||('HTTP '+r2.status))+'</span>';
+      }
+    }catch(e){
+      status.innerHTML='<span style="color:var(--red)">❌ '+e.message+'</span>';
+    }
+    btn.textContent='Confirm Trade'; btn.disabled=false;
+    return;
+  }
+
+  // ── Admin: original path — writes data/portfolio.json ──
   status.innerHTML='<span style="color:var(--text2)">⏳ Updating portfolio.json on GitHub...</span>';
 
   try{
     const r = await fetch('/api/update-portfolio', {
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':API_KEY},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem(AUTH_SESSION_KEY)||'')},
       body: JSON.stringify(payload)
     });
     const d = await r.json();
@@ -9117,7 +9186,7 @@ function switchTab(tabId, btn) {
 
 })();
 </script>
-<!-- TRADE MODAL MOVED --> -->
+<!-- TRADE MODAL -->
 <div id="tradeModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:10001;align-items:center;justify-content:center;padding:16px;">
   <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;width:95vw;max-width:420px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5);max-height:88vh;overflow-y:auto;">
 
@@ -9145,5 +9214,46 @@ function switchTab(tabId, btn) {
         <input id="tradeSymNew" placeholder="New: TSLA" style="width:100px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;" oninput="onNewSym(this.value)">
       </div>
     </div>
+
+    <!-- New stock details (only when buying a symbol not in the portfolio) -->
+    <div id="newStockFields" style="display:none;margin-bottom:14px;">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">NEW STOCK DETAILS</label>
+      <input id="newStockName" placeholder="Company name (English)" style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Almarai',sans-serif;font-size:13px;margin-bottom:8px;">
+      <input id="newStockNameAr" placeholder="اسم الشركة بالعربي (اختياري)" dir="rtl" style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Almarai',sans-serif;font-size:13px;margin-bottom:8px;">
+      <select id="newStockSector" style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Almarai',sans-serif;font-size:13px;">
+        <option value="tech">Technology</option>
+        <option value="semis">Semiconductors</option>
+        <option value="finance">Finance</option>
+        <option value="health">Healthcare</option>
+        <option value="energy">Energy</option>
+        <option value="consumer">Consumer</option>
+        <option value="industrial">Industrial</option>
+        <option value="etf">ETF / Index</option>
+        <option value="crypto">Crypto</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+
+    <!-- Shares & Price -->
+    <div id="sharesPriceFields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div>
+        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">SHARES</label>
+        <input id="tradeShares" type="number" step="any" min="0" inputmode="decimal" placeholder="10" oninput="updatePreview()" style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">PRICE ($)</label>
+        <input id="tradePrice" type="number" step="any" min="0" inputmode="decimal" placeholder="150.00" oninput="updatePreview()" style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;">
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div id="tradePreview" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;line-height:1.8;margin-bottom:14px;min-height:44px;color:var(--text2);">Enter stock, shares and price to see preview...</div>
+
+    <!-- Status + Submit -->
+    <div id="tradeStatus" style="font-size:12px;margin-bottom:10px;min-height:18px;line-height:1.6;"></div>
+    <button id="tradeSubmitBtn" onclick="submitTrade()" style="width:100%;background:var(--rose);border:none;color:#fff;padding:13px;border-radius:10px;font-weight:800;font-size:14px;cursor:pointer;font-family:'Almarai',sans-serif;">Confirm Trade</button>
+
+  </div>
+</div>
 </body>
 </html>
