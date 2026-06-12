@@ -6399,49 +6399,6 @@ loadTxFromStorage();
 fetchLivePrices();
 </script>
 
-
-    <!-- New Stock Details (hidden unless new) -->
-    <div id="newStockFields" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
-      <div style="font-size:11px;color:var(--accent);margin-bottom:10px;font-weight:700;">NEW STOCK DETAILS</div>
-      <input id="newStockName" placeholder="Full name (e.g. Tesla Inc.)" style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-family:'Almarai',sans-serif;font-size:12px;margin-bottom:8px;">
-      <input id="newStockNameAr" placeholder="Arabic name (e.g. تيسلا)" dir="rtl" style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-family:'Almarai',sans-serif;font-size:12px;margin-bottom:8px;">
-      <select id="newStockSector" style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-family:'Almarai',sans-serif;font-size:12px;">
-        <option value="tech">Technology</option>
-        <option value="spec">Speculative</option>
-        <option value="bio">Biotech</option>
-        <option value="etf">ETF</option>
-        <option value="mining">Mining</option>
-      </select>
-    </div>
-
-    <!-- Shares & Price -->
-    <div id="sharesPriceFields" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-      <div>
-        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">SHARES</label>
-        <input id="tradeShares" type="number" step="0.0001" placeholder="e.g. 10" oninput="updatePreview()" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;">
-      </div>
-      <div>
-        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">PRICE PER SHARE ($)</label>
-        <input id="tradePrice" type="number" step="0.01" placeholder="e.g. 215.00" oninput="updatePreview()" style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;">
-      </div>
-    </div>
-
-    <!-- Preview -->
-    <div id="tradePreview" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px;font-size:12px;min-height:52px;font-family:'IBM Plex Mono',monospace;color:var(--text2);">
-      Enter stock, shares and price to see preview...
-    </div>
-
-    <!-- Submit -->
-    <div style="display:flex;gap:10px;">
-      <button onclick="submitTrade()" id="tradeSubmitBtn" style="flex:1;padding:12px;background:var(--rose);border:none;color:#fff;border-radius:10px;font-weight:900;font-size:14px;cursor:pointer;font-family:'Almarai',sans-serif;">Confirm Trade</button>
-      <button onclick="closeTradeModal()" style="padding:12px 18px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:10px;cursor:pointer;font-family:'Almarai',sans-serif;">Cancel</button>
-    </div>
-
-    <!-- Status -->
-    <div id="tradeStatus" style="margin-top:12px;text-align:center;font-size:12px;"></div>
-  </div>
-</div>
-
 <!-- ═══════════════════════════════════════════════ -->
 <!-- PORTFOLIO CHAT WIDGET                           -->
 <!-- ═══════════════════════════════════════════════ -->
