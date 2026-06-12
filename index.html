@@ -3788,6 +3788,21 @@ async function translateAnalysis(data){
 // Renders top-50 cards with Arabic why_text
 // ═══════════════════════════════════════════════════
 const _OP_GH = 'https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/market/';
+
+// SHARIA LIST CANARY (Session 29): a compliant list can never contain
+// conventional banks/insurers. If any canary symbol is present, the list is
+// provably broken (FMP's isSharia param doesn't exist) → show NO badges.
+// Sharia badge with the list's update date — honest, dated, sourced
+function _shariaChip(){
+  const d=window._shariaUpdated;
+  const tip=(window._shariaMethodAr||'قائمة مبنية على مؤشرات شرعية مُدقّقة')+(d?(' · آخر تحديث: '+d):'');
+  return '<span class="op-chip good" title="'+tip+'">متوافق مع الشريعة ✓'+(d?'<span style="opacity:.65;font-size:9px"> · '+d+'</span>':'')+'</span>';
+}
+function _shariaListValid(set){
+  const canaries=['JPM','GS','C','BAC','WFC','AIG','MET','PRU','AFL'];
+  return set.size>0 && !canaries.some(c=>set.has(c));
+}
+
 const _OP_PAT_LABEL = {Momentum:'زخم',Value:'قيمة',Recovery:'انتعاش',Breakout:'اختراق',Growth:'نمو'};
 /* pattern color maps retired — patterns render as neutral .op-chip (categories carry no color) */
 
@@ -4050,19 +4065,6 @@ async function loadOpportunities(force){
       scoredRes = await fetch(`${_OP_GH}scored-${yesterUAE}.json?t=${t}`);
     }
     if(!scoredRes.ok) throw new Error('فشل تحميل بيانات الأسهم من GitHub');
-// SHARIA LIST CANARY (Session 29): a compliant list can never contain
-// conventional banks/insurers. If any canary symbol is present, the list is
-// provably broken (FMP's isSharia param doesn't exist) → show NO badges.
-// Sharia badge with the list's update date — honest, dated, sourced
-function _shariaChip(){
-  const d=window._shariaUpdated;
-  const tip=(window._shariaMethodAr||'قائمة مبنية على مؤشرات شرعية مُدقّقة')+(d?(' · آخر تحديث: '+d):'');
-  return '<span class="op-chip good" title="'+tip+'">متوافق مع الشريعة ✓'+(d?'<span style="opacity:.65;font-size:9px"> · '+d+'</span>':'')+'</span>';
-}
-function _shariaListValid(set){
-  const canaries=['JPM','GS','C','BAC','WFC','AIG','MET','PRU','AFL'];
-  return set.size>0 && !canaries.some(c=>set.has(c));
-}
     let _shariaSet = new Set();
     try {
       const shariaData = await shariaRes.json();
