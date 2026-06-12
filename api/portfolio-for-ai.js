@@ -1271,6 +1271,56 @@ module.exports = async (req, res) => {
   }
 
 
+  // ── MODE: build-sharia — rebuild the Sharia-compliant list (monthly) ──────
+  // Source: holdings of professionally screened Islamic ETFs (S&P Shariah via
+  // SPUS, FTSE USA Shariah via HLAL). Their committees apply AAOIFI screening;
+  // we consume the result. Replaces the broken isSharia screener (the param
+  // never existed in FMP — the old list was an unfiltered market dump).
+  if (req.query.mode === 'build-sharia') {
+    const bearer = (req.headers.authorization || '').replace('Bearer ', '').trim();
+    const k = req.query.key || bearer;
+    if (k !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    const GH_TOKEN = process.env.GITHUB_TOKEN;
+    if (!GH_TOKEN) return res.status(500).json({ error: 'GITHUB_TOKEN not set' });
+    try {
+      const ETFS = ['SPUS', 'HLAL'];
+      const results = await Promise.all(ETFS.map(e => fmpGet(`/etf/holdings?symbol=${e}`)));
+      const set = new Set();
+      const perEtf = {};
+      results.forEach((rows, i) => {
+        const got = [];
+        (Array.isArray(rows) ? rows : []).forEach(r => {
+          const a = String(r.asset || r.symbol || '').toUpperCase().trim();
+          // keep plausible US tickers; drop cash lines, the ETF itself, and non-equity rows
+          if (a && /^[A-Z]{1,6}(\.[A-Z])?$/.test(a) && !ETFS.includes(a) && !/^CASH/.test(a)) {
+            set.add(a); got.push(a);
+          }
+        });
+        perEtf[ETFS[i]] = got.length;
+      });
+      // SELF-VERIFICATION (the canary, server-side): a compliant list can never
+      // contain conventional banks/insurers. Refuse to write a broken list.
+      const canaries = ['JPM', 'GS', 'C', 'BAC', 'WFC', 'AIG', 'MET', 'PRU', 'AFL'];
+      const hit = canaries.filter(c => set.has(c));
+      if (hit.length) return res.status(500).json({ error: `canary check failed: ${hit.join(',')} present — refusing to write` });
+      if (set.size < 50) return res.status(500).json({ error: `only ${set.size} symbols — ETF holdings fetch likely failed, refusing to write` });
+
+      const out = {
+        updated: todayUAE(),
+        method: 'Holdings of AAOIFI-screened Islamic ETFs (S&P Shariah via SPUS + FTSE USA Shariah via HLAL)',
+        method_ar: 'قائمة مبنية على مكونات صناديق مؤشرات شرعية مُدقّقة وفق معايير AAOIFI (مؤشر S&P الشرعي ومؤشر FTSE الأمريكي الشرعي)',
+        source_etfs: perEtf,
+        count: set.size,
+        symbols: [...set].sort(),
+      };
+      await ghWriteScorer(REPO, 'data/market/sharia-list.json', out, `sharia-list: ${out.updated} — ${out.count} symbols (SPUS+HLAL)`, GH_TOKEN);
+      return res.status(200).json({ ok: true, updated: out.updated, count: out.count, per_etf: perEtf });
+    } catch (err) {
+      console.error('build-sharia FATAL:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   // ── MODE: lookup-analysis — phase 2: the written analysis only ────────────
   // Separated from mode=lookup so the data renders in seconds and Claude gets
   // the full function time budget (~50s) to write a substantive analysis.
