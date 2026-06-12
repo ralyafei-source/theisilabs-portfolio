@@ -1284,26 +1284,49 @@ module.exports = async (req, res) => {
     if (!GH_TOKEN) return res.status(500).json({ error: 'GITHUB_TOKEN not set' });
     try {
       const ETFS = ['SPUS', 'HLAL'];
-      const results = await Promise.all(ETFS.map(e => fmpGet(`/etf/holdings?symbol=${e}`)));
+      // Try endpoint variants in order until one returns usable rows; record
+      // what each attempt said so failures are diagnosable from the browser.
+      const variants = [
+        sym => `https://financialmodelingprep.com/stable/etf/holdings?symbol=${sym}&apikey=${FMP_KEY}`,
+        sym => `https://financialmodelingprep.com/api/v3/etf-holder/${sym}?apikey=${FMP_KEY}`,
+      ];
+      async function fetchHoldings(sym) {
+        const attempts = [];
+        for (const v of variants) {
+          const url = v(sym);
+          try {
+            const r = await fetch(url);
+            if (!r.ok) { attempts.push(`${url.split('?')[0].split('.com')[1]} → HTTP ${r.status}`); continue; }
+            const d = await r.json();
+            const rows = Array.isArray(d) ? d : (d.holdings || d.data || []);
+            if (!rows.length) { attempts.push(`${url.split('?')[0].split('.com')[1]} → 0 rows`); continue; }
+            return { rows, attempts, used: url.split('?')[0].split('.com')[1], sampleKeys: Object.keys(rows[0] || {}).slice(0, 8) };
+          } catch (e) { attempts.push(`${url.split('?')[0].split('.com')[1]} → ${e.message}`); }
+        }
+        return { rows: [], attempts, used: null, sampleKeys: [] };
+      }
+      const results = await Promise.all(ETFS.map(fetchHoldings));
       const set = new Set();
       const perEtf = {};
-      results.forEach((rows, i) => {
+      const debug = {};
+      results.forEach((resu, i) => {
         const got = [];
-        (Array.isArray(rows) ? rows : []).forEach(r => {
-          const a = String(r.asset || r.symbol || '').toUpperCase().trim();
+        resu.rows.forEach(r => {
+          const a = String(r.asset || r.symbol || r.ticker || '').toUpperCase().trim();
           // keep plausible US tickers; drop cash lines, the ETF itself, and non-equity rows
-          if (a && /^[A-Z]{1,6}(\.[A-Z])?$/.test(a) && !ETFS.includes(a) && !/^CASH/.test(a)) {
+          if (a && /^[A-Z]{1,6}([.\-][A-Z])?$/.test(a) && !ETFS.includes(a) && !/^CASH/.test(a)) {
             set.add(a); got.push(a);
           }
         });
         perEtf[ETFS[i]] = got.length;
+        debug[ETFS[i]] = { endpoint_used: resu.used, raw_rows: resu.rows.length, kept: got.length, sample_fields: resu.sampleKeys, attempts: resu.attempts };
       });
       // SELF-VERIFICATION (the canary, server-side): a compliant list can never
       // contain conventional banks/insurers. Refuse to write a broken list.
       const canaries = ['JPM', 'GS', 'C', 'BAC', 'WFC', 'AIG', 'MET', 'PRU', 'AFL'];
       const hit = canaries.filter(c => set.has(c));
       if (hit.length) return res.status(500).json({ error: `canary check failed: ${hit.join(',')} present — refusing to write` });
-      if (set.size < 50) return res.status(500).json({ error: `only ${set.size} symbols — ETF holdings fetch likely failed, refusing to write` });
+      if (set.size < 50) return res.status(500).json({ error: `only ${set.size} symbols — ETF holdings fetch likely failed, refusing to write`, debug });
 
       const out = {
         updated: todayUAE(),
@@ -1314,7 +1337,7 @@ module.exports = async (req, res) => {
         symbols: [...set].sort(),
       };
       await ghWriteScorer(REPO, 'data/market/sharia-list.json', out, `sharia-list: ${out.updated} — ${out.count} symbols (SPUS+HLAL)`, GH_TOKEN);
-      return res.status(200).json({ ok: true, updated: out.updated, count: out.count, per_etf: perEtf });
+      return res.status(200).json({ ok: true, updated: out.updated, count: out.count, per_etf: perEtf, debug });
     } catch (err) {
       console.error('build-sharia FATAL:', err.message);
       return res.status(500).json({ error: err.message });
