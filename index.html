@@ -2052,21 +2052,26 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
           <button class="btn btn-primary" style="font-size:11px;padding:7px 12px;" id="a-add">+ Add Alert</button>
         </div>
         <div id="alertList"></div>
-        <hr class="divider">
-        <div class="card-title" id="a-settings-title">Alert Settings</div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px">
+                <div class="card-title" id="a-settings-title">Alert Settings</div>
         <div class="form-group">
           <label class="form-label" id="a-sens">Alert Sensitivity</label>
           <select class="form-input" id="sensSelect">
-            <option id="sens1">Big moves only (±3%)</option>
-            <option id="sens2">Medium moves (±1.5%)</option>
-            <option id="sens3">All moves (±0.5%)</option>
+            <option id="sens1" value="10">Major moves only (±10%)</option>
+            <option id="sens2" value="5">Big moves (±5%)</option>
+            <option id="sens3" value="3">Medium moves (±3%)</option>
+            <option id="sens4" value="0">All moves</option>
           </select>
         </div>
         <div class="form-group">
           <label class="form-label" id="a-time">Morning Brief Time</label>
-          <input class="form-input" type="time" value="07:00">
+          <input class="form-input" type="time" value="07:00" id="briefTimeInput">
         </div>
-        <button class="btn btn-success" id="a-save">💾 Save Settings</button>
+        <button class="btn btn-success" id="a-save" onclick="saveAlertSettings()">💾 Save Settings</button>
+        <span id="alertSettingsStatus" style="font-size:11.5px;margin-right:8px;margin-left:8px;"></span>
         <hr class="divider">
         <div class="card-title">📱 النشرة الصباحية على تيليجرام</div>
         <div style="font-size:11.5px;color:var(--text2);line-height:1.9;direction:rtl;text-align:right;margin-bottom:10px;">
@@ -2083,8 +2088,6 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
         <button class="btn" style="margin-right:6px" onclick="saveTelegramChatId(true)">إيقاف رسائل تيليجرام</button>
         <div id="tgChatStatus" style="font-size:11.5px;margin-top:8px;direction:rtl;text-align:right;"></div>
       </div>
-    </div>
-    <div>
       <div class="card">
         <div class="card-title" id="a-tg-title">Telegram Preview</div>
         <div class="tg-box">
@@ -2761,7 +2764,7 @@ const T={
     wPerfTitle:'Historical Accuracy',wSysTitle:'System Accuracy',wOverall:'Overall prediction accuracy',
     aTitle:'Active Alerts',aAdd:'+ Add Alert',aSettingsTitle:'Alert Settings',
     aSens:'Alert Sensitivity',aTime:'Morning Brief Time',aSave:'💾 Save Settings',
-    sens1:'Big moves only (±3%)',sens2:'Medium moves (±1.5%)',sens3:'All moves (±0.5%)',
+    sens1:'Major moves only (±10%)',sens2:'Big moves (±5%)',sens3:'Medium moves (±3%)',sens4:'All moves',
     tgBotName:'Market Intelligence Bot',tgBotStatus:'Bot · Active now',
     sKeysTitle:'API Keys',sStepsTitle:'Make.com Setup Steps',sSave:'💾 Save Config',
     st1Title:'Create new scenario',st1Desc:'In Make.com click "Create a new scenario" then press the "+" button in the center',
@@ -2792,7 +2795,7 @@ const T={
     wPerfTitle:'الدقة التاريخية للمؤشرات',wSysTitle:'دقة النظام الكلية',wOverall:'دقة التوقعات الإجمالية',
     aTitle:'التنبيهات النشطة',aAdd:'+ إضافة تنبيه',aSettingsTitle:'إعدادات التنبيهات',
     aSens:'حساسية التنبيه',aTime:'وقت التقرير الصباحي',aSave:'💾 حفظ الإعدادات',
-    sens1:'تحركات كبيرة فقط (±3%)',sens2:'تحركات متوسطة (±1.5%)',sens3:'جميع التحركات (±0.5%)',
+    sens1:'التحركات الضخمة فقط (±10%)',sens2:'تحركات كبيرة (±5%)',sens3:'تحركات متوسطة (±3%)',sens4:'جميع التحركات',
     tgBotName:'بوت المحلل المالي',tgBotStatus:'بوت · نشط الآن',
     sKeysTitle:'مفاتيح API',sStepsTitle:'خطوات إعداد Make.com',sSave:'💾 حفظ الإعدادات',
     st1Title:'إنشاء Scenario جديد',st1Desc:'في Make.com اضغط "Create a new scenario" ثم اضغط "+" في المنتصف',
@@ -2859,7 +2862,7 @@ function applyTranslations(){
     'w-perf-title':'wPerfTitle','w-sys-title':'wSysTitle','w-overall':'wOverall',
     'a-title':'aTitle','a-add':'aAdd','a-settings-title':'aSettingsTitle',
     'a-sens':'aSens','a-time':'aTime','a-save':'aSave',
-    'sens1':'sens1','sens2':'sens2','sens3':'sens3',
+    'sens1':'sens1','sens2':'sens2','sens3':'sens3','sens4':'sens4',
     'tg-bot-name':'tgBotName','tg-bot-status':'tgBotStatus',
     's-keys-title':'sKeysTitle','s-steps-title':'sStepsTitle','s-save':'sSave',
     'st1-title':'st1Title','st1-desc':'st1Desc','st2-title':'st2Title','st2-desc':'st2Desc',
@@ -3016,6 +3019,29 @@ const linkIcon=`<span style="color:${arrowColor};font-weight:700;font-size:14px;
     </div>`;
   }).join('');
 }
+
+// ===== ALERT SETTINGS persistence (Session 29) =====
+function saveAlertSettings(){
+  try{
+    const sens=document.getElementById('sensSelect');
+    const tm=document.getElementById('briefTimeInput');
+    if(sens)localStorage.setItem('theisilabs_alert_sens',sens.value);
+    if(tm)localStorage.setItem('theisilabs_brief_time',tm.value);
+    const st=document.getElementById('alertSettingsStatus');
+    if(st){st.style.color='var(--green)';st.textContent='✓ تم الحفظ';setTimeout(()=>{st.textContent='';},2500);}
+  }catch(e){}
+}
+function loadAlertSettings(){
+  try{
+    const sv=localStorage.getItem('theisilabs_alert_sens');
+    const tv=localStorage.getItem('theisilabs_brief_time');
+    const sens=document.getElementById('sensSelect');
+    const tm=document.getElementById('briefTimeInput');
+    if(sens&&sv!=null)sens.value=sv;
+    if(tm&&tv)tm.value=tv;
+  }catch(e){}
+}
+try{ loadAlertSettings(); }catch(e){}
 
 // ===== TELEGRAM CHAT ID SETTING (Session 29) =====
 async function loadTelegramSetting(){
