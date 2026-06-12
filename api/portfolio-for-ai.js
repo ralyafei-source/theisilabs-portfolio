@@ -1283,44 +1283,36 @@ module.exports = async (req, res) => {
     const GH_TOKEN = process.env.GITHUB_TOKEN;
     if (!GH_TOKEN) return res.status(500).json({ error: 'GITHUB_TOKEN not set' });
     try {
-      const ETFS = ['SPUS', 'HLAL'];
-      // Try endpoint variants in order until one returns usable rows; record
-      // what each attempt said so failures are diagnosable from the browser.
-      const variants = [
-        sym => `https://financialmodelingprep.com/stable/etf/holdings?symbol=${sym}&apikey=${FMP_KEY}`,
-        sym => `https://financialmodelingprep.com/api/v3/etf-holder/${sym}?apikey=${FMP_KEY}`,
-      ];
-      async function fetchHoldings(sym) {
-        const attempts = [];
-        for (const v of variants) {
-          const url = v(sym);
-          try {
-            const r = await fetch(url);
-            if (!r.ok) { attempts.push(`${url.split('?')[0].split('.com')[1]} → HTTP ${r.status}`); continue; }
-            const d = await r.json();
-            const rows = Array.isArray(d) ? d : (d.holdings || d.data || []);
-            if (!rows.length) { attempts.push(`${url.split('?')[0].split('.com')[1]} → 0 rows`); continue; }
-            return { rows, attempts, used: url.split('?')[0].split('.com')[1], sampleKeys: Object.keys(rows[0] || {}).slice(0, 8) };
-          } catch (e) { attempts.push(`${url.split('?')[0].split('.com')[1]} → ${e.message}`); }
-        }
-        return { rows: [], attempts, used: null, sampleKeys: [] };
-      }
-      const results = await Promise.all(ETFS.map(fetchHoldings));
+      // PRIMARY SOURCE: the fund issuer's own daily holdings CSV (public,
+      // SEC-mandated disclosure). SPUS = SP Funds S&P 500 Sharia Industry
+      // Exclusions ETF — AAOIFI-screened by S&P's Shariah committee, with a
+      // published Certificate of Sharia Accreditation. Updated daily.
+      // (FMP ETF-holdings endpoints are not in our plan: 402/403.)
+      const CSV_URL = 'https://www.sp-funds.com/wp-content/uploads/data/TidalFG_Holdings_SPUS.csv';
       const set = new Set();
-      const perEtf = {};
-      const debug = {};
-      results.forEach((resu, i) => {
-        const got = [];
-        resu.rows.forEach(r => {
-          const a = String(r.asset || r.symbol || r.ticker || '').toUpperCase().trim();
-          // keep plausible US tickers; drop cash lines, the ETF itself, and non-equity rows
-          if (a && /^[A-Z]{1,6}([.\-][A-Z])?$/.test(a) && !ETFS.includes(a) && !/^CASH/.test(a)) {
-            set.add(a); got.push(a);
-          }
-        });
-        perEtf[ETFS[i]] = got.length;
-        debug[ETFS[i]] = { endpoint_used: resu.used, raw_rows: resu.rows.length, kept: got.length, sample_fields: resu.sampleKeys, attempts: resu.attempts };
-      });
+      const debug = { source: CSV_URL, http: null, lines: 0, kept: 0, as_of: null };
+      const csvRes = await fetch(CSV_URL, { headers: { 'User-Agent': 'Mozilla/5.0 (THEISI sharia-list builder)' } });
+      debug.http = csvRes.status;
+      if (!csvRes.ok) return res.status(500).json({ error: `holdings CSV fetch failed: HTTP ${csvRes.status}`, debug });
+      const text = await csvRes.text();
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      debug.lines = lines.length;
+      // Columns: Date,Account,StockTicker,SecurityName,... — ticker is col 3,
+      // safely BEFORE any field that could contain commas.
+      let asOf = null;
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',');
+        if (cols.length < 3) continue;
+        if (!asOf && cols[0]) {
+          const m = String(cols[0]).trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+          if (m) asOf = `${m[3]}-${m[1]}-${m[2]}`;
+        }
+        const a = String(cols[2] || '').toUpperCase().trim();
+        // plausible US tickers only — drops Cash&Other, CUSIP-like ids, CVRs
+        if (a && /^[A-Z]{1,6}([.\-][A-Z])?$/.test(a) && a !== 'SPUS' && !/^CASH/.test(a) && a !== 'STOCKTICKER') set.add(a);
+      }
+      debug.kept = set.size; debug.as_of = asOf;
+      const perEtf = { SPUS: set.size };
       // SELF-VERIFICATION (the canary, server-side): a compliant list can never
       // contain conventional banks/insurers. Refuse to write a broken list.
       const canaries = ['JPM', 'GS', 'C', 'BAC', 'WFC', 'AIG', 'MET', 'PRU', 'AFL'];
@@ -1330,9 +1322,10 @@ module.exports = async (req, res) => {
 
       const out = {
         updated: todayUAE(),
-        method: 'Holdings of AAOIFI-screened Islamic ETFs (S&P Shariah via SPUS + FTSE USA Shariah via HLAL)',
+        method: 'Holdings of the SP Funds S&P 500 Sharia Industry Exclusions ETF (SPUS) — AAOIFI screening by the S&P Shariah committee, certified by an independent Sharia auditor',
         method_ar: 'قائمة مبنية على مكونات صناديق مؤشرات شرعية مُدقّقة وفق معايير AAOIFI (مؤشر S&P الشرعي ومؤشر FTSE الأمريكي الشرعي)',
         source_etfs: perEtf,
+        holdings_as_of: debug.as_of,
         count: set.size,
         symbols: [...set].sort(),
       };
