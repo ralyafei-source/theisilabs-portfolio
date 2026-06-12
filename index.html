@@ -1577,6 +1577,8 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 .tmoves .tm-row{display:flex;justify-content:space-between;align-items:center;padding:8px 2px;border-bottom:1px solid var(--border);direction:ltr}
 .tmoves .tm-row:last-child{border-bottom:none}
 .cmd-top.below-strip{margin-top:8px}
+.lk-spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--rose);border-radius:50%;margin:0 auto;animation:lkspin .8s linear infinite}
+@keyframes lkspin{to{transform:rotate(360deg)}}
 @media(max-width:640px){
   .zone1 .cmd-big{font-size:30px}
   .z1-num{font-size:23px}
@@ -2203,8 +2205,14 @@ WOLF remains at critical lows<br><br>
       <button onclick="lookupStock()" style="background:var(--rose);border:none;color:#fff;padding:10px 24px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">بحث</button>
     </div>
     <!-- Loading -->
-    <div id="lookup-loading" style="display:none;padding:30px;text-align:center;color:var(--text2);font-size:13px;">
-      ⏳ جاري تحليل السهم...
+    <div id="lookup-loading" style="display:none;padding:34px 20px;text-align:center;color:var(--text2);font-size:13px;">
+      <div class="lk-spinner"></div>
+      <div id="lk-load-stage" style="margin-top:14px;font-size:13.5px;color:var(--text);font-weight:700;">جاري جلب البيانات المالية…</div>
+      <div id="lk-load-sub" style="margin-top:6px;font-size:11px;color:var(--text3);">عادةً يستغرق التحليل الكامل ٢٠–٢٥ ثانية</div>
+      <div style="max-width:340px;margin:14px auto 0;background:var(--bg3);border-radius:99px;height:6px;overflow:hidden;">
+        <div id="lk-load-bar" style="height:100%;width:3%;background:var(--rose);border-radius:99px;transition:width .9s linear;"></div>
+      </div>
+      <div id="lk-load-secs" style="margin-top:8px;font-size:10.5px;color:var(--text3);font-family:'IBM Plex Mono',monospace;"></div>
     </div>
     <!-- Error -->
     <div id="lookup-error" style="display:none;padding:20px;color:var(--red);font-size:13px;text-align:center;"></div>
@@ -4153,7 +4161,18 @@ function _sigReads(d, isAr){
 
   // 1) DCF view
   (function(){
-    if(d.dcfValue==null||price==null){ reads.push({key:'dcf',label:t('DCF Model','نموذج التدفقات النقدية'),value:'—',dir:'na',why:t('No cash-flow valuation available.','لا يوجد تقييم تدفقات نقدية.')}); return; }
+    if(d.dcfValue==null||price==null){
+      const alt=d.targetMedian??d.targetMean;
+      if(alt!=null&&price!=null){
+        const gap=(alt-price)/price*100;
+        const dir=gap>5?'fav':gap<-5?'cau':'neu';
+        reads.push({key:'dcf',label:t('Valuation','التقييم'),value:'$'+Number(alt).toFixed(0),sub:(gap>=0?'+':'')+gap.toFixed(1)+'%',dir,
+          why:t('Cash-flow model unreliable for this stock — showing analyst target range instead.','نموذج التدفقات غير موثوق لهذا السهم — نعرض نطاق أهداف المحللين بدلاً منه'+(d.targetLow!=null&&d.targetHigh!=null?` ($${d.targetLow}–$${d.targetHigh})`:'')+'.')});
+      } else {
+        reads.push({key:'dcf',label:t('DCF Model','نموذج التدفقات النقدية'),value:'—',dir:'na',why:t('No reliable valuation available.','لا يوجد تقييم موثوق متاح.')});
+      }
+      return;
+    }
     const gap=(d.dcfValue-price)/price*100;
     let dir = gap>5?'fav':gap<-5?'cau':'neu';
     let why;
@@ -4295,9 +4314,36 @@ function _lkRiskRead(d){
   return {key:'high', ar:'مرتفع', en:'High', color:'var(--red)'};
 }
 
+let _lkLoadTimer=null;
+function _lkLoadStart(){
+  const t0=Date.now();
+  const stages=[
+    [0,  'جاري جلب البيانات المالية من المصادر…'],
+    [5,  'التحقق من جودة الأرقام ومقارنتها بأهداف المحللين…'],
+    [9,  'بناء جدول النتائج المالية وتاريخ السعر…'],
+    [13, 'الذكاء الاصطناعي يقرأ الأرقام ويكتب التحليل…'],
+    [22, 'لمسات أخيرة على التحليل…'],
+  ];
+  const stageEl=document.getElementById('lk-load-stage');
+  const barEl=document.getElementById('lk-load-bar');
+  const secEl=document.getElementById('lk-load-secs');
+  if(barEl)barEl.style.width='3%';
+  _lkLoadStop();
+  _lkLoadTimer=setInterval(()=>{
+    const s=(Date.now()-t0)/1000;
+    let msg=stages[0][1];
+    for(const [at,m] of stages){ if(s>=at) msg=m; }
+    if(stageEl)stageEl.textContent=msg;
+    if(barEl)barEl.style.width=Math.min(95, 3+(s/26)*92).toFixed(0)+'%';
+    if(secEl)secEl.textContent=Math.floor(s)+' ث';
+  },900);
+}
+function _lkLoadStop(){ if(_lkLoadTimer){clearInterval(_lkLoadTimer);_lkLoadTimer=null;} }
+
 async function lookupStock() {
   const sym = document.getElementById('lookup-input').value.trim().toUpperCase();
   if (!sym) return;
+  _lkLoadStart();
   const isAr = true; // Lookup panel always renders in Arabic regardless of page language
 
   document.getElementById('lookup-loading').style.display = 'block';
@@ -4387,7 +4433,14 @@ async function lookupStock() {
 
     // ── Decision Dashboard Panel ──────────────────────────────────────────
     const riskRead = _lkRiskRead(d);
-    const dcfUpsideVal = (d.dcfValue && d.price) ? (((d.dcfValue - d.price) / d.price) * 100).toFixed(1) : null;
+    // Unified fair value (Session 29): DCF when it passed validation; otherwise
+    // the analyst median — and ALWAYS show the analyst range when we have it,
+    // so a suppressed model never leaves the user with an empty box.
+    const fvPrimary = d.dcfValue ?? d.targetMedian ?? d.targetMean ?? null;
+    const fvIsDcf   = d.dcfValue != null;
+    const fvRange   = (d.targetLow != null && d.targetHigh != null) ? ('$'+d.targetLow+' – $'+d.targetHigh) : null;
+    const fvUpside  = (fvPrimary && d.price) ? (((fvPrimary - d.price) / d.price) * 100) : null;
+    const dcfUpsideVal = fvUpside != null ? fvUpside.toFixed(1) : null;
     const upsideColor = dcfUpsideVal > 0 ? 'var(--green)' : 'var(--red)';
     const upsideArrow = dcfUpsideVal > 0 ? '↑' : '↓';
     const changePctColor = (d.changePct||0) >= 0 ? 'var(--green)' : 'var(--red)';
@@ -4445,7 +4498,8 @@ async function lookupStock() {
           <div class="lk-dp-val-label">القيمة العادلة</div>
           <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end;">
             <div class="lk-dp-val-sub" style="color:${upsideColor}">${dcfUpsideVal ? upsideArrow+' '+Math.abs(dcfUpsideVal)+'%' : ''}</div>
-            <div class="lk-dp-val-big">${d.dcfValue ? '$'+d.dcfValue.toFixed(2) : '—'}</div>
+            <div class="lk-dp-val-big">${fvPrimary != null ? '$'+Number(fvPrimary).toFixed(2) : '—'}</div>
+            <div class="lk-dp-val-sub">${fvPrimary == null ? 'لا تقدير موثوق' : (fvIsDcf ? 'نموذج التدفقات' : 'متوسط أهداف المحللين')}${fvRange ? ' · النطاق: '+fvRange : ''}</div>
           </div>
         </div>
 
@@ -4585,7 +4639,7 @@ async function lookupStock() {
         <div class="lk-sub-card">
           <div class="lk-card-title">${t('Valuation — what the numbers say','التقييم — ماذا تقول الأرقام')}</div>
           ${_lkRow(t('Analyst Target','هدف المحللين'), t('Average 12-month analyst expectation','متوسط ما يتوقعه المحللون خلال 12 شهراً'), d.targetMean?'$'+d.targetMean.toFixed(2):'—', upside!=null?(upside>=0?'+':'')+upside.toFixed(1)+'% '+t('potential','محتمل'):null, upside>=0)}
-          ${_lkRow(t('Fair Value · DCF','القيمة العادلة · DCF'), t('Value estimate from future cash flows','تقدير القيمة بناءً على التدفقات النقدية المستقبلية'), d.dcfValue?'$'+d.dcfValue.toFixed(2):'—', dcfUpside!=null?(dcfUpside>=0?'+':'')+dcfUpside.toFixed(1)+'% '+t('potential','محتمل'):null, dcfUpside>=0)}
+          ${_lkRow(t('Fair Value','القيمة العادلة'), fvIsDcf ? t('Value estimate from future cash flows','تقدير القيمة بناءً على التدفقات النقدية المستقبلية') : t('Analyst targets (model unreliable for this stock)','أهداف المحللين (النموذج غير موثوق لهذا السهم)'), fvPrimary!=null?('$'+Number(fvPrimary).toFixed(2)+(fvRange?' ('+fvRange+')':'')):'—', fvUpside!=null?(fvUpside>=0?'+':'')+fvUpside.toFixed(1)+'% '+t('potential','محتمل'):null, fvUpside>=0)}
           ${_lkRow(t('P/E Ratio','مضاعف الربحية · P/E'), d.pe!=null?(d.pe.toFixed(1)+'x — '+t('reasonable for tech sector','معقول مقارنةً بقطاع التقنية')):t('Price to earnings','السعر إلى الأرباح'), d.pe!=null?d.pe.toFixed(1)+'x':'—', null)}
           ${_lkRow(t('PEG Ratio','نسبة PEG'), t('Below 1 = price cheap vs growth rate','أقل من 1 = السعر رخيص مقارنةً بمعدل النمو'), d.peg!=null?d.peg.toFixed(2):'—', d.peg!=null&&d.peg<1?t('relatively cheap','رخيص نسبياً'):null, true)}
           ${''}
@@ -4674,11 +4728,13 @@ async function lookupStock() {
       }
     }catch(e){}
 
+    _lkLoadStop();
     document.getElementById('lookup-loading').style.display = 'none';
     document.getElementById('lookup-result').style.display = 'block';
 
   } catch(e) {
     document.getElementById('lookup-loading').style.display = 'none';
+    _lkLoadStop();
     document.getElementById('lookup-error').style.display = 'block';
     document.getElementById('lookup-error').textContent = '❌ ' + e.message;
   }
