@@ -3972,7 +3972,7 @@ function _opBuildHeroCard(s){
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 8px;direction:rtl">
       ${_opPatBadges(s.pattern)}
       <span class="op-chip ${fitCls}">${fit.label}</span>
-      ${s._isSharia?'<span class="op-chip good">متوافق مع الشريعة</span>':''}
+      ${s._isSharia?_shariaChip():''}
     </div>
     <div style="font-size:11.5px;color:var(--text2);line-height:1.85;direction:rtl">${why1}</div>
     <button id="opt-${s.symbol}" class="op-toggle" style="direction:rtl;display:block" onclick="event.stopPropagation();_opToggleDetails('${s.symbol}')">التفاصيل</button>
@@ -4001,7 +4001,7 @@ function _opBuildMiniCard(s){
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;justify-content:flex-end">${_opPatBadges(s.pattern)}</div>
     <div style="font-size:10px;color:var(--text3);line-height:1.55;direction:rtl">${(s._why||'').slice(0,100)}${(s._why||'').length>100?'...':''}</div>
-    <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">${_opStreakBadge(s._streak)}${_opEarningsBadge(s)}${s._isSharia?'<span class="op-chip good">متوافق مع الشريعة</span>':''}</div>
+    <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">${_opStreakBadge(s._streak)}${_opEarningsBadge(s)}${s._isSharia?_shariaChip():''}</div>
   </div>`;
 }
 
@@ -4050,11 +4050,27 @@ async function loadOpportunities(force){
       scoredRes = await fetch(`${_OP_GH}scored-${yesterUAE}.json?t=${t}`);
     }
     if(!scoredRes.ok) throw new Error('فشل تحميل بيانات الأسهم من GitHub');
+// SHARIA LIST CANARY (Session 29): a compliant list can never contain
+// conventional banks/insurers. If any canary symbol is present, the list is
+// provably broken (FMP's isSharia param doesn't exist) → show NO badges.
+// Sharia badge with the list's update date — honest, dated, sourced
+function _shariaChip(){
+  const d=window._shariaUpdated;
+  const tip=(window._shariaMethodAr||'قائمة مبنية على مؤشرات شرعية مُدقّقة')+(d?(' · آخر تحديث: '+d):'');
+  return '<span class="op-chip good" title="'+tip+'">متوافق مع الشريعة ✓'+(d?'<span style="opacity:.65;font-size:9px"> · '+d+'</span>':'')+'</span>';
+}
+function _shariaListValid(set){
+  const canaries=['JPM','GS','C','BAC','WFC','AIG','MET','PRU','AFL'];
+  return set.size>0 && !canaries.some(c=>set.has(c));
+}
     let _shariaSet = new Set();
     try {
       const shariaData = await shariaRes.json();
-      const list = Array.isArray(shariaData) ? shariaData : (shariaData.list || []);
+      const list = Array.isArray(shariaData) ? shariaData : (shariaData.symbols || shariaData.list || []);
       list.forEach(s => _shariaSet.add(s.symbol || s));
+      window._shariaUpdated = shariaData.updated || null;
+      window._shariaMethodAr = shariaData.method_ar || null;
+      if(!_shariaSet || !_shariaListValid(_shariaSet)){ console.warn('sharia-list failed canary check — badges suppressed'); _shariaSet = new Set(); }
     } catch(e) { console.warn('Sharia list not available'); }
 
 // today.json may be malformed — handle gracefully
@@ -8814,7 +8830,8 @@ async function renderZone3(force){
       ]);
       let why={};try{const td=JSON.parse(await todayRes.text());why=td.why_texts||{};}catch(e){}
       let sharia=new Set();
-      try{const sd=await shariaRes.json();(Array.isArray(sd)?sd:(sd.list||[])).forEach(x=>sharia.add(x.symbol||x));}catch(e){}
+      try{const sd=await shariaRes.json();(Array.isArray(sd)?sd:(sd.symbols||sd.list||[])).forEach(x=>sharia.add(x.symbol||x));window._shariaUpdated=window._shariaUpdated||sd.updated||null;window._shariaMethodAr=window._shariaMethodAr||sd.method_ar||null;}catch(e){}
+      if(typeof _shariaListValid==='function' && !_shariaListValid(sharia)){ sharia=new Set(); }
       const sj=await scoredRes.json();
       let all=[];
       if(Array.isArray(sj))all=sj;
@@ -8841,7 +8858,7 @@ async function renderZone3(force){
       +'<div class="z3-sec">'+(pick.sector||'')+'</div>'
       +'</div><div class="z3-score"><b>'+Math.round(pick.final_score||0)+'</b><i>'+(ar?'\u0645\u0646 \u0661\u0660\u0660':'of 100')+'</i></div></div>'
       +'<div class="z3-chips">'
-      +(isSh?'<span class="op-chip good">\u0645\u062a\u0648\u0627\u0641\u0642 \u0645\u0639 \u0627\u0644\u0634\u0631\u064a\u0639\u0629 \u2713</span>':'')
+      +(isSh?_shariaChip():'')
       +pat
       +(owned?'<span class="op-chip">'+(ar?'\u062a\u0645\u0644\u0643\u0647 \u0628\u0627\u0644\u0641\u0639\u0644':'You already hold this')+'</span>':'')
       +'</div>'
