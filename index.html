@@ -1531,6 +1531,58 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 .sig-read-dir{font-size:12px;font-weight:700;text-transform:lowercase;}
 .sig-read-why{font-size:13px;color:var(--text2);line-height:1.7;margin-top:5px;}
 [dir="rtl"] .sig-read-why,.firm-body:not(.en) .sig-read-why{text-align:right;}
+
+/* ═══ CALM FIRST PAGE (spec v1.1) ═══ */
+.zone1{padding:18px 4px 8px}
+.z1-greet{font-size:14px;color:var(--text2);margin-bottom:10px;font-weight:700}
+.zone1 .cmd-big{font-size:34px;line-height:1.1}
+.z1-stats{display:flex;align-items:baseline;gap:22px;margin-top:10px;flex-wrap:wrap}
+.z1-stat{display:flex;flex-direction:column;gap:2px}
+.z1-num{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:26px;line-height:1}
+.z1-num.z1-small{font-size:16px}
+.z1-num.up{color:var(--green)}.z1-num.dn{color:var(--red)}
+.z1-cap{font-size:11px;color:var(--text3)}
+.z1-sentence{font-size:13.5px;color:var(--text2);line-height:1.8;margin-top:12px;max-width:560px}
+.z1-fresh{font-size:10.5px;color:var(--text3);margin-top:6px}
+.zone2{margin:18px 0 6px;border-radius:16px;border:1px solid var(--border);background:var(--bg2);padding:16px 18px}
+.zone2.calm{border-color:rgba(74,222,128,.35)}
+.zone2.alert{border-color:rgba(248,113,113,.4)}
+.z2-state{display:flex;align-items:flex-start;gap:12px}
+.z2-ico{font-size:22px;line-height:1.2}
+.z2-head{font-size:15px;font-weight:700;color:var(--text)}
+.z2-sub{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.7}
+.z2-meta{font-size:10.5px;color:var(--text3);margin-top:8px}
+.z2-item{display:block;border-radius:12px;padding:12px 14px;margin-top:10px;border:1px solid var(--border);background:var(--bg3);cursor:pointer}
+.z2-item.red{border-color:rgba(248,113,113,.55)}
+.z2-item.amber{border-color:rgba(251,191,36,.5)}
+.z2-row{display:flex;justify-content:space-between;align-items:center;gap:10px;direction:ltr}
+.z2-sym{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;color:var(--text)}
+.z2-pct{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px}
+.z2-pct.up{color:var(--green)}.z2-pct.dn{color:var(--red)}
+.z2-impact{font-size:11px;color:var(--text2);font-family:'IBM Plex Mono',monospace}
+.z2-why{font-size:12px;color:var(--text2);line-height:1.75;margin-top:7px}
+.z2-cta{font-size:11px;color:var(--rose);margin-top:6px;font-weight:700}
+.zone3{margin-bottom:8px}
+.z3-card{border:1px solid var(--border);background:var(--bg2);border-radius:16px;padding:16px 18px;cursor:pointer}
+.z3-top{display:flex;justify-content:space-between;align-items:flex-start;direction:ltr}
+.z3-sym{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:18px;color:var(--text)}
+.z3-sec{font-size:10.5px;color:var(--text3);margin-top:2px}
+.z3-score{text-align:center;min-width:50px}
+.z3-score b{font-size:22px;font-family:'IBM Plex Mono',monospace;color:var(--text)}
+.z3-score i{display:block;font-style:normal;font-size:8.5px;color:var(--text3);margin-top:2px}
+.z3-chips{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 8px;direction:rtl}
+.z3-why{font-size:12px;color:var(--text2);line-height:1.85;direction:rtl}
+.z-fold{text-align:center;font-size:11px;color:var(--text3);margin:18px 0 10px;letter-spacing:.3px}
+.tmoves{display:none;border:1px solid var(--border);border-radius:14px;background:var(--bg2);padding:6px 14px;margin-bottom:18px}
+.tmoves .tm-row{display:flex;justify-content:space-between;align-items:center;padding:8px 2px;border-bottom:1px solid var(--border);direction:ltr}
+.tmoves .tm-row:last-child{border-bottom:none}
+.cmd-top.below-strip{margin-top:8px}
+@media(max-width:640px){
+  .zone1 .cmd-big{font-size:30px}
+  .z1-num{font-size:23px}
+  .z1-stats{gap:18px}
+  .zone2,.z3-card{padding:14px 14px}
+}
 </style>
 </head>
 <body>
@@ -1760,12 +1812,38 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 <!-- ===== PORTFOLIO TAB ===== -->
 <!-- DASHBOARD -->
 <div id="tab-dashboard" class="tab-content active">
-  <div class="cmd-top">
-    <div class="cmd-val">
-      <div class="cmd-lbl" id="cmd-port-label">Portfolio Value</div>
-      <div class="cmd-big" id="cmd-value">$—</div>
-      <div class="cmd-sub" id="cmd-change">Loading...</div>
+  <!-- ═══ ZONE 1 — STATUS ═══ -->
+  <div class="zone1">
+    <div class="z1-greet" id="z1-greet">&nbsp;</div>
+    <div class="cmd-lbl" id="cmd-port-label" data-en="Portfolio Value" data-ar="قيمة المحفظة">قيمة المحفظة</div>
+    <div class="cmd-big" id="cmd-value">$—</div>
+    <div class="z1-stats">
+      <div class="z1-stat"><span class="z1-num" id="z1-alltime">—</span><span class="z1-cap" data-en="all-time vs your cost" data-ar="منذ البداية (مقابل تكلفتك)">منذ البداية (مقابل تكلفتك)</span></div>
+      <div class="z1-stat"><span class="z1-num z1-small" id="z1-today">—</span><span class="z1-cap" data-en="today" data-ar="اليوم">اليوم</span></div>
     </div>
+    <div class="z1-sentence" id="z1-sentence"></div>
+    <div class="z1-fresh" id="z1-fresh"></div>
+    <div class="cmd-sub" id="cmd-change" style="display:none">Loading...</div>
+  </div>
+
+  <!-- ═══ ZONE 2 — REASSURANCE / ATTENTION ═══ -->
+  <div class="zone2" id="zone2">
+    <div class="z2-state"><span class="z2-ico">⏳</span><div><div class="z2-head" data-en="Checking your portfolio…" data-ar="جاري فحص محفظتك…">جاري فحص محفظتك…</div></div></div>
+  </div>
+
+  <!-- ═══ ZONE 3 — OPPORTUNITY ═══ -->
+  <div class="cmd-stitle" id="z3-title" data-en="⭐ A stock worth a look" data-ar="⭐ سهم يستحق نظرة">⭐ سهم يستحق نظرة</div>
+  <p id="z3-disclaimer" data-en="Organized reasons + the risk — never a recommendation. You decide." data-ar="أسباب منظمة + المخاطر — ليست توصية أبداً. القرار لك." style="font-size:11px;color:var(--text2);margin:-4px 0 10px;line-height:1.5">أسباب منظمة + المخاطر — ليست توصية أبداً. القرار لك.</p>
+  <div id="zone3" class="zone3"><div class="skel" style="height:84px;border-radius:14px"></div></div>
+
+  <div class="z-fold" id="z-fold" data-en="full detail below ↓" data-ar="التفاصيل الكاملة بالأسفل ↓">التفاصيل الكاملة بالأسفل ↓</div>
+
+  <!-- Today's moves (FYI tier) -->
+  <div class="cmd-stitle" id="tmoves-title" style="display:none" data-en="Today's moves" data-ar="تحركات اليوم">تحركات اليوم</div>
+  <div id="tmoves" class="tmoves"></div>
+
+  <!-- Portfolio snapshot strip (relocated off page 1) -->
+  <div class="cmd-top below-strip">
     <div class="cmd-score-wrap">
       <div class="cmd-ring"><span id="cmd-score-num">—</span></div>
       <div style="margin-left:12px">
@@ -2709,7 +2787,7 @@ const T={
 };
 
 // ===== LANGUAGE =====
-function setLang(l,btn){
+function setLang(l,btn){ setTimeout(function(){ if(typeof renderCalmZones==='function') renderCalmZones(); if(typeof renderZone3==='function') renderZone3(true); },60);
   lang=l;
   document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
@@ -5227,6 +5305,7 @@ let privacyOn=false;
 
 function togglePrivacy(){
   privacyOn=!privacyOn;
+  setTimeout(function(){ if(typeof renderCalmZones==='function') renderCalmZones(); },30);
   const eye=privacyOn?'🙈':'👁';
   const btn=document.getElementById('privacyBtn');
   if(btn){
@@ -5326,6 +5405,8 @@ async function fetchLivePrices(){
       if(q && q.price){
         s.price=q.price;
         s.gl=((q.price - s.cost)/s.cost)*100;
+        s.dayCh=Number(q.change)||0;
+        s.dayChPct=(q.changePct!=null)?Number(q.changePct):null;
         if(s._shares) s.mv=Math.round(s._shares * q.price);
         updated++;
       }
@@ -5371,6 +5452,7 @@ if(hStocks) hStocks.textContent = secCount;
     });
     if(needsFullRender) renderPortfolio();
     renderTrends();
+    calmPricesAt=Date.now(); renderCalmZones();
 
   } catch(e){
     console.error('fetchLivePrices error:', e);
@@ -7546,6 +7628,8 @@ async function fetchLivePricesForUser(token, symbols) {
       if (q && q.price) {
         s.price = q.price;
         s.gl = ((q.price - s.cost) / s.cost) * 100;
+        s.dayCh = Number(q.change) || 0;
+        s.dayChPct = (q.changePct != null) ? Number(q.changePct) : null;
         s.mv = Math.round(s.shares * q.price);
         updated++;
       }
@@ -7559,6 +7643,7 @@ async function fetchLivePricesForUser(token, symbols) {
     if (hStocks) hStocks.textContent = stocks.length;
     updateStatCards();
     renderPortfolio();
+    calmPricesAt=Date.now(); renderCalmZones();
   } catch(e) {
     if (indicator) indicator.innerHTML = `<span style="color:var(--red)">⚠️ ${e.message}</span>`;
   }
@@ -8280,6 +8365,303 @@ function toggleTheme(){
 }
 
 document.addEventListener('DOMContentLoaded', _updateLogo);
+
+
+// ═══════════════════════════════════════════════════════════
+// CALM FIRST PAGE ENGINE — spec v1.1 (Session 29)
+// Zone 1: status · Zone 2: rule-based attention · Zone 3: opportunity
+// Rules decide, Claude phrases. Never recommend — only explain.
+// ═══════════════════════════════════════════════════════════
+const _CALM_GH='https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main';
+let calmPricesAt=0;
+const CALM={baselines:null,baseDate:null,attention:null,attDate:null,z3:null,z3LoadedAt:0};
+
+function _calmAr(){return typeof lang!=='undefined'&&lang==='ar';}
+function _calmPct(p){return (p>=0?'+':'\u2212')+Math.abs(p).toFixed(2)+'%';}
+function _calmMoney(v){return '$'+Math.abs(Math.round(v)).toLocaleString('en-US');}
+
+function renderCalmZones(){ try{renderZone1();}catch(e){console.warn('z1',e);} try{evaluateZone2();}catch(e){console.warn('z2',e);} }
+
+// ── ZONE 1 — STATUS ──
+function renderZone1(){
+  if(typeof stocks==='undefined'||!stocks.length) return;
+  const ar=_calmAr();
+  // Time-aware greeting
+  const nick=(localStorage.getItem('theisilabs_nick')||'').trim();
+  const name=nick?nick.charAt(0).toUpperCase()+nick.slice(1):'';
+  const h=new Date().getHours();
+  const morning=h>=5&&h<12;
+  const g=document.getElementById('z1-greet');
+  if(g)g.textContent=(ar?(morning?'\u0635\u0628\u0627\u062d \u0627\u0644\u062e\u064a\u0631':'\u0645\u0633\u0627\u0621 \u0627\u0644\u062e\u064a\u0631'):(morning?'Good morning':'Good evening'))+(name?(ar?' \u064a\u0627 ':', ')+name:'');
+  // Totals — all-time vs cost + today
+  let tv=0,tc=0,dch=0,haveDay=false;
+  stocks.forEach(s=>{
+    const sh=Number(s.shares!=null?s.shares:s._shares)||0;
+    const mv=Number(s.mv)||sh*(Number(s.price)||0);
+    tv+=mv; tc+=sh*(Number(s.cost)||0);
+    if(s.dayCh!=null&&sh>0){dch+=sh*Number(s.dayCh);haveDay=true;}
+  });
+  if(tv<=0&&tc<=0) return;
+  const allPct=tc>0?((tv-tc)/tc*100):0;
+  const prevTv=tv-dch;
+  const dayPct=(haveDay&&prevTv>0)?(dch/prevTv*100):null;
+  const ve=document.getElementById('cmd-value');
+  if(ve)ve.textContent=privacyOn?'$ \u2022\u2022\u2022\u2022\u2022\u2022':('$'+Math.round(tv).toLocaleString('en-US'));
+  const at=document.getElementById('z1-alltime');
+  if(at){at.textContent=_calmPct(allPct);at.className='z1-num '+(allPct>=0?'up':'dn');}
+  const td=document.getElementById('z1-today');
+  if(td){td.textContent=dayPct==null?'\u2014':_calmPct(dayPct);td.className='z1-num z1-small '+(dayPct==null?'':(dayPct>=0?'up':'dn'));}
+  // The calm connecting sentence — context, not noise
+  const se=document.getElementById('z1-sentence');
+  if(se){
+    if(dayPct==null){se.textContent='';}
+    else{
+      const a=Math.abs(allPct).toFixed(0), d=Math.abs(dayPct).toFixed(1);
+      let t='';
+      if(ar){
+        if(dayPct<=-0.05&&allPct>0)      t='\u0627\u0644\u0645\u062d\u0641\u0638\u0629 \u062a\u0631\u0627\u062c\u0639\u062a '+d+'% \u0627\u0644\u064a\u0648\u0645 \u2014 \u0644\u0643\u0646\u0643 \u0645\u0627 \u0632\u0644\u062a \u0631\u0627\u0628\u062d\u0627\u064b '+a+'% \u0639\u0644\u0649 \u062a\u0643\u0644\u0641\u0629 \u0634\u0631\u0627\u0626\u0643.';
+        else if(dayPct<=-0.05)            t='\u0627\u0644\u0645\u062d\u0641\u0638\u0629 \u062a\u0631\u0627\u062c\u0639\u062a '+d+'% \u0627\u0644\u064a\u0648\u0645. \u0627\u0644\u0635\u0648\u0631\u0629 \u0627\u0644\u0643\u0627\u0645\u0644\u0629 \u0641\u064a \u062a\u0628\u0648\u064a\u0628 \u0627\u0644\u0645\u062d\u0641\u0638\u0629.';
+        else if(dayPct>=0.05&&allPct>0)   t='\u0627\u0644\u0645\u062d\u0641\u0638\u0629 \u0627\u0631\u062a\u0641\u0639\u062a '+d+'% \u0627\u0644\u064a\u0648\u0645\u060c \u0648\u0625\u062c\u0645\u0627\u0644\u064a \u0631\u0628\u062d\u0643 '+a+'% \u0645\u0646\u0630 \u0627\u0644\u0628\u062f\u0627\u064a\u0629.';
+        else if(dayPct>=0.05)             t='\u0627\u0644\u0645\u062d\u0641\u0638\u0629 \u0627\u0631\u062a\u0641\u0639\u062a '+d+'% \u0627\u0644\u064a\u0648\u0645.';
+        else                              t='\u064a\u0648\u0645 \u0647\u0627\u062f\u0626 \u2014 \u0627\u0644\u0645\u062d\u0641\u0638\u0629 \u0634\u0628\u0647 \u0645\u0633\u062a\u0642\u0631\u0629.';
+      } else {
+        if(dayPct<=-0.05&&allPct>0)      t='Down '+d+'% today \u2014 but you are still up '+a+'% on what you paid.';
+        else if(dayPct<=-0.05)            t='Down '+d+'% today. The full picture is in the Portfolio tab.';
+        else if(dayPct>=0.05&&allPct>0)   t='Up '+d+'% today, and up '+a+'% all-time on your cost.';
+        else if(dayPct>=0.05)             t='Up '+d+'% today.';
+        else                              t='A quiet day \u2014 your portfolio is roughly flat.';
+      }
+      se.textContent=t;
+    }
+  }
+  // Honest freshness line — US market hours (approx, UTC)
+  const fr=document.getElementById('z1-fresh');
+  if(fr){
+    const n=new Date(); const u=n.getUTCHours()+n.getUTCMinutes()/60; const wd=n.getUTCDay();
+    const open=wd>=1&&wd<=5&&u>=13.5&&u<20;
+    fr.textContent=ar?(open?'\u0623\u0633\u0639\u0627\u0631 \u0645\u0628\u0627\u0634\u0631\u0629 \u0627\u0644\u0622\u0646':'\u0622\u062e\u0631 \u062a\u062d\u062f\u064a\u062b: \u0625\u063a\u0644\u0627\u0642 \u0648\u0648\u0644 \u0633\u062a\u0631\u064a\u062a')
+                     :(open?'Live prices':'As of last Wall Street close');
+  }
+}
+
+// ── DATA: baselines + attention (922 outputs; graceful until they exist) ──
+async function loadCalmData(){
+  const dstr=o=>new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10);
+  async function grab(prefix){
+    for(const o of [0,1,2]){
+      try{
+        const r=await fetch(_CALM_GH+'/data/market/'+prefix+'-'+dstr(o)+'.json?t='+Date.now());
+        if(r.ok){const j=await r.json();return {data:j,date:dstr(o)};}
+      }catch(e){}
+    }
+    return null;
+  }
+  try{const b=await grab('baselines'); if(b){CALM.baselines=b.data.symbols||b.data;CALM.baseDate=b.date;}}catch(e){}
+  try{const a=await grab('attention'); if(a){CALM.attention=a.data.events||a.data||[];CALM.attDate=a.date;}}catch(e){}
+  renderCalmZones();
+}
+
+// ── ZONE 2 — RULE ENGINE (deterministic; LLM never decides) ──
+function evaluateZone2(){
+  const el=document.getElementById('zone2'); if(!el) return;
+  const ar=_calmAr();
+  // State C — prices not loaded yet → never fake calm
+  if(!calmPricesAt||typeof stocks==='undefined'||!stocks.length){
+    el.className='zone2';
+    el.innerHTML='<div class="z2-state"><span class="z2-ico">\u23f3</span><div><div class="z2-head">'+(ar?'\u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0642\u064a\u062f \u0627\u0644\u062a\u062d\u062f\u064a\u062b':'Data updating')+'</div><div class="z2-sub">'+(ar?'\u0644\u0627 \u0646\u0639\u0631\u0636 \u0627\u0644\u062f\u0631\u0639 \u0627\u0644\u0623\u062e\u0636\u0631 \u0625\u0644\u0627 \u0628\u0628\u064a\u0627\u0646\u0627\u062a \u062d\u062f\u064a\u062b\u0629.':'We only show the green shield with fresh data.')+'</div></div></div>';
+    return;
+  }
+  const FLOOR=3;
+  const items=[], fyi=[];
+  stocks.forEach(s=>{
+    const sh=Number(s.shares!=null?s.shares:s._shares)||0; if(sh<=0)return;
+    if(s.dayChPct==null)return;
+    const pct=Number(s.dayChPct); const a=Math.abs(pct);
+    const b=CALM.baselines&&CALM.baselines[s.sym];
+    const base=b?Number(b.avg_daily_move!=null?b.avg_daily_move:b.adm):null;
+    let tier=0;
+    if(base&&base>0.4){
+      const r=a/base;
+      tier=(a<FLOOR)?0:(r>=3?3:(r>=2?2:(r>=1.5?1:0)));
+    }else{
+      // Fallback thresholds until 922 ships baselines-{date}.json
+      tier=a>=8?3:(a>=5?2:(a>=3?1:0));
+    }
+    const wk=b&&b.weekly_change!=null?Number(b.weekly_change):null;
+    if(wk!=null&&Math.abs(wk)>=10) tier=Math.max(tier,2);
+    if(tier===0)return;
+    const rec={sym:s.sym,kind:'price',tier,pct,impact:sh*(Number(s.dayCh)||0),wk};
+    if(tier>=2)items.push(rec); else fyi.push(rec);
+  });
+  // Event alerts from 922 attention file (downgrade / earnings miss / sharia removal)
+  (Array.isArray(CALM.attention)?CALM.attention:[]).forEach(ev=>{
+    const sym=String(ev.symbol||ev.sym||'').toUpperCase(); if(!sym)return;
+    const held=stocks.find(s=>s.sym===sym&&(Number(s.shares!=null?s.shares:s._shares)||0)>0); if(!held)return;
+    const sh=Number(held.shares!=null?held.shares:held._shares)||0;
+    items.push({sym,kind:'event',tier:3,pct:held.dayChPct!=null?Number(held.dayChPct):null,
+      impact:sh*(Number(held.dayCh)||0),
+      txtAr:ev.title_ar||ev.ar||'',txtEn:ev.title_en||ev.en||ev.title||'',
+      noteAr:ev.note_ar||'',noteEn:ev.note_en||''});
+  });
+  // Concentration: alert only on CROSSING 25% (hysteresis 22%) — chronic ≠ daily red
+  try{
+    const nick=(localStorage.getItem('theisilabs_nick')||'me');
+    const key='theisi_conc_'+nick;
+    const seen=new Set(JSON.parse(localStorage.getItem(key)||'[]'));
+    const tot=stocks.reduce((x,s)=>x+(Number(s.mv)||0),0);
+    if(tot>0){
+      let changed=false;
+      stocks.forEach(s=>{
+        const w=(Number(s.mv)||0)/tot*100;
+        if(w>=25&&!seen.has(s.sym)){
+          seen.add(s.sym);changed=true;
+          items.push({sym:s.sym,kind:'conc',tier:2,pct:null,impact:0,weight:w});
+        } else if(w<22&&seen.has(s.sym)){seen.delete(s.sym);changed=true;}
+      });
+      if(changed)localStorage.setItem(key,JSON.stringify([...seen]));
+    }
+  }catch(e){}
+  // Rank by absolute dollar impact, cap at 3, overflow goes to today's moves
+  items.sort((x,y)=>Math.abs(y.impact)-Math.abs(x.impact));
+  const top=items.slice(0,3);
+  items.slice(3).forEach(r=>fyi.push(r));
+  renderTodayMoves(fyi);
+  // State A — earned calm
+  if(!top.length){
+    el.className='zone2 calm';
+    const checked=stocks.filter(s=>s.dayChPct!=null&&(Number(s.shares!=null?s.shares:s._shares)||0)>0).length;
+    el.innerHTML='<div class="z2-state"><span class="z2-ico">\ud83d\udee1\ufe0f</span><div>'
+      +'<div class="z2-head">'+(ar?'\u0645\u062d\u0641\u0638\u062a\u0643 \u0628\u062e\u064a\u0631':'Your portfolio is fine')+'</div>'
+      +'<div class="z2-sub">'+(ar?'\u0644\u0627 \u062a\u062d\u0631\u0643\u0627\u062a \u062a\u0633\u062a\u062f\u0639\u064a \u0642\u0631\u0627\u0631\u0627\u064b \u0627\u0644\u064a\u0648\u0645.':'No moves that need a decision today.')+'</div>'
+      +'<div class="z2-meta">'+(ar?'\u062a\u0645 \u0641\u062d\u0635 '+checked+' \u0633\u0647\u0645\u0627\u064b \u0628\u0623\u0633\u0639\u0627\u0631 \u0645\u0628\u0627\u0634\u0631\u0629':'Checked '+checked+' holdings against live prices')+'</div>'
+      +'</div></div>';
+    return;
+  }
+  // State B — attention (0–3 real items)
+  el.className='zone2 alert';
+  let html='<div class="z2-state"><span class="z2-ico">\ud83d\udd34</span><div style="flex:1">'
+    +'<div class="z2-head">'+(ar?'\u064a\u062d\u062a\u0627\u062c \u0627\u0646\u062a\u0628\u0627\u0647\u0643':'Needs your attention')+'</div>';
+  top.forEach(r=>{
+    const cls=r.tier>=3?'red':'amber';
+    const arrow=r.pct==null?'':(r.pct>=0?'\u25b2':'\u25bc');
+    const pctTxt=r.pct==null?'':(arrow+Math.abs(r.pct).toFixed(1)+'%');
+    const impTxt=r.impact?(privacyOn?'\u2022\u2022\u2022\u2022':((r.impact>=0?'+':'\u2212')+_calmMoney(r.impact))):'';
+    let why='';
+    if(r.kind==='event') why=ar?(r.txtAr||r.txtEn):(r.txtEn||r.txtAr);
+    else if(r.kind==='conc') why=ar?('\u062a\u0631\u0643\u064a\u0632 \u0639\u0627\u0644\u064d: \u0647\u0630\u0627 \u0627\u0644\u0633\u0647\u0645 \u062a\u062c\u0627\u0648\u0632 '+Math.round(r.weight)+'% \u0645\u0646 \u0645\u062d\u0641\u0638\u062a\u0643.')
+                              :('High concentration: this stock just crossed '+Math.round(r.weight)+'% of your portfolio.');
+    else if(r.wk!=null&&Math.abs(r.wk)>=10&&Math.abs(r.pct||0)<5)
+         why=ar?('\u062a\u0631\u0627\u062c\u0639 \u062a\u062f\u0631\u064a\u062c\u064a \u0647\u0630\u0627 \u0627\u0644\u0623\u0633\u0628\u0648\u0639 ('+r.wk.toFixed(1)+'%) \u2014 \u064a\u0633\u062a\u062d\u0642 \u0646\u0638\u0631\u0629 \u0647\u0627\u062f\u0626\u0629.')
+              :('Gradual slide this week ('+r.wk.toFixed(1)+'%) \u2014 worth a calm look.');
+    else if(r.tier>=3) why=ar?'\u062a\u062d\u0631\u0643 \u062d\u0627\u062f \u0648\u063a\u064a\u0631 \u0645\u0639\u062a\u0627\u062f \u0644\u0647\u0630\u0627 \u0627\u0644\u0633\u0647\u0645 \u2014 \u0631\u0627\u062c\u0639 \u0627\u0644\u0623\u062e\u0628\u0627\u0631 \u0642\u0628\u0644 \u0623\u064a \u0642\u0631\u0627\u0631\u060c \u0648\u0644\u0627 \u062a\u0628\u0639 \u0628\u0647\u0644\u0639.'
+                            :'A sharp, unusual move for this stock \u2014 check the news before any decision. No panic selling.';
+    else why=ar?'\u062a\u062d\u0631\u0643 \u0623\u0643\u0628\u0631 \u0645\u0646 \u0627\u0644\u0645\u0639\u062a\u0627\u062f \u0644\u0647\u0630\u0627 \u0627\u0644\u0633\u0647\u0645 \u2014 \u064a\u0633\u062a\u062d\u0642 \u0646\u0638\u0631\u0629\u060c \u0644\u0627 \u0642\u0631\u0627\u0631\u0627\u062a \u0645\u062a\u0633\u0631\u0639\u0629.'
+               :'A bigger move than usual for this stock \u2014 worth a look, no rushed decisions.';
+    html+='<div class="z2-item '+cls+'" onclick="calmOpenStock(\''+r.sym+'\')">'
+      +'<div class="z2-row"><span class="z2-sym">'+r.sym+'</span>'
+      +'<span class="z2-pct '+((r.pct||0)>=0?'up':'dn')+'">'+pctTxt+'</span>'
+      +(impTxt?'<span class="z2-impact">'+(ar?'\u0627\u0644\u062a\u0623\u062b\u064a\u0631: ':'Impact: ')+impTxt+'</span>':'')
+      +'</div>'
+      +'<div class="z2-why" dir="'+(ar?'rtl':'ltr')+'">'+why+'</div>'
+      +'<div class="z2-cta" dir="'+(ar?'rtl':'ltr')+'">'+(ar?'\u0627\u0636\u063a\u0637 \u0644\u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u2190':'Tap for detail \u2192')+'</div>'
+      +'</div>';
+  });
+  html+='</div></div>';
+  el.innerHTML=html;
+}
+
+function renderTodayMoves(fyi){
+  const t=document.getElementById('tmoves-title'), w=document.getElementById('tmoves');
+  if(!w||!t)return;
+  if(!fyi||!fyi.length){t.style.display='none';w.style.display='none';return;}
+  const ar=_calmAr();
+  fyi.sort((x,y)=>Math.abs(y.pct||0)-Math.abs(x.pct||0));
+  t.style.display='';w.style.display='block';
+  w.innerHTML=fyi.slice(0,8).map(r=>{
+    const up=(r.pct||0)>=0;
+    return '<div class="tm-row"><span class="z2-sym" style="font-size:12.5px">'+r.sym+'</span>'
+      +'<span class="z2-pct '+(up?'up':'dn')+'" style="font-size:12px">'+(up?'\u25b2':'\u25bc')+Math.abs(r.pct||0).toFixed(1)+'%</span></div>';
+  }).join('');
+}
+
+function calmOpenStock(sym){
+  try{
+    const idx=stocks.findIndex(s=>s.sym===sym);
+    if(idx>=0&&typeof openModal==='function'){openModal(idx);return;}
+  }catch(e){}
+  try{document.getElementById('nav-trends').click();}catch(e){}
+}
+
+// ── ZONE 3 — ONE OPPORTUNITY, honestly framed ──
+async function renderZone3(force){
+  const el=document.getElementById('zone3'); if(!el)return;
+  const ar=_calmAr();
+  try{
+    if(!CALM.z3||force||Date.now()-CALM.z3LoadedAt>15*60000){
+      const OP=_CALM_GH+'/data/opportunities/';
+      const t=Date.now();
+      const dstr=o=>new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10);
+      let scoredRes=await fetch(OP+'scored-'+dstr(0)+'.json?t='+t);
+      if(!scoredRes.ok)scoredRes=await fetch(OP+'scored-'+dstr(1)+'.json?t='+t);
+      if(!scoredRes.ok)throw new Error('no scored file');
+      const [todayRes,shariaRes]=await Promise.all([
+        fetch(OP+'today.json?t='+t),fetch(OP+'sharia-list.json?t='+t)
+      ]);
+      let why={};try{const td=JSON.parse(await todayRes.text());why=td.why_texts||{};}catch(e){}
+      let sharia=new Set();
+      try{const sd=await shariaRes.json();(Array.isArray(sd)?sd:(sd.list||[])).forEach(x=>sharia.add(x.symbol||x));}catch(e){}
+      const sj=await scoredRes.json();
+      let all=[];
+      if(Array.isArray(sj))all=sj;
+      else if(sj.data&&typeof sj.data==='object')all=Object.values(sj.data);
+      else if(Array.isArray(sj.stocks))all=sj.stocks;
+      else all=Object.values(sj).filter(v=>v&&typeof v==='object'&&v.symbol);
+      CALM.z3={all,why,sharia};CALM.z3LoadedAt=Date.now();
+    }
+    const {all,why,sharia}=CALM.z3;
+    const heldSyms=new Set((typeof stocks!=='undefined'?stocks:[]).filter(s=>(Number(s.shares!=null?s.shares:s._shares)||0)>0).map(s=>s.sym));
+    const ranked=all.filter(s=>s.display===true||s.display_eligible===true)
+                    .sort((a,b)=>(a.display_rank||a.rank||9999)-(b.display_rank||b.rank||9999));
+    const pick=ranked.find(s=>!s.in_portfolio&&!heldSyms.has(s.symbol))||ranked[0];
+    if(!pick){el.innerHTML='<div class="z3-card" style="cursor:default"><div class="z3-why">'+(ar?'\u0644\u0627 \u062a\u0648\u062c\u062f \u0641\u0631\u0635 \u0645\u0639\u0631\u0648\u0636\u0629 \u0627\u0644\u064a\u0648\u0645.':'No opportunities surfaced today.')+'</div></div>';return;}
+    const whyFull=why[pick.symbol]||'';
+    let why1=whyFull.split(/\.\s/)[0]||'';
+    if(why1.length>140)why1=why1.slice(0,140).trim()+'\u2026';else if(why1&&why1!==whyFull)why1+='.';
+    const isSh=sharia.has(pick.symbol);
+    const owned=heldSyms.has(pick.symbol);
+    const pat=(typeof _opPatBadges==='function'&&pick.pattern)?_opPatBadges(pick.pattern):'';
+    el.innerHTML='<div class="z3-card" onclick="calmOpenOpportunities()">'
+      +'<div class="z3-top"><div>'
+      +'<div class="z3-sym">'+pick.symbol+'</div>'
+      +'<div class="z3-sec">'+(pick.sector||'')+'</div>'
+      +'</div><div class="z3-score"><b>'+Math.round(pick.final_score||0)+'</b><i>'+(ar?'\u0645\u0646 \u0661\u0660\u0660':'of 100')+'</i></div></div>'
+      +'<div class="z3-chips">'
+      +(isSh?'<span class="op-chip good">\u0645\u062a\u0648\u0627\u0641\u0642 \u0645\u0639 \u0627\u0644\u0634\u0631\u064a\u0639\u0629 \u2713</span>':'')
+      +pat
+      +(owned?'<span class="op-chip">'+(ar?'\u062a\u0645\u0644\u0643\u0647 \u0628\u0627\u0644\u0641\u0639\u0644':'You already hold this')+'</span>':'')
+      +'</div>'
+      +(why1?'<div class="z3-why">'+why1+'</div>':'')
+      +'<div class="z2-cta" dir="'+(ar?'rtl':'ltr')+'" style="margin-top:8px">'+(ar?'\u0644\u0645\u0627\u0630\u0627\u061f + \u0627\u0644\u0645\u062e\u0627\u0637\u0631 \u2014 \u0627\u0636\u063a\u0637 \u0644\u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u2190':'Why? + the risk \u2014 tap for detail \u2192')+'</div>'
+      +'</div>';
+  }catch(e){
+    el.innerHTML='<div class="z3-card" style="cursor:default"><div class="z3-why">'+(ar?'\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0641\u0631\u0635 \u063a\u064a\u0631 \u0645\u062a\u0627\u062d\u0629 \u062d\u0627\u0644\u064a\u0627\u064b.':'Opportunity data is not available right now.')+'</div></div>';
+  }
+}
+function calmOpenOpportunities(){
+  try{
+    showTab('advisor',document.querySelectorAll('.nav-tab')[2]);
+    setTimeout(function(){
+      const b=document.querySelector(".firm-tab.opportunities");
+      if(b)b.click();
+    },150);
+  }catch(e){}
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  loadCalmData();
+  setTimeout(function(){renderZone3(false);},800);
+});
+// ═══ END CALM FIRST PAGE ENGINE ═══
 
 // ── Live data ──
 const _API='https://theisilabs.vercel.app';
