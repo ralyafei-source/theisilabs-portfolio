@@ -863,6 +863,106 @@ async function handleScore(req, res) {
 // ════════════════════════════════════════════════════════════════════════════
 
 // ─── main ────────────────────────────────────────────────────────────────────
+// Build the full lookup data object for a symbol (shared by both lookup modes)
+async function buildLookupData(sym) {
+  const to = todayUAE();
+  const from = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
+
+  const [profArr, quoteArr, ratiosArr, ptc, gradesArr, consArr, dcfArr, income, cashflow, hist] =
+    await Promise.all([
+      fmpGet(`/profile?symbol=${sym}`),
+      fmpGet(`/quote?symbol=${sym}`),
+      fmpGet(`/ratios-ttm?symbol=${sym}`),
+      fmpGet(`/price-target-consensus?symbol=${sym}`),
+      fmpGet(`/grades?symbol=${sym}&limit=5`),
+      fmpGet(`/grades-consensus?symbol=${sym}`),
+      fmpGet(`/discounted-cash-flow?symbol=${sym}`),
+      fmpGet(`/income-statement?symbol=${sym}&period=annual&limit=3`),
+      fmpGet(`/cash-flow-statement?symbol=${sym}&period=annual&limit=3`),
+      fmpGet(`/historical-price-eod/light?symbol=${sym}&from=${from}&to=${to}`),
+    ]);
+
+  const prof  = Array.isArray(profArr)  ? profArr[0]  : profArr;
+  const quote = Array.isArray(quoteArr) ? quoteArr[0] : quoteArr;
+  if (!prof && !quote) { const e = new Error(`لم يتم العثور على الرمز ${sym}`); e.code = 404; throw e; }
+  const ratios = Array.isArray(ratiosArr) ? ratiosArr[0] : ratiosArr;
+  const target = Array.isArray(ptc) ? ptc[0] : ptc;
+  const cons   = Array.isArray(consArr) ? consArr[0] : consArr;
+  const dcfRow = Array.isArray(dcfArr) ? dcfArr[0] : dcfArr;
+
+  // 3-year financial history table (oldest → newest)
+  let financials = null;
+  if (Array.isArray(income) && income.length) {
+    const inc = [...income].reverse();
+    const cf  = Array.isArray(cashflow) ? [...cashflow].reverse() : [];
+    financials = inc.map((y, i) => {
+      const revenue   = y.revenue ?? null;
+      const netIncome = y.netIncome ?? null;
+      const yr        = y.fiscalYear ?? y.calendarYear ?? (y.date ? String(y.date).slice(0, 4) : null);
+      const fcfRow    = cf.find(c => (c.fiscalYear ?? c.calendarYear ?? (c.date ? String(c.date).slice(0,4) : null)) === yr) || cf[i] || {};
+      return {
+        label: yr ? `FY${yr}` : (y.date || ''),
+        year: yr,
+        revenue,
+        netIncome,
+        netMargin: (revenue && netIncome != null) ? (netIncome / revenue * 100) : null,
+        freeCashFlow: fcfRow.freeCashFlow ?? null,
+      };
+    });
+  }
+  // revenue growth (latest FY vs previous) from the same data — no extra call
+  let revenueGrowth = null;
+  if (financials && financials.length >= 2) {
+    const a = financials[financials.length - 1].revenue, b = financials[financials.length - 2].revenue;
+    if (a && b) revenueGrowth = (a / b - 1) * 100;
+  }
+
+  // 1-year weekly-sampled price history for the chart (oldest → newest)
+  let priceHistory = null;
+  if (Array.isArray(hist) && hist.length) {
+    const asc = [...hist].reverse();
+    const step = Math.max(1, Math.floor(asc.length / 52));
+    priceHistory = asc.filter((_, i) => i % step === 0)
+      .map(p => ({ date: p.date, price: p.price ?? p.close ?? null }))
+      .filter(p => p.price != null);
+  }
+
+  const num = v => (v == null || isNaN(Number(v))) ? null : Number(v);
+  const rnd = (v, d=2) => v == null ? null : Number(v.toFixed(d));
+  const data = {
+    symbol: sym,
+    name: prof?.companyName || quote?.name || sym,
+    companyName: prof?.companyName || quote?.name || sym,
+    sector: prof?.sector || null,
+    description: prof?.description || null,
+    website: prof?.website || null,
+    beta: rnd(num(prof?.beta)),
+    price: num(quote?.price ?? prof?.price),
+    changePct: rnd(num(quote?.changePercentage ?? quote?.changesPercentage)),
+    marketCap: num(quote?.marketCap ?? prof?.marketCap),
+    pe: rnd(num(ratios?.priceToEarningsRatioTTM ?? ratios?.peRatioTTM ?? quote?.pe)),
+    peg: rnd(num(ratios?.priceToEarningsGrowthRatioTTM ?? ratios?.pegRatioTTM)),
+    roe: rnd(num(ratios?.returnOnEquityTTM) != null ? num(ratios?.returnOnEquityTTM) * 100 : null, 1),
+    revenueGrowth: rnd(revenueGrowth, 1),
+    targetMean: rnd(num(target?.targetConsensus ?? target?.targetMedian)),
+    targetMedian: rnd(num(target?.targetMedian)),
+    targetHigh: rnd(num(target?.targetHigh)),
+    targetLow: rnd(num(target?.targetLow)),
+    dcfValue: (() => {
+      // FMP's DCF is unreliable on stocks with recent one-time losses (IPO SBC, write-offs etc.)
+      // A negative fair value is always a model artifact — suppress it rather than mislead.
+      const v = num(dcfRow?.dcf);
+      return (v != null && v > 0) ? rnd(v) : null;
+    })(),
+    analystConsensus: cons?.consensus || null,
+    grades: Array.isArray(gradesArr) ? gradesArr.slice(0, 5) : [],
+    financials,
+    priceHistory,
+  };
+  const dq = validateLookupData(data);
+  return { data, dq };
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
@@ -1170,110 +1270,15 @@ module.exports = async (req, res) => {
     }
   }
 
-  // ── MODE: lookup — single-stock snapshot for the dashboard Lookup tab ─────
-  // Public market data only (no portfolio info), so it sits with the other
-  // dashboard modes, before the server-key auth gate.
-  if (req.query.mode === 'lookup') {
+
+  // ── MODE: lookup-analysis — phase 2: the written analysis only ────────────
+  // Separated from mode=lookup so the data renders in seconds and Claude gets
+  // the full function time budget (~50s) to write a substantive analysis.
+  if (req.query.mode === 'lookup-analysis') {
     try {
       const sym = String(req.query.sym || '').toUpperCase().replace(/[^A-Z0-9.\-]/g, '');
       if (!sym) return res.status(400).json({ error: 'sym required' });
-
-      const to = todayUAE();
-      const from = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
-
-      const [profArr, quoteArr, ratiosArr, ptc, gradesArr, consArr, dcfArr, income, cashflow, hist] =
-        await Promise.all([
-          fmpGet(`/profile?symbol=${sym}`),
-          fmpGet(`/quote?symbol=${sym}`),
-          fmpGet(`/ratios-ttm?symbol=${sym}`),
-          fmpGet(`/price-target-consensus?symbol=${sym}`),
-          fmpGet(`/grades?symbol=${sym}&limit=5`),
-          fmpGet(`/grades-consensus?symbol=${sym}`),
-          fmpGet(`/discounted-cash-flow?symbol=${sym}`),
-          fmpGet(`/income-statement?symbol=${sym}&period=annual&limit=3`),
-          fmpGet(`/cash-flow-statement?symbol=${sym}&period=annual&limit=3`),
-          fmpGet(`/historical-price-eod/light?symbol=${sym}&from=${from}&to=${to}`),
-        ]);
-
-      const prof  = Array.isArray(profArr)  ? profArr[0]  : profArr;
-      const quote = Array.isArray(quoteArr) ? quoteArr[0] : quoteArr;
-      if (!prof && !quote) return res.status(404).json({ error: `لم يتم العثور على الرمز ${sym}` });
-      const ratios = Array.isArray(ratiosArr) ? ratiosArr[0] : ratiosArr;
-      const target = Array.isArray(ptc) ? ptc[0] : ptc;
-      const cons   = Array.isArray(consArr) ? consArr[0] : consArr;
-      const dcfRow = Array.isArray(dcfArr) ? dcfArr[0] : dcfArr;
-
-      // 3-year financial history table (oldest → newest)
-      let financials = null;
-      if (Array.isArray(income) && income.length) {
-        const inc = [...income].reverse();
-        const cf  = Array.isArray(cashflow) ? [...cashflow].reverse() : [];
-        financials = inc.map((y, i) => {
-          const revenue   = y.revenue ?? null;
-          const netIncome = y.netIncome ?? null;
-          const yr        = y.fiscalYear ?? y.calendarYear ?? (y.date ? String(y.date).slice(0, 4) : null);
-          const fcfRow    = cf.find(c => (c.fiscalYear ?? c.calendarYear ?? (c.date ? String(c.date).slice(0,4) : null)) === yr) || cf[i] || {};
-          return {
-            label: yr ? `FY${yr}` : (y.date || ''),
-            year: yr,
-            revenue,
-            netIncome,
-            netMargin: (revenue && netIncome != null) ? (netIncome / revenue * 100) : null,
-            freeCashFlow: fcfRow.freeCashFlow ?? null,
-          };
-        });
-      }
-      // revenue growth (latest FY vs previous) from the same data — no extra call
-      let revenueGrowth = null;
-      if (financials && financials.length >= 2) {
-        const a = financials[financials.length - 1].revenue, b = financials[financials.length - 2].revenue;
-        if (a && b) revenueGrowth = (a / b - 1) * 100;
-      }
-
-      // 1-year weekly-sampled price history for the chart (oldest → newest)
-      let priceHistory = null;
-      if (Array.isArray(hist) && hist.length) {
-        const asc = [...hist].reverse();
-        const step = Math.max(1, Math.floor(asc.length / 52));
-        priceHistory = asc.filter((_, i) => i % step === 0)
-          .map(p => ({ date: p.date, price: p.price ?? p.close ?? null }))
-          .filter(p => p.price != null);
-      }
-
-      const num = v => (v == null || isNaN(Number(v))) ? null : Number(v);
-      const rnd = (v, d=2) => v == null ? null : Number(v.toFixed(d));
-      const data = {
-        symbol: sym,
-        name: prof?.companyName || quote?.name || sym,
-        companyName: prof?.companyName || quote?.name || sym,
-        sector: prof?.sector || null,
-        description: prof?.description || null,
-        website: prof?.website || null,
-        beta: rnd(num(prof?.beta)),
-        price: num(quote?.price ?? prof?.price),
-        changePct: rnd(num(quote?.changePercentage ?? quote?.changesPercentage)),
-        marketCap: num(quote?.marketCap ?? prof?.marketCap),
-        pe: rnd(num(ratios?.priceToEarningsRatioTTM ?? ratios?.peRatioTTM ?? quote?.pe)),
-        peg: rnd(num(ratios?.priceToEarningsGrowthRatioTTM ?? ratios?.pegRatioTTM)),
-        roe: rnd(num(ratios?.returnOnEquityTTM) != null ? num(ratios?.returnOnEquityTTM) * 100 : null, 1),
-        revenueGrowth: rnd(revenueGrowth, 1),
-        targetMean: rnd(num(target?.targetConsensus ?? target?.targetMedian)),
-        targetMedian: rnd(num(target?.targetMedian)),
-        targetHigh: rnd(num(target?.targetHigh)),
-        targetLow: rnd(num(target?.targetLow)),
-        dcfValue: (() => {
-          // FMP's DCF is unreliable on stocks with recent one-time losses (IPO SBC, write-offs etc.)
-          // A negative fair value is always a model artifact — suppress it rather than mislead.
-          const v = num(dcfRow?.dcf);
-          return (v != null && v > 0) ? rnd(v) : null;
-        })(),
-        analystConsensus: cons?.consensus || null,
-        grades: Array.isArray(gradesArr) ? gradesArr.slice(0, 5) : [],
-        financials,
-        priceHistory,
-      };
-      // ── DATA QUALITY GATE — validate before anything reads this data ──
-      const _lkDQ = validateLookupData(data);
+      const { data, dq: _lkDQ } = await buildLookupData(sym);
 
       // ── Claude analysis (THEISI voice) — optional, never blocks the data ──
       let analysis = null;
@@ -1320,7 +1325,7 @@ module.exports = async (req, res) => {
 بيانات السهم (JSON):
 ${JSON.stringify(facts)}`;
           const controller = new AbortController();
-          const tmo = setTimeout(() => controller.abort(), 45000);
+          const tmo = setTimeout(() => controller.abort(), 50000);
           const aRes = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-api-key': AK, 'anthropic-version': '2023-06-01' },
@@ -1344,8 +1349,27 @@ ${JSON.stringify(facts)}`;
       }
 
       res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=1800');
+      res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=1800');
+      return res.status(200).json(analysis ? { analysis } : { analysis: null, analysis_error: analysisErr });
+    } catch (err) {
+      const code = err.code === 404 ? 404 : 500;
+      return res.status(code).json({ analysis: null, analysis_error: err.message });
+    }
+  }
+
+  // ── MODE: lookup — single-stock snapshot for the dashboard Lookup tab ─────
+  // Public market data only (no portfolio info), so it sits with the other
+  // dashboard modes, before the server-key auth gate.
+  if (req.query.mode === 'lookup') {
+    try {
+      const sym = String(req.query.sym || '').toUpperCase().replace(/[^A-Z0-9.\-]/g, '');
+      if (!sym) return res.status(400).json({ error: 'sym required' });
+
+      const { data, dq: _lkDQ } = await buildLookupData(sym);
+
+      res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=1800');
       const quality = { confidence: _lkDQ.confidence, flags: _lkDQ.flags, notes_ar: _lkDQ.notesAr };
-      return res.status(200).json(analysis ? { data, analysis, quality } : { data, quality, analysis_error: analysisErr });
+      return res.status(200).json({ data, quality });
     } catch (err) {
       console.error('lookup FATAL:', err.message);
       return res.status(500).json({ error: err.message });
