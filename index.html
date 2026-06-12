@@ -2067,6 +2067,21 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
           <input class="form-input" type="time" value="07:00">
         </div>
         <button class="btn btn-success" id="a-save">💾 Save Settings</button>
+        <hr class="divider">
+        <div class="card-title">📱 النشرة الصباحية على تيليجرام</div>
+        <div style="font-size:11.5px;color:var(--text2);line-height:1.9;direction:rtl;text-align:right;margin-bottom:10px;">
+          لتصلك نشرتك الصباحية الخاصة على تيليجرام كل يوم:<br>
+          ١. افتح بوت THEISI على تيليجرام واضغط <b>Start</b><br>
+          ٢. أرسل أي رسالة إلى <b>@userinfobot</b> ليعطيك رقم معرّفك (Id)<br>
+          ٣. الصق الرقم هنا واضغط حفظ — ستصلك رسالة تأكيد فوراً
+        </div>
+        <div class="form-group">
+          <label class="form-label" dir="rtl" style="text-align:right">معرّف المحادثة (Chat ID)</label>
+          <input class="form-input" type="text" id="tgChatIdInput" placeholder="مثال: 1365815413" inputmode="numeric" dir="ltr">
+        </div>
+        <button class="btn btn-primary" id="tgChatSaveBtn" onclick="saveTelegramChatId()">💾 حفظ وإرسال رسالة تجريبية</button>
+        <button class="btn" style="margin-right:6px" onclick="saveTelegramChatId(true)">إيقاف رسائل تيليجرام</button>
+        <div id="tgChatStatus" style="font-size:11.5px;margin-top:8px;direction:rtl;text-align:right;"></div>
       </div>
     </div>
     <div>
@@ -3001,6 +3016,42 @@ const linkIcon=`<span style="color:${arrowColor};font-weight:700;font-size:14px;
     </div>`;
   }).join('');
 }
+
+// ===== TELEGRAM CHAT ID SETTING (Session 29) =====
+async function loadTelegramSetting(){
+  try{
+    const token=localStorage.getItem(AUTH_SESSION_KEY)||'';
+    if(!token) return;
+    const r=await fetch('/api/auth?action=me',{headers:{'Authorization':'Bearer '+token}});
+    const d=await r.json();
+    const inp=document.getElementById('tgChatIdInput');
+    if(inp && d.telegram_chat_id) inp.value=d.telegram_chat_id;
+  }catch(e){}
+}
+async function saveTelegramChatId(clear){
+  const inp=document.getElementById('tgChatIdInput');
+  const st=document.getElementById('tgChatStatus');
+  const btn=document.getElementById('tgChatSaveBtn');
+  const val=clear?'':(inp?inp.value.trim():'');
+  if(!clear && !val){ st.style.color='var(--gold)'; st.textContent='أدخل معرّف المحادثة أولاً'; return; }
+  st.style.color='var(--text2)'; st.textContent='جاري الحفظ…'; if(btn)btn.disabled=true;
+  try{
+    const token=localStorage.getItem(AUTH_SESSION_KEY)||'';
+    const r=await fetch('/api/auth?action=set-telegram',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({telegram_chat_id:val})
+    });
+    const d=await r.json();
+    if(!r.ok||!d.ok){ st.style.color='var(--red)'; st.textContent='❌ '+(d.message_ar||d.error||'فشل الحفظ'); }
+    else if(clear){ if(inp)inp.value=''; st.style.color='var(--text2)'; st.textContent='تم إيقاف رسائل تيليجرام — ستبقى نشرتك على اللوحة فقط'; }
+    else if(d.tested===true){ st.style.color='var(--green)'; st.textContent='✅ تم الحفظ — وصلتك رسالة التأكيد على تيليجرام!'; }
+    else if(d.tested===false){ st.style.color='var(--gold)'; st.innerHTML='⚠️ تم الحفظ، لكن رسالة الاختبار لم تصل — تأكد أنك ضغطت <b>Start</b> في البوت أولاً ثم احفظ مجدداً'; }
+    else { st.style.color='var(--green)'; st.textContent='✅ تم الحفظ'; }
+  }catch(e){ st.style.color='var(--red)'; st.textContent='❌ خطأ في الاتصال'; }
+  if(btn)btn.disabled=false;
+}
+try{ loadTelegramSetting(); }catch(e){}
 
 // ===== AI BRIEFING =====
 function _briefGreeting(isAr){
