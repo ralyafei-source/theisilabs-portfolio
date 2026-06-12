@@ -1042,6 +1042,161 @@ module.exports = async (req, res) => {
       return res.status(500).json({ error: err.message });
     }
   }
+
+  // ── MODE: lookup — single-stock snapshot for the dashboard Lookup tab ─────
+  // Public market data only (no portfolio info), so it sits with the other
+  // dashboard modes, before the server-key auth gate.
+  if (req.query.mode === 'lookup') {
+    try {
+      const sym = String(req.query.sym || '').toUpperCase().replace(/[^A-Z0-9.\-]/g, '');
+      if (!sym) return res.status(400).json({ error: 'sym required' });
+
+      const to = todayUAE();
+      const from = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
+
+      const [profArr, quoteArr, ratiosArr, ptc, gradesArr, consArr, dcfArr, income, cashflow, hist] =
+        await Promise.all([
+          fmpGet(`/profile?symbol=${sym}`),
+          fmpGet(`/quote?symbol=${sym}`),
+          fmpGet(`/ratios-ttm?symbol=${sym}`),
+          fmpGet(`/price-target-consensus?symbol=${sym}`),
+          fmpGet(`/grades?symbol=${sym}&limit=5`),
+          fmpGet(`/grades-consensus?symbol=${sym}`),
+          fmpGet(`/discounted-cash-flow?symbol=${sym}`),
+          fmpGet(`/income-statement?symbol=${sym}&period=annual&limit=3`),
+          fmpGet(`/cash-flow-statement?symbol=${sym}&period=annual&limit=3`),
+          fmpGet(`/historical-price-eod/light?symbol=${sym}&from=${from}&to=${to}`),
+        ]);
+
+      const prof  = Array.isArray(profArr)  ? profArr[0]  : profArr;
+      const quote = Array.isArray(quoteArr) ? quoteArr[0] : quoteArr;
+      if (!prof && !quote) return res.status(404).json({ error: `لم يتم العثور على الرمز ${sym}` });
+      const ratios = Array.isArray(ratiosArr) ? ratiosArr[0] : ratiosArr;
+      const target = Array.isArray(ptc) ? ptc[0] : ptc;
+      const cons   = Array.isArray(consArr) ? consArr[0] : consArr;
+      const dcfRow = Array.isArray(dcfArr) ? dcfArr[0] : dcfArr;
+
+      // 3-year financial history table (oldest → newest)
+      let financials = null;
+      if (Array.isArray(income) && income.length) {
+        const inc = [...income].reverse();
+        const cf  = Array.isArray(cashflow) ? [...cashflow].reverse() : [];
+        financials = inc.map((y, i) => {
+          const revenue   = y.revenue ?? null;
+          const netIncome = y.netIncome ?? null;
+          const fcfRow    = cf.find(c => c.calendarYear === y.calendarYear) || cf[i] || {};
+          return {
+            label: y.period === 'FY' ? `FY${y.calendarYear}` : (y.calendarYear || y.date || ''),
+            year: y.calendarYear,
+            revenue,
+            netIncome,
+            netMargin: (revenue && netIncome != null) ? (netIncome / revenue * 100) : null,
+            freeCashFlow: fcfRow.freeCashFlow ?? null,
+          };
+        });
+      }
+      // revenue growth (latest FY vs previous) from the same data — no extra call
+      let revenueGrowth = null;
+      if (financials && financials.length >= 2) {
+        const a = financials[financials.length - 1].revenue, b = financials[financials.length - 2].revenue;
+        if (a && b) revenueGrowth = (a / b - 1) * 100;
+      }
+
+      // 1-year weekly-sampled price history for the chart (oldest → newest)
+      let priceHistory = null;
+      if (Array.isArray(hist) && hist.length) {
+        const asc = [...hist].reverse();
+        const step = Math.max(1, Math.floor(asc.length / 52));
+        priceHistory = asc.filter((_, i) => i % step === 0)
+          .map(p => ({ date: p.date, price: p.price ?? p.close ?? null }))
+          .filter(p => p.price != null);
+      }
+
+      const num = v => (v == null || isNaN(Number(v))) ? null : Number(v);
+      const rnd = (v, d=2) => v == null ? null : Number(v.toFixed(d));
+      const data = {
+        symbol: sym,
+        name: prof?.companyName || quote?.name || sym,
+        companyName: prof?.companyName || quote?.name || sym,
+        sector: prof?.sector || null,
+        description: prof?.description || null,
+        website: prof?.website || null,
+        beta: rnd(num(prof?.beta)),
+        price: num(quote?.price ?? prof?.price),
+        changePct: rnd(num(quote?.changePercentage ?? quote?.changesPercentage)),
+        marketCap: num(quote?.marketCap ?? prof?.marketCap),
+        pe: rnd(num(ratios?.priceToEarningsRatioTTM ?? ratios?.peRatioTTM ?? quote?.pe)),
+        peg: rnd(num(ratios?.priceToEarningsGrowthRatioTTM ?? ratios?.pegRatioTTM)),
+        roe: rnd(num(ratios?.returnOnEquityTTM) != null ? num(ratios?.returnOnEquityTTM) * 100 : null, 1),
+        revenueGrowth: rnd(revenueGrowth, 1),
+        targetMean: num(target?.targetConsensus ?? target?.targetMedian),
+        dcfValue: num(dcfRow?.dcf),
+        analystConsensus: cons?.consensus || null,
+        grades: Array.isArray(gradesArr) ? gradesArr.slice(0, 5) : [],
+        financials,
+        priceHistory,
+      };
+      // ── Claude analysis (THEISI voice) — optional, never blocks the data ──
+      let analysis = null;
+      try {
+        const AK = process.env.ANTHROPIC_API_KEY;
+        if (AK) {
+          const facts = {
+            symbol: data.symbol, name: data.companyName, sector: data.sector,
+            price: data.price, changePct: data.changePct, marketCapB: data.marketCap ? +(data.marketCap/1e9).toFixed(1) : null,
+            pe: data.pe, peg: data.peg, roePct: data.roe, beta: data.beta,
+            revenueGrowthPct: data.revenueGrowth,
+            dcfFairValue: data.dcfValue, analystTarget: data.targetMean, analystConsensus: data.analystConsensus,
+            recentGrades: (data.grades||[]).map(g=>`${g.gradingCompany||''}: ${g.previousGrade||''}→${g.newGrade||''}`).slice(0,3),
+            financials: (data.financials||[]).map(f=>({y:f.label, revB:f.revenue?+(f.revenue/1e9).toFixed(1):null, niB:f.netIncome?+(f.netIncome/1e9).toFixed(1):null, marginPct:f.netMargin?+f.netMargin.toFixed(1):null, fcfB:f.freeCashFlow?+(f.freeCashFlow/1e9).toFixed(1):null}))
+          };
+          const prompt = `أنت محلل مالي في THEISI تشرح سهماً لمستثمر خليجي طويل الأجل، غير متخصص، بلغة عربية هادئة وواضحة (لهجة بيضاء قريبة من الخليجية، بدون مبالغة).
+
+قواعد صارمة:
+- اشرح ولا توصِ أبداً: ممنوع "اشترِ/بِع/الآن فرصة"، وممنوع التنبؤ بسعر أو إطار زمني.
+- كل رقم تذكره اربطه بمعناه بكلمات بسيطة (مثال: "P/E أعلى من المعتاد يعني أن السوق يدفع علاوة على النمو").
+- كن صادقاً في نقاط الضعف كما في القوة. إن كانت بيانات ناقصة فقل ذلك ببساطة.
+- لا تستخدم مصطلحات تقنية (RSI/MACD). الأساسيات فقط.
+
+اكتب بهذا الهيكل بالضبط (Markdown):
+فقرة افتتاحية من جملتين تلخص وضع الشركة بهدوء.
+
+**نقاط القوة**
+- (٣ نقاط، كل نقطة سطر واحد برقم ومعناه)
+
+**نقاط الضعف والمخاطر**
+- (٣ نقاط، بنفس الأسلوب، بصدق كامل)
+
+**ماذا يعني هذا لمستثمر طويل الأجل؟**
+جملتان تضعان الصورة في سياق هادئ، تنتهيان بأن القرار يعود للمستثمر.
+
+بيانات السهم (JSON):
+${JSON.stringify(facts)}`;
+          const controller = new AbortController();
+          const tmo = setTimeout(() => controller.abort(), 25000);
+          const aRes = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': AK, 'anthropic-version': '2023-06-01' },
+            body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 800, messages: [{ role: 'user', content: prompt }] }),
+            signal: controller.signal
+          });
+          clearTimeout(tmo);
+          if (aRes.ok) {
+            const aData = await aRes.json();
+            analysis = (aData.content || []).map(c => c.type === 'text' ? c.text : '').join('').trim() || null;
+          } else {
+            console.error('lookup analysis: anthropic', aRes.status);
+          }
+        }
+      } catch (e) { console.error('lookup analysis skipped:', e.message); }
+
+      res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=1800');
+      return res.status(200).json(analysis ? { data, analysis } : { data });
+    } catch (err) {
+      console.error('lookup FATAL:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  }
   // ─────────────────────────────────────────────────────────────────────────
 
   // Auth check
