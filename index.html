@@ -2208,7 +2208,7 @@ WOLF remains at critical lows<br><br>
     <div id="lookup-loading" style="display:none;padding:34px 20px;text-align:center;color:var(--text2);font-size:13px;">
       <div class="lk-spinner"></div>
       <div id="lk-load-stage" style="margin-top:14px;font-size:13.5px;color:var(--text);font-weight:700;">جاري جلب البيانات المالية…</div>
-      <div id="lk-load-sub" style="margin-top:6px;font-size:11px;color:var(--text3);">عادةً يستغرق التحليل الكامل ٢٥–٤٠ ثانية</div>
+      <div id="lk-load-sub" style="margin-top:6px;font-size:11px;color:var(--text3);">البيانات تظهر خلال ثوانٍ — والتحليل المكتوب يكتمل بعدها</div>
       <div style="max-width:340px;margin:14px auto 0;background:var(--bg3);border-radius:99px;height:6px;overflow:hidden;">
         <div id="lk-load-bar" style="height:100%;width:3%;background:var(--rose);border-radius:99px;transition:width .9s linear;"></div>
       </div>
@@ -4314,15 +4314,70 @@ function _lkRiskRead(d){
   return {key:'high', ar:'مرتفع', en:'High', color:'var(--red)'};
 }
 
+// ── PHASE 2: fetch + apply the written analysis separately ──────────────────
+function _lkWritingState(){
+  const w='✍️ الذكاء الاصطناعي يكتب التحليل الآن… (٣٠–٥٠ ثانية)';
+  const th=document.querySelector('.lk-dp-thesis'); if(th) th.textContent=w;
+  document.querySelectorAll('.lk-dp-box .lk-dp-box-empty').forEach(el=>el.textContent='✍️ قيد الكتابة…');
+}
+function _lkAnalysisFailed(sym){
+  const th=document.querySelector('.lk-dp-thesis');
+  if(th) th.innerHTML='تعذر توليد التحليل — <a href="#" onclick="event.preventDefault();_lkFetchAnalysis(\''+sym+'\',true)" style="color:var(--rose)">أعد المحاولة</a>';
+  document.querySelectorAll('.lk-dp-box .lk-dp-box-empty').forEach(el=>el.textContent='—');
+}
+function _lkApplyAnalysis(txt, isAr){
+  try{
+    const strengthMatch=txt.match(/نقاط القوة[\s\S]*?(?=نقاط الضعف|المخاطر|---|$)/i);
+    const riskMatch=txt.match(/(نقاط الضعف|المخاطر)[\s\S]*?(?=---|$)/i);
+    const extractBullets=(block)=>{
+      if(!block)return null;
+      const lines=block.split('\n').filter(l=>l.trim().match(/^[-*•]|^\d+\./)).slice(0,4).map(l=>l.replace(/^[-*•]\s*|\d+\.\s*/,'').replace(/\*\*/g,'').replace(/[🔴🟡🟢⚠️💪🏦⚡]/gu,'').trim()).filter(l=>l.length>5);
+      return lines.length?lines:null;
+    };
+    const strengths=extractBullets(strengthMatch?.[0]);
+    const risks=extractBullets(riskMatch?.[0]);
+    const strengthEl=document.querySelector('.lk-dp-box:first-child .lk-dp-box-empty, .lk-dp-box:first-child .lk-dp-bullets');
+    const riskEl=document.querySelector('.lk-dp-box:last-child .lk-dp-box-empty, .lk-dp-box:last-child .lk-dp-bullets');
+    if(strengthEl&&strengths){strengthEl.innerHTML=strengths.map(s=>`<div class="lk-dp-bullet">• ${s}</div>`).join('');strengthEl.className='lk-dp-bullets';}
+    if(riskEl&&risks){riskEl.innerHTML=risks.map(r=>`<div class="lk-dp-bullet lk-dp-bullet-risk">• ${r}</div>`).join('');riskEl.className='lk-dp-bullets';}
+    let thesisMatch = txt.match(/##[^\n]*الاستثمارية[^\n]*\n+([\s\S]*?)(?=\n##|\n⚠️|$)/);
+    let thesisText = thesisMatch ? thesisMatch[1].replace(/\*\*/g,'').trim() : null;
+    if(!thesisText){
+      const opening = txt.split(/\n##|\n\*\*/)[0].replace(/\*\*/g,'').trim();
+      if(opening && opening.length > 60 && !opening.startsWith('-')) thesisText = opening;
+    }
+    const thesisEl = document.querySelector('.lk-dp-thesis');
+    if(thesisEl && thesisText){ thesisEl.textContent = thesisText; thesisEl.className = 'lk-dp-text-box'; }
+  }catch(e){}
+  const analysisEl=document.getElementById('lookup-analysis');
+  if(analysisEl){
+    analysisEl.className='firm-body'+(isAr?'':' en');
+    analysisEl.innerHTML=(typeof mdToHtml==='function')?mdToHtml(txt):txt;
+    try{enhanceAnalysis(analysisEl);}catch(e){}
+    if(typeof highlightGlossaryTerms==='function'){analysisEl.dataset.glossaryDone='';highlightGlossaryTerms(analysisEl);}
+  }
+}
+async function _lkFetchAnalysis(sym, isRetry){
+  if(isRetry)_lkWritingState();
+  try{
+    const token=localStorage.getItem(AUTH_SESSION_KEY)||'';
+    const r=await fetch(`/api/portfolio-for-ai?mode=lookup-analysis&sym=${encodeURIComponent(sym)}&v=6`,{headers:{'Authorization':'Bearer '+token}});
+    const res=await r.json().catch(()=>({}));
+    if(window._lastLookupSym!==sym) return; // user moved on to another symbol
+    if(res.analysis){ _lkApplyAnalysis(res.analysis, true); }
+    else { console.warn('analysis_error:', res.analysis_error); _lkAnalysisFailed(sym); }
+  }catch(e){
+    if(window._lastLookupSym===sym)_lkAnalysisFailed(sym);
+  }
+}
+
 let _lkLoadTimer=null;
 function _lkLoadStart(){
   const t0=Date.now();
   const stages=[
     [0,  'جاري جلب البيانات المالية من المصادر…'],
-    [5,  'التحقق من جودة الأرقام ومقارنتها بأهداف المحللين…'],
-    [9,  'بناء جدول النتائج المالية وتاريخ السعر…'],
-    [13, 'الذكاء الاصطناعي يقرأ الأرقام ويكتب التحليل…'],
-    [30, 'لمسات أخيرة على التحليل…'],
+    [3,  'التحقق من جودة الأرقام ومقارنتها بأهداف المحللين…'],
+    [6,  'بناء جدول النتائج المالية وتاريخ السعر…'],
   ];
   const stageEl=document.getElementById('lk-load-stage');
   const barEl=document.getElementById('lk-load-bar');
@@ -4334,7 +4389,7 @@ function _lkLoadStart(){
     let msg=stages[0][1];
     for(const [at,m] of stages){ if(s>=at) msg=m; }
     if(stageEl)stageEl.textContent=msg;
-    if(barEl)barEl.style.width=Math.min(95, 3+(s/38)*92).toFixed(0)+'%';
+    if(barEl)barEl.style.width=Math.min(95, 3+(s/8)*92).toFixed(0)+'%';
     if(secEl)secEl.textContent=Math.floor(s)+' ث';
   },900);
 }
@@ -4352,7 +4407,7 @@ async function lookupStock() {
 
   try {
     const token = localStorage.getItem(AUTH_SESSION_KEY) || '';
-    const r = await fetch(`/api/portfolio-for-ai?mode=lookup&sym=${encodeURIComponent(sym)}&v=5`, {
+    const r = await fetch(`/api/portfolio-for-ai?mode=lookup&sym=${encodeURIComponent(sym)}&v=6`, {
       headers: { 'Authorization': 'Bearer ' + token }
     });
     if (!r.ok) throw new Error('فشل تحميل البيانات');
@@ -4683,9 +4738,9 @@ async function lookupStock() {
       if (finTarget) _lkRenderFinancials(d.financials, true, finTarget);
     }
 
-    // AI analysis — rendered through mdToHtml for proper hierarchy (no raw ##)
+    // AI analysis arrives in PHASE 2 (mode=lookup-analysis) — see _lkFetchAnalysis.
     const analysisEl = document.getElementById('lookup-analysis');
-    if(res.analysis){
+    if(false){
       try{
         const txt=res.analysis;
         const strengthMatch=txt.match(/نقاط القوة[\s\S]*?(?=نقاط الضعف|المخاطر|---|$)/i);
@@ -4737,6 +4792,8 @@ async function lookupStock() {
     _lkLoadStop();
     document.getElementById('lookup-loading').style.display = 'none';
     document.getElementById('lookup-result').style.display = 'block';
+    _lkWritingState();
+    _lkFetchAnalysis(sym, false);
 
   } catch(e) {
     document.getElementById('lookup-loading').style.display = 'none';
