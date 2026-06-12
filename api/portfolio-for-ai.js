@@ -100,6 +100,14 @@ function validateLookupData(d) {
   // Analyst target vs price anchor
   if (price && tgt != null && (tgt <= 0 || tgt < price * 0.2 || tgt > price * 5))
     bad('targetMean', 'anchor_vs_price', tgt, 'هدف المحللين المستلم غير منطقي مقابل السعر — تم إخفاؤه');
+  // Range fields: high may run hotter (up to 8×), low may run colder (down to 0.1×)
+  ['targetMedian', 'targetHigh', 'targetLow'].forEach(k => {
+    const v = n(d[k]);
+    if (price && v != null && (v <= 0 || v < price * 0.1 || v > price * 8)) bad(k, 'range_vs_price', v);
+  });
+  if (n(d.targetLow) != null && n(d.targetHigh) != null && d.targetLow > d.targetHigh) {
+    bad('targetLow', 'low_gt_high', d.targetLow); bad('targetHigh', 'low_gt_high', d.targetHigh);
+  }
 
   // One-time-charge distortion: one fiscal year's net income wildly off vs the others
   let onetime = false;
@@ -1248,7 +1256,10 @@ module.exports = async (req, res) => {
         peg: rnd(num(ratios?.priceToEarningsGrowthRatioTTM ?? ratios?.pegRatioTTM)),
         roe: rnd(num(ratios?.returnOnEquityTTM) != null ? num(ratios?.returnOnEquityTTM) * 100 : null, 1),
         revenueGrowth: rnd(revenueGrowth, 1),
-        targetMean: num(target?.targetConsensus ?? target?.targetMedian),
+        targetMean: rnd(num(target?.targetConsensus ?? target?.targetMedian)),
+        targetMedian: rnd(num(target?.targetMedian)),
+        targetHigh: rnd(num(target?.targetHigh)),
+        targetLow: rnd(num(target?.targetLow)),
         dcfValue: (() => {
           // FMP's DCF is unreliable on stocks with recent one-time losses (IPO SBC, write-offs etc.)
           // A negative fair value is always a model artifact — suppress it rather than mislead.
@@ -1273,7 +1284,9 @@ module.exports = async (req, res) => {
             price: data.price, changePct: data.changePct, marketCapB: data.marketCap ? +(data.marketCap/1e9).toFixed(1) : null,
             pe: data.pe, peg: data.peg, roePct: data.roe, beta: data.beta,
             revenueGrowthPct: data.revenueGrowth,
-            dcfFairValue: data.dcfValue, analystTarget: data.targetMean, analystConsensus: data.analystConsensus,
+            dcfFairValue: data.dcfValue, analystTarget: data.targetMean,
+            analystRange: (data.targetLow != null && data.targetHigh != null) ? `$${data.targetLow}–$${data.targetHigh}` : null,
+            analystConsensus: data.analystConsensus,
             recentGrades: (data.grades||[]).map(g=>`${g.gradingCompany||''}: ${g.previousGrade||''}→${g.newGrade||''}`).slice(0,3),
             financials: (data.financials||[]).map(f=>({y:f.label, revB:f.revenue?+(f.revenue/1e9).toFixed(1):null, niB:f.netIncome?+(f.netIncome/1e9).toFixed(1):null, marginPct:f.netMargin?+f.netMargin.toFixed(1):null, fcfB:f.freeCashFlow?+(f.freeCashFlow/1e9).toFixed(1):null}))
           };
@@ -1287,16 +1300,16 @@ module.exports = async (req, res) => {
 
 اكتب بهذا الهيكل بالضبط (Markdown — العناوين بـ ## حرفياً):
 ## الاستثمارية
-فقرة من جملتين إلى ثلاث تلخص وضع الشركة وقصتها الاستثمارية بهدوء.
+فقرة وافية من ٤ إلى ٦ جمل تجيب فعلياً: ماذا تعمل الشركة وكيف تكسب المال؟ ما قصة نموها وموقعها التنافسي؟ وماذا تقول أرقامها الحالية (التقييم، النمو، الربحية) عن وضعها اليوم؟ اربط الأرقام بالقصة — هذه الفقرة هي قلب الصفحة فلا تختصرها.
 
 ## نقاط القوة
-- (٣ نقاط، كل نقطة سطر واحد برقم ومعناه)
+- (٣ إلى ٤ نقاط، كل نقطة سطر إلى سطرين: الرقم + لماذا يهم هذا المستثمر تحديداً)
 
 ## نقاط الضعف والمخاطر
-- (٣ نقاط، بنفس الأسلوب، بصدق كامل)
+- (٣ إلى ٤ نقاط بنفس العمق وبصدق كامل — ضمّن مخاطر القطاع والمنافسة لا الأرقام فقط)
 
 ## ماذا يعني هذا لمستثمر طويل الأجل؟
-جملتان تضعان الصورة في سياق هادئ، تنتهيان بأن القرار يعود للمستثمر.${_lkDQ.notesAr.length ? `
+٣ جمل: لمن قد يناسب هذا السهم كنوع (نمو/قيمة/توزيعات)، وما الذي يجب مراقبته في النتائج القادمة، وتنتهي بأن القرار يعود للمستثمر.${_lkDQ.notesAr.length ? `
 
 ملاحظات جودة البيانات (مهمة — يجب أن تنعكس بصدق في تحليلك دون تهويل):
 - ${_lkDQ.notesAr.join('\n- ')}` : ''}
@@ -1308,7 +1321,7 @@ ${JSON.stringify(facts)}`;
           const aRes = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-api-key': AK, 'anthropic-version': '2023-06-01' },
-            body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 800, messages: [{ role: 'user', content: prompt }] }),
+            body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] }),
             signal: controller.signal
           });
           clearTimeout(tmo);
