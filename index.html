@@ -8667,7 +8667,7 @@ async function renderZone3(force){
   const ar=_calmAr();
   try{
     if(!CALM.z3||force||Date.now()-CALM.z3LoadedAt>15*60000){
-      const OP=_CALM_GH+'/data/opportunities/';
+      const OP=_OP_GH; // same source as the Opportunities tab (data/market/)
       const t=Date.now();
       const dstr=o=>new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10);
       let scoredRes=await fetch(OP+'scored-'+dstr(0)+'.json?t='+t);
