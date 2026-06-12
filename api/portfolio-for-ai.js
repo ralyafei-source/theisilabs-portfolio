@@ -37,6 +37,94 @@ function todayUAE() {
   return new Date(Date.now() + 4 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// DATA QUALITY GATE (Session 29) — deterministic validation BEFORE any
+// scoring, ranking, or LLM analysis. Rules never delete a stock; they null
+// the corrupt metric (the scorer renormalizes around nulls) and record a flag.
+// ════════════════════════════════════════════════════════════════════════════
+function yesterdayUAE() {
+  return new Date(Date.now() + 4 * 3600 * 1000 - 86400000).toISOString().slice(0, 10);
+}
+
+// Validate one universe stock IN PLACE before scoring. Returns {flags, confidence}.
+function validateScoringStock(s, prevPrice) {
+  const flags = [];
+  const bad = (field, rule, value) => { flags.push({ field, rule, value }); s[field] = null; };
+  const n = v => (v == null || isNaN(Number(v))) ? null : Number(v);
+
+  const pe = n(s.pe_ratio);
+  if (pe != null && (pe <= 0 || pe > 500)) bad('pe_ratio', 'bounds_0_500', pe);
+  const peg = n(s.peg);
+  if (peg != null && (peg <= 0 || peg > 50)) bad('peg', 'bounds_0_50', peg);
+  const roe = n(s.roe);
+  if (roe != null && Math.abs(roe) > 1000) bad('roe', 'bounds_abs_1000', roe);
+  const roic = n(s.roic);
+  if (roic != null && Math.abs(roic) > 1000) bad('roic', 'bounds_abs_1000', roic);
+  const fcf = n(s.fcf_yield);
+  if (fcf != null && Math.abs(fcf) > 100) bad('fcf_yield', 'bounds_abs_100', fcf);
+  const de = n(s.debt_to_equity);
+  if (de != null && Math.abs(de) > 100) bad('debt_to_equity', 'bounds_abs_100', de);
+  const c5 = n(s.change5d);
+  if (c5 != null && Math.abs(c5) > 60) bad('change5d', 'bounds_abs_60', c5);
+
+  // Anchor: analyst target must be within 0.2×–5× of price, else it is corrupt
+  const price = n(s.price), tgt = n(s.analyst_target);
+  if (price != null && price > 0 && tgt != null) {
+    if (tgt <= 0 || tgt < price * 0.2 || tgt > price * 5) bad('analyst_target', 'anchor_vs_price', tgt);
+  }
+  // Day-over-day: >50% price jump vs yesterday's scored price = glitch or split.
+  // Flag only (do NOT null price — splits are real); confidence drops.
+  if (price != null && prevPrice != null && prevPrice > 0) {
+    const jump = Math.abs(price / prevPrice - 1);
+    if (jump > 0.5) flags.push({ field: 'price', rule: 'day_jump_gt_50pct', value: +(jump * 100).toFixed(1) });
+  }
+  const confidence = flags.length === 0 ? 'high' : (flags.length <= 2 ? 'medium' : 'low');
+  return { flags, confidence };
+}
+
+// Validate the lookup data object IN PLACE. Returns {flags, confidence, notesAr}.
+function validateLookupData(d) {
+  const flags = [];
+  const notes = [];
+  const bad = (field, rule, value, noteAr) => { flags.push({ field, rule, value }); d[field] = null; if (noteAr) notes.push(noteAr); };
+  const n = v => (v == null || isNaN(Number(v))) ? null : Number(v);
+
+  if (n(d.pe) != null && (d.pe <= 0 || d.pe > 500)) bad('pe', 'bounds_0_500', d.pe, 'مكرر الربحية خارج النطاق المنطقي — تم إخفاؤه');
+  if (n(d.peg) != null && (d.peg <= 0 || d.peg > 50)) bad('peg', 'bounds_0_50', d.peg, 'مؤشر PEG غير منطقي — تم إخفاؤه');
+  if (n(d.roe) != null && Math.abs(d.roe) > 150) bad('roe', 'bounds_abs_150', d.roe, 'العائد على حقوق الملكية خارج النطاق — تم إخفاؤه');
+  if (n(d.beta) != null && (d.beta < 0 || d.beta > 4)) bad('beta', 'bounds_0_4', d.beta);
+  if (n(d.revenueGrowth) != null && (d.revenueGrowth < -60 || d.revenueGrowth > 300))
+    bad('revenueGrowth', 'bounds_-60_300', d.revenueGrowth, 'نمو الإيرادات المحسوب غير موثوق — تم إخفاؤه');
+
+  const price = n(d.price), tgt = n(d.targetMean), dcf = n(d.dcfValue);
+  // Analyst target vs price anchor
+  if (price && tgt != null && (tgt <= 0 || tgt < price * 0.2 || tgt > price * 5))
+    bad('targetMean', 'anchor_vs_price', tgt, 'هدف المحللين المستلم غير منطقي مقابل السعر — تم إخفاؤه');
+
+  // One-time-charge distortion: one fiscal year's net income wildly off vs the others
+  let onetime = false;
+  if (Array.isArray(d.financials) && d.financials.length >= 3) {
+    const nis = d.financials.map(f => n(f.netIncome)).filter(v => v != null);
+    if (nis.length >= 3) {
+      const sorted = [...nis].map(Math.abs).sort((a, b) => a - b);
+      const maxAbs = sorted[sorted.length - 1], secondAbs = sorted[sorted.length - 2] || 0;
+      const signs = new Set(nis.map(v => Math.sign(v)));
+      if (secondAbs > 0 && maxAbs > 3 * secondAbs && signs.size > 1) onetime = true;
+    }
+  }
+  // DCF: positive, sane vs price, sane vs analyst anchor, and never trusted under one-time distortion
+  if (dcf != null) {
+    if (dcf <= 0) bad('dcfValue', 'negative_dcf', dcf, 'نموذج القيمة العادلة أعطى رقماً مستحيلاً (سالباً) — تم إخفاؤه');
+    else if (price && (dcf < price * 0.2 || dcf > price * 5)) bad('dcfValue', 'bounds_vs_price', dcf, 'تقدير القيمة العادلة بعيد جداً عن السعر — غير موثوق وتم إخفاؤه');
+    else if (n(d.targetMean) && (dcf < d.targetMean * 0.33 || dcf > d.targetMean * 3)) bad('dcfValue', 'anchor_vs_analysts', dcf, 'تقدير النموذج يتباعد كثيراً عن إجماع المحللين — اعتمدنا هدف المحللين بدلاً منه');
+    else if (onetime) bad('dcfValue', 'onetime_distortion', dcf, 'الشركة لديها خسارة/ربح استثنائي لمرة واحدة يشوّه نموذج القيمة العادلة — تم إخفاؤه');
+  }
+  if (onetime) flags.push({ field: 'financials', rule: 'onetime_distortion', value: null });
+
+  const confidence = flags.length === 0 ? 'high' : (flags.length <= 2 ? 'medium' : 'low');
+  return { flags, confidence, notesAr: notes };
+}
+
 function daysAheadUAE(n) {
   return new Date(Date.now() + 4 * 3600 * 1000 + n * 86400000).toISOString().slice(0, 10);
 }
@@ -377,6 +465,25 @@ async function handleScore(req, res) {
     });
   }
 
+  // ── 3.5 DATA QUALITY GATE (Session 29) ─────────────────────────────────────
+  // Validate every stock BEFORE any indicator/scoring math. Corrupt metrics are
+  // nulled (scorer renormalizes); flags are logged; low-confidence stocks are
+  // later excluded from the displayed top list.
+  const _dqLog = [];
+  let _prevPriceMap = {};
+  try {
+    const prevScored = await ghReadScorer(REPO, `data/market/scored-${yesterdayUAE()}.json`);
+    (prevScored?.data || []).forEach(p => { if (p.symbol && p.price_at_score != null) _prevPriceMap[p.symbol] = p.price_at_score; });
+  } catch {}
+  stocks.forEach(s => {
+    const r = validateScoringStock(s, _prevPriceMap[s.symbol]);
+    if (r.flags.length) {
+      s._dq = r;
+      r.flags.forEach(f => _dqLog.push({ date, symbol: s.symbol, ...f }));
+    }
+  });
+  if (_dqLog.length) console.log(`quality-gate: ${_dqLog.length} flags across ${new Set(_dqLog.map(f=>f.symbol)).size} stocks`);
+
   // ── 4. Compute raw indicator values ────────────────────────────────────────
   stocks.forEach(s => {
     s._raw = {
@@ -566,7 +673,7 @@ async function handleScore(req, res) {
   let displayRank = 0;
   stocks.forEach((s, i) => {
     s._score.rank = i + 1;
-    if (s._score.display_eligible && displayRank < SCORE_CONFIG.DISPLAY_TOP) {
+    if (s._score.display_eligible && (!s._dq || s._dq.confidence !== 'low') && displayRank < SCORE_CONFIG.DISPLAY_TOP) {
       displayRank++;
       s._score.display_rank = displayRank;
       s._score.display      = true;
@@ -639,6 +746,7 @@ async function handleScore(req, res) {
       pattern:           s._score.pattern,
       upcoming_earnings: s._score.upcoming_earnings,
       score_breakdown:   s._score.score_breakdown,
+      data_quality:      s._dq ? { confidence: s._dq.confidence, flags: s._dq.flags } : null,
     };
   });
 
@@ -660,6 +768,17 @@ async function handleScore(req, res) {
     `score: ${date} — ${stocks.length} stocks, ${stocks.filter(s => s._score.display_eligible).length} display-eligible`,
     GITHUB_TOKEN
   );
+
+  // ── 11.5 Append quality flags to the monthly audit log (best-effort) ───────
+  if (_dqLog.length) {
+    try {
+      const month = date.slice(0, 7);
+      const logPath = `data/quality/quality-log-${month}.json`;
+      const existing = (await ghReadScorer(REPO, logPath)) || { month, entries: [] };
+      existing.entries = (existing.entries || []).concat(_dqLog);
+      await ghWriteScorer(REPO, logPath, existing, `quality-log: ${date} +${_dqLog.length} flags`, GITHUB_TOKEN);
+    } catch (e) { console.error('quality-log write skipped:', e.message); }
+  }
 
   // Update history.json — rolling 28-day log of display stocks (enables streak)
   try {
@@ -1130,12 +1249,20 @@ module.exports = async (req, res) => {
         roe: rnd(num(ratios?.returnOnEquityTTM) != null ? num(ratios?.returnOnEquityTTM) * 100 : null, 1),
         revenueGrowth: rnd(revenueGrowth, 1),
         targetMean: num(target?.targetConsensus ?? target?.targetMedian),
-        dcfValue: num(dcfRow?.dcf),
+        dcfValue: (() => {
+          // FMP's DCF is unreliable on stocks with recent one-time losses (IPO SBC, write-offs etc.)
+          // A negative fair value is always a model artifact — suppress it rather than mislead.
+          const v = num(dcfRow?.dcf);
+          return (v != null && v > 0) ? rnd(v) : null;
+        })(),
         analystConsensus: cons?.consensus || null,
         grades: Array.isArray(gradesArr) ? gradesArr.slice(0, 5) : [],
         financials,
         priceHistory,
       };
+      // ── DATA QUALITY GATE — validate before anything reads this data ──
+      const _lkDQ = validateLookupData(data);
+
       // ── Claude analysis (THEISI voice) — optional, never blocks the data ──
       let analysis = null;
       try {
@@ -1158,17 +1285,21 @@ module.exports = async (req, res) => {
 - كن صادقاً في نقاط الضعف كما في القوة. إن كانت بيانات ناقصة فقل ذلك ببساطة.
 - لا تستخدم مصطلحات تقنية (RSI/MACD). الأساسيات فقط.
 
-اكتب بهذا الهيكل بالضبط (Markdown):
-فقرة افتتاحية من جملتين تلخص وضع الشركة بهدوء.
+اكتب بهذا الهيكل بالضبط (Markdown — العناوين بـ ## حرفياً):
+## الاستثمارية
+فقرة من جملتين إلى ثلاث تلخص وضع الشركة وقصتها الاستثمارية بهدوء.
 
-**نقاط القوة**
+## نقاط القوة
 - (٣ نقاط، كل نقطة سطر واحد برقم ومعناه)
 
-**نقاط الضعف والمخاطر**
+## نقاط الضعف والمخاطر
 - (٣ نقاط، بنفس الأسلوب، بصدق كامل)
 
-**ماذا يعني هذا لمستثمر طويل الأجل؟**
-جملتان تضعان الصورة في سياق هادئ، تنتهيان بأن القرار يعود للمستثمر.
+## ماذا يعني هذا لمستثمر طويل الأجل؟
+جملتان تضعان الصورة في سياق هادئ، تنتهيان بأن القرار يعود للمستثمر.${_lkDQ.notesAr.length ? `
+
+ملاحظات جودة البيانات (مهمة — يجب أن تنعكس بصدق في تحليلك دون تهويل):
+- ${_lkDQ.notesAr.join('\n- ')}` : ''}
 
 بيانات السهم (JSON):
 ${JSON.stringify(facts)}`;
@@ -1191,7 +1322,8 @@ ${JSON.stringify(facts)}`;
       } catch (e) { console.error('lookup analysis skipped:', e.message); }
 
       res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=1800');
-      return res.status(200).json(analysis ? { data, analysis } : { data });
+      const quality = { confidence: _lkDQ.confidence, flags: _lkDQ.flags, notes_ar: _lkDQ.notesAr };
+      return res.status(200).json(analysis ? { data, analysis, quality } : { data, quality });
     } catch (err) {
       console.error('lookup FATAL:', err.message);
       return res.status(500).json({ error: err.message });
