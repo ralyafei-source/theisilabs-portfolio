@@ -32,6 +32,35 @@ module.exports = async (req, res) => {
 
   let symbols = fallbackSymbols;
 
+  // ?list=symbols — return the UNION of ALL users' holdings (no prices).
+  // Used by 922 Data Collector so baselines cover every user's stocks (spec v1.1 Fix 2).
+  if (req.query.list === 'symbols') {
+    const set = new Set();
+    try {
+      const uRes = await fetchWithTimeout(
+        `https://raw.githubusercontent.com/${REPO}/main/data/users.json?t=${Date.now()}`, {}, 3000
+      );
+      const users = uRes.ok ? await uRes.json() : [];
+      const userList = Array.isArray(users) ? users : (users.users || []);
+      const files = ['data/portfolio.json'];
+      userList.forEach(u => { if (u.portfolioFile) files.push(u.portfolioFile); });
+      await Promise.all([...new Set(files)].map(async f => {
+        try {
+          const r = await fetchWithTimeout(
+            `https://raw.githubusercontent.com/${REPO}/main/${f}?t=${Date.now()}`, {}, 3000
+          );
+          if (!r.ok) return;
+          const d = await r.json();
+          (d.holdings || d.stocks || d.portfolio?.stocks || []).forEach(h => {
+            if (h && h.sym) set.add(String(h.sym).toUpperCase());
+          });
+        } catch (e) {}
+      }));
+    } catch (e) {}
+    if (set.size === 0) fallbackSymbols.forEach(s => set.add(s));
+    return res.json({ symbols: [...set].sort(), count: set.size, updated: new Date().toISOString() });
+  }
+
   // If symbols passed as query param, use those directly
   if (req.query.symbols) {
     const requested = req.query.symbols.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
