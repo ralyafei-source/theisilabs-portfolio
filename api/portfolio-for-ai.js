@@ -1211,10 +1211,11 @@ module.exports = async (req, res) => {
         financials = inc.map((y, i) => {
           const revenue   = y.revenue ?? null;
           const netIncome = y.netIncome ?? null;
-          const fcfRow    = cf.find(c => c.calendarYear === y.calendarYear) || cf[i] || {};
+          const yr        = y.fiscalYear ?? y.calendarYear ?? (y.date ? String(y.date).slice(0, 4) : null);
+          const fcfRow    = cf.find(c => (c.fiscalYear ?? c.calendarYear ?? (c.date ? String(c.date).slice(0,4) : null)) === yr) || cf[i] || {};
           return {
-            label: y.period === 'FY' ? `FY${y.calendarYear}` : (y.calendarYear || y.date || ''),
-            year: y.calendarYear,
+            label: yr ? `FY${yr}` : (y.date || ''),
+            year: yr,
             revenue,
             netIncome,
             netMargin: (revenue && netIncome != null) ? (netIncome / revenue * 100) : null,
@@ -1317,7 +1318,7 @@ module.exports = async (req, res) => {
 بيانات السهم (JSON):
 ${JSON.stringify(facts)}`;
           const controller = new AbortController();
-          const tmo = setTimeout(() => controller.abort(), 25000);
+          const tmo = setTimeout(() => controller.abort(), 45000);
           const aRes = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-api-key': AK, 'anthropic-version': '2023-06-01' },
