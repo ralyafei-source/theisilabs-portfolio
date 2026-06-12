@@ -4313,6 +4313,49 @@ async function lookupStock() {
     const res = await r.json();
     if (res.error) throw new Error(res.error);
     const d = res.data;
+    // ── DISPLAY-LAYER SANITY PASS (Session 29) ──────────────────────────────
+    // Last line of defense AFTER the API gate: catches presentation-layer bugs
+    // (unit ×100 mistakes, wrong scaling) that the source-data validator can't
+    // see. Any value outside a human-plausible range is nulled before render so
+    // a wrong number can never reach the eye. Adds to res.quality.flags so the
+    // honesty banner fires too.
+    (function sanityPass(){
+      const R = {
+        price:        [0, 1000000],
+        changePct:    [-90, 90],
+        pe:           [0, 500],
+        peg:          [0, 50],
+        roe:          [-150, 150],
+        beta:         [0, 4],
+        revenueGrowth:[-60, 300],
+        marketCap:    [0, 5e13],
+        targetMean:   [0, 1000000],
+        dcfValue:     [0, 1000000],
+      };
+      const added=[];
+      for(const k in R){
+        const v=d[k];
+        if(v==null) continue;
+        const num=Number(v);
+        if(isNaN(num) || num<R[k][0] || num>R[k][1]){
+          added.push({field:k, rule:'display_sanity_'+R[k][0]+'_'+R[k][1], value:num});
+          d[k]=null;
+        }
+      }
+      // Cross-field: DCF / target must stay within 0.2×–5× of price at display too
+      if(d.price>0){
+        ['targetMean','dcfValue'].forEach(k=>{
+          if(d[k]!=null && (d[k] < d.price*0.2 || d[k] > d.price*5)){
+            added.push({field:k, rule:'display_anchor_vs_price', value:d[k]}); d[k]=null;
+          }
+        });
+      }
+      if(added.length){
+        res.quality = res.quality || {flags:[], notes_ar:[], confidence:'medium'};
+        res.quality.flags = (res.quality.flags||[]).concat(added);
+        if(res.quality.confidence==='high') res.quality.confidence='medium';
+      }
+    })();
     let descTranslated = null;
     if (d.description) {
       try {
@@ -4350,7 +4393,7 @@ async function lookupStock() {
     const changePctColor = (d.changePct||0) >= 0 ? 'var(--green)' : 'var(--red)';
     const changePctSign = (d.changePct||0) >= 0 ? '▲' : '▼';
     const verdictColor = d.analystConsensus && d.analystConsensus.includes('Bullish') ? 'var(--green)' : d.analystConsensus && d.analystConsensus.includes('Bearish') ? 'var(--red)' : 'var(--gold)';
-    const revenueGrowthPct = d.revenueGrowth != null ? (d.revenueGrowth * 100).toFixed(1) : null;
+    const revenueGrowthPct = d.revenueGrowth != null ? Number(d.revenueGrowth).toFixed(1) : null; // API already returns a percent
     const logoUrl = d.website ? `https://logo.clearbit.com/${d.website.replace(/https?:\/\/(www\.)?/,'').split('/')[0]}` : null;
     const logoInitials = (d.symbol||'??').slice(0,2).toUpperCase();
     const agreeGlyph = agree.key==='align' ? '✓' : agree.key==='mixed' ? '~' : '?';
@@ -4433,7 +4476,7 @@ async function lookupStock() {
         <div class="lk-dp-val-card">
           <div class="lk-dp-val-label">نمو الإيرادات</div>
           <div class="lk-dp-val-big" style="color:${revenueGrowthPct>0?'var(--green)':'var(--red)'}">${revenueGrowthPct ? (revenueGrowthPct>0?'+':'')+revenueGrowthPct+'%' : '—'}</div>
-          <div class="lk-dp-val-sub">المتوقع</div>
+          <div class="lk-dp-val-sub">آخر سنة مالية</div>
         </div>
 
         <div class="lk-dp-val-card">
@@ -4551,7 +4594,7 @@ async function lookupStock() {
         <div class="lk-sub-card">
           <div class="lk-card-title">${t('Decision Factors','عوامل القرار')}</div>
           ${_lkRowHtml(t('Volatility Read','مستوى التقلّب'), t('A rough sense of how bumpy this might be — from PEG & recent volatility. Not a full risk model.','إحساس تقريبي بمدى تذبذب السعر — من PEG والتقلّب الأخير. ليس نموذج مخاطر كامل.'), `<span style="color:${risk.color}">${isAr?risk.ar:risk.en}</span>`, true)}
-          ${_lkRow(t('Revenue Growth','نمو الإيرادات'), t('Last 12 months','آخر 12 شهراً'), d.revenueGrowth!=null?(d.revenueGrowth*100).toFixed(1)+'%':'—', null)}
+          ${_lkRow(t('Revenue Growth','نمو الإيرادات'), t('Last 12 months','آخر 12 شهراً'), d.revenueGrowth!=null?Number(d.revenueGrowth).toFixed(1)+'%':'—', null)}
           ${_lkRow(t('ROE','العائد على حقوق الملكية'), t('Return on equity','كفاءة استخدام رأس المال'), d.roe!=null?d.roe+'%':'—', null)}
           ${_lkRow(t('Market Cap','القيمة السوقية'), '', d.marketCap?'$'+(d.marketCap/1e9).toFixed(1)+'B':'—', null)}
         </div>
