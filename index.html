@@ -6310,7 +6310,7 @@ async function saveEditStock(sym) {
     if (isAdmin) {
       r = await fetch('/api/update-portfolio', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': 'theisi-2026-X9k3mP' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (token || '') },
         body: JSON.stringify({
           action: 'EDIT',
           sym: sym,
@@ -6350,17 +6350,20 @@ async function deleteStock(sym) {
 
   const idx = stocks.findIndex(s => s.sym === sym);
   if (idx < 0) return;
-  stocks.splice(idx, 1);
 
   const token = localStorage.getItem(AUTH_SESSION_KEY);
   const isAdmin = localStorage.getItem(AUTH_ADMIN_KEY) === '1';
+  // For users we must remove BEFORE building the full-list payload;
+  // for admin we remove only after the server confirms (so a failed save
+  // never shows a stock as deleted when it is not).
+  if (!isAdmin) stocks.splice(idx, 1);
 
   try {
     if (isAdmin) {
       // Admin portfolio — use REMOVE action on update-portfolio endpoint
       const r = await fetch('/api/update-portfolio', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': 'theisi-2026-X9k3mP' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (token || '') },
         body: JSON.stringify({
           action: 'REMOVE',
           sym: sym,
@@ -6368,8 +6371,8 @@ async function deleteStock(sym) {
           price: 1
         })
       });
-      if (r.ok) { renderPortfolio(); updateStatCards(); }
-      else { const e = await r.json(); console.error('deleteStock admin error:', e); }
+      if (r.ok) { stocks.splice(idx, 1); renderPortfolio(); updateStatCards(); try{renderCalmZones();}catch(e){} }
+      else { const e = await r.json().catch(()=>({})); console.error('deleteStock admin error:', e); _toast('Delete failed: '+(e.error||r.status),'err'); }
     } else {
       // Regular user — stocks schema
       const r = await fetch('/api/user-portfolio', {
