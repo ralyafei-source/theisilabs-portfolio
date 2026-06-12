@@ -1277,8 +1277,10 @@ module.exports = async (req, res) => {
 
       // ── Claude analysis (THEISI voice) — optional, never blocks the data ──
       let analysis = null;
+      let analysisErr = null;   // surfaced in the response so failures are diagnosable
       try {
         const AK = process.env.ANTHROPIC_API_KEY;
+        if (!AK) analysisErr = 'ANTHROPIC_API_KEY not set in Vercel env';
         if (AK) {
           const facts = {
             symbol: data.symbol, name: data.companyName, sector: data.sector,
@@ -1329,15 +1331,21 @@ ${JSON.stringify(facts)}`;
           if (aRes.ok) {
             const aData = await aRes.json();
             analysis = (aData.content || []).map(c => c.type === 'text' ? c.text : '').join('').trim() || null;
+            if (!analysis) analysisErr = 'anthropic returned empty content';
           } else {
-            console.error('lookup analysis: anthropic', aRes.status);
+            const errBody = await aRes.text().catch(() => '');
+            analysisErr = `anthropic ${aRes.status}: ${errBody.slice(0, 300)}`;
+            console.error('lookup analysis:', analysisErr);
           }
         }
-      } catch (e) { console.error('lookup analysis skipped:', e.message); }
+      } catch (e) {
+        analysisErr = e.name === 'AbortError' ? 'timeout: Claude did not finish within 45s' : e.message;
+        console.error('lookup analysis skipped:', analysisErr);
+      }
 
       res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=1800');
       const quality = { confidence: _lkDQ.confidence, flags: _lkDQ.flags, notes_ar: _lkDQ.notesAr };
-      return res.status(200).json(analysis ? { data, analysis, quality } : { data, quality });
+      return res.status(200).json(analysis ? { data, analysis, quality } : { data, quality, analysis_error: analysisErr });
     } catch (err) {
       console.error('lookup FATAL:', err.message);
       return res.status(500).json({ error: err.message });
