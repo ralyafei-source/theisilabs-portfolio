@@ -582,7 +582,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .tb-btn svg{width:17px;height:17px;display:block;}
 .op-hero-card{background:var(--bg2);border:1px solid var(--border);border-top:2px solid var(--rose);border-radius:12px;padding:14px;position:relative;transition:border-color .15s;}
 .op-hero-card:hover{border-color:var(--rose);}
-.op-mini-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px;transition:border-color .15s;}
+.op-mini-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px;transition:border-color .15s;;display:flex;flex-direction:column}
 .op-mini-card:hover{border-color:var(--border2);}
 .op-lgd-panel{will-change:max-height,opacity,transform;}
 .tab-stale{font-size:9px;color:var(--text3);font-weight:400;margin-inline-start:4px;}
@@ -4016,7 +4016,7 @@ function _opBuildMiniCard(s){
     </div>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;justify-content:flex-end">${_opPatBadges(s.pattern)}</div>
     <div style="font-size:10px;color:var(--text3);line-height:1.55;direction:rtl">${(s._why||'').slice(0,100)}${(s._why||'').length>100?'...':''}</div>
-    <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">${_opStreakBadge(s._streak)}${_opEarningsBadge(s)}${s._isSharia?_shariaChip():''}</div>
+    <div style="display:flex;gap:4px;margin-top:auto;padding-top:8px;flex-wrap:wrap">${_opStreakBadge(s._streak)}${_opEarningsBadge(s)}${s._isSharia?_shariaChip():''}</div>
   </div>`;
 }
 
