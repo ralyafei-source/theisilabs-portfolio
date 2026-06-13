@@ -1250,7 +1250,7 @@ module.exports = async (req, res) => {
           roic:      m?.returnOnInvestedCapitalTTM ?? null,
           roe:       m?.returnOnEquityTTM          ?? null,
           fcf_yield: m?.freeCashFlowYieldTTM       ?? null,
-          ev_ebitda: m?.evToEBITDATTM              ?? null
+          
           ev_ebitda: m?.evToEBITDATTM              ?? null,
       // L3 analyst signals
       analyst_upside_pct,
