@@ -1137,22 +1137,22 @@ module.exports = async (req, res) => {
 
         // 8 FMP calls per symbol — all parallel
         // Includes Step 3 additions: ADX, Williams, 52w high/low, volume ratio
-        const [rsiD, sma50D, sma200D, adxD, williamsD, histD, ratiosD, metricsD] = await Promise.all([
-          fmpGet(`/technical-indicators/rsi?symbol=${s}&periodLength=14&timeframe=1day&limit=3`),
-          fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=50&timeframe=1day&limit=1`),
-          fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=200&timeframe=1day&limit=1`),
-          fmpGet(`/technical-indicators/adx?symbol=${s}&periodLength=14&timeframe=1day&limit=1`),
-          fmpGet(`/technical-indicators/williams?symbol=${s}&periodLength=14&timeframe=1day&limit=3`),
-          (() => {
-            // Use explicit date range to get exactly 1 year of DAILY prices
-            // 'limit' on this endpoint counts weeks not days
-            const toDate = new Date(Date.now() + 4*3600*1000).toISOString().slice(0,10);
-            const fromDate = new Date(Date.now() + 4*3600*1000 - 365*86400*1000).toISOString().slice(0,10);
-            return fmpGet(`/historical-price-eod/light?symbol=${s}&from=${fromDate}&to=${toDate}`);
-          })(),  // ~1 year of trading days
-          fmpGet(`/ratios-ttm?symbol=${s}`),
-          fmpGet(`/key-metrics-ttm?symbol=${s}`)
-        ]);
+        const [rsiD, sma50D, sma200D, adxD, williamsD, histD, ratiosD, metricsD, targetD, gradesD] = await Promise.all([
+  fmpGet(`/technical-indicators/rsi?symbol=${s}&periodLength=14&timeframe=1day&limit=3`),
+  fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=50&timeframe=1day&limit=1`),
+  fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=200&timeframe=1day&limit=1`),
+  fmpGet(`/technical-indicators/adx?symbol=${s}&periodLength=14&timeframe=1day&limit=1`),
+  fmpGet(`/technical-indicators/williams?symbol=${s}&periodLength=14&timeframe=1day&limit=3`),
+  (() => {
+    const toDate = new Date(Date.now() + 4*3600*1000).toISOString().slice(0,10);
+    const fromDate = new Date(Date.now() + 4*3600*1000 - 365*86400*1000).toISOString().slice(0,10);
+    return fmpGet(`/historical-price-eod/light?symbol=${s}&from=${fromDate}&to=${toDate}`);
+  })(),
+  fmpGet(`/ratios-ttm?symbol=${s}`),
+  fmpGet(`/key-metrics-ttm?symbol=${s}`),
+  fmpGet(`/price-target-consensus?symbol=${s}`),          // NEW — analyst target
+  fmpGet(`/grades-latest?symbols=${s}&limit=10`)          // NEW — recent grades
+]);
 
         const sma50  = latest(sma50D,  'sma');
         const sma200 = latest(sma200D, 'sma');
@@ -1187,7 +1187,40 @@ module.exports = async (req, res) => {
             if (avg20 > 0) volume_ratio_20d = +(todayVol / avg20).toFixed(3);
           }
         }
+// ── L3 ANALYST SIGNALS ──────────────────────────────────────────────
+    // 1) analyst upside %: (consensus target - price)/price, capped +60%
+    let analyst_upside_pct = null;
+    const tc = Array.isArray(targetD) ? targetD[0] : targetD;
+    const targetConsensus = tc?.targetConsensus ?? tc?.targetMedian ?? null;
+    if (targetConsensus && price && price > 0) {
+      let up = ((targetConsensus - price) / price) * 100;
+      if (up > 60) up = 60;                 // cap junk targets (spec §212)
+      analyst_upside_pct = +up.toFixed(2);
+    }
 
+    // 2) recent upgrade flag: any upgrade action in last 30 days
+    // 3) grade consensus tilt: share of bullish ratings among recent grades
+    let recent_upgrade = false, grade_score = null;
+    const grades = Array.isArray(gradesD) ? gradesD : [];
+    if (grades.length > 0) {
+      const now = Date.now();
+      const BULLISH = /buy|outperform|overweight|strong buy|accumulate|positive/i;
+      const BEARISH = /sell|underperform|underweight|reduce|negative/i;
+      let bull = 0, total = 0;
+      grades.forEach(g => {
+        const ng = String(g.newGrade || g.gradeNew || '').trim();
+        const pg = String(g.previousGrade || g.gradePrev || '').trim();
+        const action = String(g.action || g.gradeAction || '').toLowerCase();
+        const gdate = g.date ? new Date(g.date).getTime() : null;
+        // recent upgrade: explicit 'upgrade' action OR bullish new grade in 30d
+        if (gdate && (now - gdate) <= 30*86400*1000) {
+          if (action.includes('upgrade') || (BULLISH.test(ng) && !BULLISH.test(pg))) recent_upgrade = true;
+        }
+        // consensus tilt across the returned grades
+        if (ng) { total++; if (BULLISH.test(ng)) bull++; else if (BEARISH.test(ng)) bull += 0; else bull += 0.5; }
+      });
+      if (total > 0) grade_score = +((bull / total) * 100).toFixed(1);  // 0..100, higher=more bullish
+    }
         return [s, {
           symbol:    s,
           price,
@@ -1218,6 +1251,11 @@ module.exports = async (req, res) => {
           roe:       m?.returnOnEquityTTM          ?? null,
           fcf_yield: m?.freeCashFlowYieldTTM       ?? null,
           ev_ebitda: m?.evToEBITDATTM              ?? null
+          ev_ebitda: m?.evToEBITDATTM              ?? null,
+      // L3 analyst signals
+      analyst_upside_pct,
+      recent_upgrade,
+      grade_score
         }];
       }));
 
