@@ -3091,7 +3091,7 @@ function _briefGreeting(isAr){
   let g;
   if(isAr){ g = h<12?'صباح الخير':'مساء الخير'; }
   else { g = h<12?'Good morning':h<17?'Good afternoon':'Good evening'; }
-  const icon = h<12?'â˜€ï¸':h<17?'🌤ï¸':'🌙';
+  const icon = h<12?'☀️':h<17?'🌤️':'🌙';;
   let nick='';
   try{ nick=(localStorage.getItem('theisilabs_nick')||'').trim(); }catch(e){}
   const name = nick ? (isAr?(' يا '+nick):(', '+nick)) : '';
