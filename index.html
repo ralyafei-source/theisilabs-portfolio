@@ -1765,7 +1765,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
       </div>
       <div id="su-stock-rows" style="max-height:220px;overflow-y:auto;"></div>
       <button onclick="addSignupStockRow()" style="background:rgba(0,212,255,.1);border:1px solid var(--accent);color:var(--accent);border-radius:10px;padding:10px;width:100%;cursor:pointer;font-size:13px;font-weight:600;font-family:'Almarai',sans-serif;margin-bottom:12px;transition:all .2s;">+ Add Stock</button>
-      <button class="auth-btn auth-btn-primary" onclick="saveSignupPortfolio()">🚀 Launch My Dashboard</button>
+      <button class="auth-btn auth-btn-primary" onclick="saveSignupPortfolio()">Launch My Dashboard</button>
       <button class="auth-btn auth-btn-outline" onclick="skipPortfolioSetup()" style="margin-top:8px;">Skip — I'll add stocks later</button>
     </div>
 
@@ -1792,14 +1792,15 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 <div id="appBody">
 <nav id="appSidebar">
   <div class="sb-item active" data-tab="dashboard"    onclick="showTab('dashboard',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="sb-lbl">Dashboard</span></div>
-  <div class="sb-item" data-tab="portfolio"           onclick="showTab('portfolio',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><span class="sb-lbl">Portfolio</span></div>
-  <div class="sb-item" data-tab="trends"              onclick="showTab('trends',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg></span><span class="sb-lbl">Trends</span></div>
   <div class="sb-item" data-tab="advisor"             onclick="showTab('advisor',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg></span><span class="sb-lbl">AI Advisor</span></div>
+  <div class="sb-item" data-tab="portfolio"           onclick="showTab('portfolio',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><span class="sb-lbl">Portfolio</span></div>
   <div class="sb-item" data-tab="lookup"              onclick="showTab('lookup',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></span><span class="sb-lbl">Lookup</span></div>
+  <div class="sb-sep"></div>
+  <div class="sb-group-lbl" data-en="More" data-ar="المزيد" style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);padding:6px 14px 4px;">المزيد</div>
+  <div class="sb-item" data-tab="trends"              onclick="showTab('trends',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg></span><span class="sb-lbl">Trends</span></div>
   <div class="sb-item" data-tab="weights"             onclick="showTab('weights',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="14" cy="6" r="2.2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="8" cy="12" r="2.2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="16" cy="18" r="2.2"/></svg></span><span class="sb-lbl">Indicators</span></div>
   <div class="sb-item" data-tab="alerts"              onclick="showTab('alerts',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9"/><path d="M10.2 20a2 2 0 0 0 3.6 0"/></svg></span><span class="sb-lbl">Alerts</span></div>
   <div class="sb-item" data-tab="transactions"        onclick="showTab('transactions',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 4 3 8 7 12"/><line x1="3" y1="8" x2="16" y2="8"/><polyline points="17 12 21 16 17 20"/><line x1="8" y1="16" x2="21" y2="16"/></svg></span><span class="sb-lbl">Transactions</span></div>
-  <div class="sb-sep"></div>
   <div class="sb-item" data-tab="health" id="healthNavTab" style="display:none;" onclick="showTab('health',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.6-9.2-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.2 11C19 15.4 12 20 12 20z"/></svg></span><span class="sb-lbl">Health</span></div>
   <div class="sb-item" data-tab="setup"               onclick="showTab('setup',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="sb-lbl">Settings</span></div>
 </nav>
@@ -1835,7 +1836,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
       <div style="margin-top:12px;font-size:11px;color:var(--text3);text-align:center;" id="modalCostNote"></div>
     </div>
     <div class="card" style="margin-bottom:0;">
-      <div class="card-title">📊 Technical Indicators (Simulated)</div>
+      <div class="card-title">Technical Indicators (Simulated)</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;" id="modalIndicators"></div>
     </div>
   </div>
@@ -1883,7 +1884,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 
   <!-- Zone 2 full engine output (powers Card 1; full detail here) -->
   <div class="zone2" id="zone2">
-    <div class="z2-state"><span class="z2-ico">⏳</span><div><div class="z2-head" data-en="Checking your portfolio…" data-ar="جاري فحص محفظتك…">جاري فحص محفظتك…</div></div></div>
+    <div class="z2-state"><span class="z2-ico"></span><div><div class="z2-head" data-en="Checking your portfolio…" data-ar="جاري فحص محفظتك…">جاري فحص محفظتك…</div></div></div>
   </div>
 
   <div class="z-fold" id="z-fold" data-en="full detail below ↓" data-ar="التفاصيل الكاملة بالأسفل ↓">التفاصيل الكاملة بالأسفل ↓</div>
@@ -2068,7 +2069,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
         </div>
         <div id="wSliders"></div>
         <div style="display:flex;gap:10px;margin-top:16px;">
-          <button class="btn btn-primary" onclick="saveW()" id="w-save">💾 Save Weights</button>
+          <button class="btn btn-primary" onclick="saveW()" id="w-save">Save Weights</button>
           <button class="btn btn-outline" onclick="resetW()" id="w-reset">â†º Reset</button>
         </div>
       </div>
@@ -2118,10 +2119,10 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
           <label class="form-label" id="a-time">Morning Brief Time</label>
           <input class="form-input" type="time" value="07:00" id="briefTimeInput">
         </div>
-        <button class="btn btn-success" id="a-save" onclick="saveAlertSettings()">💾 Save Settings</button>
+        <button class="btn btn-success" id="a-save" onclick="saveAlertSettings()">Save Settings</button>
         <span id="alertSettingsStatus" style="font-size:11.5px;margin-right:8px;margin-left:8px;"></span>
         <hr class="divider">
-        <div class="card-title">📱 النشرة الصباحية على تيليجرام</div>
+        <div class="card-title">النشرة الصباحية على تيليجرام</div>
         <div style="font-size:11.5px;color:var(--text2);line-height:1.9;direction:rtl;text-align:right;margin-bottom:10px;">
           لتصلك نشرتك الصباحية الخاصة على تيليجرام كل يوم:<br>
           ١. افتح بوت THEISI على تيليجرام واضغط <b>Start</b><br>
@@ -2132,7 +2133,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
           <label class="form-label" dir="rtl" style="text-align:right">معرّف المحادثة (Chat ID)</label>
           <input class="form-input" type="text" id="tgChatIdInput" placeholder="مثال: 1313818473" inputmode="numeric" dir="ltr">
         </div>
-        <button class="btn btn-primary" id="tgChatSaveBtn" onclick="saveTelegramChatId()">💾 حفظ وإرسال رسالة تجريبية</button>
+        <button class="btn btn-primary" id="tgChatSaveBtn" onclick="saveTelegramChatId()">حفظ وإرسال رسالة تجريبية</button>
         <button class="btn" style="margin-right:6px" onclick="saveTelegramChatId(true)">إيقاف رسائل تيليجرام</button>
         <div id="tgChatStatus" style="font-size:11.5px;margin-top:8px;direction:rtl;text-align:right;"></div>
       </div>
@@ -2140,7 +2141,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
         <div class="card-title" id="a-tg-title">Telegram Preview</div>
         <div class="tg-box">
           <div class="tg-hdr">
-            <div class="tg-av">📊</div>
+            <div class="tg-av"></div>
             <div>
               <div class="tg-name" id="tg-bot-name">Market Intelligence Bot</div>
               <div class="tg-status" id="tg-bot-status">Bot · Active now</div>
@@ -2175,19 +2176,19 @@ WOLF remains at critical lows<br><br>
         <div class="section-sub" id="tx-sub">Import and manage your trade history</div>
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-outline" onclick="clearTransactions()" id="tx-clear" style="font-size:12px;padding:7px 12px;">🗑 Clear All</button>
-        <button class="btn btn-primary" onclick="document.getElementById('txFileInput').click()" id="tx-import" style="font-size:12px;padding:7px 12px;">📂 Import CSV</button>
+        <button class="btn btn-outline" onclick="clearTransactions()" id="tx-clear" style="font-size:12px;padding:7px 12px;">Clear All</button>
+        <button class="btn btn-primary" onclick="document.getElementById('txFileInput').click()" id="tx-import" style="font-size:12px;padding:7px 12px;">Import CSV</button>
         <input type="file" id="txFileInput" accept=".csv,.txt" style="display:none;" onchange="handleTxFile(event)">
       </div>
     </div>
 
     <!-- Upload Area (shown when empty) -->
     <div id="txUploadArea" class="upload-area" onclick="document.getElementById('txFileInput').click()">
-      <div class="upload-area-icon">📋</div>
+      <div class="upload-area-icon"></div>
       <div class="upload-area-text" id="tx-drop-title">Drop your CSV file here or click to upload</div>
       <div class="upload-area-sub" id="tx-drop-sub">Supports Wio Invest / DriveWealth export format<br>Columns: Date, Symbol, Action, Quantity, Price, Total</div>
       <div style="margin-top:16px;">
-        <button class="btn btn-primary" onclick="loadSampleTransactions();event.stopPropagation();" id="tx-sample">📊 Load Sample Data</button>
+        <button class="btn btn-primary" onclick="loadSampleTransactions();event.stopPropagation();" id="tx-sample">Load Sample Data</button>
       </div>
     </div>
 
@@ -2246,8 +2247,8 @@ WOLF remains at critical lows<br><br>
 
       <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn btn-success" onclick="markAllNewAsRecorded()" style="font-size:12px;">âœ… Mark All New as Recorded</button>
-        <button class="btn btn-outline" onclick="exportTransactions()" style="font-size:12px;">📤 Export</button>
-        <button class="btn btn-primary" onclick="document.getElementById('txFileInput').click()" style="font-size:12px;">📂 Import More</button>
+        <button class="btn btn-outline" onclick="exportTransactions()" style="font-size:12px;">Export</button>
+        <button class="btn btn-primary" onclick="document.getElementById('txFileInput').click()" style="font-size:12px;">Import More</button>
       </div>
     </div>
   </div>
@@ -2258,7 +2259,7 @@ WOLF remains at critical lows<br><br>
   <div class="card">
     <div class="section-hdr" style="margin-bottom:16px;">
       <div>
-        <div class="section-title">🔍 Stock Lookup — بحث سهم</div>
+        <div class="section-title">Stock Lookup — بحث سهم</div>
         <div class="section-sub">ابحث عن أي سهم أمريكي واحصل على تحليل كامل بالعربية</div>
       </div>
     </div>
@@ -2301,7 +2302,7 @@ WOLF remains at critical lows<br><br>
   <div class="card">
     <div class="section-hdr" style="margin-bottom:16px;">
       <div>
-        <div class="section-title" id="adv-title">🏦 AI Advisor — 9 Framework Analysis</div>
+        <div class="section-title" id="adv-title">AI Advisor — 9 Framework Analysis</div>
         <div class="section-sub" id="adv-sub">Daily deep analysis powered by world's top investment frameworks</div>
       </div>
       <button class="btn btn-outline" style="font-size:11px;padding:5px 12px;" onclick="loadAnalysis()">â†º Refresh</button>
@@ -2343,7 +2344,7 @@ WOLF remains at critical lows<br><br>
     <!-- Empty State -->
     <div id="advisorEmpty">
       <div class="advisor-empty">
-        <div class="advisor-empty-icon">🏦</div>
+        <div class="advisor-empty-icon"></div>
         <div style="font-size:14px;font-weight:700;margin-bottom:8px;" id="adv-empty-title">No Analysis Available Yet</div>
         <div style="font-size:12px;color:var(--text2);" id="adv-empty-sub">
           Analysis will appear here automatically after Make.com runs tomorrow morning.<br>
@@ -2562,7 +2563,7 @@ WOLF remains at critical lows<br><br>
         <label class="form-label">NewsAPI Key</label>
         <input class="form-input" type="password" placeholder="abc123...">
       </div>
-      <button class="btn btn-primary" id="s-save">💾 Save Config</button>
+      <button class="btn btn-primary" id="s-save">Save Config</button>
     </div>
     <div class="card">
       <div class="card-title" id="s-steps-title">Make.com Setup Steps</div>
@@ -2615,7 +2616,7 @@ WOLF remains at critical lows<br><br>
         <div class="section-title" id="pr-title">Claude API Prompt</div>
         <div class="section-sub" id="pr-sub">Copy this into Make.com â†’ HTTP Module â†’ Body</div>
       </div>
-      <button class="btn btn-primary" onclick="copyPrompt()" id="pr-copy">📋 Copy All</button>
+      <button class="btn btn-primary" onclick="copyPrompt()" id="pr-copy">Copy All</button>
     </div>
     <div class="code-block" id="promptBlock"></div>
   </div>
@@ -2626,7 +2627,7 @@ WOLF remains at critical lows<br><br>
   <div class="card">
     <div class="section-hdr" style="margin-bottom:20px;">
       <div>
-        <div class="section-title" id="health-title">🩺 System Health Log</div>
+        <div class="section-title" id="health-title">System Health Log</div>
         <div class="section-sub" id="health-sub">Last 30 analysis runs — source quality and write verification</div>
       </div>
       <button class="btn btn-outline" style="font-size:11px;padding:5px 12px;" onclick="loadHealthLog()">â†º Refresh</button>
@@ -2716,7 +2717,7 @@ const r=await fetch('https://raw.githubusercontent.com/ralyafei-source/theisilab
     const arr=Array.isArray(d)?d:(d.items||d.news||d.articles||[]);
     if(arr&&arr.length){
       newsItems=arr.map(n=>({
-        icon:n.icon||'📰',
+        icon:n.icon||'',
         title:n.title_ar||n.title||n.headline||'—',
         summary:n.insight_ar||n.summary||n.description||'',
         url:n.url||n.link||'#',
@@ -2765,19 +2766,19 @@ const T={
     statusReview:'âš ï¸ Review',statusStrong:'âœ… Strong',
     briefTitle:"Today's AI Analysis",newsTitle:"Today's News & Articles",
     briefLoadingTxt:'Loading latest briefing...',
-    wTitle:'Indicator Weights',wMust:'Must equal 100%',wSave:'💾 Save Weights',wReset:'â†º Reset',
+    wTitle:'Indicator Weights',wMust:'Must equal 100%',wSave:'Save Weights',wReset:'â†º Reset',
     wPerfTitle:'Historical Accuracy',wSysTitle:'System Accuracy',wOverall:'Overall prediction accuracy',
     aTitle:'Active Alerts',aAdd:'+ Add Alert',aSettingsTitle:'Alert Settings',
-    aSens:'Alert Sensitivity',aTime:'Morning Brief Time',aSave:'💾 Save Settings',
+    aSens:'Alert Sensitivity',aTime:'Morning Brief Time',aSave:'Save Settings',
     sens1:'Major moves only (±10%)',sens2:'Big moves (±5%)',sens3:'Medium moves (±3%)',sens4:'All moves',
     tgBotName:'Market Intelligence Bot',tgBotStatus:'Bot · Active now',
-    sKeysTitle:'API Keys',sStepsTitle:'Make.com Setup Steps',sSave:'💾 Save Config',
+    sKeysTitle:'API Keys',sStepsTitle:'Make.com Setup Steps',sSave:'Save Config',
     st1Title:'Create new scenario',st1Desc:'In Make.com click "Create a new scenario" then press the "+" button in the center',
     st2Title:'Add Schedule trigger',st2Desc:'Search "Schedule" â†’ Every day â†’ Set time to 03:00 UTC (= 7:00am UAE)',
     st3Title:'Add HTTP module for market data',st3Desc:'Search "HTTP" â†’ Make a request â†’ Enter URL below:',
     st4Title:'Add Claude AI module',st4Desc:'Add another HTTP module â†’ POST to Anthropic API â†’ Copy prompt from Claude Prompt tab',
     st5Title:'Add Telegram module',st5Desc:'Search "Telegram Bot" â†’ Send a Message â†’ Enter Chat ID â†’ Map Claude response',
-    prTitle:'Claude API Prompt',prSub:'Copy this into Make.com â†’ HTTP Module â†’ Body',prCopy:'📋 Copy All',
+    prTitle:'Claude API Prompt',prSub:'Copy this into Make.com â†’ HTTP Module â†’ Body',prCopy:'Copy All',
     dragHint:'Click card to expand | Drag to reorder | Pin to keep at top',
     txTitle:'Transaction Records',txSub:'Import and manage your trade history',
     txDropTitle:'Drop your CSV file here or click to upload',txDropSub:'Supports Wio Invest / DriveWealth export format',
@@ -2796,19 +2797,19 @@ const T={
     statusReview:'âš ï¸ مراجعة',statusStrong:'âœ… قوي',
     briefTitle:'تحليل الذكاء الاصطناعي اليوم',newsTitle:'أخبار ومقالات اليوم',
     briefLoadingTxt:'جارٍ تحميل التقرير...',
-    wTitle:'أوزان المؤشرات',wMust:'يجب أن يساوي 100%',wSave:'💾 حفظ الأوزان',wReset:'â†º إعادة تعيين',
+    wTitle:'أوزان المؤشرات',wMust:'يجب أن يساوي 100%',wSave:'حفظ الأوزان',wReset:'â†º إعادة تعيين',
     wPerfTitle:'الدقة التاريخية للمؤشرات',wSysTitle:'دقة النظام الكلية',wOverall:'دقة التوقعات الإجمالية',
     aTitle:'التنبيهات النشطة',aAdd:'+ إضافة تنبيه',aSettingsTitle:'إعدادات التنبيهات',
-    aSens:'حساسية التنبيه',aTime:'وقت التقرير الصباحي',aSave:'💾 حفظ الإعدادات',
+    aSens:'حساسية التنبيه',aTime:'وقت التقرير الصباحي',aSave:'حفظ الإعدادات',
     sens1:'التحركات الضخمة فقط (±10%)',sens2:'تحركات كبيرة (±5%)',sens3:'تحركات متوسطة (±3%)',sens4:'جميع التحركات',
     tgBotName:'بوت المحلل المالي',tgBotStatus:'بوت · نشط الآن',
-    sKeysTitle:'مفاتيح API',sStepsTitle:'خطوات إعداد Make.com',sSave:'💾 حفظ الإعدادات',
+    sKeysTitle:'مفاتيح API',sStepsTitle:'خطوات إعداد Make.com',sSave:'حفظ الإعدادات',
     st1Title:'إنشاء Scenario جديد',st1Desc:'في Make.com اضغط "Create a new scenario" ثم اضغط "+" في المنتصف',
     st2Title:'إضافة Schedule trigger',st2Desc:'ابحث عن "Schedule" â†’ كل يوم â†’ اضبط الوقت 03:00 UTC',
     st3Title:'إضافة HTTP module لبيانات السوق',st3Desc:'ابحث "HTTP" â†’ Make a request â†’ أدخل الرابط أدناه:',
     st4Title:'إضافة Claude AI module',st4Desc:'أضف HTTP module آخر â†’ POST إلى Anthropic API â†’ انسخ النص من تبويب نص Claude',
     st5Title:'إضافة Telegram module',st5Desc:'ابحث "Telegram Bot" â†’ Send a Message â†’ أدخل Chat ID â†’ ربط رد Claude كرسالة',
-    prTitle:'نص Claude API الكامل',prSub:'انسخه والصقه في Make.com â†’ HTTP Module â†’ Body',prCopy:'📋 نسخ الكل',
+    prTitle:'نص Claude API الكامل',prSub:'انسخه والصقه في Make.com â†’ HTTP Module â†’ Body',prCopy:'نسخ الكل',
     dragHint:'انقر لتوسيع | اسحب لإعادة الترتيب | ثبّت في الأعلى',
     txTitle:'سجلات المعاملات',txSub:'استيراد وإدارة تاريخ التداول',
     txDropTitle:'أسقط ملف CSV هنا أو اضغط للرفع',txDropSub:'يدعم صيغة Wio Invest / DriveWealth',
@@ -2994,7 +2995,7 @@ function renderPortfolio(){
       <td class="num" data-label="${lang==='ar'?'التاريخ':'Date'}"><span class="hold-date">${purchaseDateStr}</span></td>
       <td class="num" style="white-space:nowrap;">
         <button class="row-act edit" onclick="openEditStockModal('${s.sym}')" title="Edit">âœŽ</button>
-        <button class="row-act del" onclick="deleteStock('${s.sym}')" title="Delete">🗑</button>
+        <button class="row-act del" onclick="deleteStock('${s.sym}')" title="Delete"></button>
       </td>
     </tr>`;
   }).join('');
@@ -3015,7 +3016,7 @@ const arrowColor=sentiment==='bullish'?'#00d4aa':sentiment==='bearish'?'#ff4444'
 const linkIcon=`<span style="color:${arrowColor};font-weight:700;font-size:14px;margin-left:4px">${arrow}</span>`;
     const summary=n.summary?`<div class="news-summary">${n.summary}</div>`:'';
     return `<div class="news-item" ${clickable}>
-      <div class="news-icon">${n.icon||'📰'}</div>
+      <div class="news-icon">${n.icon||''}</div>
       <div style="flex:1">
         <div class="news-title">${n.title} ${linkIcon}</div>
         ${summary}
@@ -3224,7 +3225,7 @@ function renderAlerts(){
 
   // Critical losses (below -50%)
   stocks.filter(s=>s.gl<=-50).forEach(s=>{
-    alerts.push({level:'high',icon:'🔴',
+    alerts.push({level:'high',icon:'',
       title:`${s.sym} — ${isAr?'خسارة حرجة':'Critical loss'} ${s.gl.toFixed(1)}%`,
       desc:isAr?`${s.ar} — القيمة المتبقية $${s.mv.toLocaleString()}`:`${s.en} — $${s.mv.toLocaleString()} remaining`,
       time:isAr?'تنبيه يومي — 7:00 صباحاً':'Daily alert — 7:00 AM'
@@ -3233,7 +3234,7 @@ function renderAlerts(){
 
   // Large losses (-20% to -50%)
   stocks.filter(s=>s.gl<-20 && s.gl>-50).forEach(s=>{
-    alerts.push({level:'high',icon:'🔴',
+    alerts.push({level:'high',icon:'',
       title:`${s.sym} — ${isAr?'خسارة كبيرة':'Large loss'} ${s.gl.toFixed(1)}%`,
       desc:isAr?`${s.ar} — القيمة الحالية $${s.mv.toLocaleString()}`:`${s.en} — Current value $${s.mv.toLocaleString()}`,
       time:isAr?'تنبيه فوري عند تحرك ±3%':'Instant alert on ±3% move'
@@ -3248,7 +3249,7 @@ function renderAlerts(){
     const pct = (val/total*100).toFixed(0);
     if(pct>=50){
       const secName = sectors[sec]?.[isAr?'ar':'en'] || sec;
-      alerts.push({level:'med',icon:'🟡',
+      alerts.push({level:'med',icon:'',
         title:isAr?`تركز عالي في ${secName}`:`High ${secName} concentration`,
         desc:isAr?`${pct}% من المحفظة في قطاع واحد`:`${pct}% of portfolio in one sector`,
         time:isAr?'تنبيه أسبوعي':'Weekly alert'
@@ -3258,7 +3259,7 @@ function renderAlerts(){
 
   // Strong performers (above +50%)
   stocks.filter(s=>s.gl>=50).slice(0,2).forEach(s=>{
-    alerts.push({level:'low',icon:'🟢',
+    alerts.push({level:'low',icon:'',
       title:`${s.sym} — ${isAr?'أداء ممتاز':'Strong performance'} +${s.gl.toFixed(1)}%`,
       desc:isAr?`${s.ar} تحقق أداءً قوياً`:`${s.en} performing well. Monitor RSI.`,
       time:isAr?'تنبيه عند RSI > 75':'Alert when RSI > 75'
@@ -3839,7 +3840,7 @@ async function translateAnalysis(data){
 
   // Show translating state only on active firm bodies
   document.querySelectorAll('.firm-body').forEach(el=>{
-    el.innerHTML='<span style="color:var(--text2);font-size:12px;">🔄 Translating to English...</span>';
+    el.innerHTML='<span style="color:var(--text2);font-size:12px;">Translating to English...</span>';
   });
 
   if(!translationCache[cacheKey]){
@@ -4729,12 +4730,12 @@ async function lookupStock() {
       <div class="lk-dp-section-title">âš¡ الأطروحة الاستثمارية</div>
       <div class="lk-dp-text-box lk-dp-thesis">— سيتوفر قريباً (تحليل ذكاء اصطناعي)</div>
 
-      <div class="lk-dp-section-title" style="margin-top:14px">🏢 نبذة عن الشركة</div>
+      <div class="lk-dp-section-title" style="margin-top:14px">نبذة عن الشركة</div>
       <div class="lk-dp-text-box" dir="rtl" style="text-align:right">${descShort||'—'}</div>
 
       <div class="lk-dp-2col" style="margin-top:14px">
         <div class="lk-dp-box">
-          <div class="lk-dp-box-title">💪 نقاط القوة</div>
+          <div class="lk-dp-box-title">نقاط القوة</div>
           <div class="lk-dp-box-empty">— سيتوفر قريباً</div>
         </div>
         <div class="lk-dp-box">
@@ -5441,7 +5442,7 @@ function renderSignals(text){
     'Buy':       {color:'var(--green)',bg:'var(--green-dim)',border:'transparent',emoji:''},
     'Hold':      {color:'var(--gold)',bg:'var(--gold-dim)',border:'transparent',emoji:''},
     'Reduce':    {color:'var(--red)',bg:'var(--red-dim)',border:'transparent',emoji:''},
-    'Sell':      {color:'#ff4444',bg:'rgba(255,68,68,0.1)', border:'rgba(255,68,68,0.4)', emoji:'🔴'},
+    'Sell':      {color:'#ff4444',bg:'rgba(255,68,68,0.1)', border:'rgba(255,68,68,0.4)', emoji:''},
   };
 
   const lines = text.split('\n');
@@ -5973,7 +5974,7 @@ function updatePreview(){
 
   if(tradeAction==='REMOVE'){
     if(!existing){ box.innerHTML=`<span style="color:var(--red)">âš ï¸ ${sym} not found in portfolio</span>`; return; }
-    box.innerHTML=`<span style="color:var(--red)">🗑 Remove ${sym} (${existing._shares?.toFixed(2)||'?'} shares) completely from portfolio</span>`;
+    box.innerHTML=`<span style="color:var(--red)">Remove ${sym} (${existing._shares?.toFixed(2)||'?'} shares) completely from portfolio</span>`;
     return;
   }
 
@@ -5988,10 +5989,10 @@ function updatePreview(){
       const oldShares = existing._shares || (existing.mv/existing.price);
       const newShares = oldShares + shares;
       const newCost = ((oldShares * existing.cost) + total) / newShares;
-      box.innerHTML=`<span style="color:var(--green)">📈 BUY ${shares} Ã— $${price.toFixed(2)} = $${total.toLocaleString(undefined,{maximumFractionDigits:2})}</span><br>
+      box.innerHTML=`<span style="color:var(--green)">BUY ${shares} Ã— $${price.toFixed(2)} = $${total.toLocaleString(undefined,{maximumFractionDigits:2})}</span><br>
         <span style="color:var(--text2)">New position: ${newShares.toFixed(4)} shares | New avg cost: $${newCost.toFixed(2)}</span>`;
     } else {
-      box.innerHTML=`<span style="color:var(--green)">📈 NEW: Buy ${shares} ${sym} Ã— $${price.toFixed(2)} = $${total.toLocaleString(undefined,{maximumFractionDigits:2})}</span>`;
+      box.innerHTML=`<span style="color:var(--green)">NEW: Buy ${shares} ${sym} Ã— $${price.toFixed(2)} = $${total.toLocaleString(undefined,{maximumFractionDigits:2})}</span>`;
     }
   } else if(tradeAction==='SELL'){
     if(!existing){ box.innerHTML=`<span style="color:var(--red)">âš ï¸ ${sym} not found in portfolio</span>`; return; }
@@ -6001,7 +6002,7 @@ function updatePreview(){
     const gainPct = ((price/existing.cost)-1)*100;
     const gainColor = gain>=0?'var(--green)':'var(--red)';
     if(remaining < 0){ box.innerHTML=`<span style="color:var(--red)">âš ï¸ Cannot sell ${shares} — only ${heldShares.toFixed(4)} held</span>`; return; }
-    box.innerHTML=`<span style="color:var(--red)">📉 SELL ${shares} Ã— $${price.toFixed(2)} = $${total.toLocaleString(undefined,{maximumFractionDigits:2})}</span><br>
+    box.innerHTML=`<span style="color:var(--red)">SELL ${shares} Ã— $${price.toFixed(2)} = $${total.toLocaleString(undefined,{maximumFractionDigits:2})}</span><br>
       <span style="color:${gainColor}">Gain/Loss: ${gain>=0?'+':''}$${gain.toFixed(2)} (${gainPct>=0?'+':''}${gainPct.toFixed(2)}%)</span><br>
       <span style="color:var(--text2)">Remaining: ${remaining < 0.01 ? '0 (fully sold)' : remaining.toFixed(4)+' shares'}</span>`;
   }
@@ -6166,7 +6167,7 @@ window._scoreCards = {};
 function renderScoring(text) {
   if (!text || text.trim().length < 100) {
     return `<div style="text-align:center;padding:40px;color:var(--text2);">
-      <div style="font-size:32px;margin-bottom:12px;">🎯</div>
+      <div style="font-size:32px;margin-bottom:12px;"></div>
       <div style="font-size:14px;font-weight:700;margin-bottom:6px;">محرك القرار الأسبوعي</div>
       <div style="font-size:12px;">يتم التحديث كل سبت صباحاً مع اكتمال التحليل الأسبوعي</div>
     </div>`;
@@ -6346,7 +6347,7 @@ function buildScoreCard(stock, type, idx) {
     ${stock.action
       ? `<div style="font-size:11px;padding:6px 10px;border-radius:7px;text-align:center;font-weight:600;background:${bgAccent};color:${scoreColor};direction:rtl;">${stock.action}</div>`
       : ''}
-    <div style="font-size:10px;color:var(--accent);text-align:center;margin-top:6px;opacity:0.8;letter-spacing:0.3px;">🖱️ اضغط ثم مرّر لقراءة كل الطبقات</div>
+    <div style="font-size:10px;color:var(--accent);text-align:center;margin-top:6px;opacity:0.8;letter-spacing:0.3px;">اضغط ثم مرّر لقراءة كل الطبقات</div>
   </div>`;
 }
 
@@ -6589,7 +6590,7 @@ function openEditStockModal(sym) {
       </div>
       <div id="edit-status" style="margin-top:12px;font-size:12px;text-align:center;"></div>
       <div style="display:flex;gap:10px;margin-top:18px;">
-        <button onclick="saveEditStock('${sym}')" style="flex:1;padding:12px;background:var(--rose);border:none;color:#fff;border-radius:10px;font-weight:900;font-size:14px;cursor:pointer;font-family:'Almarai',sans-serif;">💾 Save Changes</button>
+        <button onclick="saveEditStock('${sym}')" style="flex:1;padding:12px;background:var(--rose);border:none;color:#fff;border-radius:10px;font-weight:900;font-size:14px;cursor:pointer;font-family:'Almarai',sans-serif;">Save Changes</button>
         <button onclick="document.getElementById('editStockModal').remove()" style="padding:12px 18px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:10px;cursor:pointer;font-family:'Almarai',sans-serif;">Cancel</button>
       </div>
     </div>`;
@@ -6746,27 +6747,27 @@ fetchLivePrices();
   <!-- Header -->
   <div class="chat-header">
     <div style="display:flex;align-items:center;gap:10px;">
-      <div class="chat-avatar">🤖</div>
+      <div class="chat-avatar"></div>
       <div>
         <div class="chat-title" id="chatTitle">المستشار الذكي</div>
         <div class="chat-status">â— متصل — يعلم كل شيء عن محفظتك</div>
       </div>
     </div>
     <div style="display:flex;gap:4px;">
-      <button class="chat-close" onclick="clearChat()" title="مسح المحادثة">🗑</button>
+      <button class="chat-close" onclick="clearChat()" title="مسح المحادثة"></button>
       <button class="chat-close" onclick="toggleChat()">âœ•</button>
     </div>
   </div>
 
   <!-- Context bar — shows current tab -->
   <div class="chat-context-bar" id="chatContextBar">
-    📊 يعرف محفظتك + تحليلات اليوم + الأسبوعي + الشهري
+    يعرف محفظتك + تحليلات اليوم + الأسبوعي + الشهري
   </div>
 
   <!-- Messages -->
   <div id="chatMessages">
     <div id="chatWelcome" style="text-align:center;padding:16px 8px 8px;">
-      <span class="chat-welcome-icon">🤖</span>
+      <span class="chat-welcome-icon"></span>
       <div class="chat-welcome-title">مستشار محفظتك الذكي</div>
       <div class="chat-welcome-sub">اسألني أي شيء — عن مراكزك، التحليلات، أو القرارات</div>
       <div class="chat-suggestions" id="chatSuggestions"></div>
@@ -6928,7 +6929,7 @@ function updateChatContext() {
   const activeTab = document.querySelector('.firm-tab.active');
   if (activeTab) {
     const tabText = activeTab.textContent.trim().replace(/From.*/, '').trim();
-    bar.textContent = `📊 يشاهد الآن: ${tabText} — يعرف كل تفاصيل محفظتك`;
+    bar.textContent = `يشاهد الآن: ${tabText} — يعرف كل تفاصيل محفظتك`;
   }
 }
 
@@ -6976,7 +6977,7 @@ function appendMsg(role, text, time) {
 
   const avatar = document.createElement('div');
   avatar.className = `msg-avatar ${role}`;
-  avatar.textContent = role === 'ai' ? '🤖' : '👤';
+  avatar.textContent = role === 'ai' ? '' : '';
 
   const inner = document.createElement('div');
 
@@ -7015,7 +7016,7 @@ function showTyping() {
   div.className = 'chat-msg ai';
   div.id = 'chatTyping';
   div.innerHTML = `
-    <div class="msg-avatar ai">🤖</div>
+    <div class="msg-avatar ai"></div>
     <div class="msg-bubble ai chat-typing">
       <div class="typing-dot"></div>
       <div class="typing-dot"></div>
@@ -7142,7 +7143,7 @@ function clearChat() {
   welcome.id = 'chatWelcome';
   welcome.style.cssText = 'text-align:center;padding:16px 8px 8px;';
   welcome.innerHTML = `
-    <span class="chat-welcome-icon">🤖</span>
+    <span class="chat-welcome-icon"></span>
     <div class="chat-welcome-title">مستشار محفظتك الذكي</div>
     <div class="chat-welcome-sub">اسألني أي شيء — عن مراكزك، التحليلات، أو القرارات</div>
     <div class="chat-suggestions" id="chatSuggestions"></div>`;
@@ -7341,7 +7342,7 @@ const glossaryTooltip = {
       this.defEl.textContent = entry.en;
       this.arEl.textContent = entry.ar;
       const scaleEl = document.getElementById('gtScale');
-      if(scaleEl) scaleEl.textContent = entry.scale ? '📊 ' + entry.scale : '';
+      if(scaleEl) scaleEl.textContent = entry.scale ? '' + entry.scale : '';
       this.position(x, y);
       this.el.classList.add('visible');
       return;
@@ -7354,7 +7355,7 @@ const glossaryTooltip = {
       this.termEl.textContent = term;
       this.defEl.textContent = cached.en;
       this.arEl.textContent = cached.ar;
-      if(document.getElementById('gtScale')) document.getElementById('gtScale').textContent = entry?.scale ? '📊 ' + entry.scale : '';
+      if(document.getElementById('gtScale')) document.getElementById('gtScale').textContent = entry?.scale ? '' + entry.scale : '';
       this.position(x, y);
       this.el.classList.add('visible');
       return;
@@ -7365,7 +7366,7 @@ const glossaryTooltip = {
     this.termEl.textContent = term;
     this.defEl.textContent = 'â³ جاري البحث...';
     this.arEl.textContent = '';
-    if(document.getElementById('gtScale')) document.getElementById('gtScale').textContent = entry?.scale ? '📊 ' + entry.scale : '';
+    if(document.getElementById('gtScale')) document.getElementById('gtScale').textContent = entry?.scale ? '' + entry.scale : '';
     this.position(x, y);
     this.el.classList.add('visible');
     this._currentTerm = term;
@@ -7401,14 +7402,14 @@ AR: [same definition in Arabic, max 20 words]`,
       if (this._currentTerm === term && this.el.classList.contains('visible')) {
         this.defEl.textContent = enDef;
         this.arEl.textContent = arDef;
-        if(document.getElementById('gtScale')) document.getElementById('gtScale').textContent = entry?.scale ? '📊 ' + entry.scale : '';
+        if(document.getElementById('gtScale')) document.getElementById('gtScale').textContent = entry?.scale ? '' + entry.scale : '';
       }
     } catch(e) {
       glossaryCache[term] = { en: 'Definition unavailable.', ar: 'التعريف غير متاح.' };
       if (this._currentTerm === term) {
         this.defEl.textContent = 'Definition unavailable.';
         this.arEl.textContent = '';
-        if(document.getElementById('gtScale')) document.getElementById('gtScale').textContent = entry?.scale ? '📊 ' + entry.scale : '';
+        if(document.getElementById('gtScale')) document.getElementById('gtScale').textContent = entry?.scale ? '' + entry.scale : '';
       }
     }
   },
@@ -7817,7 +7818,7 @@ async function doSignUp() {
       localStorage.setItem(AUTH_ADMIN_KEY, '0');
       const displayName = data.nickname.charAt(0).toUpperCase() + data.nickname.slice(1);
       const welcomeEl = document.getElementById('su-welcome-name');
-      if (welcomeEl) welcomeEl.textContent = 'Welcome, ' + displayName + '! 🎉';
+      if (welcomeEl) welcomeEl.textContent = 'Welcome, ' + displayName + '! ';
       // Reset numpad
       numpadBtns.forEach(b => { b.style.opacity = '1'; b.style.pointerEvents = ''; });
       document.getElementById('authError').style.color = '';
@@ -8011,7 +8012,7 @@ function showEmptyPortfolioState(nickname) {
   const reminderBanner = document.getElementById('reminderBanner');
   if (reminderBanner) {
     reminderBanner.style.display = 'flex';
-    document.getElementById('reminder-text').textContent = `👋 Welcome ${displayName}! Your portfolio is empty. Add your stocks to get started.`;
+    document.getElementById('reminder-text').textContent = `Welcome ${displayName}! Your portfolio is empty. Add your stocks to get started.`;
     document.getElementById('reminder-btn').textContent = 'Add Stocks â†’';
     document.getElementById('reminder-btn').onclick = () => openAddStocksModal(nickname);
   }
@@ -8136,7 +8137,7 @@ async function loadAdminData(token) {
         <div class="user-row" style="flex-direction:column;align-items:flex-start;gap:8px;padding:12px 0;">
           <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
             <div>
-              <div class="user-nick">${u.nickname} ${u.isAdmin ? '👑' : ''} ${u.isBlocked ? '<span style="color:var(--red);font-size:10px;">🚫 Blocked</span>' : ''}
+              <div class="user-nick">${u.nickname} ${u.isAdmin ? '' : ''} ${u.isBlocked ? '<span style="color:var(--red);font-size:10px;">Blocked</span>' : ''}
                 <span id="tier-badge-${u.nickname}" style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;margin-left:6px;
                   ${(u.tier||'fast')==='deep'
                     ? 'background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.3);'
@@ -8150,13 +8151,13 @@ async function loadAdminData(token) {
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
             ${!u.isAdmin ? `
-            ${u.lockoutUntil && new Date(u.lockoutUntil) > new Date() ? `<button class="admin-action-btn" onclick="unlockUser('${u.nickname}')">🔓 Unlock</button>` : ''}
-            <button class="admin-action-btn" onclick="resetPin('${u.nickname}')">🔑 Reset PIN</button>
+            ${u.lockoutUntil && new Date(u.lockoutUntil) > new Date() ? `<button class="admin-action-btn" onclick="unlockUser('${u.nickname}')">Unlock</button>` : ''}
+            <button class="admin-action-btn" onclick="resetPin('${u.nickname}')">Reset PIN</button>
             ${u.isBlocked
               ? `<button class="admin-action-btn" onclick="unblockUser('${u.nickname}')" style="border-color:var(--accent2);color:var(--accent2);">âœ… Unblock</button>`
-              : `<button class="admin-action-btn" onclick="blockUser('${u.nickname}')" style="border-color:var(--gold);color:var(--gold);">🚫 Block</button>`
+              : `<button class="admin-action-btn" onclick="blockUser('${u.nickname}')" style="border-color:var(--gold);color:var(--gold);">Block</button>`
             }
-            <button class="admin-action-btn" onclick="deleteUser('${u.nickname}')" style="border-color:var(--red);color:var(--red);">🗑 Delete</button>
+            <button class="admin-action-btn" onclick="deleteUser('${u.nickname}')" style="border-color:var(--red);color:var(--red);">Delete</button>
             ` : ''}
             <div style="display:flex;gap:4px;align-items:center;margin-left:4px;">
               <span style="font-size:11px;color:var(--text3);">Tier:</span>
@@ -9258,19 +9259,19 @@ document.addEventListener('DOMContentLoaded',function(){
 
 <div id="mobile-bottom-nav">
   <button class="mob-nav-btn active" onclick="switchTab('dashboard',this)">
-    <span>📊</span>Dashboard
+    <span></span>Dashboard
   </button>
   <button class="mob-nav-btn" onclick="switchTab('portfolio',this)">
-    <span>💼</span>Portfolio
+    <span></span>Portfolio
   </button>
   <button class="mob-nav-btn" onclick="switchTab('advisor',this)">
-    <span>🏦</span>Advisor
+    <span></span>Advisor
   </button>
   <button class="mob-nav-btn" onclick="switchTab('lookup',this)">
-    <span>🔍</span>Lookup
+    <span></span>Lookup
   </button>
   <button class="mob-nav-btn" onclick="switchTab('transactions',this)">
-    <span>📝</span>Trades
+    <span></span>Trades
   </button>
 </div>
 
@@ -9507,15 +9508,15 @@ function switchTab(tabId, btn) {
 
     <!-- Header -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-      <div style="font-size:16px;font-weight:900;">📝 Record Trade</div>
+      <div style="font-size:16px;font-weight:900;">Record Trade</div>
       <button onclick="closeTradeModal()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;">âœ•</button>
     </div>
 
     <!-- Action Toggle -->
     <div style="display:flex;gap:8px;margin-bottom:18px;">
-      <button id="btn-buy"  onclick="setTradeAction('BUY')"  style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--green);background:rgba(0,200,100,.15);color:var(--green);font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">📈 BUY</button>
-      <button id="btn-sell" onclick="setTradeAction('SELL')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">📉 SELL</button>
-      <button id="btn-remove" onclick="setTradeAction('REMOVE')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">🗑 REMOVE</button>
+      <button id="btn-buy"  onclick="setTradeAction('BUY')"  style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--green);background:rgba(0,200,100,.15);color:var(--green);font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">BUY</button>
+      <button id="btn-sell" onclick="setTradeAction('SELL')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">SELL</button>
+      <button id="btn-remove" onclick="setTradeAction('REMOVE')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">REMOVE</button>
     </div>
 
     <!-- Stock Symbol -->
