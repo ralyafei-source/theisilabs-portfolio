@@ -93,11 +93,27 @@ function rsiIdeal(stock){
 function run(input){
   var date = input.date;
   var deep = (input.deep && input.deep.data) ? input.deep.data : {};
-  var portfolio = Array.isArray(input.portfolio) ? input.portfolio : [];
-  var portSectors = {};
-  portfolio.forEach(function(p){ if(p && p.sector) portSectors[p.sector] = true; });
-  var portSyms = {};
-  portfolio.forEach(function(p){ if(p && p.symbol) portSyms[String(p.symbol).toUpperCase()] = true; });
+  // --- sector lookup from universe-{date}.json (authoritative sector source) ---
+  // shape: { universe: [ {symbol, sector, ...} ] }
+  var sectorOf = {};
+  var uniArr = (input.universe && Array.isArray(input.universe.universe)) ? input.universe.universe
+             : (Array.isArray(input.universe) ? input.universe : []);
+  uniArr.forEach(function(u){ if(u && u.symbol && u.sector) sectorOf[String(u.symbol).toUpperCase()] = u.sector; });
+
+  // --- portfolio: holdings array under input.portfolio.holdings OR a plain array ---
+  // each holding uses { sym, ... }; portfolio's OWN sector labels are unreliable ("tech"),
+  // so derive each holding's sector from the universe map for consistent matching.
+  var holdings = (input.portfolio && Array.isArray(input.portfolio.holdings)) ? input.portfolio.holdings
+               : (Array.isArray(input.portfolio) ? input.portfolio : []);
+  var portSyms = {}, portSectors = {};
+  holdings.forEach(function(p){
+    if(!p) return;
+    var sym = String(p.sym || p.symbol || '').toUpperCase();
+    if(!sym) return;
+    portSyms[sym] = true;
+    var sec = sectorOf[sym] || null;          // prefer universe sector
+    if(sec) portSectors[sec] = true;
+  });
 
   var syms = Object.keys(deep).filter(function(s){ return deep[s] && typeof deep[s]==="object"; });
   syms.sort(); // deterministic base ordering
@@ -177,9 +193,11 @@ function run(input){
     });
     var base = (wsum>0)? (score/wsum)*100 : null;
 
+    // resolve sector from universe lookup (deep file lacks it)
+    var stockSector = sectorOf[sym.toUpperCase()] || d.sector || null;
     // fit modifier (Standard §4.2 step 7): + if sector overlaps portfolio
     var fit = 0;
-    if (d.sector && portSectors[d.sector]) fit = CONFIG.FIT_MODIFIER_MAX;
+    if (stockSector && portSectors[stockSector]) fit = CONFIG.FIT_MODIFIER_MAX;
     var final_score = (base===null)? null : Math.round((base + fit)*10)/10;
 
     // classification (build spec §4.2 step 8) — descriptive tags, not scoring
@@ -187,7 +205,7 @@ function run(input){
 
     return {
       symbol: sym,
-      sector: d.sector || null,
+      sector: stockSector,
       price_at_score: isNum(d.price)? d.price : null,
       final_score: final_score,
       base_score: (base===null)?null:Math.round(base*10)/10,
