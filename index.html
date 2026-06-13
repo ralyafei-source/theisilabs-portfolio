@@ -5899,12 +5899,36 @@ function onSymSelect(val){
   updatePreview();
 }
 
+let _tickerLookupTimer = null;
 function onNewSym(val){
   selectedSym = val.toUpperCase();
   document.getElementById('tradeSymSelect').value='';
   const isNew = val && !stocks.find(s=>s.sym===val.toUpperCase());
-  document.getElementById('newStockFields').style.display = (isNew && tradeAction==='BUY') ? 'block' : 'none';
+  const show = (isNew && tradeAction==='BUY');
+  document.getElementById('newStockFields').style.display = show ? 'block' : 'none';
   updatePreview();
+  if (show && selectedSym.length >= 1) {
+    clearTimeout(_tickerLookupTimer);
+    _tickerLookupTimer = setTimeout(() => lookupTicker(selectedSym), 450);
+  }
+}
+
+async function lookupTicker(sym){
+  const nameEl = document.getElementById('newStockName');
+  const secEl  = document.getElementById('newStockSector');
+  if (!nameEl) return;
+  nameEl.placeholder = 'Looking up ' + sym + '…';
+  try {
+    const r = await fetch('https://theisilabs.vercel.app/api/portfolio-for-ai?mode=ticker-lookup&symbol=' + encodeURIComponent(sym));
+    if (r.ok) {
+      const d = await r.json();
+      if (selectedSym === sym) {
+        if (d.name && !nameEl.value) nameEl.value = d.name;
+        if (d.sector_code && secEl) secEl.value = d.sector_code;
+      }
+    }
+  } catch (e) { /* network error — manual entry still works */ }
+  finally { nameEl.placeholder = 'Full name (e.g. Tesla Inc.)'; }
 }
 
 function updatePreview(){
@@ -9451,7 +9475,7 @@ function switchTab(tabId, btn) {
     <div id="newStockFields" style="display:none;margin-bottom:14px;">
       <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;">NEW STOCK DETAILS</label>
       <input id="newStockName" placeholder="Company name (English)" style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Almarai',sans-serif;font-size:13px;margin-bottom:8px;">
-      <input id="newStockNameAr" placeholder="اسم الشركة بالعربي (اختياري)" dir="rtl" style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Almarai',sans-serif;font-size:13px;margin-bottom:8px;">
+      <input id="newStockNameAr" placeholder="Arabic name (optional)" dir="rtl" style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Almarai',sans-serif;font-size:13px;margin-bottom:8px;">
       <select id="newStockSector" style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Almarai',sans-serif;font-size:13px;">
         <option value="tech">Technology</option>
         <option value="semis">Semiconductors</option>

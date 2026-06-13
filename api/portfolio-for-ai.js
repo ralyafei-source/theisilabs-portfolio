@@ -1304,6 +1304,34 @@ module.exports = async (req, res) => {
   }
 
 
+  // ── MODE: ticker-lookup — company name + sector for the Record Trade modal ──
+  if (req.query.mode === 'ticker-lookup') {
+    const sym = String(req.query.symbol || '').toUpperCase().replace(/[^A-Z0-9.\-]/g, '');
+    if (!sym) return res.status(400).json({ error: 'symbol required' });
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    try {
+      const prof = await fmpGet(`/profile?symbol=${sym}`);
+      const p = Array.isArray(prof) ? prof[0] : prof;
+      if (!p || !p.companyName) return res.status(404).json({ error: 'not found', symbol: sym });
+      const map = {
+        'Technology':'tech',
+        'Communication Services':'tech',
+        'Healthcare':'bio',
+        'Basic Materials':'mining',
+        'Energy':'mining',
+        'Financial Services':'spec',
+        'Consumer Cyclical':'spec',
+        'Consumer Defensive':'spec',
+        'Industrials':'spec',
+        'Real Estate':'spec',
+        'Utilities':'spec'
+      };
+      let sector_code = map[p.sector] || 'other';
+      return res.status(200).json({ symbol: sym, name: p.companyName, sector: p.sector || null, sector_code });
+    } catch (e) { return res.status(500).json({ error: e.message }); }
+  }
+
+
   // ── MODE: build-sharia — rebuild the Sharia-compliant list (monthly) ──────
   // Source: holdings of professionally screened Islamic ETFs (S&P Shariah via
   // SPUS, FTSE USA Shariah via HLAL). Their committees apply AAOIFI screening;
