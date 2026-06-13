@@ -6,16 +6,45 @@ const BRIEFING_API_KEY = process.env.BRIEFING_API_KEY;
 const REPO = 'ralyafei-source/theisilabs-portfolio';
 const FILE_PATH = 'data/portfolio.json';
 
+// Verify a session token belongs to a logged-in ADMIN (reads data/users.json)
+async function verifyAdminSession(sessionToken) {
+  if (!sessionToken) return null;
+  try {
+    const r = await fetch(
+      `https://api.github.com/repos/${REPO}/contents/data/users.json`,
+      { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' } }
+    );
+    if (!r.ok) return null;
+    const fileData = await r.json();
+    const users = JSON.parse(Buffer.from(fileData.content, 'base64').toString('utf8'));
+    const list = Array.isArray(users) ? users : (users.users || []);
+    const user = list.find(u => u.sessionToken === sessionToken);
+    if (!user) return null;
+    if (user.sessionExpiry && new Date(user.sessionExpiry) < new Date()) return null;
+    if (!user.isAdmin) return null;
+    return user;
+  } catch (e) { return null; }
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Authorization');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Auth check
+  // Auth: EITHER a logged-in admin session token (browser path — no secret in
+  // the page source) OR the static BRIEFING_API_KEY (server-to-server only,
+  // e.g. Make.com; never embed this key in any web page).
+  const bearer = (req.headers.authorization || '').replace('Bearer ', '').trim();
   const apiKey = req.headers['x-api-key'] || (req.body && req.body.api_key);
-  if (apiKey !== BRIEFING_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+  let authorized = false;
+  if (apiKey && BRIEFING_API_KEY && apiKey === BRIEFING_API_KEY) authorized = true;
+  if (!authorized && bearer) {
+    const adminUser = await verifyAdminSession(bearer);
+    if (adminUser) authorized = true;
+  }
+  if (!authorized) return res.status(401).json({ error: 'Unauthorized' });
 
   const { action, sym, shares, price, newStock, sec, purchaseDate } = req.body || {};
 

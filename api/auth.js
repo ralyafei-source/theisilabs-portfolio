@@ -238,7 +238,53 @@ async function handleMe(req, res, token) {
   if (!user) return res.status(401).json({ error: 'Invalid session' });
   if (new Date(user.sessionExpiry) < new Date()) return res.status(401).json({ error: 'Session expired' });
 
-  return res.status(200).json({ nickname: user.nickname, isAdmin: user.isAdmin || false, portfolioFile: user.portfolioFile || null });
+  return res.status(200).json({ nickname: user.nickname, isAdmin: user.isAdmin || false, portfolioFile: user.portfolioFile || null, telegram_chat_id: user.telegram_chat_id || null });
+}
+
+// ── SET TELEGRAM (Session 29): save/clear the user's Telegram chat id ──────
+// POST ?action=set-telegram  body: { telegram_chat_id: "1234567" | "" }
+// Auth: the user's own session token. On save, sends a TEST message so the
+// user knows instantly whether the link works (bot must be started first).
+async function handleSetTelegram(req, res, token) {
+  const authHeader = req.headers.authorization || '';
+  const sessionToken = authHeader.replace('Bearer ', '').trim();
+  if (!sessionToken) return res.status(401).json({ error: 'No session token' });
+
+  const raw = (req.body && req.body.telegram_chat_id != null) ? String(req.body.telegram_chat_id).trim() : '';
+  if (raw && !/^-?\d{5,15}$/.test(raw)) {
+    return res.status(400).json({ error: 'invalid_chat_id', message_ar: 'معرّف المحادثة يجب أن يكون أرقاماً فقط (مثال: 1365815413)' });
+  }
+
+  const usersFile = await ghGet('data/users.json', token);
+  const users = JSON.parse(Buffer.from(usersFile.content, 'base64').toString());
+  const user = users.find(u => u.sessionToken === sessionToken);
+  if (!user) return res.status(401).json({ error: 'Invalid session' });
+  if (new Date(user.sessionExpiry) < new Date()) return res.status(401).json({ error: 'Session expired' });
+
+  if (raw) user.telegram_chat_id = raw;
+  else delete user.telegram_chat_id;
+
+  await ghPut('data/users.json', users, usersFile.sha, token);
+
+  // Test message — proves the link end-to-end (requires user to have started the bot)
+  let tested = null, test_error = null;
+  if (raw && TELEGRAM_TOKEN) {
+    try {
+      const tgRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: raw,
+          parse_mode: 'HTML',
+          text: `✅ <b>تم ربط حسابك بنجاح يا ${user.nickname}!</b>\n\nستصلك نشرة THEISI الصباحية هنا كل يوم الساعة 7:00 صباحاً بتوقيت الإمارات. 📊`,
+        }),
+      });
+      const tgData = await tgRes.json();
+      tested = !!tgData.ok;
+      if (!tgData.ok) test_error = tgData.description || `telegram ${tgRes.status}`;
+    } catch (e) { tested = false; test_error = e.message; }
+  }
+  return res.status(200).json({ ok: true, telegram_chat_id: raw || null, tested, test_error });
 }
 
 // ══════════════════════════════════════════
@@ -257,6 +303,7 @@ module.exports = async function handler(req, res) {
     if (action === 'login' && req.method === 'POST') return await handleLogin(req, res, githubToken);
     if (action === 'signup' && req.method === 'POST') return await handleSignup(req, res, githubToken);
     if (action === 'me' && req.method === 'GET') return await handleMe(req, res, githubToken);
+    if (action === 'set-telegram' && req.method === 'POST') return await handleSetTelegram(req, res, githubToken);
     return res.status(400).json({ error: 'Unknown action. Use ?action=login|signup|me' });
   } catch(e) {
     console.error('auth error:', e);

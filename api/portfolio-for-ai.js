@@ -1,4 +1,4 @@
-// api/portfolio-for-ai.js
+// api/portfolio-for-ai.js 
 // Returns portfolio as formatted plain text for Claude
 // Supports ?nickname=ahmed for per-user portfolios
 // Supports ?include=intelligence for smart FMP data (earnings, targets, grades, metrics, technicals)
@@ -35,6 +35,102 @@ async function fmpGet(path) {
 
 function todayUAE() {
   return new Date(Date.now() + 4 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// DATA QUALITY GATE (Session 29) — deterministic validation BEFORE any
+// scoring, ranking, or LLM analysis. Rules never delete a stock; they null
+// the corrupt metric (the scorer renormalizes around nulls) and record a flag.
+// ════════════════════════════════════════════════════════════════════════════
+function yesterdayUAE() {
+  return new Date(Date.now() + 4 * 3600 * 1000 - 86400000).toISOString().slice(0, 10);
+}
+
+// Validate one universe stock IN PLACE before scoring. Returns {flags, confidence}.
+function validateScoringStock(s, prevPrice) {
+  const flags = [];
+  const bad = (field, rule, value) => { flags.push({ field, rule, value }); s[field] = null; };
+  const n = v => (v == null || isNaN(Number(v))) ? null : Number(v);
+
+  const pe = n(s.pe_ratio);
+  if (pe != null && (pe <= 0 || pe > 500)) bad('pe_ratio', 'bounds_0_500', pe);
+  const peg = n(s.peg);
+  if (peg != null && (peg <= 0 || peg > 50)) bad('peg', 'bounds_0_50', peg);
+  const roe = n(s.roe);
+  if (roe != null && Math.abs(roe) > 1000) bad('roe', 'bounds_abs_1000', roe);
+  const roic = n(s.roic);
+  if (roic != null && Math.abs(roic) > 1000) bad('roic', 'bounds_abs_1000', roic);
+  const fcf = n(s.fcf_yield);
+  if (fcf != null && Math.abs(fcf) > 100) bad('fcf_yield', 'bounds_abs_100', fcf);
+  const de = n(s.debt_to_equity);
+  if (de != null && Math.abs(de) > 100) bad('debt_to_equity', 'bounds_abs_100', de);
+  const c5 = n(s.change5d);
+  if (c5 != null && Math.abs(c5) > 60) bad('change5d', 'bounds_abs_60', c5);
+
+  // Anchor: analyst target must be within 0.2×–5× of price, else it is corrupt
+  const price = n(s.price), tgt = n(s.analyst_target);
+  if (price != null && price > 0 && tgt != null) {
+    if (tgt <= 0 || tgt < price * 0.2 || tgt > price * 5) bad('analyst_target', 'anchor_vs_price', tgt);
+  }
+  // Day-over-day: >50% price jump vs yesterday's scored price = glitch or split.
+  // Flag only (do NOT null price — splits are real); confidence drops.
+  if (price != null && prevPrice != null && prevPrice > 0) {
+    const jump = Math.abs(price / prevPrice - 1);
+    if (jump > 0.5) flags.push({ field: 'price', rule: 'day_jump_gt_50pct', value: +(jump * 100).toFixed(1) });
+  }
+  const confidence = flags.length === 0 ? 'high' : (flags.length <= 2 ? 'medium' : 'low');
+  return { flags, confidence };
+}
+
+// Validate the lookup data object IN PLACE. Returns {flags, confidence, notesAr}.
+function validateLookupData(d) {
+  const flags = [];
+  const notes = [];
+  const bad = (field, rule, value, noteAr) => { flags.push({ field, rule, value }); d[field] = null; if (noteAr) notes.push(noteAr); };
+  const n = v => (v == null || isNaN(Number(v))) ? null : Number(v);
+
+  if (n(d.pe) != null && (d.pe <= 0 || d.pe > 500)) bad('pe', 'bounds_0_500', d.pe, 'مكرر الربحية خارج النطاق المنطقي — تم إخفاؤه');
+  if (n(d.peg) != null && (d.peg <= 0 || d.peg > 50)) bad('peg', 'bounds_0_50', d.peg, 'مؤشر PEG غير منطقي — تم إخفاؤه');
+  if (n(d.roe) != null && Math.abs(d.roe) > 150) bad('roe', 'bounds_abs_150', d.roe, 'العائد على حقوق الملكية خارج النطاق — تم إخفاؤه');
+  if (n(d.beta) != null && (d.beta < 0 || d.beta > 4)) bad('beta', 'bounds_0_4', d.beta);
+  if (n(d.revenueGrowth) != null && (d.revenueGrowth < -60 || d.revenueGrowth > 300))
+    bad('revenueGrowth', 'bounds_-60_300', d.revenueGrowth, 'نمو الإيرادات المحسوب غير موثوق — تم إخفاؤه');
+
+  const price = n(d.price), tgt = n(d.targetMean), dcf = n(d.dcfValue);
+  // Analyst target vs price anchor
+  if (price && tgt != null && (tgt <= 0 || tgt < price * 0.2 || tgt > price * 5))
+    bad('targetMean', 'anchor_vs_price', tgt, 'هدف المحللين المستلم غير منطقي مقابل السعر — تم إخفاؤه');
+  // Range fields: high may run hotter (up to 8×), low may run colder (down to 0.1×)
+  ['targetMedian', 'targetHigh', 'targetLow'].forEach(k => {
+    const v = n(d[k]);
+    if (price && v != null && (v <= 0 || v < price * 0.1 || v > price * 8)) bad(k, 'range_vs_price', v);
+  });
+  if (n(d.targetLow) != null && n(d.targetHigh) != null && d.targetLow > d.targetHigh) {
+    bad('targetLow', 'low_gt_high', d.targetLow); bad('targetHigh', 'low_gt_high', d.targetHigh);
+  }
+
+  // One-time-charge distortion: one fiscal year's net income wildly off vs the others
+  let onetime = false;
+  if (Array.isArray(d.financials) && d.financials.length >= 3) {
+    const nis = d.financials.map(f => n(f.netIncome)).filter(v => v != null);
+    if (nis.length >= 3) {
+      const sorted = [...nis].map(Math.abs).sort((a, b) => a - b);
+      const maxAbs = sorted[sorted.length - 1], secondAbs = sorted[sorted.length - 2] || 0;
+      const signs = new Set(nis.map(v => Math.sign(v)));
+      if (secondAbs > 0 && maxAbs > 3 * secondAbs && signs.size > 1) onetime = true;
+    }
+  }
+  // DCF: positive, sane vs price, sane vs analyst anchor, and never trusted under one-time distortion
+  if (dcf != null) {
+    if (dcf <= 0) bad('dcfValue', 'negative_dcf', dcf, 'نموذج القيمة العادلة أعطى رقماً مستحيلاً (سالباً) — تم إخفاؤه');
+    else if (price && (dcf < price * 0.2 || dcf > price * 5)) bad('dcfValue', 'bounds_vs_price', dcf, 'تقدير القيمة العادلة بعيد جداً عن السعر — غير موثوق وتم إخفاؤه');
+    else if (n(d.targetMean) && (dcf < d.targetMean * 0.33 || dcf > d.targetMean * 3)) bad('dcfValue', 'anchor_vs_analysts', dcf, 'تقدير النموذج يتباعد كثيراً عن إجماع المحللين — اعتمدنا هدف المحللين بدلاً منه');
+    else if (onetime) bad('dcfValue', 'onetime_distortion', dcf, 'الشركة لديها خسارة/ربح استثنائي لمرة واحدة يشوّه نموذج القيمة العادلة — تم إخفاؤه');
+  }
+  if (onetime) flags.push({ field: 'financials', rule: 'onetime_distortion', value: null });
+
+  const confidence = flags.length === 0 ? 'high' : (flags.length <= 2 ? 'medium' : 'low');
+  return { flags, confidence, notesAr: notes };
 }
 
 function daysAheadUAE(n) {
@@ -377,6 +473,25 @@ async function handleScore(req, res) {
     });
   }
 
+  // ── 3.5 DATA QUALITY GATE (Session 29) ─────────────────────────────────────
+  // Validate every stock BEFORE any indicator/scoring math. Corrupt metrics are
+  // nulled (scorer renormalizes); flags are logged; low-confidence stocks are
+  // later excluded from the displayed top list.
+  const _dqLog = [];
+  let _prevPriceMap = {};
+  try {
+    const prevScored = await ghReadScorer(REPO, `data/market/scored-${yesterdayUAE()}.json`);
+    (prevScored?.data || []).forEach(p => { if (p.symbol && p.price_at_score != null) _prevPriceMap[p.symbol] = p.price_at_score; });
+  } catch {}
+  stocks.forEach(s => {
+    const r = validateScoringStock(s, _prevPriceMap[s.symbol]);
+    if (r.flags.length) {
+      s._dq = r;
+      r.flags.forEach(f => _dqLog.push({ date, symbol: s.symbol, ...f }));
+    }
+  });
+  if (_dqLog.length) console.log(`quality-gate: ${_dqLog.length} flags across ${new Set(_dqLog.map(f=>f.symbol)).size} stocks`);
+
   // ── 4. Compute raw indicator values ────────────────────────────────────────
   stocks.forEach(s => {
     s._raw = {
@@ -566,7 +681,7 @@ async function handleScore(req, res) {
   let displayRank = 0;
   stocks.forEach((s, i) => {
     s._score.rank = i + 1;
-    if (s._score.display_eligible && displayRank < SCORE_CONFIG.DISPLAY_TOP) {
+    if (s._score.display_eligible && (!s._dq || s._dq.confidence !== 'low') && displayRank < SCORE_CONFIG.DISPLAY_TOP) {
       displayRank++;
       s._score.display_rank = displayRank;
       s._score.display      = true;
@@ -639,6 +754,7 @@ async function handleScore(req, res) {
       pattern:           s._score.pattern,
       upcoming_earnings: s._score.upcoming_earnings,
       score_breakdown:   s._score.score_breakdown,
+      data_quality:      s._dq ? { confidence: s._dq.confidence, flags: s._dq.flags } : null,
     };
   });
 
@@ -660,6 +776,17 @@ async function handleScore(req, res) {
     `score: ${date} — ${stocks.length} stocks, ${stocks.filter(s => s._score.display_eligible).length} display-eligible`,
     GITHUB_TOKEN
   );
+
+  // ── 11.5 Append quality flags to the monthly audit log (best-effort) ───────
+  if (_dqLog.length) {
+    try {
+      const month = date.slice(0, 7);
+      const logPath = `data/quality/quality-log-${month}.json`;
+      const existing = (await ghReadScorer(REPO, logPath)) || { month, entries: [] };
+      existing.entries = (existing.entries || []).concat(_dqLog);
+      await ghWriteScorer(REPO, logPath, existing, `quality-log: ${date} +${_dqLog.length} flags`, GITHUB_TOKEN);
+    } catch (e) { console.error('quality-log write skipped:', e.message); }
+  }
 
   // Update history.json — rolling 28-day log of display stocks (enables streak)
   try {
@@ -736,6 +863,106 @@ async function handleScore(req, res) {
 // ════════════════════════════════════════════════════════════════════════════
 
 // ─── main ────────────────────────────────────────────────────────────────────
+// Build the full lookup data object for a symbol (shared by both lookup modes)
+async function buildLookupData(sym) {
+  const to = todayUAE();
+  const from = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
+
+  const [profArr, quoteArr, ratiosArr, ptc, gradesArr, consArr, dcfArr, income, cashflow, hist] =
+    await Promise.all([
+      fmpGet(`/profile?symbol=${sym}`),
+      fmpGet(`/quote?symbol=${sym}`),
+      fmpGet(`/ratios-ttm?symbol=${sym}`),
+      fmpGet(`/price-target-consensus?symbol=${sym}`),
+      fmpGet(`/grades?symbol=${sym}&limit=5`),
+      fmpGet(`/grades-consensus?symbol=${sym}`),
+      fmpGet(`/discounted-cash-flow?symbol=${sym}`),
+      fmpGet(`/income-statement?symbol=${sym}&period=annual&limit=3`),
+      fmpGet(`/cash-flow-statement?symbol=${sym}&period=annual&limit=3`),
+      fmpGet(`/historical-price-eod/light?symbol=${sym}&from=${from}&to=${to}`),
+    ]);
+
+  const prof  = Array.isArray(profArr)  ? profArr[0]  : profArr;
+  const quote = Array.isArray(quoteArr) ? quoteArr[0] : quoteArr;
+  if (!prof && !quote) { const e = new Error(`لم يتم العثور على الرمز ${sym}`); e.code = 404; throw e; }
+  const ratios = Array.isArray(ratiosArr) ? ratiosArr[0] : ratiosArr;
+  const target = Array.isArray(ptc) ? ptc[0] : ptc;
+  const cons   = Array.isArray(consArr) ? consArr[0] : consArr;
+  const dcfRow = Array.isArray(dcfArr) ? dcfArr[0] : dcfArr;
+
+  // 3-year financial history table (oldest → newest)
+  let financials = null;
+  if (Array.isArray(income) && income.length) {
+    const inc = [...income].reverse();
+    const cf  = Array.isArray(cashflow) ? [...cashflow].reverse() : [];
+    financials = inc.map((y, i) => {
+      const revenue   = y.revenue ?? null;
+      const netIncome = y.netIncome ?? null;
+      const yr        = y.fiscalYear ?? y.calendarYear ?? (y.date ? String(y.date).slice(0, 4) : null);
+      const fcfRow    = cf.find(c => (c.fiscalYear ?? c.calendarYear ?? (c.date ? String(c.date).slice(0,4) : null)) === yr) || cf[i] || {};
+      return {
+        label: yr ? `FY${yr}` : (y.date || ''),
+        year: yr,
+        revenue,
+        netIncome,
+        netMargin: (revenue && netIncome != null) ? (netIncome / revenue * 100) : null,
+        freeCashFlow: fcfRow.freeCashFlow ?? null,
+      };
+    });
+  }
+  // revenue growth (latest FY vs previous) from the same data — no extra call
+  let revenueGrowth = null;
+  if (financials && financials.length >= 2) {
+    const a = financials[financials.length - 1].revenue, b = financials[financials.length - 2].revenue;
+    if (a && b) revenueGrowth = (a / b - 1) * 100;
+  }
+
+  // 1-year weekly-sampled price history for the chart (oldest → newest)
+  let priceHistory = null;
+  if (Array.isArray(hist) && hist.length) {
+    const asc = [...hist].reverse();
+    const step = Math.max(1, Math.floor(asc.length / 52));
+    priceHistory = asc.filter((_, i) => i % step === 0)
+      .map(p => ({ date: p.date, price: p.price ?? p.close ?? null }))
+      .filter(p => p.price != null);
+  }
+
+  const num = v => (v == null || isNaN(Number(v))) ? null : Number(v);
+  const rnd = (v, d=2) => v == null ? null : Number(v.toFixed(d));
+  const data = {
+    symbol: sym,
+    name: prof?.companyName || quote?.name || sym,
+    companyName: prof?.companyName || quote?.name || sym,
+    sector: prof?.sector || null,
+    description: prof?.description || null,
+    website: prof?.website || null,
+    beta: rnd(num(prof?.beta)),
+    price: num(quote?.price ?? prof?.price),
+    changePct: rnd(num(quote?.changePercentage ?? quote?.changesPercentage)),
+    marketCap: num(quote?.marketCap ?? prof?.marketCap),
+    pe: rnd(num(ratios?.priceToEarningsRatioTTM ?? ratios?.peRatioTTM ?? quote?.pe)),
+    peg: rnd(num(ratios?.priceToEarningsGrowthRatioTTM ?? ratios?.pegRatioTTM)),
+    roe: rnd(num(ratios?.returnOnEquityTTM) != null ? num(ratios?.returnOnEquityTTM) * 100 : null, 1),
+    revenueGrowth: rnd(revenueGrowth, 1),
+    targetMean: rnd(num(target?.targetConsensus ?? target?.targetMedian)),
+    targetMedian: rnd(num(target?.targetMedian)),
+    targetHigh: rnd(num(target?.targetHigh)),
+    targetLow: rnd(num(target?.targetLow)),
+    dcfValue: (() => {
+      // FMP's DCF is unreliable on stocks with recent one-time losses (IPO SBC, write-offs etc.)
+      // A negative fair value is always a model artifact — suppress it rather than mislead.
+      const v = num(dcfRow?.dcf);
+      return (v != null && v > 0) ? rnd(v) : null;
+    })(),
+    analystConsensus: cons?.consensus || null,
+    grades: Array.isArray(gradesArr) ? gradesArr.slice(0, 5) : [],
+    financials,
+    priceHistory,
+  };
+  const dq = validateLookupData(data);
+  return { data, dq };
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
@@ -910,22 +1137,22 @@ module.exports = async (req, res) => {
 
         // 8 FMP calls per symbol — all parallel
         // Includes Step 3 additions: ADX, Williams, 52w high/low, volume ratio
-        const [rsiD, sma50D, sma200D, adxD, williamsD, histD, ratiosD, metricsD] = await Promise.all([
-          fmpGet(`/technical-indicators/rsi?symbol=${s}&periodLength=14&timeframe=1day&limit=3`),
-          fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=50&timeframe=1day&limit=1`),
-          fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=200&timeframe=1day&limit=1`),
-          fmpGet(`/technical-indicators/adx?symbol=${s}&periodLength=14&timeframe=1day&limit=1`),
-          fmpGet(`/technical-indicators/williams?symbol=${s}&periodLength=14&timeframe=1day&limit=3`),
-          (() => {
-            // Use explicit date range to get exactly 1 year of DAILY prices
-            // 'limit' on this endpoint counts weeks not days
-            const toDate = new Date(Date.now() + 4*3600*1000).toISOString().slice(0,10);
-            const fromDate = new Date(Date.now() + 4*3600*1000 - 365*86400*1000).toISOString().slice(0,10);
-            return fmpGet(`/historical-price-eod/light?symbol=${s}&from=${fromDate}&to=${toDate}`);
-          })(),  // ~1 year of trading days
-          fmpGet(`/ratios-ttm?symbol=${s}`),
-          fmpGet(`/key-metrics-ttm?symbol=${s}`)
-        ]);
+        const [rsiD, sma50D, sma200D, adxD, williamsD, histD, ratiosD, metricsD, targetD, gradesD] = await Promise.all([
+  fmpGet(`/technical-indicators/rsi?symbol=${s}&periodLength=14&timeframe=1day&limit=3`),
+  fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=50&timeframe=1day&limit=1`),
+  fmpGet(`/technical-indicators/sma?symbol=${s}&periodLength=200&timeframe=1day&limit=1`),
+  fmpGet(`/technical-indicators/adx?symbol=${s}&periodLength=14&timeframe=1day&limit=1`),
+  fmpGet(`/technical-indicators/williams?symbol=${s}&periodLength=14&timeframe=1day&limit=3`),
+  (() => {
+    const toDate = new Date(Date.now() + 4*3600*1000).toISOString().slice(0,10);
+    const fromDate = new Date(Date.now() + 4*3600*1000 - 365*86400*1000).toISOString().slice(0,10);
+    return fmpGet(`/historical-price-eod/light?symbol=${s}&from=${fromDate}&to=${toDate}`);
+  })(),
+  fmpGet(`/ratios-ttm?symbol=${s}`),
+  fmpGet(`/key-metrics-ttm?symbol=${s}`),
+  fmpGet(`/price-target-consensus?symbol=${s}`),
+  fmpGet(`/grades-consensus?symbol=${s}`)
+]);
 
         const sma50  = latest(sma50D,  'sma');
         const sma200 = latest(sma200D, 'sma');
@@ -960,7 +1187,35 @@ module.exports = async (req, res) => {
             if (avg20 > 0) volume_ratio_20d = +(todayVol / avg20).toFixed(3);
           }
         }
+// ── L3 ANALYST SIGNALS ──────────────────────────────────────────────
+    // 1) analyst upside %: (consensus target - price)/price, capped +60%
+    let analyst_upside_pct = null;
+    const tc = Array.isArray(targetD) ? targetD[0] : targetD;
+    const targetConsensus = tc?.targetConsensus ?? tc?.targetMedian ?? null;
+    if (targetConsensus && price && price > 0) {
+      let up = ((targetConsensus - price) / price) * 100;
+      if (up > 60) up = 60;                 // cap junk targets (spec §212)
+      analyst_upside_pct = +up.toFixed(2);
+    }
 
+    // 2) grade_score: bullish tilt from analyst consensus (strongBuy..strongSell)
+    // 3) recent_upgrade: true when consensus is Buy/Strong Buy
+    let recent_upgrade = false, grade_score = null;
+    const gc = Array.isArray(gradesD) ? gradesD[0] : gradesD;
+    if (gc && typeof gc === 'object') {
+      const sb = +gc.strongBuy  || 0;
+      const b  = +gc.buy        || 0;
+      const h  = +gc.hold       || 0;
+      const sl = +gc.sell       || 0;
+      const ss = +gc.strongSell || 0;
+      const total = sb + b + h + sl + ss;
+      if (total > 0) {
+        const weighted = (sb*1 + b*0.75 + h*0.5 + sl*0.25 + ss*0) / total;
+        grade_score = +(weighted * 100).toFixed(1);   // 0..100, higher = more bullish
+      }
+      const cons = String(gc.consensus || '').toLowerCase();
+      recent_upgrade = (cons === 'strong buy' || cons === 'buy');
+    }
         return [s, {
           symbol:    s,
           price,
@@ -990,7 +1245,12 @@ module.exports = async (req, res) => {
           roic:      m?.returnOnInvestedCapitalTTM ?? null,
           roe:       m?.returnOnEquityTTM          ?? null,
           fcf_yield: m?.freeCashFlowYieldTTM       ?? null,
-          ev_ebitda: m?.evToEBITDATTM              ?? null
+          
+          ev_ebitda: m?.evToEBITDATTM              ?? null,
+      // L3 analyst signals
+      analyst_upside_pct,
+      recent_upgrade,
+      grade_score
         }];
       }));
 
@@ -1039,6 +1299,178 @@ module.exports = async (req, res) => {
 
     } catch (err) {
       console.error('deep-chunk FATAL:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+
+  // ── MODE: build-sharia — rebuild the Sharia-compliant list (monthly) ──────
+  // Source: holdings of professionally screened Islamic ETFs (S&P Shariah via
+  // SPUS, FTSE USA Shariah via HLAL). Their committees apply AAOIFI screening;
+  // we consume the result. Replaces the broken isSharia screener (the param
+  // never existed in FMP — the old list was an unfiltered market dump).
+  if (req.query.mode === 'build-sharia') {
+    const bearer = (req.headers.authorization || '').replace('Bearer ', '').trim();
+    const k = req.query.key || bearer;
+    if (k !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    const GH_TOKEN = process.env.GITHUB_TOKEN;
+    if (!GH_TOKEN) return res.status(500).json({ error: 'GITHUB_TOKEN not set' });
+    try {
+      // PRIMARY SOURCE: the fund issuer's own daily holdings CSV (public,
+      // SEC-mandated disclosure). SPUS = SP Funds S&P 500 Sharia Industry
+      // Exclusions ETF — AAOIFI-screened by S&P's Shariah committee, with a
+      // published Certificate of Sharia Accreditation. Updated daily.
+      // (FMP ETF-holdings endpoints are not in our plan: 402/403.)
+      const CSV_URL = 'https://www.sp-funds.com/wp-content/uploads/data/TidalFG_Holdings_SPUS.csv';
+      const set = new Set();
+      const debug = { source: CSV_URL, http: null, lines: 0, kept: 0, as_of: null };
+      const csvRes = await fetch(CSV_URL, { headers: { 'User-Agent': 'Mozilla/5.0 (THEISI sharia-list builder)' } });
+      debug.http = csvRes.status;
+      if (!csvRes.ok) return res.status(500).json({ error: `holdings CSV fetch failed: HTTP ${csvRes.status}`, debug });
+      const text = await csvRes.text();
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      debug.lines = lines.length;
+      // Columns: Date,Account,StockTicker,SecurityName,... — ticker is col 3,
+      // safely BEFORE any field that could contain commas.
+      let asOf = null;
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',');
+        if (cols.length < 3) continue;
+        if (!asOf && cols[0]) {
+          const m = String(cols[0]).trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+          if (m) asOf = `${m[3]}-${m[1]}-${m[2]}`;
+        }
+        const a = String(cols[2] || '').toUpperCase().trim();
+        // plausible US tickers only — drops Cash&Other, CUSIP-like ids, CVRs
+        if (a && /^[A-Z]{1,6}([.\-][A-Z])?$/.test(a) && a !== 'SPUS' && !/^CASH/.test(a) && a !== 'STOCKTICKER') set.add(a);
+      }
+      debug.kept = set.size; debug.as_of = asOf;
+      const perEtf = { SPUS: set.size };
+      // SELF-VERIFICATION (the canary, server-side): a compliant list can never
+      // contain conventional banks/insurers. Refuse to write a broken list.
+      const canaries = ['JPM', 'GS', 'C', 'BAC', 'WFC', 'AIG', 'MET', 'PRU', 'AFL'];
+      const hit = canaries.filter(c => set.has(c));
+      if (hit.length) return res.status(500).json({ error: `canary check failed: ${hit.join(',')} present — refusing to write` });
+      if (set.size < 50) return res.status(500).json({ error: `only ${set.size} symbols — ETF holdings fetch likely failed, refusing to write`, debug });
+
+      const out = {
+        updated: todayUAE(),
+        method: 'Holdings of the SP Funds S&P 500 Sharia Industry Exclusions ETF (SPUS) — AAOIFI screening by the S&P Shariah committee, certified by an independent Sharia auditor',
+        method_ar: 'قائمة مبنية على مكونات صناديق مؤشرات شرعية مُدقّقة وفق معايير AAOIFI (مؤشر S&P الشرعي ومؤشر FTSE الأمريكي الشرعي)',
+        source_etfs: perEtf,
+        holdings_as_of: debug.as_of,
+        count: set.size,
+        symbols: [...set].sort(),
+      };
+      await ghWriteScorer(REPO, 'data/market/sharia-list.json', out, `sharia-list: ${out.updated} — ${out.count} symbols (SPUS+HLAL)`, GH_TOKEN);
+      return res.status(200).json({ ok: true, updated: out.updated, count: out.count, per_etf: perEtf, debug });
+    } catch (err) {
+      console.error('build-sharia FATAL:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ── MODE: lookup-analysis — phase 2: the written analysis only ────────────
+  // Separated from mode=lookup so the data renders in seconds and Claude gets
+  // the full function time budget (~50s) to write a substantive analysis.
+  if (req.query.mode === 'lookup-analysis') {
+    try {
+      const sym = String(req.query.sym || '').toUpperCase().replace(/[^A-Z0-9.\-]/g, '');
+      if (!sym) return res.status(400).json({ error: 'sym required' });
+      const { data, dq: _lkDQ } = await buildLookupData(sym);
+
+      // ── Claude analysis (THEISI voice) — optional, never blocks the data ──
+      let analysis = null;
+      let analysisErr = null;   // surfaced in the response so failures are diagnosable
+      try {
+        const AK = process.env.ANTHROPIC_API_KEY;
+        if (!AK) analysisErr = 'ANTHROPIC_API_KEY not set in Vercel env';
+        if (AK) {
+          const facts = {
+            symbol: data.symbol, name: data.companyName, sector: data.sector,
+            price: data.price, changePct: data.changePct, marketCapB: data.marketCap ? +(data.marketCap/1e9).toFixed(1) : null,
+            pe: data.pe, peg: data.peg, roePct: data.roe, beta: data.beta,
+            revenueGrowthPct: data.revenueGrowth,
+            dcfFairValue: data.dcfValue, analystTarget: data.targetMean,
+            analystRange: (data.targetLow != null && data.targetHigh != null) ? `$${data.targetLow}–$${data.targetHigh}` : null,
+            analystConsensus: data.analystConsensus,
+            recentGrades: (data.grades||[]).map(g=>`${g.gradingCompany||''}: ${g.previousGrade||''}→${g.newGrade||''}`).slice(0,3),
+            financials: (data.financials||[]).map(f=>({y:f.label, revB:f.revenue?+(f.revenue/1e9).toFixed(1):null, niB:f.netIncome?+(f.netIncome/1e9).toFixed(1):null, marginPct:f.netMargin?+f.netMargin.toFixed(1):null, fcfB:f.freeCashFlow?+(f.freeCashFlow/1e9).toFixed(1):null}))
+          };
+          const prompt = `أنت محلل مالي في THEISI تشرح سهماً لمستثمر خليجي طويل الأجل، غير متخصص، بلغة عربية هادئة وواضحة (لهجة بيضاء قريبة من الخليجية، بدون مبالغة).
+
+قواعد صارمة:
+- اشرح ولا توصِ أبداً: ممنوع "اشترِ/بِع/الآن فرصة"، وممنوع التنبؤ بسعر أو إطار زمني.
+- كل رقم تذكره اربطه بمعناه بكلمات بسيطة (مثال: "P/E أعلى من المعتاد يعني أن السوق يدفع علاوة على النمو").
+- كن صادقاً في نقاط الضعف كما في القوة. إن كانت بيانات ناقصة فقل ذلك ببساطة.
+- لا تستخدم مصطلحات تقنية (RSI/MACD). الأساسيات فقط.
+
+اكتب بهذا الهيكل بالضبط (Markdown — العناوين بـ ## حرفياً ودون تغيير):
+## الأطروحة الاستثمارية
+هذه الفقرة هي قلب الصفحة — خذ المساحة التي تحتاجها (فقرة أو فقرتان، بلا حد معين للجمل) لتجيب فعلياً: ماذا تعمل الشركة وكيف تكسب المال؟ ما قصة نموها وموقعها التنافسي ومن ينافسها؟ وماذا تقول أرقامها الحالية (التقييم، النمو، الربحية) عن وضعها اليوم؟ اربط الأرقام بالقصة، واكتب بقدر ما تستحق القصة: شركة بسيطة تكفيها فقرة قصيرة، وشركة معقدة أو حديثة الإدراج تستحق التفصيل. لا حشو ولا تكرار — كل جملة تضيف معلومة.
+
+## نقاط القوة
+- (٣ إلى ٤ نقاط، كل نقطة سطر إلى سطرين: الرقم + لماذا يهم هذا المستثمر تحديداً)
+
+## نقاط الضعف والمخاطر
+- (٣ إلى ٤ نقاط بنفس العمق وبصدق كامل — ضمّن مخاطر القطاع والمنافسة لا الأرقام فقط)
+
+## ماذا يعني هذا لمستثمر طويل الأجل؟
+٣ جمل: لمن قد يناسب هذا السهم كنوع (نمو/قيمة/توزيعات)، وما الذي يجب مراقبته في النتائج القادمة، وتنتهي بأن القرار يعود للمستثمر.${_lkDQ.notesAr.length ? `
+
+ملاحظات جودة البيانات (مهمة — يجب أن تنعكس بصدق في تحليلك دون تهويل):
+- ${_lkDQ.notesAr.join('\n- ')}` : ''}
+
+بيانات السهم (JSON):
+${JSON.stringify(facts)}`;
+          const controller = new AbortController();
+          const tmo = setTimeout(() => controller.abort(), 50000);
+          const aRes = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': AK, 'anthropic-version': '2023-06-01' },
+            body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2200, messages: [{ role: 'user', content: prompt }] }),
+            signal: controller.signal
+          });
+          clearTimeout(tmo);
+          if (aRes.ok) {
+            const aData = await aRes.json();
+            analysis = (aData.content || []).map(c => c.type === 'text' ? c.text : '').join('').trim() || null;
+            if (!analysis) analysisErr = 'anthropic returned empty content';
+          } else {
+            const errBody = await aRes.text().catch(() => '');
+            analysisErr = `anthropic ${aRes.status}: ${errBody.slice(0, 300)}`;
+            console.error('lookup analysis:', analysisErr);
+          }
+        }
+      } catch (e) {
+        analysisErr = e.name === 'AbortError' ? 'timeout: Claude did not finish within 45s' : e.message;
+        console.error('lookup analysis skipped:', analysisErr);
+      }
+
+      res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=1800');
+      res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=1800');
+      return res.status(200).json(analysis ? { analysis } : { analysis: null, analysis_error: analysisErr });
+    } catch (err) {
+      const code = err.code === 404 ? 404 : 500;
+      return res.status(code).json({ analysis: null, analysis_error: err.message });
+    }
+  }
+
+  // ── MODE: lookup — single-stock snapshot for the dashboard Lookup tab ─────
+  // Public market data only (no portfolio info), so it sits with the other
+  // dashboard modes, before the server-key auth gate.
+  if (req.query.mode === 'lookup') {
+    try {
+      const sym = String(req.query.sym || '').toUpperCase().replace(/[^A-Z0-9.\-]/g, '');
+      if (!sym) return res.status(400).json({ error: 'sym required' });
+
+      const { data, dq: _lkDQ } = await buildLookupData(sym);
+
+      res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=1800');
+      const quality = { confidence: _lkDQ.confidence, flags: _lkDQ.flags, notes_ar: _lkDQ.notesAr };
+      return res.status(200).json({ data, quality });
+    } catch (err) {
+      console.error('lookup FATAL:', err.message);
       return res.status(500).json({ error: err.message });
     }
   }
