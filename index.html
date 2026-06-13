@@ -1577,6 +1577,36 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 .tmoves .tm-row{display:flex;justify-content:space-between;align-items:center;padding:8px 2px;border-bottom:1px solid var(--border);direction:ltr}
 .tmoves .tm-row:last-child{border-bottom:none}
 .cmd-top.below-strip{margin-top:8px}
+/* â•â•â• NARRATIVE BRIEFING (new hero) â•â•â• */
+.z-narr{border:1px solid var(--border);background:var(--bg2);border-radius:16px;padding:16px 18px;margin:16px 0 14px;border-inline-start:3px solid var(--rose)}
+.z-narr-hd{display:flex;align-items:center;gap:7px;margin-bottom:9px}
+.z-narr-dot{width:6px;height:6px;border-radius:50%;background:var(--rose)}
+.z-narr-lbl{font-size:12px;font-weight:700;color:var(--rose)}
+.z-narr-body{font-size:14px;line-height:1.9;color:var(--text);direction:rtl}
+.z-narr-body.en{direction:ltr}
+.z-narr-body b,.z-narr-body strong{color:var(--text);font-weight:700}
+.z-narr-note{font-size:10px;color:var(--text3);line-height:1.5;margin-top:10px}
+.z-narr-skel{opacity:.6}
+/* â•â•â• TWO ATTENTION CARDS â•â•â• */
+.z-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.z-card{border:1px solid var(--border);background:var(--bg2);border-radius:14px;padding:13px 14px;cursor:pointer;border-top:2px solid var(--border)}
+.z-card.mine{border-top-color:var(--accent)}
+.z-card.pick{border-top-color:var(--rose)}
+.z-card-tag{font-size:10px;font-weight:700;margin-bottom:7px}
+.z-card.mine .z-card-tag{color:var(--accent)}
+.z-card.pick .z-card-tag{color:var(--rose)}
+.z-card-sym{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;color:var(--text);direction:ltr}
+.z-card-pct{font-family:'IBM Plex Mono',monospace;font-size:11px;margin-top:2px}
+.z-card-pct.up{color:var(--green)}.z-card-pct.dn{color:var(--red)}
+.z-card-why{font-size:11px;color:var(--text2);line-height:1.6;margin-top:6px;direction:rtl}
+.z-card-why.en{direction:ltr}
+.z-card .zone3 .z3-card{border:none;background:transparent;padding:0;border-radius:0}
+.z-card .zone3 .z3-sym{font-size:14px}
+.z-card .zone3 .z3-score b{font-size:16px}
+.z-card .zone3 .z3-why{font-size:11px;margin-top:6px}
+.firm-tabs-5{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px}
+.firm-tabs-5 .firm-tab.grp{flex:0 0 auto}
+.firm-content.active ~ .firm-content.active{margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
 .lk-spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--rose);border-radius:50%;margin:0 auto;animation:lkspin .8s linear infinite}
 @keyframes lkspin{to{transform:rotate(360deg)}}
 @media(max-width:640px){
@@ -1584,6 +1614,8 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
   .z1-num{font-size:23px}
   .z1-stats{gap:18px}
   .zone2,.z3-card{padding:14px 14px}
+  .z-cards{gap:8px}
+  .z-card{padding:11px 12px}
 }
 </style>
 </head>
@@ -1828,17 +1860,33 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
     <div class="cmd-sub" id="cmd-change" style="display:none">Loading...</div>
   </div>
 
-  <!-- â•â•â• ZONE 2 â€” REASSURANCE / ATTENTION â•â•â• -->
-  <div class="zone2" id="zone2">
-    <div class="z2-state"><span class="z2-ico">â³</span><div><div class="z2-head" data-en="Checking your portfolioâ€¦" data-ar="Ø¬Ø§Ø±ÙŠ ÙØ­Øµ Ù…Ø­ÙØ¸ØªÙƒâ€¦">Ø¬Ø§Ø±ÙŠ ÙØ­Øµ Ù…Ø­ÙØ¸ØªÙƒâ€¦</div></div></div>
+  <!-- ═══ NARRATIVE BRIEFING — HERO (fed by Scenario 977; placeholder until then) ═══ -->
+  <div class="z-narr" id="z-narr">
+    <div class="z-narr-hd"><span class="z-narr-dot"></span><span class="z-narr-lbl" data-en="THEISI’s read today" data-ar="قراءة ثيسي اليوم">قراءة ثيسي اليوم</span></div>
+    <div class="z-narr-body z-narr-skel" id="z-narr-body" data-en="THEISI’s daily briefing will appear here — the one story worth knowing, what it means, and how it touches your portfolio. (Connecting to the analysis engine…)" data-ar="ستظهر هنا قراءة ثيسي اليومية — أهم خبر يستحق المعرفة، وماذا يعني، وكيف يؤثر على محفظتك. (جاري الربط بمحرك التحليل…)">جاري التحميل…</div>
+    <div class="z-narr-note" data-en="We connect the dots and explain — you decide. Not financial advice." data-ar="نربط النقاط ونشرح — القرار لك. ليست نصيحة مالية.">نربط النقاط ونشرح — القرار لك.</div>
   </div>
 
-  <!-- â•â•â• ZONE 3 â€” OPPORTUNITY â•â•â• -->
-  <div class="cmd-stitle" id="z3-title" data-en="â­ A stock worth a look" data-ar="â­ Ø³Ù‡Ù… ÙŠØ³ØªØ­Ù‚ Ù†Ø¸Ø±Ø©">â­ Ø³Ù‡Ù… ÙŠØ³ØªØ­Ù‚ Ù†Ø¸Ø±Ø©</div>
-  <p id="z3-disclaimer" data-en="Organized reasons + the risk â€” never a recommendation. You decide." data-ar="Ø£Ø³Ø¨Ø§Ø¨ Ù…Ù†Ø¸Ù…Ø© + Ø§Ù„Ù…Ø®Ø§Ø·Ø± â€” Ù„ÙŠØ³Øª ØªÙˆØµÙŠØ© Ø£Ø¨Ø¯Ø§Ù‹. Ø§Ù„Ù‚Ø±Ø§Ø± Ù„Ùƒ." style="font-size:11px;color:var(--text2);margin:-4px 0 10px;line-height:1.5">Ø£Ø³Ø¨Ø§Ø¨ Ù…Ù†Ø¸Ù…Ø© + Ø§Ù„Ù…Ø®Ø§Ø·Ø± â€” Ù„ÙŠØ³Øª ØªÙˆØµÙŠØ© Ø£Ø¨Ø¯Ø§Ù‹. Ø§Ù„Ù‚Ø±Ø§Ø± Ù„Ùƒ.</p>
-  <div id="zone3" class="zone3"><div class="skel" style="height:84px;border-radius:14px"></div></div>
+  <!-- ═══ TWO ATTENTION CARDS — Card1: holdings (Zone2) · Card2: THEISI pick (Zone3) ═══ -->
+  <div class="z-cards">
+    <div class="z-card mine" id="z-card-mine" onclick="(function(){var z=document.getElementById('zone2');if(z)z.scrollIntoView({behavior:'smooth'});})()">
+      <div class="z-card-tag" data-en="Needs your attention · your holdings" data-ar="يحتاج انتباهك · محفظتك">يحتاج انتباهك</div>
+      <div class="z-card-sym" id="z-card-mine-sym">—</div>
+      <div class="z-card-pct" id="z-card-mine-pct"></div>
+      <div class="z-card-why" id="z-card-mine-why"></div>
+    </div>
+    <div class="z-card pick" onclick="calmOpenOpportunities()">
+      <div class="z-card-tag" data-en="THEISI picks · opportunity" data-ar="ثيسي تختار · فرصة">ثيسي تختار</div>
+      <div id="zone3" class="zone3"><div class="skel" style="height:48px;border-radius:10px"></div></div>
+    </div>
+  </div>
 
-  <div class="z-fold" id="z-fold" data-en="full detail below â†“" data-ar="Ø§Ù„ØªÙØ§ØµÙŠÙ„ Ø§Ù„ÙƒØ§Ù…Ù„Ø© Ø¨Ø§Ù„Ø£Ø³ÙÙ„ â†“">Ø§Ù„ØªÙØ§ØµÙŠÙ„ Ø§Ù„ÙƒØ§Ù…Ù„Ø© Ø¨Ø§Ù„Ø£Ø³ÙÙ„ â†“</div>
+  <!-- Zone 2 full engine output (powers Card 1; full detail here) -->
+  <div class="zone2" id="zone2">
+    <div class="z2-state"><span class="z2-ico">⏳</span><div><div class="z2-head" data-en="Checking your portfolio…" data-ar="Ø¬Ø§Ø±ÙŠ ÙØ­Øµ Ù…Ø­ÙØ¸ØªÙƒâ€¦">Ø¬Ø§Ø±ÙŠ ÙØ­Øµ Ù…Ø­ÙØ¸ØªÙƒâ€¦</div></div></div>
+  </div>
+
+  <div class="z-fold" id="z-fold" data-en="full detail below ↓" data-ar="التفاصيل الكاملة بالأسفل ↓">التفاصيل الكاملة بالأسفل ↓</div>
 
   <!-- Today's moves (FYI tier) -->
   <div class="cmd-stitle" id="tmoves-title" style="display:none" data-en="Today's moves" data-ar="ØªØ­Ø±ÙƒØ§Øª Ø§Ù„ÙŠÙˆÙ…">ØªØ­Ø±ÙƒØ§Øª Ø§Ù„ÙŠÙˆÙ…</div>
@@ -2274,57 +2322,14 @@ WOLF remains at critical lows<br><br>
     <!-- Grouped Analysis Tabs -->
     <div id="firmTabs">
 
-      <div class="analysis-group">
-        <div class="group-label daily"><span class="gl-dot"></span>Daily â€” Updates every morning</div>
-        <div class="firm-tabs">
-          <button class="firm-tab signals active" onclick="showFirm('signals',this)">
-            Daily Signals<span class="tab-stale" id="stale-signals"></span>
-          </button>
-          <button class="firm-tab earnings" onclick="showFirm('earnings',this)">
-            Earnings &amp; Events<span class="tab-stale" id="stale-earnings"></span>
-          </button>
-          <button class="firm-tab macro" onclick="showFirm('macro',this)">
-            Macro Today<span class="tab-stale" id="stale-macro"></span>
-          </button>
-          <button class="firm-tab opportunities" onclick="showFirm('opportunities',this)">
-            ÙØ±Øµ Ø§Ù„Ø³ÙˆÙ‚<span class="tab-stale" id="stale-opportunities"></span>
-          </button>
-        </div>
+      <!-- 5 consolidated groups (each shows its member panels stacked) -->
+      <div class="firm-tabs firm-tabs-5">
+        <button class="firm-tab grp active" onclick="showGroup('positions',this)" data-en="My positions" data-ar="مراكزي">مراكزي</button>
+        <button class="firm-tab grp" onclick="showGroup('riskhealth',this)" data-en="Risk & health" data-ar="المخاطر والصحة">المخاطر والصحة</button>
+        <button class="firm-tab grp" onclick="showGroup('opportunities',this)" data-en="Opportunities" data-ar="فرص السوق">فرص السوق</button>
+        <button class="firm-tab grp" onclick="showGroup('forces',this)" data-en="Market forces" data-ar="قوى السوق">قوى السوق</button>
+        <button class="firm-tab grp" onclick="showGroup('longgame',this)" data-en="The long game" data-ar="النظرة البعيدة">النظرة البعيدة</button>
       </div>
-
-      <div class="analysis-group">
-        <div class="group-label weekly"><span class="gl-dot"></span>Weekly â€” Updates every Saturday</div>
-        <div class="firm-tabs">
-          <button class="firm-tab risk" onclick="showFirm('risk',this)">
-            Risk Radar<span class="tab-stale" id="stale-risk"></span>
-          </button>
-          <button class="firm-tab fairvalue" onclick="showFirm('fairvalue',this)">
-            Fair Value<span class="tab-stale" id="stale-fairvalue"></span>
-          </button>
-          <button class="firm-tab momentum" onclick="showFirm('momentum',this)">
-            Momentum<span class="tab-stale" id="stale-momentum"></span>
-          </button>
-          <button class="firm-tab scoring" onclick="showFirm('scoring',this)">
-            Scoring Engine<span class="tab-stale" id="stale-scoring"></span>
-          </button>
-        </div>
-      </div>
-
-      <div class="analysis-group">
-        <div class="group-label monthly"><span class="gl-dot"></span>Monthly â€” Updates first Sunday</div>
-        <div class="firm-tabs">
-          <button class="firm-tab competitive" onclick="showFirm('competitive',this)">
-            Competitive Edge<span class="tab-stale" id="stale-competitive"></span>
-          </button>
-          <button class="firm-tab longview" onclick="showFirm('longview',this)">
-            Long View<span class="tab-stale" id="stale-longview"></span>
-          </button>
-          <button class="firm-tab health" onclick="showFirm('health',this)">
-            Portfolio Health<span class="tab-stale" id="stale-health"></span>
-          </button>
-        </div>
-      </div>
-
     </div>
 
     <!-- Loading State -->
@@ -2409,7 +2414,7 @@ WOLF remains at critical lows<br><br>
         <div class="advisor-ts" id="risk-ts"></div>
       </div>
 
-      <div class="firm-content" id="firm-fairvalue">
+      <div class="firm-content active" id="firm-fairvalue">
         <div class="firm-header">
           <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:11px;">FV</div>
           <div>
@@ -2423,7 +2428,7 @@ WOLF remains at critical lows<br><br>
 
       
 
-      <div class="firm-content" id="firm-momentum">
+      <div class="firm-content active" id="firm-momentum">
         <div class="firm-header">
           <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--accent2);font-size:11px;">MO</div>
           <div>
@@ -2435,7 +2440,7 @@ WOLF remains at critical lows<br><br>
         <div class="advisor-ts" id="momentum-ts"></div>
       </div>
 
-      <div class="firm-content" id="firm-scoring">
+      <div class="firm-content active" id="firm-scoring">
         <div class="firm-header">
           <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:11px;">SE</div>
           <div>
@@ -3820,7 +3825,9 @@ function getActiveRouteType(){
   const typeMap = {
     signals:'daily', earnings:'daily', macro:'daily',
     risk:'weekly', fairvalue:'weekly', momentum:'weekly',
-    competitive:'monthly', longview:'monthly', health:'monthly'
+    competitive:'monthly', longview:'monthly', health:'monthly',
+    positions:'daily', opportunities:'daily', forces:'daily',
+    riskhealth:'weekly', longgame:'monthly'
   };
   return typeMap[firmId] || 'daily';
 }
@@ -4209,6 +4216,29 @@ const scoredData = await scoredRes.json();
   }
 }
 // â•â•â• END OPPORTUNITY ENGINE â•â•â•
+
+// ── 5-GROUP CONSOLIDATION: map each group to its member panels (shown stacked) ──
+const FIRM_GROUPS={
+  positions:['signals','momentum','fairvalue','scoring'],
+  riskhealth:['risk','health'],
+  opportunities:['opportunities'],
+  forces:['macro','earnings'],
+  longgame:['competitive','longview']
+};
+function showGroup(group,btn){
+  const members=FIRM_GROUPS[group]||[];
+  document.querySelectorAll('.firm-tab').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  document.querySelectorAll('.firm-content').forEach(c=>c.classList.remove('active'));
+  members.forEach(id=>{ const el=document.getElementById("firm-"+id); if(el)el.classList.add("active"); });
+  if(advisorLang==='en' && analysisData){
+    const typeMap={signals:'daily',earnings:'daily',macro:'daily',risk:'weekly',fairvalue:'weekly',momentum:'weekly',competitive:'monthly',longview:'monthly',health:'monthly',opportunities:'daily'};
+    const types=[...new Set(members.map(m=>typeMap[m]||"daily"))];
+    if(types.some(t=>!translationCache[t+'-'+advisorDate])){ setTimeout(()=>translateAnalysis(analysisData),50); }
+  }
+  setTimeout(()=>{ members.forEach(id=>{ const body=document.querySelector("#firm-"+id+" .firm-body"); if(body && !body.dataset.glossaryDone){ highlightGlossaryTerms(body); body.dataset.glossaryDone="1"; } }); },200);
+  if(members.includes('opportunities')) loadOpportunities(false);
+}
 
 function showFirm(id,btn){
   // If in EN mode, trigger translation for the new tab's route type
@@ -8785,6 +8815,34 @@ async function loadCalmData(){
   renderCalmZones();
 }
 
+// â”€â”€ CARD 1 (z-card-mine): mirror the #1 Zone 2 attention item onto the landing card â”€â”€
+function populateMineCard(r, ar){
+  const symEl=document.getElementById('z-card-mine-sym');
+  const pctEl=document.getElementById('z-card-mine-pct');
+  const whyEl=document.getElementById('z-card-mine-why');
+  if(!symEl) return;
+  if(!r){
+    symEl.textContent=ar?'\u0644\u0627 \u0634\u064a\u0621 \u0639\u0627\u062c\u0644':'Nothing urgent';
+    pctEl.textContent=''; pctEl.className='z-card-pct';
+    whyEl.textContent=ar?'\u0645\u062d\u0641\u0638\u062a\u0643 \u0647\u0627\u062f\u0626\u0629 \u0627\u0644\u064a\u0648\u0645.':'Your portfolio is calm today.';
+    whyEl.className='z-card-why'+(ar?'':' en');
+    return;
+  }
+  symEl.textContent=r.sym||'\u2014';
+  if(r.pct==null){ pctEl.textContent=''; pctEl.className='z-card-pct'; }
+  else{
+    const up=r.pct>=0;
+    pctEl.textContent=(up?'\u25b2':'\u25bc')+' '+Math.abs(r.pct).toFixed(1)+'%';
+    pctEl.className='z-card-pct '+(up?'up':'dn');
+  }
+  let why='';
+  if(r.kind==='event') why=ar?(r.txtAr||r.txtEn):(r.txtEn||r.txtAr);
+  else if(r.kind==='conc') why=ar?('\u062a\u0631\u0643\u064a\u0632 \u0639\u0627\u0644\u064d \u2014 \u062a\u062c\u0627\u0648\u0632 '+Math.round(r.weight)+'% \u0645\u0646 \u0645\u062d\u0641\u0638\u062a\u0643.'):('High concentration \u2014 crossed '+Math.round(r.weight)+'% of your portfolio.');
+  else why=ar?'\u062d\u0631\u0643\u0629 \u062a\u0633\u062a\u062d\u0642 \u0646\u0638\u0631\u0629 \u2014 \u0627\u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u0628\u0627\u0644\u0623\u0633\u0641\u0644.':'A move worth a look \u2014 detail below.';
+  whyEl.textContent=why||'';
+  whyEl.className='z-card-why'+(ar?'':' en');
+}
+
 // â”€â”€ ZONE 2 â€” RULE ENGINE (deterministic; LLM never decides) â”€â”€
 function evaluateZone2(){
   const el=document.getElementById('zone2'); if(!el) return;
@@ -8850,6 +8908,7 @@ function evaluateZone2(){
   const top=items.slice(0,3);
   items.slice(3).forEach(r=>fyi.push(r));
   renderTodayMoves(fyi);
+  try{ populateMineCard(top[0], ar); }catch(e){}
   // State A â€” earned calm
   if(!top.length){
     el.className='zone2 calm';
@@ -8976,8 +9035,8 @@ function calmOpenOpportunities(){
   try{
     showTab('advisor',document.querySelectorAll('.nav-tab')[2]);
     setTimeout(function(){
-      const b=document.querySelector(".firm-tab.opportunities");
-      if(b)b.click();
+      const b=document.querySelector(".firm-tab.grp[onclick*='opportunities']");
+      if(b)b.click(); else if(typeof showGroup==='function')showGroup('opportunities',null);
     },150);
   }catch(e){}
 }
