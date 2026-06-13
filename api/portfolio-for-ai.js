@@ -1151,7 +1151,7 @@ module.exports = async (req, res) => {
   fmpGet(`/ratios-ttm?symbol=${s}`),
   fmpGet(`/key-metrics-ttm?symbol=${s}`),
   fmpGet(`/price-target-consensus?symbol=${s}`),
-  fmpGet(`/grades-latest?symbols=${s}&limit=10`)
+  fmpGet(`/grades-consensus?symbol=${s}`)
 ]);
 
         const sma50  = latest(sma50D,  'sma');
@@ -1198,28 +1198,23 @@ module.exports = async (req, res) => {
       analyst_upside_pct = +up.toFixed(2);
     }
 
-    // 2) recent upgrade flag: any upgrade action in last 30 days
-    // 3) grade consensus tilt: share of bullish ratings among recent grades
+    // 2) grade_score: bullish tilt from analyst consensus (strongBuy..strongSell)
+    // 3) recent_upgrade: true when consensus is Buy/Strong Buy
     let recent_upgrade = false, grade_score = null;
-    const grades = Array.isArray(gradesD) ? gradesD : [];
-    if (grades.length > 0) {
-      const now = Date.now();
-      const BULLISH = /buy|outperform|overweight|strong buy|accumulate|positive/i;
-      const BEARISH = /sell|underperform|underweight|reduce|negative/i;
-      let bull = 0, total = 0;
-      grades.forEach(g => {
-        const ng = String(g.newGrade || g.gradeNew || '').trim();
-        const pg = String(g.previousGrade || g.gradePrev || '').trim();
-        const action = String(g.action || g.gradeAction || '').toLowerCase();
-        const gdate = g.date ? new Date(g.date).getTime() : null;
-        // recent upgrade: explicit 'upgrade' action OR bullish new grade in 30d
-        if (gdate && (now - gdate) <= 30*86400*1000) {
-          if (action.includes('upgrade') || (BULLISH.test(ng) && !BULLISH.test(pg))) recent_upgrade = true;
-        }
-        // consensus tilt across the returned grades
-        if (ng) { total++; if (BULLISH.test(ng)) bull++; else if (BEARISH.test(ng)) bull += 0; else bull += 0.5; }
-      });
-      if (total > 0) grade_score = +((bull / total) * 100).toFixed(1);  // 0..100, higher=more bullish
+    const gc = Array.isArray(gradesD) ? gradesD[0] : gradesD;
+    if (gc && typeof gc === 'object') {
+      const sb = +gc.strongBuy  || 0;
+      const b  = +gc.buy        || 0;
+      const h  = +gc.hold       || 0;
+      const sl = +gc.sell       || 0;
+      const ss = +gc.strongSell || 0;
+      const total = sb + b + h + sl + ss;
+      if (total > 0) {
+        const weighted = (sb*1 + b*0.75 + h*0.5 + sl*0.25 + ss*0) / total;
+        grade_score = +(weighted * 100).toFixed(1);   // 0..100, higher = more bullish
+      }
+      const cons = String(gc.consensus || '').toLowerCase();
+      recent_upgrade = (cons === 'strong buy' || cons === 'buy');
     }
         return [s, {
           symbol:    s,
