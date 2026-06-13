@@ -1518,11 +1518,12 @@ ${JSON.stringify(facts)}`;
       } catch (e) { /* no portfolio -> no fit; base scores still valid */ }
 
       // 4) apply personal fit + re-rank
-      const ranked = Object.values(scored.data || {}).map(s => {
+      const ranked = (scored.stocks || []).map(s => {
         const base = (s.base_score != null ? s.base_score : s.final_score);
-        const fit  = (s.sector && heldSectors[s.sector]) ? FIT : 0;
+        const stockSector = sectorOf[String(s.symbol).toUpperCase()] || s.sector || null;
+        const fit  = (stockSector && heldSectors[stockSector]) ? FIT : 0;
         return {
-          symbol: s.symbol, sector: s.sector, pattern: s.pattern,
+          symbol: s.symbol, sector: stockSector, pattern: s.pattern,
           base_score: base, fit_modifier: fit,
           user_score: +(base + fit).toFixed(1),
           in_portfolio: s.in_portfolio, data_completeness: s.data_completeness,
