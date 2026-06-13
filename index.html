@@ -3091,7 +3091,7 @@ function _briefGreeting(isAr){
   let g;
   if(isAr){ g = h<12?'صباح الخير':'مساء الخير'; }
   else { g = h<12?'Good morning':h<17?'Good afternoon':'Good evening'; }
-  const icon = h<12?'☀️':h<17?'🌤️':'🌙';;
+  const icon = h<12?'â˜€ï¸':h<17?'🌤ï¸':'🌙';
   let nick='';
   try{ nick=(localStorage.getItem('theisilabs_nick')||'').trim(); }catch(e){}
   const name = nick ? (isAr?(' يا '+nick):(', '+nick)) : '';
@@ -9042,9 +9042,34 @@ function calmOpenOpportunities(){
   }catch(e){}
 }
 
+
+// ── NARRATIVE BRIEFING — loads per-user narrative-{nick}-{date}.json from GitHub (graceful) ──
+async function loadNarrative(){
+  const bodyEl=document.getElementById('z-narr-body'); if(!bodyEl) return;
+  const ar=(typeof _calmAr==='function')?_calmAr():(localStorage.getItem('theisilabs_lang')!=='en');
+  let nick=''; try{ nick=(localStorage.getItem('theisilabs_nick')||'').trim().toLowerCase(); }catch(e){}
+  if(!nick) return;
+  const t=Date.now();
+  const dstr=o=>new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10);
+  async function grab(){
+    for(const o of [0,1,2]){
+      try{ const r=await fetch(`${_OP_GH}narrative-${nick}-${dstr(o)}.json?t=${t}`); if(r.ok) return await r.json(); }catch(e){}
+    }
+    return null;
+  }
+  try{
+    const d=await grab(); if(!d) return;
+    const text= ar ? (d.ar||d.text||d.narrative||'') : (d.en||d.text||d.narrative||'');
+    if(!text) return;
+    bodyEl.classList.remove('z-narr-skel');
+    bodyEl.classList.toggle('en', !ar);
+    bodyEl.textContent=text;
+  }catch(e){}
+}
 document.addEventListener('DOMContentLoaded',function(){
   loadCalmData();
   setTimeout(function(){renderZone3(false);},800);
+  setTimeout(function(){loadNarrative();},600);
 });
 // â•â•â• END CALM FIRST PAGE ENGINE â•â•â•
 
