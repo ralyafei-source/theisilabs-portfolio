@@ -126,10 +126,10 @@ function run(input){
     change5d:   percentileRank(col(function(d){ return distFromIdeal(d.change5d, CONFIG.CHANGE5D_IDEAL); })),
     vol_ratio:  percentileRank(col(function(d){ return isNum(d.volume_ratio_20d)? d.volume_ratio_20d : null; })),
     streak:     percentileRank(col(function(d){ return isNum(d.streak)? d.streak : null; })),
-    // L3
+    // L3 — analyst signals
     upside:     percentileRank(col(function(d){ return isNum(d.analyst_upside_pct)? d.analyst_upside_pct : null; })),
     grade:      percentileRank(col(function(d){ return isNum(d.grade_score)? d.grade_score : null; })),
-    surprise:   percentileRank(col(function(d){ return isNum(d.earnings_surprise)? d.earnings_surprise : null; })),
+    upgrade:    percentileRank(col(function(d){ return (d.recent_upgrade===true)?1:(d.recent_upgrade===false?0:null); })),
     // L4
     peg:        percentileRank(col(function(d){ return (isNum(d.peg)&&d.peg>0)? invert(d.peg) : null; })),
     pe:         percentileRank(col(function(d){ return (isNum(d.pe_ratio)&&d.pe_ratio>0)? invert(d.pe_ratio) : null; })),
@@ -148,7 +148,7 @@ function run(input){
   var LAYERS = {
     L1: ["rsi","dist_sma50","adx","trend","williams"],
     L2: ["change5d","vol_ratio","streak"],
-    L3: ["upside","grade","surprise"],
+    L3: ["upside","grade","upgrade"],
     L4: ["peg","pe","pb","fcf_yield","ev_ebitda"],
     L5: ["roic","npm","roe","de","int_cov","cur_ratio"]
   };
