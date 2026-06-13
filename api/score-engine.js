@@ -195,10 +195,11 @@ function run(input){
 
     // resolve sector from universe lookup (deep file lacks it)
     var stockSector = sectorOf[sym.toUpperCase()] || d.sector || null;
-    // fit modifier (Standard §4.2 step 7): + if sector overlaps portfolio
+    // FIT MODIFIER IS PERSONAL — not applied in the shared scored file.
+    // Each user's scenario applies +/- fit downstream using base_score + sector + their holdings.
+    // (Standard §4.2 step 7; multi-user design — see THEISI fit-modifier note.)
     var fit = 0;
-    if (stockSector && portSectors[stockSector]) fit = CONFIG.FIT_MODIFIER_MAX;
-    var final_score = (base===null)? null : Math.round((base + fit)*10)/10;
+    var final_score = (base===null)? null : Math.round(base*10)/10; // shared file: no personal fit
 
     // classification (build spec §4.2 step 8) — descriptive tags, not scoring
     var tags = classify(d);
