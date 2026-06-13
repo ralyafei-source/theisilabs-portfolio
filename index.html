@@ -5899,12 +5899,34 @@ function onSymSelect(val){
   updatePreview();
 }
 
+let _tickerLookupTimer = null;
 function onNewSym(val){
   selectedSym = val.toUpperCase();
   document.getElementById('tradeSymSelect').value='';
   const isNew = val && !stocks.find(s=>s.sym===val.toUpperCase());
-  document.getElementById('newStockFields').style.display = (isNew && tradeAction==='BUY') ? 'block' : 'none';
+  const show = (isNew && tradeAction==='BUY');
+  document.getElementById('newStockFields').style.display = show ? 'block' : 'none';
   updatePreview();
+  if (show && selectedSym.length >= 1) {
+    clearTimeout(_tickerLookupTimer);
+    _tickerLookupTimer = setTimeout(() => lookupTicker(selectedSym), 450);
+  }
+}
+
+async function lookupTicker(sym){
+  const nameEl = document.getElementById('newStockName');
+  const secEl  = document.getElementById('newStockSector');
+  if (!nameEl) return;
+  try {
+    const r = await fetch('https://theisilabs.vercel.app/api/portfolio-for-ai?mode=ticker-lookup&symbol=' + encodeURIComponent(sym));
+    if (r.ok) {
+      const d = await r.json();
+      if (selectedSym === sym) {
+        if (d.name && !nameEl.value) nameEl.value = d.name;
+        if (d.sector_code && secEl) secEl.value = d.sector_code;
+      }
+    }
+  } catch (e) {}
 }
 
 function updatePreview(){
