@@ -120,6 +120,7 @@ function run(input){
     rsi:        percentileRank(col(function(d){ return distFromIdeal(d.rsi, rsiIdeal(d)); })),
     dist_sma50: percentileRank(col(function(d){ return isNum(d.price)&&isNum(d.sma50)&&d.sma50!==0 ? distFromIdeal(((d.price-d.sma50)/d.sma50)*100, CONFIG.SMA50_DIST_IDEAL) : null; })),
     adx:        percentileRank(col(function(d){ return isNum(d.adx)? d.adx : null; })),
+    williams:   percentileRank(col(function(d){ return distFromIdeal(d.williams, -50); })),
     trend:      percentileRank(col(function(d){ return (d.above_sma50===true?1:0)+(d.above_sma200===true?1:0); })),
     // L2
     change5d:   percentileRank(col(function(d){ return distFromIdeal(d.change5d, CONFIG.CHANGE5D_IDEAL); })),
@@ -131,24 +132,25 @@ function run(input){
     surprise:   percentileRank(col(function(d){ return isNum(d.earnings_surprise)? d.earnings_surprise : null; })),
     // L4
     peg:        percentileRank(col(function(d){ return (isNum(d.peg)&&d.peg>0)? invert(d.peg) : null; })),
-    pe:         percentileRank(col(function(d){ return (isNum(d.pe)&&d.pe>0)? invert(d.pe) : null; })),
-    ps:         percentileRank(col(function(d){ return (isNum(d.ps)&&d.ps>0)? invert(d.ps) : null; })),
+    pe:         percentileRank(col(function(d){ return (isNum(d.pe_ratio)&&d.pe_ratio>0)? invert(d.pe_ratio) : null; })),
+    pb:         percentileRank(col(function(d){ return (isNum(d.pb)&&d.pb>0)? invert(d.pb) : null; })),
     fcf_yield:  percentileRank(col(function(d){ return isNum(d.fcf_yield)? d.fcf_yield : null; })),
-    earn_yield: percentileRank(col(function(d){ return isNum(d.earnings_yield)? d.earnings_yield : null; })),
+    ev_ebitda:  percentileRank(col(function(d){ return (isNum(d.ev_ebitda)&&d.ev_ebitda>0)? invert(d.ev_ebitda) : null; })),
     // L5
     roic:       percentileRank(col(function(d){ return isNum(d.roic)? d.roic : null; })),
-    npm:        percentileRank(col(function(d){ return isNum(d.net_profit_margin)? d.net_profit_margin : null; })),
+    npm:        percentileRank(col(function(d){ return isNum(d.net_margin)? d.net_margin : null; })),
+    roe:        percentileRank(col(function(d){ return isNum(d.roe)? d.roe : null; })),
     de:         percentileRank(col(function(d){ return (isNum(d.debt_to_equity)&&d.debt_to_equity>=0)? invert(d.debt_to_equity) : null; })),
     int_cov:    percentileRank(col(function(d){ return isNum(d.interest_coverage)? d.interest_coverage : null; })),
     cur_ratio:  percentileRank(col(function(d){ return isNum(d.current_ratio)? d.current_ratio : null; }))
   };
 
   var LAYERS = {
-    L1: ["rsi","dist_sma50","adx","trend"],
+    L1: ["rsi","dist_sma50","adx","trend","williams"],
     L2: ["change5d","vol_ratio","streak"],
     L3: ["upside","grade","surprise"],
-    L4: ["peg","pe","ps","fcf_yield","earn_yield"],
-    L5: ["roic","npm","de","int_cov","cur_ratio"]
+    L4: ["peg","pe","pb","fcf_yield","ev_ebitda"],
+    L5: ["roic","npm","roe","de","int_cov","cur_ratio"]
   };
 
   // ---- 2. per-stock layer scores + renormalized composite (Standard §4.2 steps 4–7) ----
@@ -192,7 +194,7 @@ function run(input){
       fit_modifier: fit,
       pattern: tags,
       in_portfolio: !!portSyms[sym.toUpperCase()],
-      data_completeness: Math.round(((20 - breakdown.na.length)/20)*100),
+      data_completeness: Math.round(((22 - breakdown.na.length)/22)*100),
       layers_used: used,
       score_breakdown: breakdown
     };
