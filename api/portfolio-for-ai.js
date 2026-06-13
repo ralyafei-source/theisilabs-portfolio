@@ -1475,7 +1475,33 @@ ${JSON.stringify(facts)}`;
     }
   }
   // ─────────────────────────────────────────────────────────────────────────
-
+// ── MODE: ticker-lookup — company name + sector for the Record Trade modal ──
+  if (req.query.mode === 'ticker-lookup') {
+    const sym = String(req.query.symbol || '').toUpperCase().replace(/[^A-Z0-9.\-]/g, '');
+    if (!sym) return res.status(400).json({ error: 'symbol required' });
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    try {
+      const prof = await fmpGet(`/profile?symbol=${sym}`);
+      const p = Array.isArray(prof) ? prof[0] : prof;
+      if (!p || !p.companyName) return res.status(404).json({ error: 'not found', symbol: sym });
+      const map = {
+        'Technology':'tech',
+        'Communication Services':'tech',
+        'Financial Services':'finance',
+        'Healthcare':'health',
+        'Energy':'energy',
+        'Consumer Cyclical':'consumer',
+        'Consumer Defensive':'consumer',
+        'Industrials':'industrial',
+        'Basic Materials':'industrial',
+        'Real Estate':'finance',
+        'Utilities':'energy'
+      };
+      let sector_code = map[p.sector] || 'other';
+      if (p.industry && /semiconductor/i.test(p.industry)) sector_code = 'semis';
+      return res.status(200).json({ symbol: sym, name: p.companyName, sector: p.sector || null, sector_code });
+    } catch (e) { return res.status(500).json({ error: e.message }); }
+  }
   // ── MODE: user-opportunities ─────────────────────────────────────────────
   // GET ?mode=user-opportunities&nickname=ahmed&date=YYYY-MM-DD
   // Reads the SHARED scored file (universal base scores), applies THIS user's
