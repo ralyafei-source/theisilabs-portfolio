@@ -1044,6 +1044,74 @@ module.exports = async (req, res) => {
   }
   // ─────────────────────────────────────────────────────────────────────────
 
+  // ── MODE: user-opportunities ─────────────────────────────────────────────
+  // GET ?mode=user-opportunities&nickname=ahmed&date=YYYY-MM-DD
+  // Reads the SHARED scored file (universal base scores), applies THIS user's
+  // personal fit (+5 for sectors they hold, sector resolved from universe),
+  // re-ranks, and returns their personalized list. No re-scoring.
+  if (req.query.mode === 'user-opportunities') {
+    try {
+      const date     = req.query.date || todayUAE();
+      const nickname = String(req.query.nickname || 'rashed').toLowerCase();
+      const FIT      = 5;
+
+      // 1) shared scored file (universal)
+      const scoredRes = await fetch(`https://raw.githubusercontent.com/${REPO}/main/data/market/scored-${date}.json?t=${Date.now()}`);
+      if (!scoredRes.ok) return res.status(404).json({ error: `scored-${date}.json not found` });
+      const scored = await scoredRes.json();
+
+      // 2) universe sector map (authoritative sector names)
+      const uniRes = await fetch(`https://raw.githubusercontent.com/${REPO}/main/data/market/universe-${date}.json?t=${Date.now()}`);
+      const uni = uniRes.ok ? await uniRes.json() : { universe: [] };
+      const sectorOf = {};
+      (uni.universe || []).forEach(u => { if (u && u.symbol && u.sector) sectorOf[String(u.symbol).toUpperCase()] = u.sector; });
+
+      // 3) this user's held sectors — derive from universe (ignore portfolio's own labels)
+      let heldSectors = {};
+      try {
+        const pfFile = (nickname === 'rashed')
+          ? 'data/portfolio.json'
+          : `data/portfolio-${nickname}.json`;
+        const pfRes = await fetch(`https://raw.githubusercontent.com/${REPO}/main/${pfFile}?t=${Date.now()}`);
+        if (pfRes.ok) {
+          const pf = await pfRes.json();
+          // Rashed: .holdings ; other users: .stocks ; both use .sym
+          const holdings = pf.holdings || pf.stocks || (Array.isArray(pf) ? pf : []);
+          holdings.forEach(h => {
+            const sym = String(h.sym || h.symbol || '').toUpperCase();
+            const sec = sectorOf[sym];
+            if (sec) heldSectors[sec] = true;
+          });
+        }
+      } catch (e) { /* no portfolio -> no fit; base scores still valid */ }
+
+      // 4) apply personal fit + re-rank
+      const ranked = Object.values(scored.data || {}).map(s => {
+        const base = (s.base_score != null ? s.base_score : s.final_score);
+        const fit  = (s.sector && heldSectors[s.sector]) ? FIT : 0;
+        return {
+          symbol: s.symbol, sector: s.sector, pattern: s.pattern,
+          base_score: base, fit_modifier: fit,
+          user_score: +(base + fit).toFixed(1),
+          in_portfolio: s.in_portfolio, data_completeness: s.data_completeness,
+          score_breakdown: s.score_breakdown
+        };
+      }).sort((a, b) => b.user_score - a.user_score || (a.symbol < b.symbol ? -1 : 1));
+      ranked.forEach((s, i) => { s.user_rank = i + 1; });
+
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return res.status(200).json({
+        date, nickname,
+        held_sectors: Object.keys(heldSectors),
+        count: ranked.length,
+        stocks: ranked
+      });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   // Auth check
   const authHeader = req.headers['authorization'] || '';
   const key = authHeader.replace('Bearer ', '').trim();
