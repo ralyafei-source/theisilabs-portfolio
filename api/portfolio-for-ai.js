@@ -1150,8 +1150,8 @@ module.exports = async (req, res) => {
   })(),
   fmpGet(`/ratios-ttm?symbol=${s}`),
   fmpGet(`/key-metrics-ttm?symbol=${s}`),
-  fmpGet(`/price-target-consensus?symbol=${s}`),          // NEW — analyst target
-  fmpGet(`/grades-latest?symbols=${s}&limit=10`)          // NEW — recent grades
+  fmpGet(`/price-target-consensus?symbol=${s}`),
+  fmpGet(`/grades-latest?symbols=${s}&limit=10`)
 ]);
 
         const sma50  = latest(sma50D,  'sma');
