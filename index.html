@@ -2420,7 +2420,7 @@ WOLF remains at critical lows<br><br>
 
     <!-- Analysis Content Panels -->
     <div id="advisorContent" style="display:none;">
-      <div id="scoringPopup" style="display:none;position:fixed;z-index:9999;width:340px;max-height:70vh;overflow-y:auto;overscroll-behavior:contain;background:var(--bg2);border:1px solid var(--border);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,0.5);padding:16px;pointer-events:auto;"></div>
+      <div id="scoringPopup" style="display:none;position:fixed;z-index:9999;width:380px;max-height:78vh;overflow-y:auto;overscroll-behavior:contain;background:var(--bg2);border:1px solid var(--border);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,0.5);padding:16px;pointer-events:auto;right:16px;top:72px;"></div>
 
 <!-- Bottom sheet for touch devices -->
 <div id="scoringSheet" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:var(--bg2);border-top:1px solid var(--border);border-radius:20px 20px 0 0;padding:0;max-height:75vh;overflow-y:auto;box-shadow:0 -8px 32px rgba(0,0,0,0.5);">
@@ -2670,7 +2670,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.23 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.24 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -7339,7 +7339,6 @@ function buildScoreCard(stock, type, idx) {
     style="background:var(--bg2);border:1px solid var(--border);border-top:3px solid ${borderTop};border-radius:12px;padding:14px;cursor:pointer;transition:border-color .15s;"
     onmouseenter="showScoringPopup(event,'${uid}')"
     onmouseleave="hideScoringPopup()"
-    onmousemove="moveScoringPopup(event)"
     onclick="if(_isTouchDevice()){showScoringSheet('${uid}')}else{lockScoringPopup(event,'${uid}')}">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
       <div>
@@ -7442,7 +7441,8 @@ function closeScoringSheet() {
   }, 300);
 }
 
-function moveScoringPopup(e) {
+function moveScoringPopup(e) { return; // popup is fixed, no longer follows mouse
+  void(0);//
   if (_isTouchDevice()) return;
   positionScoringPopup(e);
 }
@@ -7450,18 +7450,15 @@ function moveScoringPopup(e) {
 
   
 function positionScoringPopup(e) {
+  // Fixed position — right side, always visible, never follows mouse
   const popup = document.getElementById('scoringPopup');
   if (!popup || popup.style.display === 'none') return;
-  const pw = 350;
-  const ph = Math.min(500, window.innerHeight * 0.7);
-  popup.style.maxHeight = ph + 'px';
-  let left = e.clientX + 16;
-  let top = e.clientY - 40;
-  if (left + pw > window.innerWidth - 10) left = e.clientX - pw - 16;
-  if (top + ph > window.innerHeight - 10) top = window.innerHeight - ph - 10;
-  if (top < 10) top = 10;
-  popup.style.left = left + 'px';
-  popup.style.top = top + 'px';
+  popup.style.position = 'fixed';
+  popup.style.width = '380px';
+  popup.style.maxHeight = (window.innerHeight * 0.78) + 'px';
+  popup.style.right = '16px';
+  popup.style.left = 'auto';
+  popup.style.top = '72px';
 }
 
 function hideScoringPopup() {
@@ -7470,6 +7467,7 @@ function hideScoringPopup() {
   const popup = document.getElementById('scoringPopup');
   if (popup) popup.style.display = 'none';
 }
+
 function lockScoringPopup(e, uid) {
   e.stopPropagation();
   _popupLocked = true;
@@ -7477,11 +7475,12 @@ function lockScoringPopup(e, uid) {
   if (!popup) return;
   popup.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;position:sticky;top:0;background:var(--bg2);padding-bottom:8px;border-bottom:1px solid var(--border);z-index:1;">
-      <span style="font-size:11px;color:var(--accent);opacity:0.9;">âœ… الآن يمكنك التمرير â†•</span>
-      <button onclick="unlockScoringPopup()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">âœ•</button>
+      <span style="font-size:11px;color:var(--accent);opacity:0.9;">مرّر لقراءة كل الطبقات</span>
+      <button onclick="unlockScoringPopup()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;">✕</button>
     </div>` + buildScoringPopupHTML(uid);
   popup.style.overflowY = 'auto';
   popup.style.overscrollBehavior = 'contain';
+  positionScoringPopup(e);
   document.addEventListener('click', _outsideClickHandler);
 }
 
