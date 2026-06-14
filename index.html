@@ -2670,7 +2670,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.9 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.10 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -5766,27 +5766,31 @@ function colorizePercent(text){
   });
 }
 // ── Section 2: Stop-Loss parser (Option B: badge + action + reason) ──
+// ── Section 2: Stop-Loss — reads real pipe-table format from 255 ──
 function parseSection2Signals(text){
-  const rows=text.split('\n').filter(l=>l.trim()&&!/^\*{0,2}[٢2][\.\-\)]/.test(l.trim())).map(l=>l.replace(/\*\*/g,''));
-  if(!rows.length) return '';
+  const lines=text.split('\n');
+  const rows=[];
+  for(const line of lines){
+    if(!line.includes('|')) continue;
+    const cells=line.split('|').map(c=>c.replace(/<[^>]+>/g,'').replace(/\*\*/g,'').trim()).filter(c=>c);
+    if(cells.length<2) continue;
+    if(/^[-:]+$/.test(cells[0])||/الرمز|Symbol/.test(cells[0])) continue;
+    if(!/^[A-Z]{1,5}$/.test(cells[0])) continue;
+    rows.push({sym:cells[0],pct:cells[1]||'',rec:cells[2]||'',why:cells[3]||''});
+  }
+  if(!rows.length) return '<div style="font-size:12px;color:var(--text3);padding:8px;direction:rtl;">لا توجد تنبيهات stop-loss اليوم.</div>';
   let html='<div style="display:flex;flex-direction:column;gap:8px;white-space:normal;">';
-  rows.forEach(line=>{
-    const sep = line.includes('|') ? '|' : '\t';
-    const p = line.split(sep).map(s => s.replace(/\*\*/g,'').trim());
-    if(p.length<2) return;
-    // Skip header rows (sym should be a stock ticker: 1-5 uppercase Latin letters)
-    if(!/^[A-Z]{1,5}$/.test(p[0].replace(/\*\*/g,'').trim())) return;
-    const sym=p[0]||'', rec=p[1]||'', pct=p[2]||'', why=p.slice(3).join(' ').trim();
-    const pctVal=parseFloat(pct)||0;
-    const alpha=Math.min(0.35,0.12+Math.abs(pctVal)/400);
+  rows.forEach(r=>{
+    const pctVal=parseFloat(r.pct)||0;
+    const alpha=Math.min(0.3,0.1+Math.abs(pctVal)/400);
     html+=`<div style="display:flex;align-items:stretch;border-radius:10px;overflow:hidden;background:rgba(226,75,74,0.08);border:1px solid rgba(226,75,74,0.2);white-space:normal;">
       <div style="flex:0 0 64px;text-align:center;padding:12px 6px;background:rgba(226,75,74,${alpha});display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">
-        <div style="font-size:12px;font-weight:800;color:#fff;font-family:'IBM Plex Mono',monospace;">${sym}</div>
-        <div style="font-size:11px;font-weight:700;color:#E24B4A;margin-top:3px;">${pct}</div>
+        <div style="font-size:12px;font-weight:800;color:#fff;font-family:'IBM Plex Mono',monospace;">${r.sym}</div>
+        <div style="font-size:11px;font-weight:700;color:#E24B4A;margin-top:3px;">${r.pct}</div>
       </div>
-      <div style="flex:1;padding:10px 13px;text-align:right;direction:rtl;display:flex;flex-direction:column;justify-content:center;gap:4px;white-space:normal;">
-        <div style="font-size:12px;color:var(--text);font-weight:600;">${rec}</div>
-        ${why?`<div style="font-size:10.5px;color:var(--text3);line-height:1.6;">${colorizePercent(why)}</div>`:''}
+      <div style="flex:1;padding:10px 13px;text-align:right;direction:rtl;display:flex;flex-direction:column;justify-content:center;gap:4px;white-space:normal;min-width:0;">
+        <div style="font-size:12px;color:var(--text);font-weight:600;">${r.rec}</div>
+        ${r.why?`<div style="font-size:10.5px;color:var(--text3);line-height:1.6;">${colorizePercent(r.why)}</div>`:''}
       </div>
     </div>`;
   });
@@ -5795,69 +5799,40 @@ function parseSection2Signals(text){
 }
 
 // ── Section 3: Top Conviction parser (numbered reasons) ──
+// ── Section 3: Top Conviction — reads real emoji+heading format from 255 ──
 function parseSection3Signals(text){
-  const rawLines=text.split('\n')
-    .filter(l=>l.trim()&&!/^\*{0,2}[٣3][\.\-\)]/.test(l.trim()))
-    .map(l=>l.replace(/\*\*/g,'').replace(/[🎯⭐★✨🌟]/g,'').trim())
-    .filter(l=>l);
-  if(!rawLines.length) return '';
-
-  // Extract symbol — match leading uppercase letters even if followed by digits
-  let sym='', price='', target='', upside='';
-  const first=rawLines[0];
-  const symM=first.match(/^([A-Z]{2,5})/);
-  if(symM) sym=symM[1];
-  const prices=first.match(/\$[\d,]+\.?\d*/g)||[];
-  if(prices.length) price=prices[0];
-
-  // Find target/upside line
-  rawLines.forEach(l=>{
-    if(/الهدف|هدف/.test(l)){
-      const pm=l.match(/\$[\d,.]+/g)||[];
-      if(pm.length>=2) target=pm[pm.length-1];
-      else if(pm.length) target=pm[0];
-      const up=l.match(/\+[\d.]+%/);
-      if(up) upside=up[0];
-    }
-  });
-
-  // Extract reasons — pair "السبب N — label:" with the next content line
+  const clean=l=>l.replace(/[\u{1F300}-\u{1FAFF}]/gu,'').replace(/─+/g,'').replace(/\*\*/g,'').replace(/<[^>]+>/g,'').trim();
+  const lines=text.split('\n').map(clean).filter(l=>l&&!/^[٣3][\.\-\)]/.test(l));
+  let sym='',price='',target='',upside='';
   const reasons=[];
-  for(let i=0;i<rawLines.length;i++){
-    const l=rawLines[i];
-    if(/^السبب\s*[\u0661-\u0669١٢٣123]\s*[—\-]/.test(l)){
-      // Get the label part after the dash
-      const label=l.replace(/^السبب\s*[\u0661-\u0669١٢٣123]\s*[—\-]\s*/,'').replace(/:$/,'').trim();
-      // Get the content from the same line (if any after colon) or next line
+  for(let i=0;i<lines.length;i++){
+    const l=lines[i];
+    const symM=l.match(/^([A-Z]{2,5})\s*[\|،:]/);
+    if(symM&&!sym){sym=symM[1];const pm=l.match(/\$[\d,.]+/g)||[];if(pm.length)price=pm[0];}
+    if(l.includes('الهدف')&&l.includes('$')){
+      const pm=l.match(/\$[\d,.]+/g)||[];if(pm.length)target=pm[pm.length-1];
+      const up=l.match(/\+[\d.]+%/);if(up)upside=up[0];
+    }
+    const rm=l.match(/السبب\s*[\d١٢٣]\s*[—\-]\s*(.+?)[:：]?\s*$/);
+    if(rm){
+      const label=rm[1].trim();
       let content='';
-      const colonIdx=l.indexOf(':');
-      if(colonIdx>0&&colonIdx<l.length-1){
-        content=l.slice(colonIdx+1).trim();
-      }
-      if(!content&&i+1<rawLines.length&&!/^السبب/.test(rawLines[i+1])&&!/الهدف/.test(rawLines[i+1])){
-        content=rawLines[i+1]; i++; // consume next line
-      }
-      if(label||content) reasons.push({label,content});
+      if(i+1<lines.length&&!/السبب|الهدف/.test(lines[i+1])){content=lines[i+1];i++;}
+      reasons.push({label,content});
     }
   }
-
-  let html=`<div style="white-space:normal;">`;
-
-  // Header
-  html+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-    <div style="font-size:11px;color:var(--green);font-weight:700;">إقناع عالٍ</div>
-    <div style="font-size:22px;font-weight:800;color:var(--text);font-family:'IBM Plex Mono',monospace;">${sym||'—'}</div>
-  </div>`;
-
-  // Price/target row
+  if(!sym) return '<div style="font-size:12px;color:var(--text3);padding:8px;direction:rtl;">لا توجد صفقة إقناع اليوم.</div>';
+  let html=`<div style="white-space:normal;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div style="font-size:11px;color:var(--green);font-weight:700;">إقناع عالٍ</div>
+      <div style="font-size:22px;font-weight:800;color:var(--text);font-family:'IBM Plex Mono',monospace;">${sym}</div>
+    </div>`;
   if(price||target){
     html+=`<div style="background:rgba(29,158,117,0.1);border-radius:8px;padding:9px 12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;white-space:normal;">
       <div style="font-size:11px;color:var(--green);">${target}${upside?' ('+upside+')':''}</div>
       <div style="font-size:12px;color:var(--text2);font-family:'IBM Plex Mono',monospace;">${price}</div>
     </div>`;
   }
-
-  // Reasons
   if(reasons.length){
     html+=`<div style="display:flex;flex-direction:column;gap:8px;white-space:normal;">`;
     reasons.slice(0,3).forEach((r,i)=>{
@@ -5870,7 +5845,6 @@ function parseSection3Signals(text){
     });
     html+=`</div>`;
   }
-
   html+=`</div>`;
   return html;
 }
