@@ -2670,7 +2670,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.5 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.6 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -5713,6 +5713,16 @@ function renderAnalysis(data){
     let text = sectionsToUse[f] || (isAr ? 'لا توجد بيانات — سيتم التحديث في الموعد المجدول' : 'No data yet — updates on schedule');
 
     body.innerHTML = f==='signals' ? renderSignals(text) : f==='scoring' ? renderScoring(text) : mdToHtml(text);
+    // Force flex layout on signals top row (inline style beats all CSS)
+    if(f==='signals'){
+      const flexRow=body.querySelector('[data-signals-row]');
+      if(flexRow){
+        flexRow.style.cssText='display:flex!important;flex-direction:row!important;gap:14px;width:100%;white-space:normal;margin-bottom:20px;';
+        flexRow.querySelectorAll('[data-signals-col]').forEach(col=>{
+          col.style.cssText=col.style.cssText+'flex:1!important;min-width:0!important;white-space:normal!important;';
+        });
+      }
+    }
 body.style.direction = isAr ? 'rtl' : 'ltr';
 body.style.textAlign = isAr ? 'right' : 'left';
 body.className = 'firm-body' + (isAr ? '' : ' en');
@@ -6006,22 +6016,24 @@ function renderSignals(text){
   let html = '';
 
   // Sections 2 + 3 — two-column row at top using dedicated parsers
+  // Sections 2 + 3 — two-column row at top using dedicated parsers
   if(sec2 || sec3){
-    html += `<div style="display:flex;gap:14px;width:100%;white-space:normal;margin-bottom:20px;">`;
+    html += `<div data-signals-row style="display:flex;gap:14px;width:100%;white-space:normal;margin-bottom:20px;">`;
     if(sec3){
-      html += `<div style="flex:1;min-width:0;background:var(--bg2);border-radius:12px;padding:16px;border-top:2px solid var(--green);white-space:normal;">
-        <div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;text-align:right;">\u0623\u0639\u0644\u0649 \u0635\u0641\u0642\u0629 \u0625\u0642\u0646\u0627\u0639 \u0627\u0644\u064a\u0648\u0645</div>
+      html += `<div data-signals-col style="flex:1;min-width:0;background:var(--bg2);border-radius:12px;padding:16px;border-top:2px solid var(--green);white-space:normal;direction:rtl;">
+        <div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;text-align:right;">أعلى صفقة إقناع اليوم</div>
         ${parseSection3Signals(sec3)}
       </div>`;
     }
     if(sec2){
-      html += `<div style="flex:1;min-width:0;background:var(--bg2);border-radius:12px;padding:16px;border-top:2px solid var(--red);white-space:normal;">
-        <div style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;text-align:right;">Stop-Loss \u2014 \u0627\u0644\u0645\u0631\u0627\u0643\u0632 \u0627\u0644\u0623\u0633\u0648\u0623 \u0623\u062f\u0627\u0621\u064b</div>
+      html += `<div data-signals-col style="flex:1;min-width:0;background:var(--bg2);border-radius:12px;padding:16px;border-top:2px solid var(--red);white-space:normal;direction:rtl;">
+        <div style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;text-align:right;">Stop-Loss — المراكز الأسوأ أداءً</div>
         ${parseSection2Signals(sec2)}
       </div>`;
     }
     html += `</div>`;
   }
+
 
 
   // Section 1 (main positions table) collapsed into a details/summary for cleaner scroll
