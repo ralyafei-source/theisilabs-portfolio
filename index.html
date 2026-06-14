@@ -9090,10 +9090,13 @@ async function loadNarrative(){
   }
   try{
     const d=await grab(); if(!d) return;
-    const text= ar ? (d.ar||d.text||d.narrative||'') : (d.en||d.text||d.narrative||'');
+    const text= ar ? (d.ar||d.text||d.narrative||d.en||'') : (d.en||d.text||d.narrative||d.ar||'');
     if(!text) return;
+    // Decide direction from the CONTENT, not the UI mode (narrative is usually Arabic-only)
+    const isArabicText=/[\u0600-\u06FF]/.test(text);
     bodyEl.classList.remove('z-narr-skel');
-    bodyEl.classList.toggle('en', !ar);
+    bodyEl.classList.toggle('en', !isArabicText);
+    bodyEl.style.direction = isArabicText ? 'rtl' : 'ltr';
     bodyEl.textContent=text;
   }catch(e){}
 }
