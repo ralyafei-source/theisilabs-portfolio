@@ -7317,6 +7317,8 @@ const GLOSSARY = {
   "اختراق":          {en:"Breakout. A stock near its 52-week high, consolidating with high volume and a confirming trend — positioned to break to new highs.", ar:"اختراق. سهم قريب من قمة 52 أسبوعاً، يتجمّع بحجم تداول عالٍ واتجاه مؤكّد — مهيأ للاختراق نحو قمم جديدة."},
   "نمو":             {en:"Quality Growth. Revenue growth >15% with a chart that confirms it (Minervini/CAN SLIM). Business quality and technical confirmation together.", ar:"نمو. نمو إيرادات أكثر من 15% مع رسم بياني يؤكّده (مينرفيني/CAN SLIM). جودة الشركة والتأكيد الفني معاً."},
   "دوران":           {en:"Rotation. A sector not in your portfolio that is moving up (sector +3%+ over the past month). Catches money rotating into a sector you do not yet hold.", ar:"دوران. قطاع لا تملكه في محفظتك ويتحرك صعوداً (القطاع +3% أو أكثر خلال الشهر). يلتقط دوران السيولة نحو قطاع لا تملكه بعد."},
+  "انتعاش":          {en:"Recovery. A stock down sharply from its highs but showing early reversal signals — a possible turnaround.", ar:"انتعاش. سهم هبط بقوة عن قممه لكنه يظهر إشارات انعكاس مبكرة — احتمال انعطاف."},
+  "محايد":           {en:"Neutral. No strong directional bias — the signals do not clearly lean bullish or bearish.", ar:"محايد. لا يوجد ميل اتجاهي واضح — الإشارات لا تميل بوضوح للصعود أو الهبوط."},
 };
 
 // â•â•â• TOOLTIP ENGINE â•â•â•
@@ -7444,14 +7446,15 @@ function highlightGlossaryTerms(container) {
 
   // Build one combined regex from dictionary only (fast, no dynamic detection)
   // Whole-word matching: reject a hit if it's flanked by an Arabic or Latin letter/digit,
-  // so "زخم" does NOT match inside "الزخم", and "RSI" does not match inside "RSItest".
+  // so "زخم" does NOT match inside a longer word. Allow an optional Arabic article "ال"
+  // prefix so "الزخم" / "الانتعاش" also match (and get tagged including the prefix).
   let allRe;
   try {
     const LETTER = '[A-Za-z0-9\\u0600-\\u06FF\\u0750-\\u077F]'; // Latin + Arabic letters/digits
     const alt = terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-    allRe = new RegExp('(?<!'+LETTER+')(?:'+alt+')(?!'+LETTER+')', 'g');
+    // (?:ال)? optional Arabic article before the term
+    allRe = new RegExp('(?<!'+LETTER+')(?:\\u0627\\u0644)?(?:'+alt+')(?!'+LETTER+')', 'g');
   } catch(e) {
-    // Fallback for engines without lookbehind: plain alternation
     try { allRe = new RegExp(terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g'); }
     catch(e2){ return; }
   }
@@ -7484,19 +7487,24 @@ function highlightGlossaryTerms(container) {
 
     while ((match = allRe.exec(text)) !== null) {
       const term = match[0];
+      // Display keeps the matched text (incl. any "ال"); lookup strips "ال" if that yields a real key.
+      let lookup = term;
+      if (!GLOSSARY[lookup] && lookup.indexOf('\u0627\u0644') === 0 && GLOSSARY[lookup.slice(2)]) {
+        lookup = lookup.slice(2);
+      }
       if (match.index > lastIndex) {
         fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
       }
       const span = document.createElement('span');
       span.className = 'glossary-term';
-      span.setAttribute('data-term', term);
+      span.setAttribute('data-term', lookup);
       span.textContent = term;
-      span.addEventListener('mouseenter', (e) => glossaryTooltip.show(term, e.clientX, e.clientY));
-      span.addEventListener('mousemove',  (e) => glossaryTooltip.show(term, e.clientX, e.clientY));
+      span.addEventListener('mouseenter', (e) => glossaryTooltip.show(lookup, e.clientX, e.clientY));
+      span.addEventListener('mousemove',  (e) => glossaryTooltip.show(lookup, e.clientX, e.clientY));
       span.addEventListener('mouseleave', ()  => glossaryTooltip.hide());
       span.addEventListener('click', (e) => {
         e.stopPropagation();
-        glossaryTooltip.show(term, e.clientX||0, e.clientY||0);
+        glossaryTooltip.show(lookup, e.clientX||0, e.clientY||0);
       });
       fragment.appendChild(span);
       lastIndex = match.index + term.length;
