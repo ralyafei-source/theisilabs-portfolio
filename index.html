@@ -2670,7 +2670,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.19 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.20 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -5783,6 +5783,37 @@ if(f==='scoring'){
     }
   });
 }
+// ── Sortable positions table ──────────────────────────────────────────
+const _posTblSort = {}; // tblId → {key, dir}
+function sortPosTable(tblId, key, dir){
+  const tbl = document.getElementById(tblId);
+  if(!tbl) return;
+  const prev = _posTblSort[tblId]||{};
+  // Toggle direction if same key clicked again
+  if(prev.key===key) dir = prev.dir===1?-1:1;
+  else dir = key==='sym'?1:-1; // default: sym A→Z, numbers high→low
+  _posTblSort[tblId] = {key, dir};
+  const tbody = tbl.querySelector('tbody');
+  if(!tbody) return;
+  const rows = [...tbody.querySelectorAll('tr')];
+  rows.sort((a,b)=>{
+    if(key==='sym'){
+      const av=a.dataset.sym||'', bv=b.dataset.sym||'';
+      return dir*(av<bv?-1:av>bv?1:0);
+    }
+    const av=parseFloat(a.dataset[key])||0;
+    const bv=parseFloat(b.dataset[key])||0;
+    return dir*(bv-av);
+  });
+  rows.forEach(r=>tbody.appendChild(r));
+  // Update header indicators
+  tbl.querySelectorAll('th[onclick]').forEach(th=>{
+    const thKey = (th.getAttribute('onclick')||'').match(/'([a-z]+)',0/)?.[1]||'';
+    const txt = th.textContent.replace(/[▲▼↕]/g,'').trim();
+    th.textContent = thKey===key ? txt+(dir===1?' ▲':' ▼') : txt+' ↕';
+  });
+}
+
 function colorizePercent(text){
   return text.replace(/([+\-]?\d+\.?\d*%)/g,(match)=>{
     const val=parseFloat(match);
@@ -6105,22 +6136,24 @@ function renderSignals(text, weeklyData){
     const tableLines = sec1.split('\n').filter(l=>l.trim().startsWith('|')&&l.trim().endsWith('|'));
     let sec1Html = '';
     if(tableLines.length > 1){
+      const tblId = 'pos-tbl-'+Date.now();
       sec1Html = `<div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;border-top:2px solid var(--rose);">
         <div style="overflow-y:auto;max-height:340px;">
-          <table style="width:100%;border-collapse:collapse;font-size:11.5px;white-space:normal;table-layout:fixed;">
+          <table id="${tblId}" style="width:100%;border-collapse:collapse;font-size:11.5px;white-space:normal;table-layout:fixed;">
             <thead style="position:sticky;top:0;background:var(--bg3);z-index:1;">
               <tr>
-                <th style="padding:7px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);width:55px;">الرمز</th>
+                <th onclick="sortPosTable('${tblId}','sym',0)" style="padding:7px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);width:55px;cursor:pointer;" title="ترتيب">الرمز ↕</th>
                 <th style="padding:7px 8px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);width:68px;">التوصية</th>
-                <th style="padding:7px 8px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);width:58px;">مركزك</th>
+                <th onclick="sortPosTable('${tblId}','pos',0)" style="padding:7px 8px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);width:58px;cursor:pointer;" title="ترتيب">مركزك ↕</th>
                 <th style="padding:7px 8px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);width:90px;">هدف 12ش</th>
-                ${hasWeekly?`<th style="padding:7px 6px;text-align:center;font-size:10px;font-weight:700;color:#00c8ff;border-bottom:0.5px solid var(--border);width:48px;">DCF↕</th>
-                <th style="padding:7px 6px;text-align:center;font-size:10px;font-weight:700;color:var(--gold);border-bottom:0.5px solid var(--border);width:36px;">RSI</th>
+                ${hasWeekly?`<th onclick="sortPosTable('${tblId}','dcf',0)" style="padding:7px 6px;text-align:center;font-size:10px;font-weight:700;color:#00c8ff;border-bottom:0.5px solid var(--border);width:48px;cursor:pointer;" title="ترتيب">DCF↕</th>
+                <th onclick="sortPosTable('${tblId}','rsi',0)" style="padding:7px 6px;text-align:center;font-size:10px;font-weight:700;color:var(--gold);border-bottom:0.5px solid var(--border);width:36px;cursor:pointer;" title="ترتيب">RSI ↕</th>
                 <th style="padding:7px 6px;text-align:center;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);width:72px;">الاتجاه</th>`:''}
                 <th style="padding:7px 8px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);">السبب</th>
               </tr>
             </thead>
             <tbody>`;
+
 
       tableLines.forEach((line, i)=>{
         const cells = line.split('|').map(c=>c.replace(/<[^>]+>/g,'').replace(/\*\*/g,'').trim()).filter(c=>c);
@@ -6141,21 +6174,34 @@ function renderSignals(text, weeklyData){
         const dcfTxt = fv.dcfPct!=null?(fv.dcfPct>0?'+':'')+fv.dcfPct+'%':'—';
         const dcfColor = fv.dcfPct>0?'var(--green)':fv.dcfPct<0?'var(--red)':'var(--text3)';
 
+
         // RSI — number only, colored by zone
         const rsiVal = mom.rsiVal||null;
         const rsiColor = rsiVal>70?'var(--red)':rsiVal<35?'var(--green)':rsiVal>60?'var(--gold)':'var(--text2)';
         const rsiTxt = rsiVal?rsiVal:'—';
 
-        // Trend — plain Arabic words instead of jargon badges
+        // Trend — plain Arabic
         const trendTxt = mom.cross==='golden'?'تقاطع صاعد':mom.cross==='death'?'تقاطع هابط':'محايد';
         const trendColor = mom.cross==='golden'?'var(--green)':mom.cross==='death'?'var(--red)':'var(--text3)';
 
-        // السبب — use momentum الإشارة if available (more explanatory), else daily signals reason
-        // الإشارة is stored in mom.signal from the parser
-        const fullReason = (mom.signal && mom.signal.length>10) ? mom.signal : why;
-        const whyShort = fullReason.length>90 ? fullReason.slice(0,87)+'…' : fullReason;
+        // السبب — clean up daily reason, replace + with · and translate jargon
+        function cleanReason(r){
+          return r
+            .replace(/Golden Cross/g,'تقاطع صاعد')
+            .replace(/Death Cross/g,'تقاطع هابط')
+            .replace(/\s*\+\s*/g,' · ')
+            .replace(/<[^>]+>/g,'')
+            .replace(/\*\*/g,'')
+            .trim();
+        }
+        const momSignal = (mom.signal||'').replace(/<[^>]+>/g,'').replace(/\*\*/g,'').trim();
+        const fullReason = (momSignal&&momSignal.length>10) ? momSignal : cleanReason(why);
+        const whyShort = fullReason.length>120 ? fullReason.slice(0,117)+'…' : fullReason;
+        // numeric sort keys
+        const posNum = parseFloat((pos||'0').replace(/[^0-9.\-]/g,''))||0;
+        const dcfNum = fv.dcfPct||0;
 
-        sec1Html += `<tr style="border-bottom:0.5px solid var(--border);">
+        sec1Html += `<tr data-sym="${sym}" data-pos="${posNum}" data-dcf="${dcfNum}" data-rsi="${rsiVal||0}" style="border-bottom:0.5px solid var(--border);">
           <td style="padding:7px 10px;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sym}</td>
           <td style="padding:7px 8px;font-size:11px;font-weight:600;color:${recColor};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${rec}</td>
           <td style="padding:7px 8px;font-size:11px;color:${posColor};white-space:nowrap;">${pos}</td>
@@ -6165,6 +6211,7 @@ function renderSignals(text, weeklyData){
           <td style="padding:7px 6px;text-align:center;font-size:10px;color:${trendColor};white-space:nowrap;">${trendTxt}</td>`:''}
           <td style="padding:7px 8px;font-size:11px;color:var(--text2);direction:rtl;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${fullReason}">${whyShort}</td>
         </tr>`;
+
       });
 
       sec1Html += `</tbody></table></div></div>`;
