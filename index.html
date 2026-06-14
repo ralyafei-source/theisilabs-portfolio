@@ -2670,7 +2670,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.26 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.27 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -4553,14 +4553,44 @@ function showGroup(group,btn){
   const members=FIRM_GROUPS[group]||[];
   document.querySelectorAll('.firm-tab').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
-  document.querySelectorAll('.firm-content').forEach(c=>c.classList.remove('active'));
-  members.forEach(id=>{ const el=document.getElementById("firm-"+id); if(el)el.classList.add("active"); });
+  document.querySelectorAll('.firm-content').forEach(c=>{
+    c.classList.remove('active');
+    c.style.cssText=''; // reset any inline layout
+  });
+
+  // Groups with 2 panels that benefit from side-by-side layout
+  const sideBySide = ['longgame'];
+  // Groups where panels should be inside <details> collapsibles
+  const collapsible = ['forces'];
+
+  if(sideBySide.includes(group) && members.length===2){
+    // Wrap both panels in a flex row
+    const wrapper = document.getElementById('_sidebyside_'+group) || (() => {
+      const w = document.createElement('div');
+      w.id = '_sidebyside_'+group;
+      w.style.cssText = 'display:flex;gap:14px;align-items:flex-start;';
+      const el0 = document.getElementById('firm-'+members[0]);
+      el0?.parentNode?.insertBefore(w, el0);
+      members.forEach(id => { const el = document.getElementById('firm-'+id); if(el) w.appendChild(el); });
+      return w;
+    })();
+    members.forEach(id=>{
+      const el = document.getElementById('firm-'+id);
+      if(el){
+        el.classList.add('active');
+        el.style.cssText = 'flex:1;min-width:0;';
+      }
+    });
+  } else {
+    members.forEach(id=>{ const el=document.getElementById('firm-'+id); if(el)el.classList.add('active'); });
+  }
+
   if(advisorLang==='en' && analysisData){
     const typeMap={signals:'daily',earnings:'daily',macro:'daily',risk:'weekly',fairvalue:'weekly',momentum:'weekly',competitive:'monthly',longview:'monthly',health:'monthly',opportunities:'daily'};
-    const types=[...new Set(members.map(m=>typeMap[m]||"daily"))];
+    const types=[...new Set(members.map(m=>typeMap[m]||'daily'))];
     if(types.some(t=>!translationCache[t+'-'+advisorDate])){ setTimeout(()=>translateAnalysis(analysisData),50); }
   }
-  setTimeout(()=>{ members.forEach(id=>{ const body=document.querySelector("#firm-"+id+" .firm-body"); if(body && !body.dataset.glossaryDone){ highlightGlossaryTerms(body); body.dataset.glossaryDone="1"; } }); },200);
+  setTimeout(()=>{ members.forEach(id=>{ const body=document.querySelector('#firm-'+id+' .firm-body'); if(body && !body.dataset.glossaryDone){ highlightGlossaryTerms(body); body.dataset.glossaryDone='1'; } }); },200);
   if(members.includes('opportunities')) loadOpportunities(false);
 }
 
@@ -5723,7 +5753,6 @@ function renderAnalysis(data){
     if(f==='signals'){
       renderedHtml = renderSignals(text, parsed.weekly);
     } else if(f==='fairvalue'){
-      // fairvalue is redundant with momentum — show same integrated view
       const wp = parsed.weekly;
       renderedHtml = renderWeeklyIntegrated(
         wp.scoring||'', wp.fairvalue||'', wp.momentum||'', wp.risk||''
@@ -5737,6 +5766,15 @@ function renderAnalysis(data){
       renderedHtml = renderScoring(text);
     } else if(f==='health'){
       renderedHtml = renderHealthSummary(text);
+    } else if(f==='risk'){
+      // Risk already styled in renderWeeklyIntegrated — collapse raw text
+      renderedHtml = renderCollapsibleSections(text, 'رادار المخاطر الأسبوعي');
+    } else if(f==='earnings'){
+      renderedHtml = renderCollapsibleSections(text, 'الأرباح والأحداث القادمة');
+    } else if(f==='competitive'){
+      renderedHtml = renderCollapsibleSections(text, 'الميزة التنافسية');
+    } else if(f==='longview'){
+      renderedHtml = renderCollapsibleSections(text, 'النظرة البعيدة — أفضل المراكز حتى 2036');
     } else {
       renderedHtml = mdToHtml(text);
     }
@@ -5819,6 +5857,51 @@ function sortPosTable(tblId, key, dir){
     const txt = th.textContent.replace(/[▲▼↕]/g,'').trim();
     th.textContent = thKey===key ? txt+(dir===1?' ▲':' ▼') : txt+' ↕';
   });
+}
+
+// ── Collapsible section renderer — splits on numbered headers, collapses each ──
+function renderCollapsibleSections(text, title){
+  if(!text||text.length<50) return `<div style="padding:20px;text-align:center;color:var(--text3);">لا توجد بيانات بعد</div>`;
+
+  // Split on major section markers: numbered headers, === dividers, <b>N. ...</b>
+  const headerRe = /(?=\n(?:<b>)?\d+[\.\)]\s|(?:\n={3,}|\n─{3,}|\n━{3,}))/g;
+  const rawSections = text.split(headerRe).filter(s=>s.trim().length>20);
+
+  // If no clear sections found, just wrap everything in one details
+  if(rawSections.length<=1){
+    return `<details open style="white-space:normal;">
+      <summary style="cursor:pointer;list-style:none;font-size:12px;font-weight:700;color:var(--text);padding:10px 12px;background:var(--bg2);border-radius:10px;display:flex;justify-content:space-between;">
+        <span>${title}</span><span style="color:var(--text3);font-size:11px;">▾</span>
+      </summary>
+      <div style="padding-top:10px;">${mdToHtml(text)}</div>
+    </details>`;
+  }
+
+  let html = `<div style="display:flex;flex-direction:column;gap:8px;white-space:normal;">`;
+  rawSections.forEach((section, i)=>{
+    const lines = section.trim().split('\n').filter(l=>l.trim());
+    if(!lines.length) return;
+    // Extract header from first line
+    const hdrRaw = lines[0].replace(/<[^>]+>/g,'').replace(/\*\*/g,'').replace(/^[\d\.\)\s]+/,'').trim();
+    const hdr = hdrRaw.slice(0,60) || `القسم ${i+1}`;
+    // Preview: first non-header content line
+    const preview = lines.slice(1).find(l=>l.trim().length>15)?.replace(/<[^>]+>/g,'').replace(/\*\*/g,'').trim().slice(0,80) || '';
+    // First section open, rest closed
+    const isOpen = i===0;
+
+    html += `<details ${isOpen?'open':''} style="background:var(--bg2);border-radius:10px;overflow:hidden;">
+      <summary style="cursor:pointer;list-style:none;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;border-right:3px solid var(--border);">
+        <div style="direction:rtl;text-align:right;flex:1;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);">${hdr}</div>
+          ${preview?`<div style="font-size:10.5px;color:var(--text3);margin-top:2px;">${preview}…</div>`:''}
+        </div>
+        <span style="color:var(--text3);font-size:12px;flex-shrink:0;">▾</span>
+      </summary>
+      <div style="padding:0 14px 14px;direction:rtl;">${mdToHtml(section)}</div>
+    </details>`;
+  });
+  html += `</div>`;
+  return html;
 }
 
 // ── Portfolio Health — compact scored summary with expandable detail ──
