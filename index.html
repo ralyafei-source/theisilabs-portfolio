@@ -2921,6 +2921,16 @@ function showTab(name,el){
     console.error('Tab error in '+name+':',e);
     document.getElementById('tab-'+name).innerHTML='<div style="padding:40px;color:var(--red);font-family:monospace;">Error: '+e.message+'</div>';
   }
+  // Apply glossary highlighting across the whole active tab (runs after render settles)
+  if(typeof sweepGlossary==='function') setTimeout(function(){ sweepGlossary('tab-'+name); }, 350);
+}
+
+// â”€â”€ DASHBOARD-WIDE GLOSSARY SWEEP â€” highlight terms anywhere, regardless of location â”€â”€
+function sweepGlossary(rootId){
+  if(typeof highlightGlossaryTerms!=='function') return;
+  const root=rootId?document.getElementById(rootId):document.body;
+  if(!root) return;
+  try{ highlightGlossaryTerms(root); }catch(e){}
 }
  
 // ===== PORTFOLIO =====
@@ -7301,6 +7311,12 @@ const GLOSSARY = {
   "Data Center":      {en:"Facility housing servers for cloud and AI computing. Key revenue driver for NVDA AMZN MSFT GOOGL.", ar:"مركز بيانات يضم خوادم الحوسبة السحابية والذكاء الاصطناعي."},
   "Semiconductor":    {en:"Computer chips. Foundation of all digital technology. Heavy portfolio exposure via NVDA MU CRDO SMH.", ar:"رقائق الحاسوب. أساس كل التقنية الرقمية. تعرض كبير في محفظتك."},
   "Cybersecurity":    {en:"Protection of systems from cyber attacks. Growing sector. PANW and CRWD are your main positions.", ar:"حماية الأنظمة من الهجمات الإلكترونية. PANW وCRWD هما مركزاك الرئيسيان."},
+  "زخم":            {en:"Momentum. Strong confirmed directional move (trend + ADX strength). The stock is moving and the trend is confirmed.", ar:"زخم. تحرك اتجاهي قوي مؤكّد (اتجاه + قوة ADX). السهم يتحرك والاتجاه مؤكّد."},
+  "قيمة":            {en:"Deep Value. A large, liquid stock trading cheap on fundamentals (P/E below sector, market cap > $10B). The Buffett/Graham discount approach.", ar:"قيمة. سهم كبير وسائل يتداول رخيصاً على الأساسيات (P/E أقل من القطاع، قيمة سوقية > 10 مليار). نهج بافت/غراهام للشراء بخصم."},
+  "تعافي":           {en:"Recovery. A stock down 30%+ from its 52-week high but showing early reversal signals. The down-badly-but-turning setup.", ar:"تعافي. سهم هبط 30% أو أكثر عن قمة 52 أسبوعاً لكنه يظهر إشارات انعكاس مبكرة. وضع "هبط بقوة لكن قد ينعكس"."},
+  "اختراق":          {en:"Breakout. A stock near its 52-week high, consolidating with high volume and a confirming trend — positioned to break to new highs.", ar:"اختراق. سهم قريب من قمة 52 أسبوعاً، يتجمّع بحجم تداول عالٍ واتجاه مؤكّد — مهيأ للاختراق نحو قمم جديدة."},
+  "نمو":             {en:"Quality Growth. Revenue growth >15% with a chart that confirms it (Minervini/CAN SLIM). Business quality and technical confirmation together.", ar:"نمو. نمو إيرادات أكثر من 15% مع رسم بياني يؤكّده (مينرفيني/CAN SLIM). جودة الشركة والتأكيد الفني معاً."},
+  "دوران":           {en:"Rotation. A sector not in your portfolio that is moving up (sector +3%+ over the past month). Catches money rotating into a sector you do not yet hold.", ar:"دوران. قطاع لا تملكه في محفظتك ويتحرك صعوداً (القطاع +3% أو أكثر خلال الشهر). يلتقط دوران السيولة نحو قطاع لا تملكه بعد."},
 };
 
 // â•â•â• TOOLTIP ENGINE â•â•â•
@@ -9050,9 +9066,11 @@ async function loadNarrative(){
   let nick=''; try{ nick=(localStorage.getItem('theisilabs_nick')||'').trim().toLowerCase(); }catch(e){}
   if(!nick) return;
   const t=Date.now();
+  // UAE date (UTC+4): shift epoch by +4h, then read the UTC calendar date of that shifted instant
   const dstr=o=>new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10);
+  // Try today, plus 1 day forward and 2 days back, to absorb any timezone drift between Make and the browser
   async function grab(){
-    for(const o of [0,1,2]){
+    for(const o of [0,-1,1,2]){
       try{ const r=await fetch(`${_OP_GH}narrative-${nick}-${dstr(o)}.json?t=${t}`); if(r.ok) return await r.json(); }catch(e){}
     }
     return null;
@@ -9070,6 +9088,7 @@ document.addEventListener('DOMContentLoaded',function(){
   loadCalmData();
   setTimeout(function(){renderZone3(false);},800);
   setTimeout(function(){loadNarrative();},600);
+  setTimeout(function(){ if(typeof sweepGlossary==='function') sweepGlossary('tab-dashboard'); },1400);
 });
 // â•â•â• END CALM FIRST PAGE ENGINE â•â•â•
 
