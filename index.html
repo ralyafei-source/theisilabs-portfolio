@@ -2395,6 +2395,7 @@ WOLF remains at critical lows<br><br>
         <button class="firm-tab grp" onclick="showGroup('opportunities',this)" data-en="Opportunities" data-ar="فرص السوق">فرص السوق</button>
         <button class="firm-tab grp" onclick="showGroup('forces',this)" data-en="Market forces" data-ar="قوى السوق">قوى السوق</button>
         <button class="firm-tab grp" onclick="showGroup('longgame',this)" data-en="The long game" data-ar="النظرة البعيدة">النظرة البعيدة</button>
+        <button class="firm-tab grp" onclick="showGroup('backtest',this)" data-en="Accuracy test" data-ar="اختبار الدقة" style="color:var(--gold);">🔬 اختبار الدقة</button>
       </div>
     </div>
 
@@ -2554,7 +2555,17 @@ WOLF remains at critical lows<br><br>
         <div class="advisor-ts" id="health-ts"></div>
       </div>
 
-      <!-- ===== OPPORTUNITIES PANEL ===== -->
+      <!-- ===== BACKTEST PANEL ===== -->
+      <div class="firm-content" id="firm-backtest">
+        <div class="firm-header">
+          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--gold);color:var(--gold);font-size:11px;">🔬</div>
+          <div>
+            <div class="firm-title" style="color:var(--gold);">اختبار دقة النظام</div>
+            <div class="firm-subtitle">أدخل تاريخاً في الماضي — يشغّل النظام بالبيانات الفعلية لذلك اليوم ثم يقارن بما حدث فعلاً</div>
+          </div>
+        </div>
+        <div id="backtest-body"></div>
+      </div>
       <div class="firm-content" id="firm-opportunities">
         <div class="firm-header">
           <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--rose);font-size:11px;">فرص</div>
@@ -2670,7 +2681,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.27 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.28 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -4547,7 +4558,8 @@ const FIRM_GROUPS={
   riskhealth:['risk','health'],
   opportunities:['opportunities'],
   forces:['macro','earnings'],
-  longgame:['competitive','longview']
+  longgame:['competitive','longview'],
+  backtest:['backtest']
 };
 function showGroup(group,btn){
   const members=FIRM_GROUPS[group]||[];
@@ -5981,6 +5993,405 @@ function renderHealthSummary(text){
   });
   html += `</div></div>`;
   return html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BACKTEST ENGINE — tests system accuracy on historical dates
+// Uses /api/historical-snapshot to reconstruct past data,
+// then calls Claude with the same prompt, then compares to actual
+// ═══════════════════════════════════════════════════════════════
+
+let _btState = {running:false, date:null, snapshotText:null, claudeOutput:null, actualPrices:null};
+
+function initBacktestPanel(){
+  const body = document.getElementById('backtest-body');
+  if(!body) return;
+  if(body.dataset.init) return;
+  body.dataset.init = '1';
+
+  // Default date: 6 months ago
+  const sixMonthsAgo = new Date(Date.now() - 180*86400000).toISOString().slice(0,10);
+
+  body.innerHTML = `
+    <div style="max-width:760px;margin:0 auto;direction:rtl;">
+
+      <!-- Explainer -->
+      <div style="background:rgba(186,117,23,0.08);border:1px solid rgba(186,117,23,0.25);border-radius:12px;padding:14px 16px;margin-bottom:20px;">
+        <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px;">كيف يعمل هذا الاختبار؟</div>
+        <div style="font-size:11.5px;color:var(--text2);line-height:1.7;">
+          ١. اختر أي تاريخ في الماضي (مثل 11/11/2025)<br>
+          ٢. يجلب النظام أسعار وبيانات تقنية محفظتك كما كانت في ذلك اليوم بالضبط<br>
+          ٣. يُشغّل تحليل كلود بنفس البيانات التاريخية (كأنه ذلك اليوم)<br>
+          ٤. يقارن التوصيات بما حدث فعلاً من ذلك اليوم حتى اليوم<br>
+          ٥. يُظهر الدقة ويقترح كيفية ضبط المعاملات للحصول على نتائج أفضل
+        </div>
+      </div>
+
+      <!-- Date picker -->
+      <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;">تاريخ الاختبار</div>
+          <input type="date" id="bt-date-input"
+            value="${sixMonthsAgo}"
+            min="2020-01-01" max="${new Date(Date.now()-7*86400000).toISOString().slice(0,10)}"
+            style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;font-family:'IBM Plex Mono',monospace;">
+        </div>
+        <div style="flex:0 0 auto;">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">اختر تاريخاً مهماً</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button onclick="document.getElementById('bt-date-input').value='2025-01-27'" style="font-size:10px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;" title="يوم إعلان DeepSeek">DeepSeek ↙</button>
+            <button onclick="document.getElementById('bt-date-input').value='2025-04-03'" style="font-size:10px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;" title="بداية أزمة الرسوم الجمركية">رسوم ترامب ↙</button>
+            <button onclick="document.getElementById('bt-date-input').value='2025-08-05'" style="font-size:10px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;" title="انهيار حمل التجارة الياباني">Carry Trade ↙</button>
+            <button onclick="document.getElementById('bt-date-input').value='2024-10-01'" style="font-size:10px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;">أكتوبر 2024</button>
+          </div>
+        </div>
+        <button onclick="runBacktest()" id="bt-run-btn"
+          style="padding:10px 24px;background:var(--gold);color:#000;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;white-space:nowrap;">
+          ▶ ابدأ الاختبار
+        </button>
+      </div>
+
+      <!-- Progress / Results area -->
+      <div id="bt-results"></div>
+    </div>
+  `;
+}
+
+async function runBacktest(){
+  if(_btState.running) return;
+  const dateInput = document.getElementById('bt-date-input');
+  const date = dateInput?.value;
+  if(!date){ showBtError('اختر تاريخاً أولاً'); return; }
+
+  const btn = document.getElementById('bt-run-btn');
+  btn.disabled = true; btn.textContent = '⏳ جاري التحميل…';
+  _btState = {running:true, date};
+
+  const res = document.getElementById('bt-results');
+  res.innerHTML = '';
+
+  try {
+    // ── Step 1: Fetch historical snapshot ──────────────────────────────────
+    showBtStep(res, 1, 4, `جلب بيانات المحفظة ليوم ${date}…`, 'جاري حساب RSI وSMA50 وSMA200 وMACD من بيانات OHLC التاريخية');
+    const snapResp = await fetch(`/api/historical-snapshot?date=${date}&format=json`, {
+      headers:{'Authorization':'Bearer theisilabs2026'}
+    });
+    if(!snapResp.ok){
+      const err = await snapResp.json().catch(()=>({}));
+      throw new Error(err.error || `HTTP ${snapResp.status} from historical-snapshot API`);
+    }
+    const snap = await snapResp.json();
+    _btState.snapshotText = snap.portfolioText;
+    _btState.holdings = snap.holdings;
+
+    // ── Step 2: Run Claude analysis on historical data ─────────────────────
+    showBtStep(res, 2, 4, 'تشغيل محرك التحليل بالبيانات التاريخية…', 'نفس البرومت المستخدم في Make.com · يستغرق 30-60 ثانية');
+    const claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4000,
+        system: `أنت محلل مالي متخصص تُحلل محفظة رشيد الاستثمارية.
+هذا اختبار رجعي — البيانات المقدمة هي كما كانت في ${date}.
+قدم تحليلاً صادقاً كأنك لا تعرف ما حدث بعد ذلك التاريخ.
+
+لكل سهم في المحفظة، قدم:
+- التوصية: تراكم | احتفظ | مراقبة | بيع (اختر واحدة فقط)
+- الدرجة من 10 (بناءً على 5 طبقات: مركزك 15% · التقييم 30% · التقني 20% · الأساسيات 25% · الخارجي 10%)
+- السبب الرئيسي في جملة واحدة
+
+استخدم هذا الصيغة بالضبط لكل سهم:
+[[SYM|توصية|X/10|السبب]]
+
+مثال:
+[[NVDA|تراكم|8.2|Golden Cross + DCF +31% + ROE 111%]]
+[[PLTR|مراقبة|5.5|RSI 78 تشبع + P/E مرتفع جداً]]
+
+بعد قائمة الأسهم، أضف:
+[[TOP_BUY|SYM|السبب الكامل]]
+[[TOP_RISK|SYM|السبب الكامل]]`,
+        messages:[{
+          role:'user',
+          content: `هذه بيانات المحفظة كما كانت في ${date}:\n\n${_btState.snapshotText}`
+        }]
+      })
+    });
+
+    const claudeData = await claudeResp.json();
+    const claudeText = claudeData?.content?.[0]?.text || '';
+    if(!claudeText) throw new Error('Claude لم يُعد استجابة. تحقق من الاتصال.');
+    _btState.claudeOutput = claudeText;
+
+    // ── Step 3: Fetch actual prices today for comparison ───────────────────
+    showBtStep(res, 3, 4, 'جلب الأسعار الحالية للمقارنة…', `ما حدث فعلاً من ${date} حتى اليوم`);
+    const syms = (snap.holdings || []).map(h=>h.sym);
+    const today = new Date().toISOString().slice(0,10);
+    const priceResp = await fetch(`/api/portfolio-for-ai?nickname=rashed`, {
+      headers:{'Authorization':'Bearer theisilabs2026'}
+    });
+    const priceText = await priceResp.text();
+    // Parse current prices from the portfolio text
+    const actualPrices = {};
+    syms.forEach(sym=>{
+      const m = priceText.match(new RegExp(`${sym}\\s+[\\d.]+\\s+sh\\s+cost \\$[\\d.]+\\s+now \\$(\\d+\\.\\d+)`));
+      if(m) actualPrices[sym] = parseFloat(m[1]);
+    });
+    _btState.actualPrices = actualPrices;
+
+    // ── Step 4: Parse and score ────────────────────────────────────────────
+    showBtStep(res, 4, 4, 'تحليل النتائج ومقارنة التوصيات…', 'حساب الدقة ومعدل الفرق عن السوق');
+
+    const parsed = parseBtOutput(claudeText);
+    const scored = scoreBtResults(parsed, snap.holdings, actualPrices, date);
+
+    // Show results
+    renderBtResults(res, date, scored, claudeText, snap);
+
+  } catch(err){
+    showBtError(err.message, res);
+  } finally {
+    _btState.running = false;
+    if(btn){ btn.disabled = false; btn.textContent = '▶ ابدأ الاختبار'; }
+  }
+}
+
+function showBtStep(container, step, total, title, sub){
+  container.innerHTML = `
+    <div style="padding:20px;background:var(--bg2);border-radius:12px;border:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);">${title}</div>
+        <div style="font-size:11px;color:var(--text3);">الخطوة ${step} من ${total}</div>
+      </div>
+      <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:10px;">
+        <div style="height:100%;width:${step/total*100}%;background:var(--gold);border-radius:2px;transition:width .5s;"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);">${sub}</div>
+    </div>`;
+}
+
+function showBtError(msg, container){
+  const el = container || document.getElementById('bt-results');
+  if(el) el.innerHTML = `
+    <div style="background:rgba(226,75,74,0.1);border:1px solid var(--red);border-radius:10px;padding:16px;color:var(--red);direction:rtl;">
+      <div style="font-weight:700;margin-bottom:4px;">خطأ</div>
+      <div style="font-size:12px;">${msg}</div>
+      ${msg.includes('historical-snapshot') ? `<div style="font-size:11px;color:var(--text3);margin-top:8px;">تلميح: تأكد من أن ملف api/historical-snapshot.js موجود في GitHub وأن Vercel أعاد النشر.</div>` : ''}
+    </div>`;
+}
+
+function parseBtOutput(text){
+  const recs = [];
+  const recRe = /\[\[([A-Z]{1,5})\|([^\|]+)\|([\d.]+)\/10\|([^\]]+)\]\]/g;
+  let m;
+  while((m=recRe.exec(text))!==null){
+    recs.push({sym:m[1], rec:m[2].trim(), score:parseFloat(m[3]), reason:m[4].trim()});
+  }
+  const topBuyM = text.match(/\[\[TOP_BUY\|([A-Z]+)\|([^\]]+)\]\]/);
+  const topRiskM= text.match(/\[\[TOP_RISK\|([A-Z]+)\|([^\]]+)\]\]/);
+  return {
+    recs,
+    topBuy:  topBuyM  ? {sym:topBuyM[1],  reason:topBuyM[2].trim()}  : null,
+    topRisk: topRiskM ? {sym:topRiskM[1], reason:topRiskM[2].trim()} : null
+  };
+}
+
+function scoreBtResults(parsed, holdings, actualPrices, date){
+  const holdingMap = {};
+  (holdings||[]).forEach(h=>{ holdingMap[h.sym]=h; });
+
+  const today = new Date().toISOString().slice(0,10);
+  const daysSince = Math.round((new Date(today) - new Date(date)) / 86400000);
+
+  const rows = parsed.recs.map(r=>{
+    const h = holdingMap[r.sym];
+    const priceOnDate  = h?.priceOnDate;
+    const priceToday   = actualPrices[r.sym];
+
+    if(!priceOnDate || !priceToday){
+      return {...r, status:'no_price', pctChange:null, verdict:null};
+    }
+
+    const pctChange = (priceToday - priceOnDate) / priceOnDate * 100;
+    const cls = r.rec.includes('تراكم')?'buy':r.rec.includes('بيع')||r.rec.includes('مراجعة عاجلة')?'sell':'hold';
+
+    // Score: buy → should have gone up, sell → should have gone down
+    let verdict;
+    if(cls==='buy'){
+      verdict = pctChange > 5 ? 'win' : pctChange < -5 ? 'lose' : 'draw';
+    } else if(cls==='sell'){
+      verdict = pctChange < -5 ? 'win' : pctChange > 5 ? 'lose' : 'draw';
+    } else {
+      verdict = Math.abs(pctChange) < 15 ? 'draw' : pctChange>0 ? 'miss_bull' : 'miss_bear';
+    }
+
+    return {...r, cls, priceOnDate, priceToday, pctChange, verdict, status:'done'};
+  });
+
+  // Summary stats
+  const done  = rows.filter(r=>r.status==='done');
+  const buys  = done.filter(r=>r.cls==='buy');
+  const sells = done.filter(r=>r.cls==='sell');
+  const wins  = [...buys,...sells].filter(r=>r.verdict==='win').length;
+  const total = buys.length + sells.length;
+  const hitRate = total>0 ? (wins/total*100) : null;
+  const avgChange = done.length>0 ? done.reduce((a,r)=>a+(r.pctChange||0),0)/done.length : 0;
+
+  return {rows, hitRate, wins, total, avgChange, daysSince, parsed};
+}
+
+function renderBtResults(container, date, scored, rawText, snap){
+  const {rows, hitRate, wins, total, avgChange, daysSince, parsed} = scored;
+  const today = new Date().toISOString().slice(0,10);
+
+  const hitColor = hitRate>=60?'var(--green)':hitRate>=40?'var(--gold)':'var(--red)';
+  const chgColor = avgChange>=0?'var(--green)':'var(--red)';
+
+  container.innerHTML = `
+    <div style="direction:rtl;">
+
+      <!-- Summary bar -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">
+        <div style="background:var(--bg2);border-radius:10px;padding:14px 16px;border-top:2px solid ${hitColor};">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">دقة التوصيات</div>
+          <div style="font-size:24px;font-weight:800;color:${hitColor};font-family:'IBM Plex Mono',monospace;">${hitRate!=null?hitRate.toFixed(0)+'%':'—'}</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:3px;">${wins} صحيحة من ${total} توصية فعّالة</div>
+        </div>
+        <div style="background:var(--bg2);border-radius:10px;padding:14px 16px;border-top:2px solid var(--accent);">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">متوسط التغيير</div>
+          <div style="font-size:24px;font-weight:800;color:${chgColor};font-family:'IBM Plex Mono',monospace;">${avgChange>=0?'+':''}${avgChange.toFixed(1)}%</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:3px;">عبر جميع المراكز</div>
+        </div>
+        <div style="background:var(--bg2);border-radius:10px;padding:14px 16px;border-top:2px solid var(--border);">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">الفترة الزمنية</div>
+          <div style="font-size:24px;font-weight:800;color:var(--text);font-family:'IBM Plex Mono',monospace;">${daysSince}</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:3px;">يوم من ${date} إلى ${today}</div>
+        </div>
+        <div style="background:var(--bg2);border-radius:10px;padding:14px 16px;border-top:2px solid var(--border);">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">توصيات تحليلها</div>
+          <div style="font-size:24px;font-weight:800;color:var(--text);font-family:'IBM Plex Mono',monospace;">${rows.length}</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:3px;">${rows.filter(r=>r.status==='done').length} مع بيانات أسعار</div>
+        </div>
+      </div>
+
+      <!-- Top buy / top risk -->
+      ${parsed.topBuy||parsed.topRisk ? `
+      <div style="display:flex;gap:12px;margin-bottom:20px;">
+        ${parsed.topBuy?`
+        <div style="flex:1;background:rgba(29,158,117,0.08);border:1px solid rgba(29,158,117,0.25);border-radius:10px;padding:12px 14px;">
+          <div style="font-size:10px;color:var(--green);font-weight:700;margin-bottom:6px;">أفضل فرصة تراكم في ${date}</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px;">${parsed.topBuy.sym}</div>
+          <div style="font-size:11px;color:var(--text2);">${parsed.topBuy.reason}</div>
+          ${(() => { const r=rows.find(x=>x.sym===parsed.topBuy.sym&&x.status==='done'); return r?`<div style="margin-top:8px;font-size:12px;font-weight:700;color:${r.pctChange>=0?'var(--green)':'var(--red)'};">النتيجة الفعلية: ${r.pctChange>=0?'+':''}${r.pctChange.toFixed(1)}%</div>`:''; })()}
+        </div>`:'' }
+        ${parsed.topRisk?`
+        <div style="flex:1;background:rgba(226,75,74,0.08);border:1px solid rgba(226,75,74,0.25);border-radius:10px;padding:12px 14px;">
+          <div style="font-size:10px;color:var(--red);font-weight:700;margin-bottom:6px;">أعلى خطر في ${date}</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px;">${parsed.topRisk.sym}</div>
+          <div style="font-size:11px;color:var(--text2);">${parsed.topRisk.reason}</div>
+          ${(() => { const r=rows.find(x=>x.sym===parsed.topRisk.sym&&x.status==='done'); return r?`<div style="margin-top:8px;font-size:12px;font-weight:700;color:${r.pctChange>=0?'var(--green)':'var(--red)'};">النتيجة الفعلية: ${r.pctChange>=0?'+':''}${r.pctChange.toFixed(1)}%</div>`:''; })()}
+        </div>`:'' }
+      </div>`:'' }
+
+      <!-- Results table -->
+      <div style="background:var(--bg2);border-radius:12px;overflow:hidden;border:1px solid var(--border);margin-bottom:20px;">
+        <div style="display:grid;grid-template-columns:56px 80px 50px 88px 88px 80px 1fr 80px;padding:9px 14px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;">
+          <div>الرمز</div><div>التوصية</div><div>الدرجة</div><div>السعر في ${date}</div><div>السعر اليوم</div><div>التغيير</div><div>السبب</div><div>الحكم</div>
+        </div>
+        <div style="max-height:440px;overflow-y:auto;">
+          ${rows.map(r=>{
+            if(r.status!=='done') return `
+              <div style="display:grid;grid-template-columns:56px 80px 50px 88px 88px 80px 1fr 80px;padding:8px 14px;border-bottom:0.5px solid var(--border);opacity:0.4;font-size:11.5px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-weight:700;">${r.sym}</div>
+                <div style="font-size:10px;color:var(--text3);">${r.rec.slice(0,10)}</div>
+                <div style="color:var(--text3);">${r.score}/10</div>
+                <div style="color:var(--text3);">—</div><div style="color:var(--text3);">—</div>
+                <div style="color:var(--text3);">—</div>
+                <div style="font-size:10px;color:var(--text3);">${r.reason.slice(0,50)}</div>
+                <div style="color:var(--text3);font-size:10px;">لا توجد أسعار</div>
+              </div>`;
+            const recColor = r.cls==='buy'?'var(--green)':r.cls==='sell'?'var(--red)':'var(--gold)';
+            const chgColor = r.pctChange>=0?'var(--green)':'var(--red)';
+            const v = r.verdict==='win'?{l:'✓ صحيح',c:'var(--green)',bg:'rgba(29,158,117,0.1)'}
+                    : r.verdict==='lose'?{l:'✗ خاطئ',c:'var(--red)',bg:'rgba(226,75,74,0.1)'}
+                    : {l:'~ محايد',c:'var(--gold)',bg:'rgba(186,117,23,0.1)'};
+            return `
+              <div style="display:grid;grid-template-columns:56px 80px 50px 88px 88px 80px 1fr 80px;padding:8px 14px;border-bottom:0.5px solid var(--border);font-size:11.5px;align-items:center;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);">${r.sym}</div>
+                <div style="font-size:10px;font-weight:700;color:${recColor};">${r.rec.slice(0,12)}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;color:var(--text2);">${r.score}/10</div>
+                <div style="font-family:'IBM Plex Mono',monospace;color:var(--text2);">$${r.priceOnDate.toFixed(2)}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;color:var(--text2);">$${r.priceToday.toFixed(2)}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:${chgColor};">${r.pctChange>=0?'+':''}${r.pctChange.toFixed(1)}%</div>
+                <div style="font-size:10.5px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.reason}">${r.reason}</div>
+                <div><span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;background:${v.bg};color:${v.c};">${v.l}</span></div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- Tuning suggestions -->
+      ${renderBtTuning(rows)}
+
+      <!-- Raw Claude output (collapsible) -->
+      <details style="background:var(--bg2);border-radius:10px;border:1px solid var(--border);overflow:hidden;">
+        <summary style="padding:12px 16px;cursor:pointer;list-style:none;font-size:12px;font-weight:700;color:var(--text3);display:flex;justify-content:space-between;">
+          <span>📄 التحليل الكامل الذي أنتجه النظام في ${date}</span><span>▾</span>
+        </summary>
+        <div style="padding:14px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--text2);white-space:pre-wrap;direction:rtl;line-height:1.7;max-height:400px;overflow-y:auto;font-family:'IBM Plex Mono',monospace;">${rawText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+      </details>
+    </div>`;
+}
+
+function renderBtTuning(rows){
+  const done = rows.filter(r=>r.status==='done'&&r.cls!=='hold');
+  if(done.length<3) return '';
+
+  // Which signals correlated with correct calls?
+  const buysWon  = done.filter(r=>r.cls==='buy'  &&r.verdict==='win');
+  const buysLost = done.filter(r=>r.cls==='buy'  &&r.verdict==='lose');
+  const sellsWon = done.filter(r=>r.cls==='sell' &&r.verdict==='win');
+
+  const avgScoreWon  = buysWon.length  ? (buysWon.reduce((a,r)=>a+r.score,0)/buysWon.length).toFixed(1)  : '—';
+  const avgScoreLost = buysLost.length ? (buysLost.reduce((a,r)=>a+r.score,0)/buysLost.length).toFixed(1) : '—';
+  const hitRate = done.length>0 ? (done.filter(r=>r.verdict==='win').length/done.length*100).toFixed(0) : 0;
+
+  const suggestions = [];
+  if(parseFloat(avgScoreWon)>0 && parseFloat(avgScoreLost)>0){
+    const gap = parseFloat(avgScoreWon) - parseFloat(avgScoreLost);
+    if(gap<1.5) suggestions.push('عتبة "تراكم" منخفضة جداً — النظام يوصي بشراء أسهم بدرجات 6+ لكن النتائج لا تدعم ذلك. اقتراح: رفع عتبة التوصية "تراكم" إلى 7.5+');
+    if(gap>2.5) suggestions.push('النظام يميّز بشكل ممتاز — الأسهم الحاصلة على درجات عالية تؤدي بشكل أفضل بفارق واضح. الأوزان الحالية تعمل جيداً.');
+  }
+  if(buysLost.length>buysWon.length) suggestions.push('معدل الإصابة في "تراكم" أقل من 50% — النظام متفائل أكثر من اللازم. اقتراح: زيادة وزن طبقة التقني من 20% إلى 25% لتقليل توصيات الشراء في الأسواق الهابطة.');
+  if(sellsWon.length>0) suggestions.push('إشارات البيع والمراقبة كانت صحيحة — النظام يُحدد المخاطر بشكل جيد. وزن طبقة المخاطر مناسب.');
+  if(suggestions.length===0) suggestions.push('البيانات غير كافية لاقتراحات ضبط محددة — جرب تاريخاً مختلفاً أو قارن نتائج عدة تواريخ.');
+
+  return `
+    <div style="background:rgba(0,200,255,0.05);border:1px solid rgba(0,200,255,0.2);border-radius:12px;padding:16px;margin-bottom:16px;direction:rtl;">
+      <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:12px;">🎯 اقتراحات ضبط النظام بناءً على هذا الاختبار</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div style="background:var(--bg3);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">متوسط درجة التوصيات الصحيحة</div>
+          <div style="font-size:18px;font-weight:800;color:var(--green);font-family:'IBM Plex Mono',monospace;">${avgScoreWon}/10</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">متوسط درجة التوصيات الخاطئة</div>
+          <div style="font-size:18px;font-weight:800;color:var(--red);font-family:'IBM Plex Mono',monospace;">${avgScoreLost}/10</div>
+        </div>
+      </div>
+      ${suggestions.map(s=>`
+        <div style="display:flex;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border);">
+          <div style="color:var(--accent);flex-shrink:0;">→</div>
+          <div style="font-size:11.5px;color:var(--text2);">${s}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ─── Hook backtest into showGroup ─────────────────────────────────────────────
+const _origShowGroup = showGroup;
+function showGroup(group, btn){
+  _origShowGroup(group, btn);
+  if(group==='backtest') initBacktestPanel();
 }
 
 function colorizePercent(text){
