@@ -2670,7 +2670,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.16 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.17 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -5721,7 +5721,7 @@ function renderAnalysis(data){
     // that shows scoring cards + merged table + risk + momentum all in one view
     let renderedHtml;
     if(f==='signals'){
-      renderedHtml = renderSignals(text);
+      renderedHtml = renderSignals(text, parsed.weekly);
     } else if(f==='fairvalue' || f==='momentum'){
       // Render integrated weekly view using all weekly sections
       const wp = parsed.weekly;
@@ -5875,7 +5875,15 @@ function parseSection3Signals(text){
   return html;
 }
 
-function renderSignals(text){
+function renderSignals(text, weeklyData){
+  // weeklyData = { fairvalue: parsed sections, momentum: parsed sections }
+  // Build lookup maps from weekly data for merging into the positions table
+  const fvMap = {}; // sym -> {dcfPct, target, rec}
+  const momMap = {}; // sym -> {cross, rsiLabel}
+  if(weeklyData){
+    _parseWeeklyFairValueRows(weeklyData.fairvalue||'').forEach(r=>{ fvMap[r.sym]=r; });
+    _parseWeeklyMomentumRows(weeklyData.momentum||'').forEach(r=>{ momMap[r.sym]=r; });
+  }
   // Strip corrupted characters
   text = text
     .replace(/[\u25C6\u25C7\u2666\u2665\u2663\u2660\uFFFD\u25A0\u25A1]/g, '')
@@ -6088,16 +6096,79 @@ function renderSignals(text){
 
 
 
-  // Section 1 (main positions table) collapsed into a details/summary for cleaner scroll
+  // Section 1 (main positions table) — scrollable, with optional weekly DCF+momentum columns
   if(sec1){
     const hdr1 = (sec1.match(/^[^\n]+/) || [''])[0].replace(/^[١٢٣123][\.\-\)]\s*/,'').trim();
-    html += `<details style="margin-bottom:8px;white-space:normal;" open>
-      <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;background:var(--bg2);border-radius:10px;list-style:none;display:flex;justify-content:space-between;align-items:center;white-space:normal;">
-        <span>${hdr1||'جدول المراكز الرئيسية'}</span>
-        <span style="color:var(--text3);font-size:10px;">▾ عرض / إخفاء</span>
-      </summary>
-      <div style="margin-top:8px;white-space:normal;">${renderBlock(sec1)}</div>
-    </details>`;
+    const hasWeekly = Object.keys(fvMap).length > 0 || Object.keys(momMap).length > 0;
+
+    // Parse section 1 table rows
+    const tableLines = sec1.split('\n').filter(l=>l.trim().startsWith('|')&&l.trim().endsWith('|'));
+    let sec1Html = '';
+    if(tableLines.length > 1){
+      // Build merged scrollable table
+      sec1Html = `<div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;border-top:2px solid var(--rose);">
+        <div style="overflow-y:auto;max-height:340px;">
+          <table style="width:100%;border-collapse:collapse;font-size:11.5px;white-space:normal;">
+            <thead style="position:sticky;top:0;background:var(--bg3);z-index:1;">
+              <tr>
+                <th style="padding:7px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);">الرمز</th>
+                <th style="padding:7px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);">التوصية</th>
+                <th style="padding:7px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);">مركزك</th>
+                <th style="padding:7px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);">هدف 12ش</th>
+                ${hasWeekly?`<th style="padding:7px 8px;text-align:center;font-size:10px;font-weight:700;color:#00c8ff;border-bottom:0.5px solid var(--border);">DCF↕</th>
+                <th style="padding:7px 8px;text-align:center;font-size:10px;font-weight:700;color:var(--gold);border-bottom:0.5px solid var(--border);">زخم</th>`:''}
+              </tr>
+            </thead>
+            <tbody>`;
+
+      tableLines.forEach((line, i)=>{
+        const cells = line.split('|').map(c=>c.replace(/<[^>]+>/g,'').replace(/\*\*/g,'').trim()).filter(c=>c);
+        if(!cells.length || cells.every(c=>/^[-:]+$/.test(c)) || i===0) return;
+        const sym = cells[0]||'';
+        if(!/^[A-Z]{1,5}$/.test(sym)) return;
+        const rec = cells[1]||'';
+        const pos = cells[3]||''; // مركزك الحالي
+        const tgt = cells[4]||''; // توقعات المحللين
+        const recColor = rec.includes('تراكم')?'var(--green)':rec.includes('بيع')||rec.includes('مراجعة')?'var(--red)':'var(--gold)';
+        const posColor = pos.startsWith('+')?'var(--green)':pos.startsWith('-')?'var(--red)':'var(--text2)';
+        const tgtColor = tgt.includes('+')?'var(--green)':tgt.includes('-')?'var(--red)':'var(--text2)';
+
+        // Weekly enrichment
+        const fv = fvMap[sym]||{};
+        const mom = momMap[sym]||{};
+        const dcfTxt = fv.dcfPct!=null?(fv.dcfPct>0?'+':'')+fv.dcfPct+'%':'—';
+        const dcfColor = fv.dcfPct>0?'var(--green)':fv.dcfPct<0?'var(--red)':'var(--text3)';
+        const momTag = mom.cross==='golden'
+          ? `<span style="font-size:10px;padding:2px 5px;border-radius:5px;background:rgba(29,158,117,0.12);color:var(--green);">GX✓</span>`
+          : mom.cross==='death'
+          ? `<span style="font-size:10px;padding:2px 5px;border-radius:5px;background:rgba(226,75,74,0.12);color:var(--red);">DX⚠</span>`
+          : mom.rsiLabel
+          ? `<span style="font-size:10px;padding:2px 5px;border-radius:5px;background:rgba(186,117,23,0.12);color:var(--gold);">${mom.rsiLabel}</span>`
+          : '<span style="color:var(--text3);font-size:10px;">—</span>';
+
+        sec1Html += `<tr style="border-bottom:0.5px solid var(--border);">
+          <td style="padding:7px 10px;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);">${sym}</td>
+          <td style="padding:7px 10px;font-size:11px;font-weight:600;color:${recColor};">${rec}</td>
+          <td style="padding:7px 10px;font-size:11px;color:${posColor};">${pos}</td>
+          <td style="padding:7px 10px;font-size:11px;color:${tgtColor};">${tgt}</td>
+          ${hasWeekly?`<td style="padding:7px 8px;text-align:center;font-weight:700;font-size:11px;color:${dcfColor};">${dcfTxt}</td>
+          <td style="padding:7px 8px;text-align:center;">${momTag}</td>`:''}
+        </tr>`;
+      });
+
+      sec1Html += `</tbody></table></div></div>`;
+    } else {
+      // Fallback if no table rows found
+      sec1Html = `<div style="white-space:normal;">${renderBlock(sec1)}</div>`;
+    }
+
+    html += `<div style="margin-bottom:8px;white-space:normal;">
+      <div style="font-size:10px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">
+        ${hdr1||'جدول المراكز الرئيسية'}
+        ${hasWeekly?'<span style="color:var(--text3);font-weight:400;font-size:9px;margin-right:8px;">+ DCF وزخم أسبوعي</span>':''}
+      </div>
+      ${sec1Html}
+    </div>`;
   }
 
   return html;
@@ -6754,52 +6825,7 @@ function renderWeeklyIntegrated(scoringText, fairvalueText, momentumText, riskTe
     html += '</div>';
   }
 
-  // ── 2. POSITIONS TABLE — daily signals + DCF + momentum merged ──
-  const fvRows = _parseWeeklyFairValueRows(fairvalueText);
-  const momRows = _parseWeeklyMomentumRows(momentumText);
-  // Build a merged map by symbol
-  const merged = {};
-  fvRows.forEach(r=>{ merged[r.sym]=merged[r.sym]||{}; Object.assign(merged[r.sym],r); });
-  momRows.forEach(r=>{ merged[r.sym]=merged[r.sym]||{}; Object.assign(merged[r.sym],r); });
-
-  if(Object.keys(merged).length){
-    html += `<div style="font-size:10px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">جدول المراكز — DCF + زخم أسبوعي</div>`;
-    html += `<div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:18px;border-top:2px solid var(--rose);">
-      <div style="overflow-y:auto;max-height:340px;">
-        <table style="width:100%;border-collapse:collapse;font-size:11.5px;white-space:normal;">
-          <thead style="position:sticky;top:0;background:var(--bg3);z-index:1;">
-            <tr>
-              <th style="padding:8px 12px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);">الرمز</th>
-              <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);">التقييم</th>
-              <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#00c8ff;border-bottom:0.5px solid var(--border);">DCF ↕</th>
-              <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--gold);border-bottom:0.5px solid var(--border);">زخم</th>
-              <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);">هدف المحللين</th>
-            </tr>
-          </thead>
-          <tbody>`;
-    Object.values(merged).forEach((r,i)=>{
-      const dcfColor = r.dcfPct>0?'var(--green)':r.dcfPct<0?'var(--red)':'var(--text3)';
-      const dcfTxt = r.dcfPct!=null?(r.dcfPct>0?'+':'')+r.dcfPct+'%':'—';
-      const momTag = r.cross==='golden'
-        ? `<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(29,158,117,0.12);color:var(--green);">Golden Cross</span>`
-        : r.cross==='death'
-        ? `<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(226,75,74,0.12);color:var(--red);">Death Cross</span>`
-        : r.rsiLabel
-        ? `<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(186,117,23,0.12);color:var(--gold);">${r.rsiLabel}</span>`
-        : '—';
-      const recColor = r.rec==='تراكم'?'var(--green)':r.rec==='مراجعة'?'var(--red)':'var(--text3)';
-      html += `<tr style="border-bottom:0.5px solid var(--border);">
-        <td style="padding:7px 12px;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);">${r.sym}</td>
-        <td style="padding:7px 10px;"><span style="font-size:11px;color:${recColor};font-weight:600;">${r.rec||'—'}</span></td>
-        <td style="padding:7px 10px;text-align:center;font-weight:700;color:${dcfColor};">${dcfTxt}</td>
-        <td style="padding:7px 10px;text-align:center;white-space:normal;">${momTag}</td>
-        <td style="padding:7px 10px;text-align:right;font-size:11px;color:${r.targetColor||'var(--text2)'};">${r.target||'—'}</td>
-      </tr>`;
-    });
-    html += `</tbody></table></div></div>`;
-  }
-
-  // ── 3. RISK RADAR — compact cards ────────────────────────────────
+  // ── 2. RISK RADAR — compact cards ────────────────────────────────
   const risks = _parseWeeklyRisks(riskText);
   if(risks.length){
     html += `<div style="font-size:10px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">رادار المخاطر</div>`;
