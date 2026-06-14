@@ -243,6 +243,32 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .briefing-loading{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:12px;}
 .briefing-dot{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 1.5s infinite;}
 .briefing-ts{font-size:10px;color:var(--text3);margin-top:8px;text-align:left;direction:ltr;font-family:'IBM Plex Mono',monospace;}
+/* ── Structured AI Brief layout ── */
+.brief-mood{background:var(--bg2);border-radius:12px;padding:13px 15px;border-right:3px solid var(--rose);margin-bottom:14px;}
+.brief-section-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.brief-mood-text{font-size:13px;line-height:1.8;color:var(--text);}
+.brief-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px;align-items:start;}
+.brief-col{background:var(--bg2);border-radius:11px;padding:12px 13px;}
+.brief-news-list{display:flex;flex-direction:column;gap:8px;}
+.brief-news-item{display:flex;gap:8px;align-items:flex-start;}
+.brief-sent-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.brief-news-title{font-size:11.5px;line-height:1.6;color:var(--text);}
+.brief-news-syms{font-size:10px;color:var(--accent);font-family:'IBM Plex Mono',monospace;margin-top:2px;}
+.brief-news-sent{font-size:9.5px;margin-top:1px;}
+.brief-dates-list{display:flex;flex-direction:column;gap:6px;}
+.brief-date-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px solid var(--border);}
+.brief-date-row:last-child{border-bottom:none;}
+.brief-date-event{font-size:11.5px;color:var(--text);line-height:1.5;}
+.brief-date-time{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;flex-shrink:0;margin-inline-start:8px;}
+.brief-moves-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;direction:rtl;margin-top:8px;}
+.brief-move-card{background:var(--bg2);border-radius:10px;padding:10px 12px;direction:ltr;}
+.brief-move-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.brief-move-sym{font-size:13px;font-weight:700;color:var(--text);font-family:'IBM Plex Mono',monospace;}
+.brief-move-meta{display:flex;gap:6px;align-items:center;font-size:10.5px;font-family:'IBM Plex Mono',monospace;flex-wrap:wrap;justify-content:flex-end;}
+.brief-move-rsi{color:var(--text3);}
+.brief-move-why{font-size:11px;line-height:1.6;color:var(--text2);}
+.brief-disclaimer{font-size:10px;color:var(--text3);text-align:center;margin-top:14px;border-top:.5px solid var(--border);padding-top:10px;}
+@media(max-width:760px){.brief-row,.brief-moves-grid{grid-template-columns:1fr;}}
 
 /* EXPAND BUTTON ON CARD */
 .s-expand-btn{position:absolute;top:8px;right:8px;width:22px;height:22px;background:rgba(0,212,255,.15);border:1px solid rgba(0,212,255,.3);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;opacity:0;transition:opacity .15s;}
@@ -2031,29 +2057,20 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
     </div>
   </div>
 
-<!-- AI BRIEFING + NEWS ROW -->
-  <div class="grid-2" style="margin-bottom:16px;">
-    <div class="card" style="margin-bottom:0;">
-      <div class="card-title" id="news-title" data-en="Today's News &amp; Articles" data-ar="أخبار ومقالات اليوم">أخبار ومقالات اليوم</div>
-      <div id="newsList"><div style="padding:10px 0;display:flex;flex-direction:column;gap:10px;">
-    <div style="display:flex;gap:10px;align-items:flex-start"><div class="skel" style="width:28px;height:28px;border-radius:6px;flex-shrink:0"></div><div style="flex:1"><div class="skel" style="height:10px;width:88%;margin-bottom:6px"></div><div class="skel" style="height:9px;width:55%"></div></div></div>
-    <div style="display:flex;gap:10px;align-items:flex-start"><div class="skel" style="width:28px;height:28px;border-radius:6px;flex-shrink:0"></div><div style="flex:1"><div class="skel" style="height:10px;width:76%;margin-bottom:6px"></div><div class="skel" style="height:9px;width:48%"></div></div></div>
-    <div style="display:flex;gap:10px;align-items:flex-start"><div class="skel" style="width:28px;height:28px;border-radius:6px;flex-shrink:0"></div><div style="flex:1"><div class="skel" style="height:10px;width:82%;margin-bottom:6px"></div><div class="skel" style="height:9px;width:60%"></div></div></div>
-  </div></div>
+<!-- AI BRIEFING — structured, full width, no news -->
+  <div class="card p-brief-card" style="margin-bottom:16px;">
+    <div class="section-hdr" style="margin-bottom:14px;">
+      <div>
+        <div class="card-title" style="margin-bottom:0;" id="brief-title" data-en="Today's AI Analysis" data-ar="تحليل ثيسي اليوم">تحليل ثيسي اليوم</div>
+        <div id="brief-date" style="font-size:10px;color:var(--text3);margin-top:2px;"></div>
+      </div>
+      <button class="btn btn-outline" style="font-size:11px;padding:5px 12px;" onclick="loadBriefing()">↺ Refresh</button>
     </div>
-    <div class="card" style="margin-bottom:0;">
-      <div class="section-hdr" style="margin-bottom:10px;">
-        <div class="card-title" style="margin-bottom:0;" id="brief-title" data-en="Today's AI Analysis" data-ar="تحليل الذكاء الاصطناعي اليوم">تحليل الذكاء الاصطناعي اليوم</div>
-        <button class="btn btn-outline" style="font-size:11px;padding:5px 12px;" onclick="loadBriefing()">â†º Refresh</button>
-      </div>
-      <div id="briefingContent">
-        <div class="briefing-loading">
-          <div class="briefing-dot"></div>
-          <span id="brief-loading-txt">Loading latest briefing...</span>
-        </div>
-      </div>
+    <div id="briefingContent">
+      <div class="briefing-loading"><div class="briefing-dot"></div><span id="brief-loading-txt">Loading latest briefing...</span></div>
     </div>
   </div>
+
 
 <div class="card">
     <div class="section-hdr">
@@ -2946,10 +2963,11 @@ function applyTranslations(){
 function showTab(name,el){
   if(name==='dashboard') setTimeout(function(){ if(typeof initLiveData==='function') initLiveData(); },100);
   if(name==='portfolio') setTimeout(function(){
-    /* news and prices may not have loaded if user skipped the dashboard tab */
-    if(!newsIsLive) loadLiveNews();
-    const box=document.getElementById('newsList');
-    if(box && !box.innerHTML.trim()) renderNews();
+    if(typeof loadBriefing==='function'){
+      const box=document.getElementById('briefingContent');
+      // Only load if not already showing structured content
+      if(box&&!box.querySelector('.brief-mood'))loadBriefing();
+    }
   },80);
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.nav-tab,.sb-item').forEach(t=>t.classList.remove('active'));
@@ -3161,36 +3179,127 @@ function _briefGreeting(isAr){
 
 async function loadBriefing(){
   const box=document.getElementById('briefingContent');
-  const isAr=(typeof lang!=='undefined' && lang==='ar');
-  box.innerHTML=`<div class="briefing-loading"><div class="briefing-dot"></div><span>${T[lang].briefLoadingTxt}</span></div>`;
-  try{
-    const nick=localStorage.getItem('theisilabs_nick')||'rashed';
-const r=await fetch('/api/briefing?nickname='+nick);
-    const d=await r.json();
-    // Extract text — handles string, array [{type:"text",text:"..."}], or object {text:"..."}
-    let text='';
-    if(typeof d.content==='string'){
-      text=d.content;
-    } else if(Array.isArray(d.content)){
-      text=d.content.filter(c=>c.type==='text').map(c=>c.text||'').join('\n');
-    } else if(d.content && typeof d.content.text==='string'){
-      text=d.content.text;
-    }
-    if(text.trim()){
-      const body = (typeof mdToHtml==='function') ? mdToHtml(text) : text.replace(/\n/g,'<br>');
-      box.innerHTML=`${_briefGreeting(isAr)}<div class="brief-body firm-body${isAr?'':' en'}">${body}</div><div class="briefing-ts">${d.date||'Just now'}</div>`;
-    } else {
-      box.innerHTML=`<div class="briefing-box" style="direction:ltr;text-align:left;color:var(--text2);font-size:12px;">
-        No briefing available yet.<br><br>
-        Connect Make.com to post the morning brief here automatically.<br>
-        The brief will appear here within seconds after Make.com runs.
-      </div>`;
-    }
-  }catch(e){
-    box.innerHTML=`<div class="briefing-box" style="direction:ltr;text-align:left;color:var(--text2);font-size:12px;">
-      API not reachable. Make sure you are on the live site (theisilabs.vercel.app).
+  const dateEl=document.getElementById('brief-date');
+  const ar=(typeof lang!=='undefined'&&lang==='ar');
+  box.innerHTML=`<div class="briefing-loading"><div class="briefing-dot"></div><span>${(typeof T!=='undefined'&&T[lang])?T[lang].briefLoadingTxt||'Loading...':'Loading...'}</span></div>`;
+
+  // Build the UAE date string for the file path (today → fallback 1-2 days)
+  const dstr=o=>new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10);
+  let nick='rashed';
+  try{ nick=(localStorage.getItem('theisilabs_nick')||'rashed').toLowerCase(); }catch(e){}
+
+  // Try to load the structured brief JSON from GitHub
+  let d=null;
+  for(const o of [0,1,2]){
+    try{
+      const r=await fetch(`https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/market/brief-${nick}-${dstr(o)}.json?t=${Date.now()}`);
+      if(r.ok){ d=await r.json(); break; }
+    }catch(e){}
+  }
+
+  // Fallback: try the old /api/briefing endpoint
+  if(!d){
+    try{
+      const r=await fetch('/api/briefing?nickname='+nick);
+      if(r.ok){
+        const legacy=await r.json();
+        let text='';
+        if(typeof legacy.content==='string') text=legacy.content;
+        else if(Array.isArray(legacy.content)) text=legacy.content.filter(c=>c.type==='text').map(c=>c.text||'').join('\n');
+        if(text.trim()){
+          box.innerHTML=`<div class="brief-body firm-body${ar?'':' en'}" style="font-size:13px;line-height:1.8;">${text.replace(/\n/g,'<br>')}</div>`;
+          return;
+        }
+      }
+    }catch(e){}
+    box.innerHTML=`<div style="font-size:12px;color:var(--text2);padding:12px 0;">${ar?'التحليل غير متاح بعد. يتم التحديث يومياً في الصباح.':'Analysis not available yet. Updates daily in the morning.'}</div>`;
+    return;
+  }
+
+  // Set date label
+  if(dateEl && d.date) dateEl.textContent=d.date;
+
+  // Render the approved layout
+  const sent=s=>s==='positive'?(ar?'إيجابي':'Positive'):s==='negative'?(ar?'سلبي':'Negative'):(ar?'محايد':'Neutral');
+  const sentColor=s=>s==='positive'?'var(--green)':s==='negative'?'var(--red)':'var(--text3)';
+
+  let html='';
+
+  // 1. MOOD — full width hero
+  if(d.mood){
+    html+=`<div class="brief-mood">
+      <div class="brief-section-lbl">${ar?'مزاج السوق اليوم':'Market mood'}</div>
+      <div class="brief-mood-text" dir="${ar?'rtl':'ltr'}">${d.mood}</div>
     </div>`;
   }
+
+  // 2. TWO COLUMNS: mood already shown; now news+dates side by side
+  const hasNews=d.news&&d.news.length>0;
+  const hasDates=d.dates&&d.dates.length>0;
+  if(hasNews||hasDates){
+    html+=`<div class="brief-row">`;
+
+    // LEFT (in RTL = right visually): news affecting portfolio
+    if(hasNews){
+      html+=`<div class="brief-col">
+        <div class="brief-section-lbl">${ar?'أخبار تمس محفظتك':'News affecting your portfolio'}</div>
+        <div class="brief-news-list">`;
+      d.news.forEach(n=>{
+        const syms=Array.isArray(n.syms)?n.syms.join(' · '):String(n.syms||'');
+        html+=`<div class="brief-news-item">
+          <span class="brief-sent-dot" style="background:${sentColor(n.sentiment)}"></span>
+          <div>
+            <div class="brief-news-title" dir="${ar?'rtl':'ltr'}">${n.title||''}</div>
+            ${syms?`<div class="brief-news-syms">${syms}</div>`:''}
+            ${n.sentiment?`<div class="brief-news-sent" style="color:${sentColor(n.sentiment)}">${sent(n.sentiment)}</div>`:''}
+          </div>
+        </div>`;
+      });
+      html+=`</div></div>`;
+    }
+
+    // RIGHT: important dates
+    if(hasDates){
+      html+=`<div class="brief-col">
+        <div class="brief-section-lbl">${ar?'مواعيد مهمة اليوم':'Important dates'}</div>
+        <div class="brief-dates-list">`;
+      d.dates.forEach(dt=>{
+        html+=`<div class="brief-date-row">
+          <span class="brief-date-event" dir="${ar?'rtl':'ltr'}">${dt.event||''}</span>
+          <span class="brief-date-time">${dt.time||''}</span>
+        </div>`;
+      });
+      html+=`</div></div>`;
+    }
+    html+=`</div>`;
+  }
+
+  // 3. MOVES — heading full width, then 2-column RTL grid
+  if(d.moves&&d.moves.length>0){
+    html+=`<div class="brief-section-lbl" style="margin-top:16px">${ar?'أبرز تحركات محفظتك':'Key portfolio moves'}</div>
+    <div class="brief-moves-grid">`;
+    d.moves.forEach(m=>{
+      const up=String(m.change||'').includes('+')||(!String(m.change||'').includes('-')&&String(m.change||'')!=='');
+      const chgColor=String(m.change||'').startsWith('-')?'var(--red)':'var(--green)';
+      html+=`<div class="brief-move-card">
+        <div class="brief-move-top">
+          <span class="brief-move-sym">${m.sym||''}</span>
+          <span class="brief-move-meta">
+            ${m.price?`<span>${m.price}</span>`:''}
+            ${m.change?`<span style="color:${chgColor}">${m.change}</span>`:''}
+            ${m.rsi?`<span class="brief-move-rsi">${m.rsi}</span>`:''}
+          </span>
+        </div>
+        ${m.why?`<div class="brief-move-why" dir="${ar?'rtl':'ltr'}">${m.why}</div>`:''}
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  html+=`<div class="brief-disclaimer">${ar?'تحليل معلوماتي بهامش خطأ واسع — ليست نصيحة مالية':'Informational analysis — not financial advice'}</div>`;
+
+  box.innerHTML=html;
+  if(typeof highlightGlossaryTerms==='function') try{ highlightGlossaryTerms(box); }catch(e){}
 }
 
 // ===== WEIGHTS =====
