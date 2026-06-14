@@ -2670,7 +2670,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.6 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.7 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -5767,11 +5767,12 @@ function colorizePercent(text){
 }
 // ── Section 2: Stop-Loss parser (Option B: badge + action + reason) ──
 function parseSection2Signals(text){
-  const rows=text.split('\n').filter(l=>l.trim()&&!/^[٢2][\.\-\)]/.test(l.trim()));
+  const rows=text.split('\n').filter(l=>l.trim()&&!/^\*{0,2}[٢2][\.\-\)]/.test(l.trim())).map(l=>l.replace(/\*\*/g,''));
   if(!rows.length) return '';
   let html='<div style="display:flex;flex-direction:column;gap:8px;white-space:normal;">';
   rows.forEach(line=>{
-    const p=line.split('|').map(s=>s.trim());
+    const sep = line.includes('|') ? '|' : '\t';
+    const p = line.split(sep).map(s => s.replace(/\*\*/g,'').trim());
     if(p.length<2) return;
     const sym=p[0]||'', rec=p[1]||'', pct=p[2]||'', why=p.slice(3).join(' ').trim();
     const pctVal=parseFloat(pct)||0;
@@ -5793,9 +5794,10 @@ function parseSection2Signals(text){
 
 // ── Section 3: Top Conviction parser (numbered reasons) ──
 function parseSection3Signals(text){
-  const lines=text.split('\n').filter(l=>l.trim()&&!/^[٣3][\.\-\)]/.test(l.trim()));
+  const lines=text.split('\n').filter(l=>l.trim()&&!/^\*{0,2}[٣3][\.\-\)]/.test(l.trim())).map(l=>l.replace(/\*\*/g,''));
   if(!lines.length) return '';
-  const header=lines[0].split('|').map(s=>s.trim());
+  const sep0 = lines[0].includes('|') ? '|' : '\t';
+  const header=lines[0].split(sep0).map(s=>s.replace(/\*\*/g,'').trim());
   const sym=header[0]||'', rating=header[1]||'', price=header[2]||'', target=header[3]||'';
   const reasons=lines.slice(1).filter(l=>l.trim());
   let html=`<div style="white-space:normal;">
@@ -5844,8 +5846,10 @@ function renderSignals(text){
   const sectionBlocks = {};
   let currentSection = 0;
   let currentLines = [];
+
   text.split('\n').forEach(line => {
-    const m = line.match(/^([١١٢٣123])[\.\-\)]/);
+    // Match: **1. ...**  or  1. ...  or  ١. ...  at start of line
+    const m = line.match(/^\*{0,2}([١٢٣123])[\.\-\)]/);
     if(m){
       if(currentLines.length) sectionBlocks[currentSection] = currentLines.join('\n');
       currentSection = parseInt(m[1].replace('١','1').replace('٢','2').replace('٣','3'));
