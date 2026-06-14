@@ -2670,7 +2670,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.14 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.15 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -5717,7 +5717,23 @@ function renderAnalysis(data){
 
     let text = sectionsToUse[f] || (isAr ? 'لا توجد بيانات — سيتم التحديث في الموعد المجدول' : 'No data yet — updates on schedule');
 
-    body.innerHTML = f==='signals' ? renderSignals(text) : f==='scoring' ? renderScoring(text) : mdToHtml(text);
+    // For weekly panels (fairvalue, momentum, scoring) — use integrated renderer
+    // that shows scoring cards + merged table + risk + momentum all in one view
+    let renderedHtml;
+    if(f==='signals'){
+      renderedHtml = renderSignals(text);
+    } else if(f==='fairvalue' || f==='momentum'){
+      // Render integrated weekly view using all weekly sections
+      const wp = parsed.weekly;
+      renderedHtml = renderWeeklyIntegrated(
+        wp.scoring||'', wp.fairvalue||'', wp.momentum||'', wp.risk||''
+      );
+    } else if(f==='scoring'){
+      renderedHtml = renderScoring(text);
+    } else {
+      renderedHtml = mdToHtml(text);
+    }
+    body.innerHTML = renderedHtml;
     // Force flex layout on signals top row (inline style beats all CSS)
     if(f==='signals'){
       const flexRow=body.querySelector('[data-signals-row]');
@@ -6705,6 +6721,241 @@ const _modal = document.getElementById('tradeModal');
 if(_modal) _modal.addEventListener('click', function(e){
   if(e.target===this) closeTradeModal();
 });
+
+
+// ══════════════════════════════════════════════════════════════════
+// WEEKLY MERGED RENDERER — Scoring cards + positions table + risk + momentum
+// Called for fairvalue, momentum, scoring panels when weekly data available
+// ══════════════════════════════════════════════════════════════════
+function renderWeeklyIntegrated(scoringText, fairvalueText, momentumText, riskText){
+  const ar = (typeof advisorLang !== 'undefined' && advisorLang === 'ar');
+  let html = '<div style="white-space:normal;">';
+
+  // ── 1. SCORING ENGINE — top 3 buy cards ──────────────────────────
+  const scoreCards = _parseWeeklyScoreCards(scoringText);
+  if(scoreCards.length){
+    html += `<div style="font-size:10px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">محرك القرار الأسبوعي — أفضل فرص الإضافة</div>`;
+    html += '<div style="display:flex;gap:12px;margin-bottom:18px;white-space:normal;">';
+    scoreCards.slice(0,3).forEach((c,i)=>{
+      const scoreNum = parseFloat(c.score)||0;
+      const scoreColor = scoreNum>=8?'var(--green)':scoreNum>=7?'var(--gold)':'var(--text2)';
+      const scoreBg = scoreNum>=8?'rgba(29,158,117,0.12)':scoreNum>=7?'rgba(186,117,23,0.12)':'rgba(136,135,128,0.12)';
+      html += `<div style="flex:1;min-width:0;background:var(--bg2);border-radius:12px;padding:13px 14px;border-top:2px solid ${scoreColor};white-space:normal;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span style="font-size:17px;font-weight:800;color:var(--text);font-family:'IBM Plex Mono',monospace;">${c.sym}</span>
+          <div style="width:38px;height:38px;border-radius:50%;background:${scoreBg};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:${scoreColor};">${c.score||'—'}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;font-size:11px;">
+          ${c.layers.map(l=>`<div style="display:flex;justify-content:space-between;"><span style="color:${l.good?'var(--green)':'var(--red)'};font-weight:500;">${l.value}</span><span style="color:var(--text3);">${l.label}</span></div>`).join('')}
+        </div>
+        ${c.action?`<div style="margin-top:9px;font-size:11px;color:var(--text3);border-top:0.5px solid var(--border);padding-top:7px;">${c.action}</div>`:''}
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  // ── 2. POSITIONS TABLE — daily signals + DCF + momentum merged ──
+  const fvRows = _parseWeeklyFairValueRows(fairvalueText);
+  const momRows = _parseWeeklyMomentumRows(momentumText);
+  // Build a merged map by symbol
+  const merged = {};
+  fvRows.forEach(r=>{ merged[r.sym]=merged[r.sym]||{}; Object.assign(merged[r.sym],r); });
+  momRows.forEach(r=>{ merged[r.sym]=merged[r.sym]||{}; Object.assign(merged[r.sym],r); });
+
+  if(Object.keys(merged).length){
+    html += `<div style="font-size:10px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">جدول المراكز — DCF + زخم أسبوعي</div>`;
+    html += `<div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:18px;border-top:2px solid var(--rose);">
+      <div style="overflow-y:auto;max-height:340px;">
+        <table style="width:100%;border-collapse:collapse;font-size:11.5px;white-space:normal;">
+          <thead style="position:sticky;top:0;background:var(--bg3);z-index:1;">
+            <tr>
+              <th style="padding:8px 12px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);">الرمز</th>
+              <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);">التقييم</th>
+              <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#00c8ff;border-bottom:0.5px solid var(--border);">DCF ↕</th>
+              <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--gold);border-bottom:0.5px solid var(--border);">زخم</th>
+              <th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);">هدف المحللين</th>
+            </tr>
+          </thead>
+          <tbody>`;
+    Object.values(merged).forEach((r,i)=>{
+      const dcfColor = r.dcfPct>0?'var(--green)':r.dcfPct<0?'var(--red)':'var(--text3)';
+      const dcfTxt = r.dcfPct!=null?(r.dcfPct>0?'+':'')+r.dcfPct+'%':'—';
+      const momTag = r.cross==='golden'
+        ? `<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(29,158,117,0.12);color:var(--green);">Golden Cross</span>`
+        : r.cross==='death'
+        ? `<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(226,75,74,0.12);color:var(--red);">Death Cross</span>`
+        : r.rsiLabel
+        ? `<span style="font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(186,117,23,0.12);color:var(--gold);">${r.rsiLabel}</span>`
+        : '—';
+      const recColor = r.rec==='تراكم'?'var(--green)':r.rec==='مراجعة'?'var(--red)':'var(--text3)';
+      html += `<tr style="border-bottom:0.5px solid var(--border);">
+        <td style="padding:7px 12px;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);">${r.sym}</td>
+        <td style="padding:7px 10px;"><span style="font-size:11px;color:${recColor};font-weight:600;">${r.rec||'—'}</span></td>
+        <td style="padding:7px 10px;text-align:center;font-weight:700;color:${dcfColor};">${dcfTxt}</td>
+        <td style="padding:7px 10px;text-align:center;white-space:normal;">${momTag}</td>
+        <td style="padding:7px 10px;text-align:right;font-size:11px;color:${r.targetColor||'var(--text2)'};">${r.target||'—'}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div></div>`;
+  }
+
+  // ── 3. RISK RADAR — compact cards ────────────────────────────────
+  const risks = _parseWeeklyRisks(riskText);
+  if(risks.length){
+    html += `<div style="font-size:10px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">رادار المخاطر</div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:7px;white-space:normal;margin-bottom:16px;">`;
+    risks.slice(0,4).forEach(r=>{
+      const probColor = r.prob>=60?'var(--red)':r.prob>=40?'var(--gold)':'var(--text3)';
+      const probBg = r.prob>=60?'rgba(226,75,74,0.1)':r.prob>=40?'rgba(186,117,23,0.1)':'rgba(136,135,128,0.1)';
+      html += `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:${probBg};border-radius:9px;border-right:3px solid ${probColor};">
+        <div style="flex:0 0 36px;text-align:center;font-size:12px;font-weight:700;color:${probColor};">${r.prob}%</div>
+        <div style="flex:1;min-width:0;direction:rtl;text-align:right;">
+          <div style="font-size:12px;font-weight:600;color:var(--text);">${r.title}</div>
+          ${r.detail?`<div style="font-size:10.5px;color:var(--text3);margin-top:2px;">${r.detail}</div>`:''}
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+    // Stress test summary
+    const stressMatch = riskText.match(/خسارة.*?\$[\d,]+.*?\$[\d,]+/);
+    if(stressMatch){
+      html += `<div style="padding:10px 14px;background:var(--bg2);border-radius:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-size:11px;color:var(--text3);">اختبار الإجهاد — انخفاض السوق 20%</div>
+        <div style="font-size:13px;font-weight:700;color:var(--red);">${stressMatch[0].replace(/.*خسارة.*?(\$[\d,–]+.*?\$[\d,]+).*/,'$1')||'~$80,000–$90,000'}</div>
+      </div>`;
+    }
+  }
+
+  // ── 4. MOMENTUM — mean reversion pick + downgrade alerts ─────────
+  const momAlerts = _parseMomAlerts(momentumText);
+  if(momAlerts.reversion || momAlerts.downgrade){
+    html += `<div style="display:flex;gap:12px;white-space:normal;">`;
+    if(momAlerts.reversion){
+      html += `<div style="flex:1;padding:10px 13px;background:rgba(0,200,255,0.07);border-radius:10px;border-right:3px solid var(--accent);direction:rtl;">
+        <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:4px;">أفضل فرصة ارتداد</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);font-family:'IBM Plex Mono',monospace;">${momAlerts.reversion.sym}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px;">${momAlerts.reversion.why}</div>
+      </div>`;
+    }
+    if(momAlerts.downgrade){
+      html += `<div style="flex:1;padding:10px 13px;background:rgba(226,75,74,0.07);border-radius:10px;border-right:3px solid var(--red);direction:rtl;">
+        <div style="font-size:10px;font-weight:700;color:var(--red);margin-bottom:4px;">تغيير توصية محللين</div>
+        <div style="font-size:11.5px;color:var(--text);direction:rtl;">${momAlerts.downgrade}</div>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  html += `<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:14px;border-top:0.5px solid var(--border);padding-top:10px;">تحليل أسبوعي — ليست نصيحة مالية</div>`;
+  html += '</div>';
+  return html;
+}
+
+// ── Parsing helpers ──────────────────────────────────────────────────
+
+function _parseWeeklyScoreCards(text){
+  if(!text) return [];
+  const cards = [];
+  // Match blocks: SYM | Score X/10 | ...
+  const blocks = text.split(/(?=\n\*\*[A-Z]{2,5}\s*\|)/);
+  blocks.forEach(block=>{
+    const headerM = block.match(/\*\*([A-Z]{2,5})\s*\|\s*Score\s*([\d.]+)\/10/);
+    if(!headerM) return;
+    const sym = headerM[1], score = headerM[2];
+    // Extract layer scores
+    const layers = [];
+    const layerMatches = [...block.matchAll(/الطبقة\s*(\d+)[^:]*:\s*\n([\s\S]*?)→\s*\*\*درجة هذه الطبقة:\s*([\d.]+)\/10\*\*/g)];
+    layerMatches.slice(0,5).forEach((m,i)=>{
+      const grade = parseFloat(m[3])||0;
+      const labels = ['مركزك','التقييم','التقني','الأساسيات','الخارجي'];
+      // Extract key metric from the layer block
+      const block2 = m[2];
+      const pctM = block2.match(/[+\-][\d.]+%/);
+      const dollarM = block2.match(/\$[\d,]+/);
+      const value = pctM?pctM[0]:dollarM?dollarM[0]:`${grade}/10`;
+      layers.push({label:labels[i]||`طبقة ${i+1}`,value,good:grade>=7});
+    });
+    // Extract action
+    const actionM = block.match(/اشتري?\s+[\d]+\s+سهم[^=]+=\s*\$[\d,]+/);
+    const action = actionM?actionM[0].replace(/\*\*/g,'').trim():'';
+    cards.push({sym,score,layers,action});
+  });
+  return cards;
+}
+
+function _parseWeeklyFairValueRows(text){
+  if(!text) return [];
+  const rows = [];
+  const lines = text.split('\n');
+  lines.forEach(line=>{
+    if(!line.includes('|')) return;
+    const cells = line.split('|').map(c=>c.replace(/<[^>]+>/g,'').replace(/\*\*/g,'').trim()).filter(c=>c);
+    if(cells.length<3) return;
+    if(/^[-:]+$/.test(cells[0])||/SYMBOL|الرمز/.test(cells[0])) return;
+    const sym = cells[0].match(/^[A-Z]{2,5}$/)?cells[0]:null;
+    if(!sym) return;
+    const desc = cells[cells.length-1];
+    const pctM = desc.match(/[+\-][\d.]+%/);
+    const dcfPct = pctM?parseFloat(pctM[0]):null;
+    const targetM = desc.match(/\$[\d,]+/);
+    const target = targetM?targetM[0]+' ('+(dcfPct!=null?(dcfPct>0?'+':'')+dcfPct+'%)':')'):null;
+    const rec = dcfPct>20?'تراكم':dcfPct<-10?'مراجعة':'احتفظ';
+    rows.push({sym,dcfPct,target,targetColor:dcfPct>0?'var(--green)':'var(--red)',rec});
+  });
+  return rows;
+}
+
+function _parseWeeklyMomentumRows(text){
+  if(!text) return [];
+  const rows = [];
+  const lines = text.split('\n');
+  lines.forEach(line=>{
+    if(!line.includes('|')) return;
+    const cells = line.split('|').map(c=>c.replace(/<[^>]+>/g,'').replace(/\*\*/g,'').trim()).filter(c=>c);
+    if(cells.length<3) return;
+    if(/^[-:]+$/.test(cells[0])||/SYMBOL|الرمز/.test(cells[0])) return;
+    const sym = cells[0].match(/^[A-Z]{2,5}$/)?cells[0]:null;
+    if(!sym) return;
+    const allText = cells.join(' ');
+    const cross = allText.includes('Golden Cross')?'golden':allText.includes('Death Cross')?'death':null;
+    const rsiM = allText.match(/RSI\s*([\d.]+)/i);
+    const rsiVal = rsiM?parseFloat(rsiM[1]):null;
+    const rsiLabel = rsiVal?(rsiVal>70?`RSI ${rsiVal} — تشبع`:rsiVal<35?`RSI ${rsiVal} — ارتداد`:null):null;
+    rows.push({sym,cross,rsiLabel,rsiVal});
+  });
+  return rows;
+}
+
+function _parseWeeklyRisks(text){
+  if(!text) return [];
+  const risks = [];
+  const lines = text.split('\n');
+  lines.forEach(line=>{
+    if(!line.includes('|')) return;
+    const cells = line.split('|').map(c=>c.replace(/<[^>]+>/g,'').replace(/\*\*/g,'').trim()).filter(c=>c);
+    if(cells.length<3) return;
+    if(/^[-:]+$/.test(cells[0])||/الخطر|Risk/.test(cells[0])) return;
+    const probM = cells[1]&&cells[1].match(/([\d]+)%/);
+    const prob = probM?parseInt(probM[1]):0;
+    const title = cells[0].slice(0,60);
+    const detail = cells[cells.length-1].slice(0,80);
+    if(title&&prob) risks.push({title,prob,detail});
+  });
+  return risks.sort((a,b)=>b.prob-a.prob);
+}
+
+function _parseMomAlerts(text){
+  if(!text) return {};
+  const result = {};
+  // Best reversion pick
+  const revM = text.match(/أبرز فرصة ارتداد[:\s]*([A-Z]{2,5})[^—]*—([^\n]+)/);
+  if(revM) result.reversion = {sym:revM[1],why:revM[2].trim().slice(0,80)};
+  // Downgrade alerts
+  const dgM = text.match(/خفّض([^\n]+(?:Neutral|هابط)[^\n]*)/);
+  if(dgM) result.downgrade = dgM[0].replace(/\*\*/g,'').trim().slice(0,120);
+  return result;
+}
+
 
   // ===== SCORING ENGINE RENDERER =====
 window._scoreCards = {};
