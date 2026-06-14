@@ -272,6 +272,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 /* Opportunity: tags inline beside the score */
 .z3-score-wrap{display:flex;align-items:center;gap:10px;}
 .z3-chips-inline{display:flex;gap:6px;flex-wrap:wrap;margin:0!important;justify-content:flex-end;}
+.z3-card-2{border-top:1px solid var(--border)!important;margin-top:10px!important;padding-top:12px!important;}
 /* Compact news strip: list rows, not card grid; show first 3 */
 .news-strip{display:block!important;}
 .news-strip .news-card{background:transparent!important;border:none!important;padding:5px 0!important;margin:0!important;border-radius:0!important;border-top:0.5px solid var(--border)!important;}
@@ -9262,29 +9263,34 @@ async function renderZone3(force){
     const heldSyms=new Set((typeof stocks!=='undefined'?stocks:[]).filter(s=>(Number(s.shares!=null?s.shares:s._shares)||0)>0).map(s=>s.sym));
     const ranked=all.filter(s=>s.display===true||s.display_eligible===true)
                     .sort((a,b)=>(a.display_rank||a.rank||9999)-(b.display_rank||b.rank||9999));
-    const pick=ranked.find(s=>!s.in_portfolio&&!heldSyms.has(s.symbol))||ranked[0];
-    if(!pick){el.innerHTML='<div class="z3-card" style="cursor:default"><div class="z3-why">'+(ar?'\u0644\u0627 \u062a\u0648\u062c\u062f \u0641\u0631\u0635 \u0645\u0639\u0631\u0648\u0636\u0629 \u0627\u0644\u064a\u0648\u0645.':'No opportunities surfaced today.')+'</div></div>';return;}
-    const whyFull=why[pick.symbol]||'';
-    let why1=whyFull.split(/\.\s/)[0]||'';
-    if(why1.length>140)why1=why1.slice(0,140).trim()+'\u2026';else if(why1&&why1!==whyFull)why1+='.';
-    const isSh=sharia.has(pick.symbol);
-    const owned=heldSyms.has(pick.symbol);
-    const pat=(typeof _opPatBadges==='function'&&pick.pattern)?_opPatBadges(pick.pattern):'';
-    el.innerHTML='<div class="z3-card" onclick="calmOpenOpportunities()">'
-      +'<div class="z3-top"><div>'
-      +'<div class="z3-sym">'+pick.symbol+'</div>'
-      +'<div class="z3-sec">'+(pick.sector||'')+'</div>'
-      +'</div><div class="z3-score-wrap">'
-      +'<div class="z3-chips z3-chips-inline">'
-      +(isSh?_shariaChip():'')
-      +pat
-      +(owned?'<span class="op-chip">'+(ar?'\u062a\u0645\u0644\u0643\u0647 \u0628\u0627\u0644\u0641\u0639\u0644':'You already hold this')+'</span>':'')
-      +'</div>'
-      +'<div class="z3-score"><b>'+Math.round(pick.final_score||0)+'</b><i>'+(ar?'\u0645\u0646 \u0661\u0660\u0660':'of 100')+'</i></div>'
-      +'</div></div>'
-      +(why1?'<div class="z3-why">'+why1+'</div>':'')
-      +'<div class="z2-cta" dir="'+(ar?'rtl':'ltr')+'" style="margin-top:8px">'+(ar?'\u0644\u0645\u0627\u0630\u0627\u061f + \u0627\u0644\u0645\u062e\u0627\u0637\u0631 \u2014 \u0627\u0636\u063a\u0637 \u0644\u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u2190':'Why? + the risk \u2014 tap for detail \u2192')+'</div>'
-      +'</div>';
+    // top 2 picks not already held; fall back to ranked order if fewer unheld
+    const unheld=ranked.filter(s=>!s.in_portfolio&&!heldSyms.has(s.symbol));
+    const picks=(unheld.length>=2?unheld:ranked).slice(0,2);
+    if(!picks.length){el.innerHTML='<div class="z3-card" style="cursor:default"><div class="z3-why">'+(ar?'\u0644\u0627 \u062a\u0648\u062c\u062f \u0641\u0631\u0635 \u0645\u0639\u0631\u0648\u0636\u0629 \u0627\u0644\u064a\u0648\u0645.':'No opportunities surfaced today.')+'</div></div>';return;}
+    const buildCard=(pick,isFirst)=>{
+      const whyFull=why[pick.symbol]||'';
+      let why1=whyFull.split(/\.\s/)[0]||'';
+      if(why1.length>140)why1=why1.slice(0,140).trim()+'\u2026';else if(why1&&why1!==whyFull)why1+='.';
+      const isSh=sharia.has(pick.symbol);
+      const owned=heldSyms.has(pick.symbol);
+      const pat=(typeof _opPatBadges==='function'&&pick.pattern)?_opPatBadges(pick.pattern):'';
+      return '<div class="z3-card'+(isFirst?'':' z3-card-2')+'" onclick="calmOpenOpportunities()">'
+        +'<div class="z3-top"><div>'
+        +'<div class="z3-sym">'+pick.symbol+'</div>'
+        +'<div class="z3-sec">'+(pick.sector||'')+'</div>'
+        +'</div><div class="z3-score-wrap">'
+        +'<div class="z3-chips z3-chips-inline">'
+        +(isSh?_shariaChip():'')
+        +pat
+        +(owned?'<span class="op-chip">'+(ar?'\u062a\u0645\u0644\u0643\u0647 \u0628\u0627\u0644\u0641\u0639\u0644':'You already hold this')+'</span>':'')
+        +'</div>'
+        +'<div class="z3-score"><b>'+Math.round(pick.final_score||0)+'</b><i>'+(ar?'\u0645\u0646 \u0661\u0660\u0660':'of 100')+'</i></div>'
+        +'</div></div>'
+        +(why1?'<div class="z3-why">'+why1+'</div>':'')
+        +'<div class="z2-cta" dir="'+(ar?'rtl':'ltr')+'" style="margin-top:8px">'+(ar?'\u0644\u0645\u0627\u0630\u0627\u061f + \u0627\u0644\u0645\u062e\u0627\u0637\u0631 \u2014 \u0627\u0636\u063a\u0637 \u0644\u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u2190':'Why? + the risk \u2014 tap for detail \u2192')+'</div>'
+        +'</div>';
+    };
+    el.innerHTML=picks.map((p,i)=>buildCard(p,i===0)).join('');
   }catch(e){
     el.innerHTML='<div class="z3-card" style="cursor:default"><div class="z3-why">'+(ar?'\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0641\u0631\u0635 \u063a\u064a\u0631 \u0645\u062a\u0627\u062d\u0629 \u062d\u0627\u0644\u064a\u0627\u064b.':'Opportunity data is not available right now.')+'</div></div>';
   }
