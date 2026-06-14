@@ -2670,7 +2670,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.10 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.11 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -5746,7 +5746,12 @@ if(f==='scoring'){
     if(stale && srcData?.date){
       const today = new Date().toISOString().slice(0,10);
       if(srcData.date !== today){
-        stale.textContent = `From ${srcData.date}`;
+        const d = new Date(srcData.date);
+        const dayName = d.toLocaleDateString('ar-AE', {weekday:'long'});
+        const dateStr = d.toLocaleDateString('ar-AE', {day:'numeric', month:'long'});
+        stale.textContent = `آخر تحديث: ${dayName} ${dateStr}`;
+        stale.style.color = 'var(--text3)';
+        stale.style.fontSize = '10px';
       } else {
         stale.textContent = '';
       }
