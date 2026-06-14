@@ -269,6 +269,16 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .news-strip .news-card:nth-child(n+4){display:none;}
 .news-strip .news-meta{font-size:9.5px;}
 .news-strip .news-headline{font-size:11.5px;line-height:1.55;}
+/* Dashboard responsive columns (desktop side-by-side, mobile stacked) */
+.dash-row{width:100%;}
+.dash-value-row{display:flex;gap:16px;align-items:stretch;flex-wrap:wrap;}
+.dash-health-card{flex:0 0 300px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;}
+.dash-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;}
+@media(max-width:760px){
+  .dash-value-row{flex-direction:column;}
+  .dash-health-card{flex:1 1 auto;}
+  .dash-cols{grid-template-columns:1fr;gap:14px;}
+}
 /* Two-column modal: indicators left, chart right; single screen */
 .modal-two-col{display:grid;grid-template-columns:minmax(300px,1.05fr) 1.25fr;gap:14px;align-items:stretch;}
 .modal-col-left .modal-ind-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
@@ -1883,54 +1893,69 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 <!-- ===== PORTFOLIO TAB ===== -->
 <!-- DASHBOARD -->
 <div id="tab-dashboard" class="tab-content active">
-  <!-- ═══ 1. VALUE ═══ -->
-  <div class="zone1">
-    <div class="z1-greet" id="z1-greet">&nbsp;</div>
-    <div class="cmd-lbl" id="cmd-port-label" data-en="Portfolio Value" data-ar="قيمة المحفظة">قيمة المحفظة</div>
-    <div class="cmd-big" id="cmd-value">$—</div>
-    <div class="z1-stats">
-      <div class="z1-stat"><span class="z1-num" id="z1-alltime">—</span><span class="z1-cap" data-en="all-time vs your cost" data-ar="منذ البداية (مقابل تكلفتك)">منذ البداية (مقابل تكلفتك)</span></div>
-      <div class="z1-stat"><span class="z1-num z1-small" id="z1-today">—</span><span class="z1-cap" id="z1-today-cap" data-en="today" data-ar="اليوم">اليوم</span></div>
+  <!-- ═══ 1. VALUE + HEALTH (share a row) ═══ -->
+  <div class="dash-row dash-value-row">
+    <div class="zone1" style="flex:1">
+      <div class="z1-greet" id="z1-greet">&nbsp;</div>
+      <div class="cmd-lbl" id="cmd-port-label" data-en="Portfolio Value" data-ar="قيمة المحفظة">قيمة المحفظة</div>
+      <div class="cmd-big" id="cmd-value">$—</div>
+      <div class="z1-stats">
+        <div class="z1-stat"><span class="z1-num" id="z1-alltime">—</span><span class="z1-cap" data-en="all-time vs your cost" data-ar="منذ البداية (مقابل تكلفتك)">منذ البداية (مقابل تكلفتك)</span></div>
+        <div class="z1-stat"><span class="z1-num z1-small" id="z1-today">—</span><span class="z1-cap" id="z1-today-cap" data-en="today" data-ar="اليوم">اليوم</span></div>
+      </div>
+      <div class="z1-sentence" id="z1-sentence"></div>
+      <div class="z1-fresh" id="z1-fresh"></div>
+      <div class="cmd-sub" id="cmd-change" style="display:none">Loading...</div>
     </div>
-    <div class="z1-sentence" id="z1-sentence"></div>
-    <div class="z1-fresh" id="z1-fresh"></div>
-    <div class="cmd-sub" id="cmd-change" style="display:none">Loading...</div>
+    <div class="dash-health-card">
+      <div class="cmd-lbl" data-en="Portfolio health" data-ar="صحة المحفظة">صحة المحفظة</div>
+      <div id="cmd-snapshot"><div class="hlayer"><span class="hlbl">—</span><div class="hbar"><i style="width:0%"></i></div><span class="hval">—</span></div></div>
+    </div>
   </div>
 
-  <!-- ═══ 2. NARRATIVE (hero — absorbs "what happened") ═══ -->
+  <!-- ═══ 2. NARRATIVE (hero, full width) ═══ -->
   <div class="z-narr" id="z-narr">
     <div class="z-narr-hd"><span class="z-narr-dot"></span><span class="z-narr-lbl" data-en="THEISI’s read today" data-ar="قراءة ثيسي اليوم">قراءة ثيسي اليوم</span></div>
     <div class="z-narr-body z-narr-skel" id="z-narr-body" data-en="THEISI’s daily briefing will appear here — the one story worth knowing, what it means, and how it touches your portfolio. (Connecting to the analysis engine…)" data-ar="ستظهر هنا قراءة ثيسي اليومية — أهم خبر يستحق المعرفة، وماذا يعني، وكيف يؤثر على محفظتك. (جاري الربط بمحرك التحليل…)">جاري التحميل…</div>
     <div class="z-narr-note" data-en="We connect the dots and explain — you decide. Not financial advice." data-ar="نربط النقاط ونشرح — القرار لك. ليست نصيحة مالية.">نربط النقاط ونشرح — القرار لك.</div>
   </div>
 
-  <!-- ═══ 3. MY HOLDINGS (merged: attention list + today's moves + health) ═══ -->
-  <div class="sec-head">
-    <span class="sec-title" data-en="Your portfolio today" data-ar="محفظتك اليوم">محفظتك اليوم</span>
-    <span class="sec-health" id="sec-health"></span>
-  </div>
-  <div class="sec-sub" data-en="what needs your attention — you decide" data-ar="ما يستحق انتباهك — القرار لك">ما يستحق انتباهك — القرار لك</div>
-  <div class="zone2" id="zone2">
-    <div class="z2-state"><span class="z2-ico"></span><div><div class="z2-head" data-en="Checking your portfolio…" data-ar="جاري فحص محفظتك…">جاري فحص محفظتك…</div></div></div>
-  </div>
-  <!-- smaller movers (Today's moves, folded in) -->
-  <div class="cmd-stitle tmoves-lbl" id="tmoves-title" style="display:none;font-size:11px;color:var(--text3);margin:14px 0 6px" data-en="Smaller moves" data-ar="تحركات أصغر">تحركات أصغر</div>
-  <div id="tmoves" class="tmoves"></div>
-
-  <!-- ═══ 4. ONE OPPORTUNITY ═══ -->
-  <div class="sec-head" style="margin-top:22px"><span class="sec-title" data-en="An opportunity THEISI sees" data-ar="فرصة يراها ثيسي">فرصة يراها ثيسي</span></div>
-  <div class="z-card pick" onclick="calmOpenOpportunities()" style="margin-top:8px">
-    <div class="z-card-tag" data-en="THEISI picks · opportunity" data-ar="ثيسي تختار · فرصة">ثيسي تختار · فرصة</div>
-    <div id="zone3" class="zone3"><div class="skel" style="height:48px;border-radius:10px"></div></div>
-  </div>
-
-  <!-- ═══ NEWS — thin strip ═══ -->
-  <div class="news-strip-wrap" style="margin-top:22px;border-top:0.5px solid var(--border);padding-top:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <span class="cmd-lbl" id="cmd-news-title" data-en="Latest news" data-ar="آخر الأخبار">آخر الأخبار</span>
-      <a href="#" onclick="document.querySelector('.sb-item[data-tab=portfolio]').click();return false;" style="color:var(--accent);font-size:11px;text-decoration:none" data-en="all in Portfolio →" data-ar="الكل في المحفظة ←">الكل في المحفظة ←</a>
+  <!-- ═══ 3. HOLDINGS (left) + SMALLER MOVES (right) ═══ -->
+  <div class="dash-row dash-cols">
+    <div class="dash-col">
+      <div class="sec-head">
+        <span class="sec-title" data-en="Your portfolio today" data-ar="محفظتك اليوم">محفظتك اليوم</span>
+        <span class="sec-health" id="sec-health"></span>
+      </div>
+      <div class="sec-sub" data-en="what needs your attention — you decide" data-ar="ما يستحق انتباهك — القرار لك">ما يستحق انتباهك — القرار لك</div>
+      <div class="zone2" id="zone2">
+        <div class="z2-state"><span class="z2-ico"></span><div><div class="z2-head" data-en="Checking your portfolio…" data-ar="جاري فحص محفظتك…">جاري فحص محفظتك…</div></div></div>
+      </div>
     </div>
-    <div class="news-grid news-strip" id="cmd-news"></div>
+    <div class="dash-col">
+      <div class="cmd-stitle tmoves-lbl" id="tmoves-title" style="display:none;font-size:12px;color:var(--text2);margin:0 0 8px" data-en="Smaller moves" data-ar="تحركات أصغر">تحركات أصغر</div>
+      <div id="tmoves" class="tmoves"></div>
+    </div>
+  </div>
+
+  <!-- ═══ 4. OPPORTUNITY (left) + NEWS (right) ═══ -->
+  <div class="dash-row dash-cols" style="margin-top:22px">
+    <div class="dash-col">
+      <div class="sec-head"><span class="sec-title" data-en="An opportunity THEISI sees" data-ar="فرصة يراها ثيسي">فرصة يراها ثيسي</span></div>
+      <div class="z-card pick" onclick="calmOpenOpportunities()" style="margin-top:8px">
+        <div class="z-card-tag" data-en="THEISI picks · opportunity" data-ar="ثيسي تختار · فرصة">ثيسي تختار · فرصة</div>
+        <div id="zone3" class="zone3"><div class="skel" style="height:48px;border-radius:10px"></div></div>
+      </div>
+    </div>
+    <div class="dash-col">
+      <div class="news-strip-wrap">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span class="sec-title" id="cmd-news-title" data-en="Latest news" data-ar="آخر الأخبار" style="font-size:14px">آخر الأخبار</span>
+          <a href="#" onclick="document.querySelector('.sb-item[data-tab=portfolio]').click();return false;" style="color:var(--accent);font-size:11px;text-decoration:none" data-en="all in Portfolio →" data-ar="الكل في المحفظة ←">الكل في المحفظة ←</a>
+        </div>
+        <div class="news-grid news-strip" id="cmd-news"></div>
+      </div>
+    </div>
   </div>
 
   <p class="cmd-disclaimer-foot" style="font-size:10px;color:var(--text3);text-align:center;margin-top:16px;border-top:0.5px solid var(--border);padding-top:10px" data-en="Informational signals with a wide margin of error. Not financial advice." data-ar="إشارات معلوماتية بهامش خطأ واسع. ليست نصيحة مالية.">إشارات معلوماتية بهامش خطأ واسع. ليست نصيحة مالية.</p>
@@ -1940,7 +1965,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
     <div class="z-card mine" id="z-card-mine"><div class="z-card-tag"></div><div class="z-card-sym" id="z-card-mine-sym">—</div><div class="z-card-pct" id="z-card-mine-pct"></div><div class="z-card-why" id="z-card-mine-why"></div></div>
     <div class="cmd-top below-strip">
       <div class="cmd-score-wrap"><div class="cmd-ring"><span id="cmd-score-num">—</span></div><div><div id="cmd-score-label">—</div><div id="cmd-actions-count">—</div></div></div>
-      <div class="cmd-health"><div class="cmd-lbl" id="cmd-score-label-txt" data-en="Portfolio Snapshot" data-ar="لمحة المحفظة">لمحة المحفظة</div><div id="cmd-snapshot"><div class="hlayer"><span class="hlbl">—</span><div class="hbar"><i style="width:0%"></i></div><span class="hval">—</span></div></div></div>
+      <div class="cmd-health"><div class="cmd-lbl" id="cmd-score-label-txt" data-en="Portfolio Snapshot" data-ar="لمحة المحفظة">لمحة المحفظة</div></div>
     </div>
     <div id="cmd-happened"></div>
     <div class="event-grid" id="cmd-events"></div>
