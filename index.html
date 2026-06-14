@@ -249,6 +249,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .brief-mood-text{font-size:13px;line-height:1.8;color:var(--text);direction:rtl;text-align:right;}
 .brief-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;align-items:start;}
 .brief-col{background:var(--bg2);border-radius:11px;padding:12px 13px;border-top:2px solid var(--border);}
+.brief-col .brief-section-lbl{color:var(--rose)!important;}
 .brief-news-list{display:flex;flex-direction:column;gap:8px;}
 .brief-news-item{display:flex;gap:8px;align-items:flex-start;direction:rtl;}
 .brief-sent-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px;}
@@ -2669,7 +2670,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.0 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.1 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -3228,14 +3229,14 @@ async function loadBriefing(){
   // 1. MOOD — full width hero
   if(d.mood){
     html+=`<div class="brief-mood">
-      <div class="brief-section-lbl">${ar?'مزاج السوق اليوم':'Market mood'}</div>
+      <div class="brief-section-lbl" style="color:#FF0A78">${ar?'مزاج السوق اليوم':'Market mood'}</div>
       <div class="brief-mood-text">${d.mood}</div>
     </div>`;
   }
 
   // 2. MOVES — heading full width, then 2-column RTL grid (moved above news/dates)
   if(d.moves&&d.moves.length>0){
-    html+=`<div class="brief-section-lbl">${ar?'أبرز تحركات محفظتك':'Key portfolio moves'}</div>
+    html+=`<div class="brief-section-lbl" style="color:#FF0A78">${ar?'أبرز تحركات محفظتك':'Key portfolio moves'}</div>
     <div class="brief-moves-grid">`;
     d.moves.forEach(m=>{
       const chgColor=String(m.change||'').startsWith('-')?'var(--red)':'var(--green)';
@@ -3261,7 +3262,7 @@ async function loadBriefing(){
     html+=`<div class="brief-row">`;
     if(hasNews){
       html+=`<div class="brief-col">
-        <div class="brief-section-lbl">${ar?'أخبار تمس محفظتك':'News affecting your portfolio'}</div>
+        <div class="brief-section-lbl" style="color:#FF0A78">${ar?'أخبار تمس محفظتك':'News affecting your portfolio'}</div>
         <div class="brief-news-list">`;
       d.news.forEach(n=>{
         const syms=Array.isArray(n.syms)?n.syms.join(' · '):String(n.syms||'');
@@ -3278,7 +3279,7 @@ async function loadBriefing(){
     }
     if(hasDates){
       html+=`<div class="brief-col">
-        <div class="brief-section-lbl">${ar?'مواعيد مهمة اليوم':'Important dates'}</div>
+        <div class="brief-section-lbl" style="color:#FF0A78">${ar?'مواعيد مهمة اليوم':'Important dates'}</div>
         <div class="brief-dates-list">`;
       d.dates.forEach(dt=>{
         html+=`<div class="brief-date-row">
