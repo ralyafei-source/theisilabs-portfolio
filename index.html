@@ -2670,7 +2670,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.25 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.26 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -5825,94 +5825,78 @@ function sortPosTable(tblId, key, dir){
 function renderHealthSummary(text){
   if(!text||text.length<50) return `<div style="padding:20px;text-align:center;color:var(--text3);">لا توجد بيانات صحة المحفظة بعد — يتحدث أول أحد من كل شهر</div>`;
 
-  // Extract scored sections e.g. "1. التنويع القطاعي: 12/20"
-  const sections = [];
-  const sectionRe = /\*\*(\d+)\.\s*([^:]+):\s*(\d+)\/(\d+)\*\*/g;
-  let m;
-  while((m = sectionRe.exec(text)) !== null){
-    const num = parseInt(m[1]);
-    const label = m[2].trim();
-    const score = parseInt(m[3]);
-    const max = parseInt(m[4]);
-    // Extract content between this header and the next
-    const start = m.index + m[0].length;
-    const nextM = sectionRe.exec(text);
-    sectionRe.lastIndex = m.index + 1; // reset to find all
-    sections.push({num, label, score, max, start});
-  }
-
-  // Simpler approach — find all "N. label: X/Y" patterns
+  // Split on --- separators, find sections with score like "12/20"
   const parts = text.split(/\n---\n/).filter(p=>p.trim());
   const cards = [];
   parts.forEach(part=>{
-    const hm = part.match(/\*\*\d+\.\s*([^:]+):\s*(\d+)\/(\d+)\*\*/);
+    // Match <b>N. label: X/Y</b>  format (actual data format)
+    const hm = part.match(/<b>\d+\.\s*([^:<]+):\s*(\d+)\/(\d+)<\/b>/);
     if(!hm) return;
     const label = hm[1].trim();
     const score = parseInt(hm[2]);
-    const max = parseInt(hm[3]);
-    const pct = Math.round(score/max*100);
+    const max   = parseInt(hm[3]);
+    const pct   = Math.round(score/max*100);
     const color = pct>=75?'var(--green)':pct>=50?'var(--gold)':'var(--red)';
-    const bg = pct>=75?'rgba(29,158,117,0.08)':pct>=50?'rgba(186,117,23,0.08)':'rgba(226,75,74,0.08)';
-    // Get key bullet points (lines starting with - or •)
+    const bg    = pct>=75?'rgba(29,158,117,0.08)':pct>=50?'rgba(186,117,23,0.08)':'rgba(226,75,74,0.08)';
+    // Key bullet points
     const bullets = part.split('\n')
       .filter(l=>l.trim().startsWith('-')||l.trim().startsWith('•'))
       .map(l=>l.replace(/^[-•]\s*/,'').replace(/<[^>]+>/g,'').replace(/\*\*/g,'').trim())
       .filter(l=>l.length>5&&l.length<120)
       .slice(0,2);
-    // Get any bold warning lines
-    const warnings = [...part.matchAll(/<b>([^<]{10,100})<\/b>/g)]
-      .map(w=>w[1].replace(/\*\*/g,'').trim())
-      .filter(w=>w.includes('⚠️')||w.includes('تحذير'))
-      .slice(0,1);
-    cards.push({label, score, max, pct, color, bg, bullets, warnings, detail: part});
+    // Warnings
+    const warnM = part.match(/<b>⚠️([^<]{5,80})<\/b>/);
+    const warning = warnM ? warnM[1].trim() : '';
+    cards.push({label, score, max, pct, color, bg, bullets, warning});
   });
 
-  if(!cards.length) return `<div style="white-space:normal;">${mdToHtml(text)}</div>`;
+  if(!cards.length){
+    // Fallback: just collapse the raw text
+    return `<details open style="white-space:normal;"><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--text);padding:10px;background:var(--bg2);border-radius:8px;list-style:none;">صحة المحفظة — اضغط لعرض التفاصيل ▾</summary><div style="padding:12px 0;">${mdToHtml(text)}</div></details>`;
+  }
 
   // Total score
   const totalScore = cards.reduce((a,c)=>a+c.score,0);
-  const totalMax = cards.reduce((a,c)=>a+c.max,0);
-  const totalPct = Math.round(totalScore/totalMax*100);
+  const totalMax   = cards.reduce((a,c)=>a+c.max,0);
+  const totalPct   = Math.round(totalScore/totalMax*100);
   const totalColor = totalPct>=75?'var(--green)':totalPct>=50?'var(--gold)':'var(--red)';
 
   let html = `<div style="white-space:normal;">`;
 
-  // Summary hero
-  html += `<div style="display:flex;align-items:center;gap:16px;padding:14px 16px;background:var(--bg2);border-radius:12px;margin-bottom:16px;border-top:2px solid ${totalColor};">
-    <div style="flex:0 0 64px;height:64px;border-radius:50%;border:3px solid ${totalColor};display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg3);">
-      <div style="font-size:18px;font-weight:800;color:${totalColor};font-family:'IBM Plex Mono',monospace;">${totalScore}</div>
-      <div style="font-size:10px;color:var(--text3);">/ ${totalMax}</div>
+  // Hero summary bar
+  html += `<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg2);border-radius:12px;margin-bottom:14px;border-top:2px solid ${totalColor};">
+    <div style="flex:0 0 58px;height:58px;border-radius:50%;border:3px solid ${totalColor};display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg3);">
+      <div style="font-size:16px;font-weight:800;color:${totalColor};font-family:'IBM Plex Mono',monospace;line-height:1;">${totalScore}</div>
+      <div style="font-size:9px;color:var(--text3);">/ ${totalMax}</div>
     </div>
     <div style="flex:1;direction:rtl;">
       <div style="font-size:13px;font-weight:700;color:var(--text);">صحة المحفظة الشهرية</div>
       <div style="font-size:11px;color:var(--text3);margin-top:2px;">${totalPct}% — ${totalPct>=75?'صحة جيدة':totalPct>=50?'تحتاج مراجعة':'تحتاج تدخل'}</div>
-      <div style="margin-top:8px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
-        <div style="height:100%;width:${totalPct}%;background:${totalColor};border-radius:2px;transition:width .4s;"></div>
+      <div style="margin-top:6px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+        <div style="height:100%;width:${totalPct}%;background:${totalColor};border-radius:2px;"></div>
       </div>
     </div>
   </div>`;
 
-  // Score cards grid
-  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">`;
+  // Score cards in 2-col grid, each collapsible
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">`;
   cards.forEach(c=>{
-    html += `<details style="background:var(--bg2);border-radius:10px;padding:11px 13px;border-right:3px solid ${c.color};">
-      <summary style="list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+    html += `<details style="background:var(--bg2);border-radius:10px;padding:10px 12px;border-right:3px solid ${c.color};">
+      <summary style="list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:6px;">
         <div style="flex:1;direction:rtl;text-align:right;">
-          <div style="font-size:11.5px;font-weight:600;color:var(--text);">${c.label}</div>
-          ${c.warnings.length?`<div style="font-size:10px;color:var(--red);margin-top:2px;">${c.warnings[0].replace('⚠️','').trim().slice(0,50)}</div>`:''}
+          <div style="font-size:11px;font-weight:600;color:var(--text);line-height:1.3;">${c.label}</div>
+          ${c.warning?`<div style="font-size:9.5px;color:var(--red);margin-top:2px;">${c.warning.slice(0,45)}</div>`:''}
         </div>
-        <div style="flex:0 0 40px;text-align:center;">
-          <div style="font-size:14px;font-weight:800;color:${c.color};font-family:'IBM Plex Mono',monospace;">${c.score}<span style="font-size:9px;color:var(--text3);">/${c.max}</span></div>
+        <div style="flex:0 0 38px;text-align:center;">
+          <span style="font-size:13px;font-weight:800;color:${c.color};font-family:'IBM Plex Mono',monospace;">${c.score}</span><span style="font-size:9px;color:var(--text3);">/${c.max}</span>
         </div>
       </summary>
-      <div style="margin-top:10px;padding-top:8px;border-top:0.5px solid var(--border);direction:rtl;">
-        ${c.bullets.map(b=>`<div style="font-size:11px;color:var(--text2);line-height:1.6;padding:2px 0;">· ${b}</div>`).join('')}
-        ${c.detail.length>200?`<div style="font-size:10px;color:var(--accent);margin-top:6px;cursor:pointer;" onclick="this.parentElement.innerHTML='<div style=font-size:11px;color:var(--text2);direction:rtl;line-height:1.7;>${c.detail.replace(/'/g,"\\'").replace(/<[^>]+>/g,'').replace(/\*\*/g,'').replace(/\n/g,'<br>').slice(0,800)}</div>'">`+'قراءة التحليل الكامل ↓'+'</div>':''}
+      <div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border);direction:rtl;">
+        ${c.bullets.map(b=>`<div style="font-size:10.5px;color:var(--text2);line-height:1.5;padding:1px 0;">· ${b}</div>`).join('')}
       </div>
     </details>`;
   });
-  html += `</div>`;
-  html += `</div>`;
+  html += `</div></div>`;
   return html;
 }
 
@@ -7035,7 +7019,7 @@ function renderWeeklyIntegrated(scoringText, fairvalueText, momentumText, riskTe
               </tr>
             </thead>
             <tbody>`;
-      stressRows.forEach(r=>{
+      stressRows.slice(0,10).forEach(r=>{
         html += `<tr style="border-bottom:0.5px solid var(--border);">
           <td style="padding:6px 10px;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);">${r.sym}</td>
           <td style="padding:6px 10px;color:var(--text2);">${r.value}</td>
