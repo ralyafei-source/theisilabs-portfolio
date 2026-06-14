@@ -3538,15 +3538,8 @@ function fillModalContext(s, idx){
   const ar=(lang==='ar');
   const parts=[];
 
-  // 1) Why flagged (carried from the attention click)
-  const reason=(window._modalReason||'').trim();
-  if(reason){
-    parts.push('<div style="background:var(--bg2);border:1px solid var(--border);border-inline-start:3px solid var(--rose);border-radius:12px;padding:12px 14px;margin-bottom:10px;">'
-      +'<div style="font-size:11px;font-weight:700;color:var(--rose);margin-bottom:5px;">'+(ar?'لماذا يستحق الانتباه':'Why it needs attention')+'</div>'
-      +'<div style="font-size:13px;line-height:1.7;color:var(--text2);" dir="'+(ar?'rtl':'ltr')+'">'+reason+'</div></div>');
-  }
-
-  // 2) Position context — rank, weight, today's $ impact
+  // Position as a prose sentence (instead of separate chips)
+  let posSentence='';
   try{
     const tot=stocks.reduce((a,x)=>a+(Number(x.mv)||0),0);
     const weight=tot>0?((Number(s.mv)||0)/tot*100):0;
@@ -3555,15 +3548,30 @@ function fillModalContext(s, idx){
     const sh=Math.round((Number(s.mv)||0)/(Number(s.price)||1));
     const dayImpact=sh*(Number(s.dayCh)||0);
     const impTxt = (typeof privacyOn!=='undefined'&&privacyOn)?'••••':((dayImpact>=0?'+':'−')+(typeof _calmMoney==='function'?_calmMoney(dayImpact):Math.abs(dayImpact).toFixed(0)));
-    const ord = ar ? (rank+'') : (rank+(rank===1?'st':rank===2?'nd':rank===3?'rd':'th'));
-    parts.push('<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">'
-      +'<span style="background:var(--bg3);border-radius:8px;padding:6px 10px;font-size:11px;color:var(--text2);">'+(ar?('المركز #'+rank+' في محفظتك'):(ord+' largest holding'))+'</span>'
-      +'<span style="background:var(--bg3);border-radius:8px;padding:6px 10px;font-size:11px;color:var(--text2);">'+(ar?'الوزن: ':'Weight: ')+weight.toFixed(1)+'%</span>'
-      +(dayImpact?'<span style="background:var(--bg3);border-radius:8px;padding:6px 10px;font-size:11px;color:'+(dayImpact>=0?'var(--green)':'var(--red)')+';">'+(ar?'تأثير اليوم: ':'Today: ')+impTxt+'</span>':'')
-      +'</div>');
+    const ord = rank+(rank===1?'st':rank===2?'nd':rank===3?'rd':'th');
+    if(ar){
+      posSentence='هذا السهم هو المركز رقم '+rank+' في محفظتك ويشكّل '+weight.toFixed(1)+'% منها'
+        + (dayImpact?('، وتأثيره على محفظتك اليوم '+impTxt):'') + '.';
+    }else{
+      posSentence='This is your '+ord+' largest holding at '+weight.toFixed(1)+'% of your portfolio'
+        + (dayImpact?(", with a "+impTxt+" impact today"):'') + '.';
+    }
   }catch(e){}
 
-  // 3) Score + opportunity tags if this stock is in the opportunity/scored data
+  // ONE card: title + reason + (data line appended async) + position sentence
+  const reason=(window._modalReason||'').trim();
+  let inner='<div style="font-size:11px;font-weight:700;color:var(--rose);margin-bottom:7px;">'+(ar?'لماذا يستحق الانتباه':'Why it needs attention')+'</div>';
+  if(reason){
+    inner+='<div style="font-size:13px;line-height:1.8;color:var(--text);margin-bottom:8px;" dir="'+(ar?'rtl':'ltr')+'">'+reason+'</div>';
+  }
+  // placeholder where the deep "what the data shows" line will be inserted
+  inner+='<div id="modalDeepLine"></div>';
+  if(posSentence){
+    inner+='<div style="font-size:12.5px;line-height:1.8;color:var(--text2);margin-top:8px;" dir="'+(ar?'rtl':'ltr')+'">'+posSentence+'</div>';
+  }
+  parts.push('<div style="background:var(--bg2);border:1px solid var(--border);border-inline-start:3px solid var(--rose);border-radius:12px;padding:14px 16px;margin-bottom:12px;">'+inner+'</div>');
+
+  // Score + opportunity tags (kept as a small row below the card)
   try{
     let rec=null;
     if(typeof CALM!=='undefined'){
@@ -3589,7 +3597,7 @@ function fillModalContext(s, idx){
     }
   }catch(e){}
 
-  // 4) Stock-specific events from the 922 attention file
+  // Stock-specific events from the 922 attention file
   try{
     const evs=(typeof CALM!=='undefined'&&Array.isArray(CALM.attention))?CALM.attention.filter(ev=>String(ev.symbol||ev.sym||'').toUpperCase()===s.sym):[];
     evs.forEach(ev=>{
@@ -3599,20 +3607,20 @@ function fillModalContext(s, idx){
   }catch(e){}
 
   el.innerHTML=parts.join('');
-  // glossary on the tags
   if(typeof highlightGlossaryTerms==='function'){ try{ highlightGlossaryTerms(el); }catch(e){} }
-  // Enrich: append a grounded "what the data shows" line from deep-{date}.json (async)
+  // Insert the grounded "what the data shows" line INSIDE the card
   try{ appendDeepReadLine(s.sym, el); }catch(e){}
 }
 
-// Adds a plain-language, data-grounded read beneath the attention reason
+// Adds a plain-language, data-grounded read INSIDE the why card (#modalDeepLine)
 async function appendDeepReadLine(sym, el){
-  if(!el || typeof _getDeep!=='function') return;
+  if(typeof _getDeep!=='function') return;
   const ar=(lang==='ar');
   try{
     const deep=await _getDeep();
     const d=deep?(deep[sym]||deep[sym.toUpperCase()]):null;
-    if(!d) return;
+    const slot=document.getElementById('modalDeepLine');
+    if(!d || !slot) return;
     const bits=[];
     if(d.rsi!=null){ const r=Number(d.rsi); if(r>70)bits.push(ar?'الزخم في منطقة ذروة شراء (RSI '+r.toFixed(0)+')':'momentum in overbought territory (RSI '+r.toFixed(0)+')'); else if(r<30)bits.push(ar?'الزخم في منطقة ذروة بيع (RSI '+r.toFixed(0)+')':'momentum oversold (RSI '+r.toFixed(0)+')'); }
     if(d.adx!=null&&Number(d.adx)>25) bits.push(ar?'الاتجاه قوي (ADX '+Number(d.adx).toFixed(0)+')':'trend is strong (ADX '+Number(d.adx).toFixed(0)+')');
@@ -3620,14 +3628,10 @@ async function appendDeepReadLine(sym, el){
     if(d.analyst_upside_pct!=null) bits.push(ar?('المحللون يرون صعوداً محتملاً '+Number(d.analyst_upside_pct).toFixed(0)+'%'):('analysts see '+Number(d.analyst_upside_pct).toFixed(0)+'% potential upside'));
     if(d.recent_upgrade) bits.push(ar?'حصل على ترقية حديثة':'recently upgraded');
     if(!bits.length) return;
-    const line=document.createElement('div');
-    line.style.cssText='font-size:12px;line-height:1.7;color:var(--text3);margin:-4px 0 10px;';
-    line.setAttribute('dir', ar?'rtl':'ltr');
-    line.textContent=(ar?'ما تظهره البيانات: ':'What the data shows: ')+bits.join(ar?' · ':' · ')+'.';
-    // insert right after the first (reason) block if present, else at top
-    if(el.firstChild && el.children.length){ el.insertBefore(line, el.children[1]||null); }
-    else el.appendChild(line);
-    if(typeof highlightGlossaryTerms==='function'){ try{ highlightGlossaryTerms(line); }catch(e){} }
+    slot.style.cssText='font-size:12.5px;line-height:1.8;color:var(--text2);';
+    slot.setAttribute('dir', ar?'rtl':'ltr');
+    slot.textContent=(ar?'ما تظهره البيانات: ':'What the data shows: ')+bits.join(ar?' · ':' · ')+'.';
+    if(typeof highlightGlossaryTerms==='function'){ try{ highlightGlossaryTerms(slot); }catch(e){} }
   }catch(e){}
 }
 
@@ -7369,6 +7373,18 @@ const GLOSSARY = {
   "ذروة بيع":   {en:"Oversold. RSI below 30 — stock may be underpriced and due for a rebound.", ar:"حالة يكون فيها السهم منخفضاً أكثر من اللازم. RSI تحت 30."},
   "الخندق التنافسي":{en:"Competitive moat. A sustainable advantage that protects a company from competition.", ar:"الميزة التنافسية المستدامة التي تحمي الشركة من المنافسين."},
   "FCF":              {en:"Free Cash Flow. Cash remaining after capital expenditures.", ar:"التدفق النقدي الحر بعد النفقات الرأسمالية.", scale:'موجب = صحة مالية جيدة · سالب = يحرق النقد'},
+  "ADX":             {en:"Average Directional Index. Measures trend strength (not direction). Above 25 = trending, above 40 = strong trend, below 25 = weak/range-bound.", ar:"مؤشر قوة الاتجاه. يقيس قوة الاتجاه (لا اتجاهه). فوق 25 = اتجاه واضح، فوق 40 = قوي، تحت 25 = ضعيف أو عرضي.", scale:'< 25 ضعيف · 25–40 معتدل · > 40 قوي'},
+  "MA 50 / 200":     {en:"50-day and 200-day moving averages. Price above both is a healthy uptrend; below both is a downtrend.", ar:"المتوسط المتحرك لـ 50 و200 يوم. السعر فوق الاثنين = اتجاه صاعد صحي، تحتهما = هابط."},
+  "Golden cross":    {en:"When the 50-day moving average crosses above the 200-day. A widely watched bullish signal.", ar:"التقاطع الذهبي: عندما يتجاوز متوسط 50 يوم متوسط 200 يوم للأعلى. إشارة إيجابية مراقبة على نطاق واسع."},
+  "Volume vs avg":   {en:"Today\u2019s trading volume compared to the 20-day average. Above 1.5x means unusually heavy trading — something is happening.", ar:"حجم التداول اليوم مقارنة بمتوسط 20 يوماً. فوق 1.5× = تداول كثيف غير معتاد."},
+  "EV/EBITDA":       {en:"Enterprise Value to EBITDA. A valuation multiple; lower can mean cheaper relative to operating earnings.", ar:"قيمة المنشأة إلى الأرباح التشغيلية. مضاعف تقييم، انخفاضه قد يعني أرخص.", scale:'< 10 رخيص · 10–20 معتدل · > 20 مرتفع'},
+  "Net margin":      {en:"Net profit as a percentage of revenue. How many cents of profit per dollar of sales.", ar:"صافي الربح كنسبة من الإيرادات. كم ربحاً من كل دولار مبيعات."},
+  "ROE":             {en:"Return on Equity. Profit generated per dollar of shareholder equity. Higher is generally better.", ar:"العائد على حقوق المساهمين. الربح مقابل كل دولار من حقوق الملكية. ارتفاعه أفضل عادةً."},
+  "ROIC":            {en:"Return on Invested Capital. How efficiently a company turns capital into profit. A core quality metric.", ar:"العائد على رأس المال المستثمر. كفاءة تحويل رأس المال إلى ربح. مقياس جودة أساسي."},
+  "PEG":             {en:"P/E ratio divided by earnings growth. Below 1 may mean growth is cheaply priced.", ar:"نسبة السعر/الربح مقسومة على نمو الأرباح. تحت 1 قد يعني أن النمو مسعّر برخص.", scale:'< 1 جذّاب · 1–2 معتدل · > 2 مرتفع'},
+  "Debt/Equity":     {en:"Total debt relative to shareholder equity. Lower means less leverage and financial risk.", ar:"إجمالي الديون مقابل حقوق المساهمين. انخفاضه = رفع مالي ومخاطر أقل.", scale:'< 0.5 منخفض · 0.5–1 معتدل · > 1 مرتفع'},
+  "FCF yield":       {en:"Free cash flow as a percentage of market value. Higher means more cash generated relative to price.", ar:"التدفق النقدي الحر كنسبة من القيمة السوقية. ارتفاعه = نقد أكثر مقابل السعر."},
+  "Analyst upside":  {en:"The percentage gain to the average analyst price target from the current price.", ar:"نسبة الارتفاع من السعر الحالي إلى متوسط السعر المستهدف من المحللين."},
 "FCF Yield":        {en:"Free Cash Flow divided by market cap. Higher = better value.", ar:"نسبة التدفق النقدي الحر إلى القيمة السوقية."},
 "ROIC":             {en:"Return on Invested Capital. How efficiently a company uses its capital.", ar:"العائد على رأس المال المستثمر. مدى كفاءة الشركة في استخدام رأس المال.", scale:'< 5% ضعيف · 5–10% معتدل · > 10% ممتاز'},
 "WACC":             {en:"Weighted Average Cost of Capital. The minimum return a company must earn.", ar:"متوسط تكلفة رأس المال المرجح."},
