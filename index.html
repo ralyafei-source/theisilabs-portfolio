@@ -2670,7 +2670,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.1 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.2 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -5760,117 +5760,133 @@ function renderSignals(text){
   text = text
     .replace(/[\u25C6\u25C7\u2666\u2665\u2663\u2660\uFFFD\u25A0\u25A1]/g, '')
     .replace(/#{1,6}\s+/g, '');
+
   const ratingMap={
-    'Strong Buy':{color:'var(--green)',bg:'var(--green-dim)',border:'transparent',emoji:''},
-    'Buy':       {color:'var(--green)',bg:'var(--green-dim)',border:'transparent',emoji:''},
-    'Hold':      {color:'var(--gold)',bg:'var(--gold-dim)',border:'transparent',emoji:''},
-    'Reduce':    {color:'var(--red)',bg:'var(--red-dim)',border:'transparent',emoji:''},
-    'Sell':      {color:'#ff4444',bg:'rgba(255,68,68,0.1)', border:'rgba(255,68,68,0.4)', emoji:''},
+    'Strong Buy':{color:'var(--green)',bg:'var(--green-dim)',border:'transparent'},
+    'Buy':       {color:'var(--green)',bg:'var(--green-dim)',border:'transparent'},
+    'Hold':      {color:'var(--gold)',bg:'var(--gold-dim)',border:'transparent'},
+    'Reduce':    {color:'var(--red)',bg:'var(--red-dim)',border:'transparent'},
+    'Sell':      {color:'#ff4444',bg:'rgba(255,68,68,0.1)',border:'rgba(255,68,68,0.4)'},
   };
 
-  const lines = text.split('\n');
-  let html = '';
-  let inTable = false;
-  let tableRows = [];
-
-  function flushSignalTable(){
-    if(!tableRows.length) return;
-    let t = '<table style="width:100%;border-collapse:collapse;margin:12px 0;">';
-    tableRows.forEach((row, i) => {
-      const cells = row.split('|').map(c=>c.trim()).filter(c=>c);
-      if(!cells.length) return;
-      if(cells.every(c=>/^[-:]+$/.test(c))) return;
-
-      if(i === 0){
-        // Header row
-        t += '<tr>' + cells.map(c=>{
-          const tip = HEADER_TOOLTIPS[c] || '';
-          return `<th style="padding:10px 14px;background:rgba(0,212,255,0.08);border:1px solid var(--border);text-align:center;font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap;">${c}${tip ? ` <span style="border-bottom:1px dotted var(--accent);cursor:help;" title="${tip}">â“˜</span>` : ''}</th>`;
-        }).join('') + '</tr>';
-      } else {
-        // Data row — detect rating in second cell for color
-        const rating = cells[1] ? cells[1].trim() : '';
-        const style = Object.entries(ratingMap).find(([k])=>rating.includes(k));
-        const rowBg = style ? style[1].bg : 'transparent';
-        const rowBorder = style ? style[1].border : 'var(--border)';
-        const emoji = style ? style[1].emoji : '';
-
-        t += `<tr style="background:${rowBg};">` + cells.map((c, ci) => {
-          let content = c;
-          // Rating cell — add emoji + color
-          if(ci === 1 && style){
-            content = `<span style="color:${style[1].color};font-weight:700;">${emoji} ${c}</span>`;
-          }
-          // Percentage cells — colorize
-          else {
-            content = colorizePercent(c);
-          }
-          const align = ci === 0 ? 'center' : ci === 2 ? 'right' : 'center';
-          return `<td style="padding:10px 14px;border:1px solid ${rowBorder};text-align:${align};font-size:13px;vertical-align:middle;">${ci===0?content.replace(/\*\*/g,''):content}</td>`;
-        }).join('') + '</tr>';
-      }
-    });
-    t += '</table>';
-    html += t;
-    tableRows = [];
-    inTable = false;
-  }
-
-  lines.forEach(line => {
-    const t = line.trim();
-
-    // Table row
-    if(t.startsWith('|') && t.endsWith('|')){
-      inTable = true;
-      tableRows.push(t.slice(1,-1));
-      return;
-    }
-
-    // Flush table if we hit a non-table line
-    if(inTable) flushSignalTable();
-
-    // Section header
-    if(/^[\d١-٩][\.\-\)]/.test(t) || /^#{1,3}\s/.test(t) || t.includes('â•â•â•')){
-      html += `<div style="font-size:14px;font-weight:800;color:var(--accent);margin:20px 0 10px;padding:10px 14px;background:rgba(0,212,255,0.06);border-radius:8px;border-right:3px solid var(--accent);direction:rtl;text-align:right;">${t.replace(/^#+\s*/,'').replace(/â•â•â•/g,'').trim()}</div>`;
-      return;
-    }
-
-    // Signal line (non-table format fallback)
-    let matched = false;
-    for(const [key, style] of Object.entries(ratingMap)){
-      if(t.includes(key)){
-        const parts = t.split(/\s*—\s*|\s*\|\s*/);
-        let sym='', desc='';
-        parts.forEach(p=>{
-          if(Object.keys(ratingMap).some(r=>p.trim().startsWith(r))){}
-          else if(/^[A-Z]{1,5}$/.test(p.trim())) sym=p.trim();
-          else if(p.trim()) desc=p.trim();
-        });
-        html += `
-          <div style="display:flex;align-items:stretch;gap:0;margin-bottom:8px;border-radius:10px;overflow:hidden;border:1px solid ${style.border};background:var(--bg3);">
-            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 12px;background:${style.bg};min-width:90px;flex-shrink:0;gap:4px;">
-              <div style="font-size:16px;">${style.emoji}</div>
-              <div style="font-size:10px;font-weight:800;color:${style.color};font-family:'IBM Plex Mono',monospace;text-align:center;">${key.toUpperCase()}</div>
-            </div>
-            <div style="display:flex;align-items:center;justify-content:center;padding:10px 14px;border-left:1px solid ${style.border};border-right:1px solid ${style.border};min-width:70px;flex-shrink:0;">
-              <div style="font-size:14px;font-weight:900;color:var(--accent);font-family:'IBM Plex Mono',monospace;">${sym||'—'}</div>
-            </div>
-            <div style="flex:1;padding:10px 14px;display:flex;align-items:center;direction:rtl;text-align:right;">
-              <div style="font-size:13px;color:var(--text);line-height:1.6;">${colorizePercent(desc)}</div>
-            </div>
-          </div>`;
-        matched = true; break;
-      }
-    }
-
-    if(!matched && t){
-      html += `<div style="font-size:13px;color:var(--text2);padding:4px 8px;direction:rtl;text-align:right;line-height:1.7;">${colorizePercent(t.replace(/\*\*/g,'').replace(/\*/g,'').replace(/^[-â€¢]\s*/,''))}</div>`;
+  // ── STEP 1: Split the full text into sections by numbered headers ──
+  // Split on lines that start with a number like "1." "2." "3."
+  const sectionBlocks = {};
+  let currentSection = 0;
+  let currentLines = [];
+  text.split('\n').forEach(line => {
+    const m = line.match(/^([١١٢٣123])[\.\-\)]/);
+    if(m){
+      if(currentLines.length) sectionBlocks[currentSection] = currentLines.join('\n');
+      currentSection = parseInt(m[1].replace('١','1').replace('٢','2').replace('٣','3'));
+      currentLines = [line];
+    } else {
+      currentLines.push(line);
     }
   });
+  if(currentLines.length) sectionBlocks[currentSection] = currentLines.join('\n');
 
-  if(inTable) flushSignalTable();
+  // ── STEP 2: Render a section block into HTML ──
+  function renderBlock(blockText, isTable){
+    const lines = blockText.split('\n');
+    let html = ''; let inTable = false; let tableRows = [];
+    function flushTable(){
+      if(!tableRows.length) return;
+      let t = '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;margin:8px 0;">';
+      tableRows.forEach((row,i)=>{
+        const cells=row.split('|').map(c=>c.trim()).filter(c=>c);
+        if(!cells.length||cells.every(c=>/^[-:]+$/.test(c))) return;
+        if(i===0){
+          t+='<tr>'+cells.map(c=>`<th style="padding:8px 12px;background:rgba(0,212,255,0.08);border:1px solid var(--border);text-align:center;font-size:11px;font-weight:700;color:var(--accent);white-space:nowrap;">${c}</th>`).join('')+'</tr>';
+        } else {
+          const rating=cells[1]?cells[1].trim():'';
+          const style=Object.entries(ratingMap).find(([k])=>rating.includes(k));
+          const rowBg=style?style[1].bg:'transparent';
+          t+=`<tr style="background:${rowBg};">`+cells.map((c,ci)=>{
+            let content=c;
+            if(ci===1&&style) content=`<span style="color:${style[1].color};font-weight:700;">${c}</span>`;
+            else content=colorizePercent(c);
+            const align=ci===0?'center':ci===2?'right':'center';
+            return `<td style="padding:8px 12px;border:1px solid var(--border);text-align:${align};font-size:12px;">${ci===0?content.replace(/\*\*/g,''):content}</td>`;
+          }).join('')+'</tr>';
+        }
+      });
+      t+='</table></div>';
+      html+=t; tableRows=[]; inTable=false;
+    }
+    lines.forEach(line=>{
+      const t=line.trim();
+      if(t.startsWith('|')&&t.endsWith('|')){ inTable=true; tableRows.push(t.slice(1,-1)); return; }
+      if(inTable) flushTable();
+      if(/^[\d١-٩][\.\-\)]/.test(t)||t.includes('═══')) return; // skip section headers (already handled)
+      let matched=false;
+      for(const [key,style] of Object.entries(ratingMap)){
+        if(t.includes(key)){
+          const parts=t.split(/\s*—\s*|\s*\|\s*/);
+          let sym='',desc='';
+          parts.forEach(p=>{if(/^[A-Z]{1,5}$/.test(p.trim()))sym=p.trim();else if(p.trim()&&!Object.keys(ratingMap).some(r=>p.trim().startsWith(r)))desc=p.trim();});
+          html+=`<div style="display:flex;align-items:stretch;gap:0;margin-bottom:6px;border-radius:9px;overflow:hidden;border:1px solid ${style.border};background:var(--bg3);">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 10px;background:${style.bg};min-width:80px;flex-shrink:0;">
+              <div style="font-size:10px;font-weight:800;color:${style.color};font-family:'IBM Plex Mono',monospace;">${key.toUpperCase()}</div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:center;padding:8px 12px;border-inline:1px solid ${style.border};min-width:60px;flex-shrink:0;">
+              <div style="font-size:13px;font-weight:900;color:var(--accent);font-family:'IBM Plex Mono',monospace;">${sym||'—'}</div>
+            </div>
+            <div style="flex:1;padding:8px 12px;display:flex;align-items:center;direction:rtl;text-align:right;">
+              <div style="font-size:12px;color:var(--text);line-height:1.6;">${colorizePercent(desc)}</div>
+            </div></div>`;
+          matched=true; break;
+        }
+      }
+      if(!matched&&t) html+=`<div style="font-size:12px;color:var(--text2);padding:3px 6px;direction:rtl;text-align:right;line-height:1.7;">${colorizePercent(t.replace(/\*\*/g,'').replace(/\*/g,'').replace(/^[-•]\s*/,''))}</div>`;
+    });
+    if(inTable) flushTable();
+    return html;
+  }
+
+  // ── STEP 3: Build the final layout ──
+  // Top cards: sections 2 (stop-loss) and 3 (top conviction) side by side
+  const sec2 = sectionBlocks[2] || '';
+  const sec3 = sectionBlocks[3] || '';
+  const sec1 = sectionBlocks[1] || sectionBlocks[0] || text; // fallback to full text
+
+  let html = '';
+
+  // Sections 2 + 3 as a two-column highlight row at the top
+  if(sec2 || sec3){
+    html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">`;
+    if(sec3){
+      const hdr3 = (sec3.match(/^[^\n]+/) || [''])[0].replace(/^[١٢٣123][\.\-\)]\s*/,'').trim();
+      html += `<div style="background:var(--bg2);border-radius:12px;padding:13px 14px;border-top:2px solid var(--green);">
+        <div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">${hdr3||'أعلى صفقة إقناع'}</div>
+        ${renderBlock(sec3)}
+      </div>`;
+    }
+    if(sec2){
+      const hdr2 = (sec2.match(/^[^\n]+/) || [''])[0].replace(/^[١٢٣123][\.\-\)]\s*/,'').trim();
+      html += `<div style="background:var(--bg2);border-radius:12px;padding:13px 14px;border-top:2px solid var(--red);">
+        <div style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">${hdr2||'Stop-Loss للمراكز الأسوأ'}</div>
+        ${renderBlock(sec2)}
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Section 1 (main positions table) collapsed into a details/summary for cleaner scroll
+  if(sec1){
+    const hdr1 = (sec1.match(/^[^\n]+/) || [''])[0].replace(/^[١٢٣123][\.\-\)]\s*/,'').trim();
+    html += `<details style="margin-bottom:8px;" open>
+      <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;background:var(--bg2);border-radius:10px;list-style:none;display:flex;justify-content:space-between;align-items:center;">
+        <span>${hdr1||'جدول المراكز الرئيسية'}</span>
+        <span style="color:var(--text3);font-size:10px;">▾ عرض / إخفاء</span>
+      </summary>
+      <div style="margin-top:8px;">${renderBlock(sec1)}</div>
+    </details>`;
+  }
+
   return html;
 }
+
 function parseAnalysisSections(content, type){
   const sections={};
   // Map section markers by type
