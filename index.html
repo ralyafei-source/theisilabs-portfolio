@@ -257,6 +257,18 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .modal-name{font-size:14px;color:var(--text2);margin-top:2px;}
 .modal-close{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 18px;border-radius:9px;cursor:pointer;font-family:'Almarai',sans-serif;font-size:13px;font-weight:600;}
 .modal-close:hover{border-color:var(--red);color:var(--red);}
+/* Merged-landing section headers */
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-top:18px;margin-bottom:2px;}
+.sec-title{color:var(--text);font-size:14px;font-weight:600;}
+.sec-health{color:var(--text2);font-size:11px;}
+.sec-sub{color:var(--text3);font-size:11px;margin-bottom:10px;}
+/* Compact news strip: list rows, not card grid; show first 3 */
+.news-strip{display:block!important;}
+.news-strip .news-card{background:transparent!important;border:none!important;padding:5px 0!important;margin:0!important;border-radius:0!important;border-top:0.5px solid var(--border)!important;}
+.news-strip .news-card:first-child{border-top:none!important;}
+.news-strip .news-card:nth-child(n+4){display:none;}
+.news-strip .news-meta{font-size:9.5px;}
+.news-strip .news-headline{font-size:11.5px;line-height:1.55;}
 /* Two-column modal: indicators left, chart right; single screen */
 .modal-two-col{display:grid;grid-template-columns:minmax(300px,1.05fr) 1.25fr;gap:14px;align-items:stretch;}
 .modal-col-left .modal-ind-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
@@ -1871,7 +1883,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 <!-- ===== PORTFOLIO TAB ===== -->
 <!-- DASHBOARD -->
 <div id="tab-dashboard" class="tab-content active">
-  <!-- â•â•â• ZONE 1 — STATUS â•â•â• -->
+  <!-- ═══ 1. VALUE ═══ -->
   <div class="zone1">
     <div class="z1-greet" id="z1-greet">&nbsp;</div>
     <div class="cmd-lbl" id="cmd-port-label" data-en="Portfolio Value" data-ar="قيمة المحفظة">قيمة المحفظة</div>
@@ -1885,72 +1897,60 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
     <div class="cmd-sub" id="cmd-change" style="display:none">Loading...</div>
   </div>
 
-  <!-- ═══ NARRATIVE BRIEFING — HERO (fed by Scenario 977; placeholder until then) ═══ -->
+  <!-- ═══ 2. NARRATIVE (hero — absorbs "what happened") ═══ -->
   <div class="z-narr" id="z-narr">
     <div class="z-narr-hd"><span class="z-narr-dot"></span><span class="z-narr-lbl" data-en="THEISI’s read today" data-ar="قراءة ثيسي اليوم">قراءة ثيسي اليوم</span></div>
     <div class="z-narr-body z-narr-skel" id="z-narr-body" data-en="THEISI’s daily briefing will appear here — the one story worth knowing, what it means, and how it touches your portfolio. (Connecting to the analysis engine…)" data-ar="ستظهر هنا قراءة ثيسي اليومية — أهم خبر يستحق المعرفة، وماذا يعني، وكيف يؤثر على محفظتك. (جاري الربط بمحرك التحليل…)">جاري التحميل…</div>
     <div class="z-narr-note" data-en="We connect the dots and explain — you decide. Not financial advice." data-ar="نربط النقاط ونشرح — القرار لك. ليست نصيحة مالية.">نربط النقاط ونشرح — القرار لك.</div>
   </div>
 
-  <!-- ═══ TWO ATTENTION CARDS — Card1: holdings (Zone2) · Card2: THEISI pick (Zone3) ═══ -->
-  <div class="z-cards">
-    <div class="z-card mine" id="z-card-mine" onclick="(function(){var z=document.getElementById('zone2');if(z)z.scrollIntoView({behavior:'smooth'});})()">
-      <div class="z-card-tag" data-en="Needs your attention · your holdings" data-ar="يحتاج انتباهك · محفظتك">يحتاج انتباهك</div>
-      <div class="z-card-sym" id="z-card-mine-sym">—</div>
-      <div class="z-card-pct" id="z-card-mine-pct"></div>
-      <div class="z-card-why" id="z-card-mine-why"></div>
-    </div>
-    <div class="z-card pick" onclick="calmOpenOpportunities()">
-      <div class="z-card-tag" data-en="THEISI picks · opportunity" data-ar="ثيسي تختار · فرصة">ثيسي تختار</div>
-      <div id="zone3" class="zone3"><div class="skel" style="height:48px;border-radius:10px"></div></div>
-    </div>
+  <!-- ═══ 3. MY HOLDINGS (merged: attention list + today's moves + health) ═══ -->
+  <div class="sec-head">
+    <span class="sec-title" data-en="Your portfolio today" data-ar="محفظتك اليوم">محفظتك اليوم</span>
+    <span class="sec-health" id="sec-health"></span>
   </div>
-
-  <!-- Zone 2 full engine output (powers Card 1; full detail here) -->
+  <div class="sec-sub" data-en="what needs your attention — you decide" data-ar="ما يستحق انتباهك — القرار لك">ما يستحق انتباهك — القرار لك</div>
   <div class="zone2" id="zone2">
     <div class="z2-state"><span class="z2-ico"></span><div><div class="z2-head" data-en="Checking your portfolio…" data-ar="جاري فحص محفظتك…">جاري فحص محفظتك…</div></div></div>
   </div>
-
-  <div class="z-fold" id="z-fold" data-en="full detail below ↓" data-ar="التفاصيل الكاملة بالأسفل ↓">التفاصيل الكاملة بالأسفل ↓</div>
-
-  <!-- Today's moves (FYI tier) -->
-  <div class="cmd-stitle" id="tmoves-title" style="display:none" data-en="Today's moves" data-ar="تحركات اليوم">تحركات اليوم</div>
+  <!-- smaller movers (Today's moves, folded in) -->
+  <div class="cmd-stitle tmoves-lbl" id="tmoves-title" style="display:none;font-size:11px;color:var(--text3);margin:14px 0 6px" data-en="Smaller moves" data-ar="تحركات أصغر">تحركات أصغر</div>
   <div id="tmoves" class="tmoves"></div>
 
-  <!-- Portfolio snapshot strip (relocated off page 1) -->
-  <div class="cmd-top below-strip">
-    <div class="cmd-score-wrap">
-      <div class="cmd-ring"><span id="cmd-score-num">—</span></div>
-      <div style="margin-left:12px">
-        <div id="cmd-score-label" style="font-weight:700;font-size:14px">—</div>
-        <div id="cmd-actions-count" style="font-size:12px;margin-top:2px;color:var(--text2)">—</div>
-      </div>
+  <!-- ═══ 4. ONE OPPORTUNITY ═══ -->
+  <div class="sec-head" style="margin-top:22px"><span class="sec-title" data-en="An opportunity THEISI sees" data-ar="فرصة يراها ثيسي">فرصة يراها ثيسي</span></div>
+  <div class="z-card pick" onclick="calmOpenOpportunities()" style="margin-top:8px">
+    <div class="z-card-tag" data-en="THEISI picks · opportunity" data-ar="ثيسي تختار · فرصة">ثيسي تختار · فرصة</div>
+    <div id="zone3" class="zone3"><div class="skel" style="height:48px;border-radius:10px"></div></div>
+  </div>
+
+  <!-- ═══ NEWS — thin strip ═══ -->
+  <div class="news-strip-wrap" style="margin-top:22px;border-top:0.5px solid var(--border);padding-top:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span class="cmd-lbl" id="cmd-news-title" data-en="Latest news" data-ar="آخر الأخبار">آخر الأخبار</span>
+      <a href="#" onclick="document.querySelector('.sb-item[data-tab=portfolio]').click();return false;" style="color:var(--accent);font-size:11px;text-decoration:none" data-en="all in Portfolio →" data-ar="الكل في المحفظة ←">الكل في المحفظة ←</a>
     </div>
-    <div class="cmd-health">
-      <div class="cmd-lbl" id="cmd-score-label-txt" data-en="Portfolio Snapshot" data-ar="لمحة المحفظة" style="margin-bottom:8px">لمحة المحفظة</div>
-      <div id="cmd-snapshot">
-        <div class="hlayer"><span class="hlbl">—</span><div class="hbar"><i style="width:0%"></i></div><span class="hval">—</span></div>
-      </div>
+    <div class="news-grid news-strip" id="cmd-news"></div>
+  </div>
+
+  <p class="cmd-disclaimer-foot" style="font-size:10px;color:var(--text3);text-align:center;margin-top:16px;border-top:0.5px solid var(--border);padding-top:10px" data-en="Informational signals with a wide margin of error. Not financial advice." data-ar="إشارات معلوماتية بهامش خطأ واسع. ليست نصيحة مالية.">إشارات معلوماتية بهامش خطأ واسع. ليست نصيحة مالية.</p>
+
+  <!-- ── Hidden render targets (kept so existing functions don't error; surfaced elsewhere) ── -->
+  <div style="display:none" aria-hidden="true">
+    <div class="z-card mine" id="z-card-mine"><div class="z-card-tag"></div><div class="z-card-sym" id="z-card-mine-sym">—</div><div class="z-card-pct" id="z-card-mine-pct"></div><div class="z-card-why" id="z-card-mine-why"></div></div>
+    <div class="cmd-top below-strip">
+      <div class="cmd-score-wrap"><div class="cmd-ring"><span id="cmd-score-num">—</span></div><div><div id="cmd-score-label">—</div><div id="cmd-actions-count">—</div></div></div>
+      <div class="cmd-health"><div class="cmd-lbl" id="cmd-score-label-txt" data-en="Portfolio Snapshot" data-ar="لمحة المحفظة">لمحة المحفظة</div><div id="cmd-snapshot"><div class="hlayer"><span class="hlbl">—</span><div class="hbar"><i style="width:0%"></i></div><span class="hval">—</span></div></div></div>
     </div>
+    <div id="cmd-happened"></div>
+    <div class="event-grid" id="cmd-events"></div>
+    <div id="cmd-decisions-title"><span id="cmd-decisions-title-txt"></span><span id="cmd-decisions-sub"></span></div>
+    <p id="cmd-disclaimer"></p>
+    <div class="action-grid" id="cmd-decisions"></div>
+    <p id="cmd-news-note"></p>
   </div>
-  <div class="cmd-stitle" id="cmd-happened" data-en="What happened today" data-ar="ماذا حدث اليوم">ماذا حدث اليوم</div>
-  <div class="event-grid" id="cmd-events">
-    <div class="event-card neutral"><div class="event-ticker">Portfolio</div><div class="event-body"><div class="skel" style="height:10px;width:85%;margin:4px 0"></div><div class="skel" style="height:10px;width:60%"></div></div></div>
-    <div class="event-card neutral"><div class="event-ticker">Market</div><div class="event-body">Fetching latest analysis...</div></div>
-    <div class="event-card neutral"><div class="event-ticker">Macro</div><div class="event-body">—</div></div>
-    <div class="event-card neutral"><div class="event-ticker">Sector</div><div class="event-body">—</div></div>
-  </div>
-  <div class="cmd-stitle" id="cmd-decisions-title" data-en="Worth your attention" data-ar="يستحق انتباهك"><span id="cmd-decisions-title-txt">يستحق انتباهك</span> <span id="cmd-decisions-sub" style="font-size:11px;font-weight:400;color:var(--text2);margin-left:6px" data-en="signals to look at — you decide" data-ar="إشارات للنظر فيها — القرار لك">إشارات للنظر فيها — القرار لك</span></div>
-  <p id="cmd-disclaimer" data-en="AI-generated signals for informational purposes only. Not financial advice. Do your own research before making investment decisions." data-ar="إشارات مُولّدة بالذكاء الاصطناعي لأغراض إعلامية فقط. هذه ليست نصيحة مالية. قم بإجراء بحثك الخاص قبل اتخاذ أي قرارات استثمارية." style="font-size:11px;color:var(--text2);margin:-4px 0 10px;line-height:1.5">AI-generated signals for informational purposes only. Not financial advice. Do your own research before making investment decisions.</p>
-  <div class="action-grid" id="cmd-decisions">
-    <div class="action-card watch"><div class="ac-header"><span class="ac-rank">1</span><span class="ac-ticker">—</span></div><div class="ac-instruction"><div class="skel" style="height:9px;width:90%;margin:3px 0"></div><div class="skel" style="height:9px;width:55%"></div></div></div>
-    <div class="action-card watch"><div class="ac-header"><span class="ac-rank">2</span><span class="ac-ticker">—</span></div><div class="ac-instruction">—</div></div>
-    <div class="action-card watch"><div class="ac-header"><span class="ac-rank">3</span><span class="ac-ticker">—</span></div><div class="ac-instruction">—</div></div>
-  </div>
-  <p style="font-size:12px;color:var(--text2);text-align:center;margin-top:6px"><span onclick="showTab('advisor',document.querySelectorAll('.nav-tab')[2])" style="cursor:pointer;color:var(--rose);text-decoration:underline;text-underline-offset:3px" data-en="Full analysis in AI Advisor tab â†’" data-ar="التحليل الكامل في تبويب المستشار الذكي â†">التحليل الكامل في تبويب المستشار الذكي â†</span></p>
-  <div class="cmd-stitle" id="cmd-news-title" data-en="Market news" data-ar="أخبار السوق" style="margin-top:22px">أخبار السوق</div>
-  <p id="cmd-news-note" style="font-size:11px;margin:4px 0 10px;line-height:1.5;color:var(--text2)">روابط المقالات الكاملة متاحة في <a href="#" onclick="document.getElementById('nav-portfolio').click();return false;" style="color:var(--accent);font-weight:700;text-decoration:underline;cursor:pointer">تبويب المحفظة</a>.</p>
-  <!-- floating news tooltip -->
+
+  <!-- floating news tooltip (kept) -->
   <div id="newsTooltip" style="display:none;position:fixed;z-index:9999;max-width:340px;width:90vw;background:var(--bg3);border:1px solid var(--accent);border-radius:14px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.45);pointer-events:auto;">
     <div id="newsTooltipSrc" style="font-size:11px;font-weight:700;color:var(--rose);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
       <span id="newsTooltipSrcName"></span>
@@ -1959,14 +1959,6 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
     <div id="newsTooltipTitle" style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;line-height:1.5;direction:rtl;text-align:right;"></div>
     <div id="newsTooltipBody" style="font-size:12px;color:var(--text2);line-height:1.65;max-height:180px;overflow-y:auto;direction:rtl;text-align:right;padding-right:2px;"></div>
     <div id="newsTooltipSyms" style="margin-top:10px;"></div>
-  </div>
-  <div class="news-grid" id="cmd-news">
-    <div class="news-card"><div class="news-meta"><span class="news-src"><div class="skel" style="height:8px;width:54px"></div></span><span class="news-time">—</span></div><div class="news-headline"><div class="skel" style="height:10px;width:92%;margin:4px 0"></div><div class="skel" style="height:10px;width:70%"></div></div></div>
-    <div class="news-card"><div class="news-meta"><span class="news-src">—</span><span class="news-time">—</span></div><div class="news-headline">—</div></div>
-    <div class="news-card"><div class="news-meta"><span class="news-src">—</span><span class="news-time">—</span></div><div class="news-headline">—</div></div>
-    <div class="news-card"><div class="news-meta"><span class="news-src">—</span><span class="news-time">—</span></div><div class="news-headline">—</div></div>
-    <div class="news-card"><div class="news-meta"><span class="news-src">—</span><span class="news-time">—</span></div><div class="news-headline">—</div></div>
-    <div class="news-card"><div class="news-meta"><span class="news-src">—</span><span class="news-time">—</span></div><div class="news-headline">—</div></div>
   </div>
 </div>
 
@@ -6056,6 +6048,13 @@ function _renderPortfolioSnapshot(total, largest){
   if(ringNum) ringNum.textContent=profitPct+'%';
   if(ringLabel) ringLabel.textContent=t('in profit','رابحة');
   if(ringCount) ringCount.textContent=stocks.length+' '+t('holdings','مركز');
+
+  // Surface a compact health summary in the merged section header
+  const secH=document.getElementById('sec-health');
+  if(secH){
+    const winLossTxt = t(profitPct+'% in profit','رابحة '+profitPct+'%');
+    secH.textContent = winLossTxt + ' · ' + stocks.length + ' ' + t('holdings','مركز');
+  }
 }
 
 // Store original prices and share counts on first load
