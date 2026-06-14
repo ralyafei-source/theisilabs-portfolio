@@ -244,29 +244,29 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .briefing-dot{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 1.5s infinite;}
 .briefing-ts{font-size:10px;color:var(--text3);margin-top:8px;text-align:left;direction:ltr;font-family:'IBM Plex Mono',monospace;}
 /* ── Structured AI Brief layout ── */
-.brief-mood{background:var(--bg2);border-radius:12px;padding:13px 15px;border-right:3px solid var(--rose);margin-bottom:14px;}
-.brief-section-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
-.brief-mood-text{font-size:13px;line-height:1.8;color:var(--text);}
-.brief-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px;align-items:start;}
-.brief-col{background:var(--bg2);border-radius:11px;padding:12px 13px;}
+.brief-mood{background:var(--bg2);border-radius:12px;padding:13px 15px;border-top:2px solid var(--rose);margin-bottom:14px;}
+.brief-section-lbl{font-size:10px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.brief-mood-text{font-size:13px;line-height:1.8;color:var(--text);direction:rtl;text-align:right;}
+.brief-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;align-items:start;}
+.brief-col{background:var(--bg2);border-radius:11px;padding:12px 13px;border-top:2px solid var(--border);}
 .brief-news-list{display:flex;flex-direction:column;gap:8px;}
-.brief-news-item{display:flex;gap:8px;align-items:flex-start;}
+.brief-news-item{display:flex;gap:8px;align-items:flex-start;direction:rtl;}
 .brief-sent-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px;}
-.brief-news-title{font-size:11.5px;line-height:1.6;color:var(--text);}
-.brief-news-syms{font-size:10px;color:var(--accent);font-family:'IBM Plex Mono',monospace;margin-top:2px;}
-.brief-news-sent{font-size:9.5px;margin-top:1px;}
+.brief-news-title{font-size:11.5px;line-height:1.6;color:var(--text);text-align:right;}
+.brief-news-syms{font-size:10px;color:var(--accent);font-family:'IBM Plex Mono',monospace;margin-top:2px;text-align:right;}
+.brief-news-sent{font-size:9.5px;margin-top:1px;text-align:right;}
 .brief-dates-list{display:flex;flex-direction:column;gap:6px;}
-.brief-date-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px solid var(--border);}
+.brief-date-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px solid var(--border);direction:rtl;}
 .brief-date-row:last-child{border-bottom:none;}
-.brief-date-event{font-size:11.5px;color:var(--text);line-height:1.5;}
+.brief-date-event{font-size:11.5px;color:var(--text);line-height:1.5;text-align:right;}
 .brief-date-time{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;flex-shrink:0;margin-inline-start:8px;}
-.brief-moves-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;direction:rtl;margin-top:8px;}
-.brief-move-card{background:var(--bg2);border-radius:10px;padding:10px 12px;direction:ltr;}
-.brief-move-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.brief-moves-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;direction:rtl;margin-top:8px;margin-bottom:14px;}
+.brief-move-card{background:var(--bg2);border-radius:10px;padding:10px 12px;direction:rtl;border-top:2px solid var(--border);}
+.brief-move-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;direction:rtl;}
 .brief-move-sym{font-size:13px;font-weight:700;color:var(--text);font-family:'IBM Plex Mono',monospace;}
-.brief-move-meta{display:flex;gap:6px;align-items:center;font-size:10.5px;font-family:'IBM Plex Mono',monospace;flex-wrap:wrap;justify-content:flex-end;}
+.brief-move-meta{display:flex;gap:6px;align-items:center;font-size:10.5px;font-family:'IBM Plex Mono',monospace;flex-wrap:wrap;justify-content:flex-start;}
 .brief-move-rsi{color:var(--text3);}
-.brief-move-why{font-size:11px;line-height:1.6;color:var(--text2);}
+.brief-move-why{font-size:11px;line-height:1.6;color:var(--text2);direction:rtl;text-align:right;}
 .brief-disclaimer{font-size:10px;color:var(--text3);text-align:center;margin-top:14px;border-top:.5px solid var(--border);padding-top:10px;}
 @media(max-width:760px){.brief-row,.brief-moves-grid{grid-template-columns:1fr;}}
 
@@ -3229,57 +3229,15 @@ async function loadBriefing(){
   if(d.mood){
     html+=`<div class="brief-mood">
       <div class="brief-section-lbl">${ar?'مزاج السوق اليوم':'Market mood'}</div>
-      <div class="brief-mood-text" dir="${ar?'rtl':'ltr'}">${d.mood}</div>
+      <div class="brief-mood-text">${d.mood}</div>
     </div>`;
   }
 
-  // 2. TWO COLUMNS: mood already shown; now news+dates side by side
-  const hasNews=d.news&&d.news.length>0;
-  const hasDates=d.dates&&d.dates.length>0;
-  if(hasNews||hasDates){
-    html+=`<div class="brief-row">`;
-
-    // LEFT (in RTL = right visually): news affecting portfolio
-    if(hasNews){
-      html+=`<div class="brief-col">
-        <div class="brief-section-lbl">${ar?'أخبار تمس محفظتك':'News affecting your portfolio'}</div>
-        <div class="brief-news-list">`;
-      d.news.forEach(n=>{
-        const syms=Array.isArray(n.syms)?n.syms.join(' · '):String(n.syms||'');
-        html+=`<div class="brief-news-item">
-          <span class="brief-sent-dot" style="background:${sentColor(n.sentiment)}"></span>
-          <div>
-            <div class="brief-news-title" dir="${ar?'rtl':'ltr'}">${n.title||''}</div>
-            ${syms?`<div class="brief-news-syms">${syms}</div>`:''}
-            ${n.sentiment?`<div class="brief-news-sent" style="color:${sentColor(n.sentiment)}">${sent(n.sentiment)}</div>`:''}
-          </div>
-        </div>`;
-      });
-      html+=`</div></div>`;
-    }
-
-    // RIGHT: important dates
-    if(hasDates){
-      html+=`<div class="brief-col">
-        <div class="brief-section-lbl">${ar?'مواعيد مهمة اليوم':'Important dates'}</div>
-        <div class="brief-dates-list">`;
-      d.dates.forEach(dt=>{
-        html+=`<div class="brief-date-row">
-          <span class="brief-date-event" dir="${ar?'rtl':'ltr'}">${dt.event||''}</span>
-          <span class="brief-date-time">${dt.time||''}</span>
-        </div>`;
-      });
-      html+=`</div></div>`;
-    }
-    html+=`</div>`;
-  }
-
-  // 3. MOVES — heading full width, then 2-column RTL grid
+  // 2. MOVES — heading full width, then 2-column RTL grid (moved above news/dates)
   if(d.moves&&d.moves.length>0){
-    html+=`<div class="brief-section-lbl" style="margin-top:16px">${ar?'أبرز تحركات محفظتك':'Key portfolio moves'}</div>
+    html+=`<div class="brief-section-lbl">${ar?'أبرز تحركات محفظتك':'Key portfolio moves'}</div>
     <div class="brief-moves-grid">`;
     d.moves.forEach(m=>{
-      const up=String(m.change||'').includes('+')||(!String(m.change||'').includes('-')&&String(m.change||'')!=='');
       const chgColor=String(m.change||'').startsWith('-')?'var(--red)':'var(--green)';
       html+=`<div class="brief-move-card">
         <div class="brief-move-top">
@@ -3290,9 +3248,46 @@ async function loadBriefing(){
             ${m.rsi?`<span class="brief-move-rsi">${m.rsi}</span>`:''}
           </span>
         </div>
-        ${m.why?`<div class="brief-move-why" dir="${ar?'rtl':'ltr'}">${m.why}</div>`:''}
+        ${m.why?`<div class="brief-move-why">${m.why}</div>`:''}
       </div>`;
     });
+    html+=`</div>`;
+  }
+
+  // 3. TWO COLUMNS: news (left) + dates (right)
+  const hasNews=d.news&&d.news.length>0;
+  const hasDates=d.dates&&d.dates.length>0;
+  if(hasNews||hasDates){
+    html+=`<div class="brief-row">`;
+    if(hasNews){
+      html+=`<div class="brief-col">
+        <div class="brief-section-lbl">${ar?'أخبار تمس محفظتك':'News affecting your portfolio'}</div>
+        <div class="brief-news-list">`;
+      d.news.forEach(n=>{
+        const syms=Array.isArray(n.syms)?n.syms.join(' · '):String(n.syms||'');
+        html+=`<div class="brief-news-item">
+          <span class="brief-sent-dot" style="background:${sentColor(n.sentiment)}"></span>
+          <div>
+            <div class="brief-news-title">${n.title||''}</div>
+            ${syms?`<div class="brief-news-syms">${syms}</div>`:''}
+            ${n.sentiment?`<div class="brief-news-sent" style="color:${sentColor(n.sentiment)}">${sent(n.sentiment)}</div>`:''}
+          </div>
+        </div>`;
+      });
+      html+=`</div></div>`;
+    }
+    if(hasDates){
+      html+=`<div class="brief-col">
+        <div class="brief-section-lbl">${ar?'مواعيد مهمة اليوم':'Important dates'}</div>
+        <div class="brief-dates-list">`;
+      d.dates.forEach(dt=>{
+        html+=`<div class="brief-date-row">
+          <span class="brief-date-event">${dt.event||''}</span>
+          <span class="brief-date-time">${dt.time||''}</span>
+        </div>`;
+      });
+      html+=`</div></div>`;
+    }
     html+=`</div>`;
   }
 
