@@ -7443,13 +7443,18 @@ function highlightGlossaryTerms(container) {
   if (!terms.length) return;
 
   // Build one combined regex from dictionary only (fast, no dynamic detection)
+  // Whole-word matching: reject a hit if it's flanked by an Arabic or Latin letter/digit,
+  // so "زخم" does NOT match inside "الزخم", and "RSI" does not match inside "RSItest".
   let allRe;
   try {
-    allRe = new RegExp(
-      terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'),
-      'g'
-    );
-  } catch(e) { return; }
+    const LETTER = '[A-Za-z0-9\\u0600-\\u06FF\\u0750-\\u077F]'; // Latin + Arabic letters/digits
+    const alt = terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+    allRe = new RegExp('(?<!'+LETTER+')(?:'+alt+')(?!'+LETTER+')', 'g');
+  } catch(e) {
+    // Fallback for engines without lookbehind: plain alternation
+    try { allRe = new RegExp(terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g'); }
+    catch(e2){ return; }
+  }
 
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
