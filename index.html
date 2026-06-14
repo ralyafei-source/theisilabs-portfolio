@@ -3601,9 +3601,49 @@ function fillModalContext(s, idx){
   el.innerHTML=parts.join('');
   // glossary on the tags
   if(typeof highlightGlossaryTerms==='function'){ try{ highlightGlossaryTerms(el); }catch(e){} }
+  // Enrich: append a grounded "what the data shows" line from deep-{date}.json (async)
+  try{ appendDeepReadLine(s.sym, el); }catch(e){}
 }
 
-// ── PHASE 3: real indicators from the live analysis endpoint ──
+// Adds a plain-language, data-grounded read beneath the attention reason
+async function appendDeepReadLine(sym, el){
+  if(!el || typeof _getDeep!=='function') return;
+  const ar=(lang==='ar');
+  try{
+    const deep=await _getDeep();
+    const d=deep?(deep[sym]||deep[sym.toUpperCase()]):null;
+    if(!d) return;
+    const bits=[];
+    if(d.rsi!=null){ const r=Number(d.rsi); if(r>70)bits.push(ar?'الزخم في منطقة ذروة شراء (RSI '+r.toFixed(0)+')':'momentum in overbought territory (RSI '+r.toFixed(0)+')'); else if(r<30)bits.push(ar?'الزخم في منطقة ذروة بيع (RSI '+r.toFixed(0)+')':'momentum oversold (RSI '+r.toFixed(0)+')'); }
+    if(d.adx!=null&&Number(d.adx)>25) bits.push(ar?'الاتجاه قوي (ADX '+Number(d.adx).toFixed(0)+')':'trend is strong (ADX '+Number(d.adx).toFixed(0)+')');
+    if(d.from_52w_high_pct!=null&&Number(d.from_52w_high_pct)>-5) bits.push(ar?'قريب من قمة 52 أسبوعاً':'near its 52-week high');
+    if(d.analyst_upside_pct!=null) bits.push(ar?('المحللون يرون صعوداً محتملاً '+Number(d.analyst_upside_pct).toFixed(0)+'%'):('analysts see '+Number(d.analyst_upside_pct).toFixed(0)+'% potential upside'));
+    if(d.recent_upgrade) bits.push(ar?'حصل على ترقية حديثة':'recently upgraded');
+    if(!bits.length) return;
+    const line=document.createElement('div');
+    line.style.cssText='font-size:12px;line-height:1.7;color:var(--text3);margin:-4px 0 10px;';
+    line.setAttribute('dir', ar?'rtl':'ltr');
+    line.textContent=(ar?'ما تظهره البيانات: ':'What the data shows: ')+bits.join(ar?' · ':' · ')+'.';
+    // insert right after the first (reason) block if present, else at top
+    if(el.firstChild && el.children.length){ el.insertBefore(line, el.children[1]||null); }
+    else el.appendChild(line);
+    if(typeof highlightGlossaryTerms==='function'){ try{ highlightGlossaryTerms(line); }catch(e){} }
+  }catch(e){}
+}
+
+// ── PHASE 3: real indicators from deep-{date}.json (the daily technicals/fundamentals file) ──
+let _deepCache=null, _deepCacheDate=null;
+async function _getDeep(){
+  const dstr=o=>new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10);
+  if(_deepCache && _deepCacheDate===dstr(0)) return _deepCache;
+  for(const o of [0,1,2]){
+    try{
+      const r=await fetch(_OP_GH+'deep-'+dstr(o)+'.json?t='+Date.now());
+      if(r.ok){ const j=await r.json(); _deepCache=j.data||j; _deepCacheDate=dstr(0); return _deepCache; }
+    }catch(e){}
+  }
+  return null;
+}
 async function loadRealIndicators(sym){
   const indEl=document.getElementById('modalIndicators');
   const loadEl=document.getElementById('modalIndLoading');
@@ -3611,32 +3651,49 @@ async function loadRealIndicators(sym){
   if(loadEl) loadEl.style.display='block';
   const ar=(lang==='ar');
   try{
-    const token=localStorage.getItem(AUTH_SESSION_KEY)||'';
-    const r=await fetch('/api/portfolio-for-ai?mode=ticker-lookup&symbol='+encodeURIComponent(sym),{headers:token?{'Authorization':'Bearer '+token}:{}});
-    const d=await r.json().catch(()=>({}));
-    if(modalStock && modalStock.sym!==sym) return; // user moved on
-    // Defensive field reads — show only what actually exists, never fabricate
-    const data=d.data||d.quote||d.metrics||d;
-    const cells=[];
-    function cell(label,val,color){ if(val==null||val===''||val==='—')return; cells.push('<div class="modal-stat"><div class="modal-stat-label">'+label+'</div><div class="modal-stat-val" style="font-size:15px;'+(color?'color:'+color:'color:var(--text2)')+'">'+val+'</div></div>'); }
-    const rsi=data.rsi!=null?Number(data.rsi):(data.RSI!=null?Number(data.RSI):null);
-    if(rsi!=null){ const c=rsi>70?'var(--red)':rsi<30?'var(--green)':'var(--text2)'; const lbl=rsi>70?(ar?'ذروة شراء':'Overbought'):rsi<30?(ar?'ذروة بيع':'Oversold'):(ar?'محايد':'Neutral'); cell('RSI (14)', rsi.toFixed(0)+' <span style="font-size:11px;color:'+c+'">'+lbl+'</span>', c); }
-    const ma50=data.ma50!=null?data.ma50:(data.sma50!=null?data.sma50:null);
-    const ma200=data.ma200!=null?data.ma200:(data.sma200!=null?data.sma200:null);
-    if(ma50!=null||ma200!=null) cell('MA 50 / MA 200', '$'+(ma50!=null?Number(ma50).toFixed(2):'—')+' / $'+(ma200!=null?Number(ma200).toFixed(2):'—'));
-    const vol=data.volume!=null?data.volume:(data.avgVolume!=null?data.avgVolume:null);
-    if(vol!=null) cell(ar?'الحجم':'Volume', typeof vol==='number'?(vol>=1e6?(vol/1e6).toFixed(1)+'M':vol.toLocaleString()):vol);
-    const wkHigh=data.week52High!=null?data.week52High:(data.high52!=null?data.high52:(data.yearHigh!=null?data.yearHigh:null));
-    const wkLow=data.week52Low!=null?data.week52Low:(data.low52!=null?data.low52:(data.yearLow!=null?data.yearLow:null));
-    if(wkHigh!=null&&wkLow!=null) cell(ar?'مدى 52 أسبوع':'52-Week Range', '$'+Number(wkLow).toFixed(0)+' – $'+Number(wkHigh).toFixed(0));
-    const pe=data.pe!=null?data.pe:(data.peRatio!=null?data.peRatio:null);
-    if(pe!=null) cell('P/E', Number(pe).toFixed(1));
-    const tgt=data.targetPrice!=null?data.targetPrice:(data.analystTarget!=null?data.analystTarget:null);
-    if(tgt!=null) cell(ar?'هدف المحللين':'Analyst Target', '$'+Number(tgt).toFixed(2));
-
+    const deep=await _getDeep();
+    if(modalStock && modalStock.sym!==sym) return;
+    const d = deep ? (deep[sym]||deep[sym.toUpperCase()]) : null;
     if(loadEl) loadEl.style.display='none';
-    if(cells.length){ indEl.innerHTML=cells.join(''); }
-    else { indEl.innerHTML='<div style="font-size:12px;color:var(--text3);grid-column:1/-1;">'+(ar?'المؤشرات غير متاحة لهذا السهم حالياً.':'Indicators not available for this stock right now.')+'</div>'; }
+    if(!d){ indEl.innerHTML='<div style="font-size:12px;color:var(--text3);grid-column:1/-1;">'+(ar?'المؤشرات غير متاحة لهذا السهم اليوم.':'Indicators not available for this stock today.')+'</div>'; return; }
+
+    const cells=[];
+    const cell=(label,val,color)=>{ if(val==null||val==='')return; cells.push('<div class="modal-stat"><div class="modal-stat-label">'+label+'</div><div class="modal-stat-val" style="font-size:15px;'+(color?'color:'+color:'color:var(--text2)')+'">'+val+'</div></div>'); };
+    const num=(x,dp=2)=>x==null?null:Number(x).toFixed(dp);
+
+    // RSI with state
+    if(d.rsi!=null){ const r=Number(d.rsi); const c=r>70?'var(--red)':r<30?'var(--green)':'var(--text2)'; const lbl=r>70?(ar?'ذروة شراء':'Overbought'):r<30?(ar?'ذروة بيع':'Oversold'):(ar?'محايد':'Neutral'); cell('RSI', r.toFixed(0)+' · '+lbl, c); }
+    // Moving averages + position
+    if(d.sma50!=null||d.sma200!=null){
+      const above50=d.above_sma50, above200=d.above_sma200;
+      const pos = (above50&&above200)?(ar?'فوق المتوسطين':'above both MAs'):(!above50&&!above200)?(ar?'تحت المتوسطين':'below both MAs'):(ar?'مختلط':'mixed');
+      cell('MA 50 / 200', '$'+num(d.sma50,0)+' / $'+num(d.sma200,0)+' · '+pos);
+    }
+    if(d.golden_cross) cell(ar?'تقاطع':'Cross', ar?'تقاطع ذهبي ✓':'Golden cross ✓', 'var(--green)');
+    // ADX trend strength
+    if(d.adx!=null){ const a=Number(d.adx); const lbl=a>40?(ar?'اتجاه قوي':'strong trend'):a>25?(ar?'اتجاه معتدل':'moderate'):(ar?'اتجاه ضعيف':'weak/range'); cell('ADX', a.toFixed(0)+' · '+lbl); }
+    // 52-week position
+    if(d.from_52w_high_pct!=null) cell(ar?'من قمة 52أ':'From 52w high', Number(d.from_52w_high_pct).toFixed(1)+'%', Number(d.from_52w_high_pct)>-5?'var(--green)':'var(--text2)');
+    if(d.from_52w_low_pct!=null) cell(ar?'من قاع 52أ':'From 52w low', '+'+Number(d.from_52w_low_pct).toFixed(0)+'%');
+    // Volume vs 20d avg
+    if(d.volume_ratio_20d!=null){ const v=Number(d.volume_ratio_20d); cell(ar?'حجم vs المعتاد':'Volume vs avg', v.toFixed(2)+'x', v>1.5?'var(--gold)':'var(--text2)'); }
+    // Valuation
+    if(d.pe_ratio!=null) cell('P/E', num(d.pe_ratio,1));
+    if(d.peg!=null) cell('PEG', num(d.peg,2), Number(d.peg)<1?'var(--green)':'var(--text2)');
+    if(d.ev_ebitda!=null) cell('EV/EBITDA', num(d.ev_ebitda,1));
+    // Quality
+    if(d.net_margin!=null) cell(ar?'هامش صافي':'Net margin', (Number(d.net_margin)*100).toFixed(0)+'%');
+    if(d.roe!=null) cell('ROE', (Number(d.roe)*100).toFixed(0)+'%');
+    if(d.roic!=null) cell('ROIC', (Number(d.roic)*100).toFixed(0)+'%');
+    if(d.debt_to_equity!=null) cell(ar?'دين/حقوق':'Debt/Equity', num(d.debt_to_equity,2), Number(d.debt_to_equity)<0.5?'var(--green)':'var(--text2)');
+    if(d.fcf_yield!=null) cell(ar?'عائد التدفق الحر':'FCF yield', (Number(d.fcf_yield)*100).toFixed(1)+'%');
+    // Analyst
+    if(d.analyst_upside_pct!=null) cell(ar?'صعود متوقع (محللون)':'Analyst upside', '+'+Number(d.analyst_upside_pct).toFixed(0)+'%', Number(d.analyst_upside_pct)>0?'var(--green)':'var(--red)');
+    if(d.recent_upgrade) cell(ar?'ترقية حديثة':'Recent upgrade', ar?'نعم ✓':'Yes ✓', 'var(--green)');
+
+    indEl.innerHTML = cells.length ? cells.join('') : '<div style="font-size:12px;color:var(--text3);grid-column:1/-1;">'+(ar?'لا مؤشرات لعرضها.':'No indicators to show.')+'</div>';
+    // glossary tooltips on indicator labels (RSI, P/E, ADX, ROE, PEG...)
+    if(typeof highlightGlossaryTerms==='function'){ try{ highlightGlossaryTerms(indEl); }catch(e){} }
   }catch(e){
     if(loadEl) loadEl.style.display='none';
     indEl.innerHTML='<div style="font-size:12px;color:var(--text3);grid-column:1/-1;">'+(ar?'تعذّر جلب المؤشرات.':'Could not load indicators.')+'</div>';
