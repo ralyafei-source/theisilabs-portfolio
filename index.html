@@ -2670,7 +2670,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.18 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.19 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -6105,18 +6105,18 @@ function renderSignals(text, weeklyData){
     const tableLines = sec1.split('\n').filter(l=>l.trim().startsWith('|')&&l.trim().endsWith('|'));
     let sec1Html = '';
     if(tableLines.length > 1){
-      const hasWeekly = Object.keys(fvMap).length > 0 || Object.keys(momMap).length > 0;
       sec1Html = `<div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;border-top:2px solid var(--rose);">
         <div style="overflow-y:auto;max-height:340px;">
           <table style="width:100%;border-collapse:collapse;font-size:11.5px;white-space:normal;table-layout:fixed;">
             <thead style="position:sticky;top:0;background:var(--bg3);z-index:1;">
               <tr>
-                <th style="padding:7px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);width:58px;">الرمز</th>
-                <th style="padding:7px 8px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);width:72px;">التوصية</th>
-                <th style="padding:7px 8px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);width:62px;">مركزك</th>
-                <th style="padding:7px 8px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);width:95px;">هدف 12ش</th>
-                ${hasWeekly?`<th style="padding:7px 7px;text-align:center;font-size:10px;font-weight:700;color:#00c8ff;border-bottom:0.5px solid var(--border);width:52px;">DCF↕</th>
-                <th style="padding:7px 7px;text-align:center;font-size:10px;font-weight:700;color:var(--gold);border-bottom:0.5px solid var(--border);width:80px;">زخم</th>`:''}
+                <th style="padding:7px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);width:55px;">الرمز</th>
+                <th style="padding:7px 8px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);width:68px;">التوصية</th>
+                <th style="padding:7px 8px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);width:58px;">مركزك</th>
+                <th style="padding:7px 8px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);width:90px;">هدف 12ش</th>
+                ${hasWeekly?`<th style="padding:7px 6px;text-align:center;font-size:10px;font-weight:700;color:#00c8ff;border-bottom:0.5px solid var(--border);width:48px;">DCF↕</th>
+                <th style="padding:7px 6px;text-align:center;font-size:10px;font-weight:700;color:var(--gold);border-bottom:0.5px solid var(--border);width:36px;">RSI</th>
+                <th style="padding:7px 6px;text-align:center;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);width:72px;">الاتجاه</th>`:''}
                 <th style="padding:7px 8px;text-align:right;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid var(--border);">السبب</th>
               </tr>
             </thead>
@@ -6140,27 +6140,30 @@ function renderSignals(text, weeklyData){
         const mom = momMap[sym]||{};
         const dcfTxt = fv.dcfPct!=null?(fv.dcfPct>0?'+':'')+fv.dcfPct+'%':'—';
         const dcfColor = fv.dcfPct>0?'var(--green)':fv.dcfPct<0?'var(--red)':'var(--text3)';
-        // Momentum badge with RSI value
-        const rsiNum = mom.rsiVal?` ${mom.rsiVal}`:'';
-        const momTag = mom.cross==='golden'
-          ? `<span style="font-size:10px;padding:2px 5px;border-radius:5px;background:rgba(29,158,117,0.12);color:var(--green);">GX✓${rsiNum}</span>`
-          : mom.cross==='death'
-          ? `<span style="font-size:10px;padding:2px 5px;border-radius:5px;background:rgba(226,75,74,0.12);color:var(--red);">DX⚠${rsiNum}</span>`
-          : mom.rsiLabel
-          ? `<span style="font-size:10px;padding:2px 5px;border-radius:5px;background:rgba(186,117,23,0.12);color:var(--gold);">${mom.rsiLabel}</span>`
-          : '<span style="color:var(--text3);font-size:10px;">—</span>';
 
-        // Truncate السبب to ~60 chars
-        const whyShort = why.length>65 ? why.slice(0,62)+'…' : why;
+        // RSI — number only, colored by zone
+        const rsiVal = mom.rsiVal||null;
+        const rsiColor = rsiVal>70?'var(--red)':rsiVal<35?'var(--green)':rsiVal>60?'var(--gold)':'var(--text2)';
+        const rsiTxt = rsiVal?rsiVal:'—';
+
+        // Trend — plain Arabic words instead of jargon badges
+        const trendTxt = mom.cross==='golden'?'تقاطع صاعد':mom.cross==='death'?'تقاطع هابط':'محايد';
+        const trendColor = mom.cross==='golden'?'var(--green)':mom.cross==='death'?'var(--red)':'var(--text3)';
+
+        // السبب — use momentum الإشارة if available (more explanatory), else daily signals reason
+        // الإشارة is stored in mom.signal from the parser
+        const fullReason = (mom.signal && mom.signal.length>10) ? mom.signal : why;
+        const whyShort = fullReason.length>90 ? fullReason.slice(0,87)+'…' : fullReason;
 
         sec1Html += `<tr style="border-bottom:0.5px solid var(--border);">
           <td style="padding:7px 10px;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sym}</td>
           <td style="padding:7px 8px;font-size:11px;font-weight:600;color:${recColor};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${rec}</td>
           <td style="padding:7px 8px;font-size:11px;color:${posColor};white-space:nowrap;">${pos}</td>
           <td style="padding:7px 8px;font-size:11px;color:${tgtColor};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tgt}</td>
-          ${hasWeekly?`<td style="padding:7px 7px;text-align:center;font-weight:700;font-size:11px;color:${dcfColor};white-space:nowrap;">${dcfTxt}</td>
-          <td style="padding:7px 7px;text-align:center;white-space:nowrap;">${momTag}</td>`:''}
-          <td style="padding:7px 8px;font-size:10.5px;color:var(--text2);direction:rtl;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${why}">${whyShort}</td>
+          ${hasWeekly?`<td style="padding:7px 6px;text-align:center;font-weight:700;font-size:11px;color:${dcfColor};white-space:nowrap;">${dcfTxt}</td>
+          <td style="padding:7px 6px;text-align:center;font-size:11px;font-weight:600;color:${rsiColor};white-space:nowrap;">${rsiTxt}</td>
+          <td style="padding:7px 6px;text-align:center;font-size:10px;color:${trendColor};white-space:nowrap;">${trendTxt}</td>`:''}
+          <td style="padding:7px 8px;font-size:11px;color:var(--text2);direction:rtl;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${fullReason}">${whyShort}</td>
         </tr>`;
       });
 
@@ -7000,17 +7003,24 @@ function _parseWeeklyMomentumRows(text){
   const lines = text.split('\n');
   lines.forEach(line=>{
     if(!line.includes('|')) return;
-    const cells = line.split('|').map(c=>c.replace(/<[^>]+>/g,'').replace(/\*\*/g,'').trim()).filter(c=>c);
+    const rawCells = line.split('|').map(c=>c.trim()).filter(c=>c);
+    const cells = rawCells.map(c=>c.replace(/<[^>]+>/g,'').replace(/\*\*/g,'').trim());
     if(cells.length<3) return;
     if(/^[-:]+$/.test(cells[0])||/SYMBOL|الرمز/.test(cells[0])) return;
     const sym = cells[0].match(/^[A-Z]{2,5}$/)?cells[0]:null;
     if(!sym) return;
+    // RSI — extract number from cell (may contain "34.76" or "29.38 — تشبع بيع")
+    const rsiRaw = cells[1]||'';
+    const rsiM = rsiRaw.match(/([\d.]+)/);
+    const rsiVal = rsiM ? parseFloat(rsiM[1]) : null;
+    // RSI label for oversold/overbought
+    const rsiLabel = rsiVal>70?`RSI ${rsiVal} تشبع شراء`:rsiVal<35?`RSI ${rsiVal} تشبع بيع`:null;
+    // Cross — detect from any cell
     const allText = cells.join(' ');
     const cross = allText.includes('Golden Cross')?'golden':allText.includes('Death Cross')?'death':null;
-    const rsiM = allText.match(/RSI\s*([\d.]+)/i);
-    const rsiVal = rsiM?parseFloat(rsiM[1]):null;
-    const rsiLabel = rsiVal?(rsiVal>70?`RSI ${rsiVal} — تشبع`:rsiVal<35?`RSI ${rsiVal} — ارتداد`:null):null;
-    rows.push({sym,cross,rsiLabel,rsiVal});
+    // الإشارة — last cell (col 4 or 5 in momentum tables)
+    const signal = cells[cells.length-1]||'';
+    rows.push({sym, cross, rsiLabel, rsiVal, signal});
   });
   return rows;
 }
