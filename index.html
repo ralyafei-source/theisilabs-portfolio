@@ -266,6 +266,12 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .sec-sub-inline{color:var(--text3);font-size:11px;margin-inline-start:8px;}
 .dash-framed{border:1px solid var(--border);background:var(--bg2);border-radius:14px;padding:8px 14px;margin-top:8px;}
 .dash-framed .news-strip .news-card{padding:8px 0!important;}
+/* Inner cards sit flush inside the unified frame (no double border/bg) */
+.dash-framed .zone2,.dash-framed .z3-card{border:none!important;background:transparent!important;padding:6px 0!important;margin:0!important;}
+.dash-framed .zone2.alert,.dash-framed .zone2.calm{border:none!important;background:transparent!important;}
+/* Opportunity: tags inline beside the score */
+.z3-score-wrap{display:flex;align-items:center;gap:10px;}
+.z3-chips-inline{display:flex;gap:6px;flex-wrap:wrap;margin:0!important;justify-content:flex-end;}
 /* Compact news strip: list rows, not card grid; show first 3 */
 .news-strip{display:block!important;}
 .news-strip .news-card{background:transparent!important;border:none!important;padding:5px 0!important;margin:0!important;border-radius:0!important;border-top:0.5px solid var(--border)!important;}
@@ -1929,9 +1935,9 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
   <div class="dash-row dash-cols">
     <div class="dash-col">
       <div class="sec-head"><span class="sec-title" data-en="Your portfolio today" data-ar="محفظتك اليوم">محفظتك اليوم</span><span class="sec-sub-inline" data-en="what needs your attention — you decide" data-ar="ما يستحق انتباهك — القرار لك">ما يستحق انتباهك — القرار لك</span></div>
-      <div class="zone2" id="zone2">
+      <div class="dash-framed"><div class="zone2" id="zone2">
         <div class="z2-state"><span class="z2-ico"></span><div><div class="z2-head" data-en="Checking your portfolio…" data-ar="جاري فحص محفظتك…">جاري فحص محفظتك…</div></div></div>
-      </div>
+      </div></div>
     </div>
     <div class="dash-col">
       <div class="sec-head"><span class="sec-title" id="tmoves-title" data-en="Smaller moves" data-ar="تحركات أصغر">تحركات أصغر</span><span class="sec-sub-inline" id="tmoves-sub" data-en="other holdings that moved today" data-ar="مراكز أخرى تحركت اليوم">مراكز أخرى تحركت اليوم</span></div>
@@ -1943,8 +1949,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
   <div class="dash-row dash-cols" style="margin-top:22px">
     <div class="dash-col">
       <div class="sec-head"><span class="sec-title" data-en="An opportunity THEISI sees" data-ar="فرصة يراها ثيسي">فرصة يراها ثيسي</span><span class="sec-sub-inline" data-en="worth researching — not a recommendation" data-ar="تستحق البحث — ليست توصية">تستحق البحث — ليست توصية</span></div>
-      <div class="z-card pick" onclick="calmOpenOpportunities()">
-        <div class="z-card-tag" data-en="THEISI picks · opportunity" data-ar="ثيسي تختار · فرصة">ثيسي تختار · فرصة</div>
+      <div class="dash-framed" onclick="calmOpenOpportunities()" style="cursor:pointer">
         <div id="zone3" class="zone3"><div class="skel" style="height:48px;border-radius:10px"></div></div>
       </div>
     </div>
@@ -9172,8 +9177,7 @@ function evaluateZone2(){
   }
   // State B — attention (0–3 real items)
   el.className='zone2 alert';
-  let html='<div class="z2-state"><span class="z2-ico">\ud83d\udd34</span><div style="flex:1">'
-    +'<div class="z2-head">'+(ar?'\u064a\u062d\u062a\u0627\u062c \u0627\u0646\u062a\u0628\u0627\u0647\u0643':'Needs your attention')+'</div>';
+  let html='<div style="flex:1">';
   top.forEach(r=>{
     const cls=r.tier>=3?'red':'amber';
     const arrow=r.pct==null?'':(r.pct>=0?'\u25b2':'\u25bc');
@@ -9199,7 +9203,7 @@ function evaluateZone2(){
       +'<div class="z2-cta" dir="'+(ar?'rtl':'ltr')+'">'+(ar?'\u0627\u0636\u063a\u0637 \u0644\u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u2190':'Tap for detail \u2192')+'</div>'
       +'</div>';
   });
-  html+='</div></div>';
+  html+='</div>';
   el.innerHTML=html;
 }
 
@@ -9270,12 +9274,14 @@ async function renderZone3(force){
       +'<div class="z3-top"><div>'
       +'<div class="z3-sym">'+pick.symbol+'</div>'
       +'<div class="z3-sec">'+(pick.sector||'')+'</div>'
-      +'</div><div class="z3-score"><b>'+Math.round(pick.final_score||0)+'</b><i>'+(ar?'\u0645\u0646 \u0661\u0660\u0660':'of 100')+'</i></div></div>'
-      +'<div class="z3-chips">'
+      +'</div><div class="z3-score-wrap">'
+      +'<div class="z3-chips z3-chips-inline">'
       +(isSh?_shariaChip():'')
       +pat
       +(owned?'<span class="op-chip">'+(ar?'\u062a\u0645\u0644\u0643\u0647 \u0628\u0627\u0644\u0641\u0639\u0644':'You already hold this')+'</span>':'')
       +'</div>'
+      +'<div class="z3-score"><b>'+Math.round(pick.final_score||0)+'</b><i>'+(ar?'\u0645\u0646 \u0661\u0660\u0660':'of 100')+'</i></div>'
+      +'</div></div>'
       +(why1?'<div class="z3-why">'+why1+'</div>':'')
       +'<div class="z2-cta" dir="'+(ar?'rtl':'ltr')+'" style="margin-top:8px">'+(ar?'\u0644\u0645\u0627\u0630\u0627\u061f + \u0627\u0644\u0645\u062e\u0627\u0637\u0631 \u2014 \u0627\u0636\u063a\u0637 \u0644\u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u2190':'Why? + the risk \u2014 tap for detail \u2192')+'</div>'
       +'</div>';
