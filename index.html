@@ -2670,7 +2670,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.22 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.23 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -6120,7 +6120,7 @@ function renderSignals(text, weeklyData){
         scoringHtml += `<div style="border-top:0.5px solid var(--border);margin-top:14px;padding-top:14px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
             <div style="font-size:10px;font-weight:700;color:var(--rose);text-transform:uppercase;letter-spacing:.06em;">محرك القرار الأسبوعي — أفضل فرص الإضافة</div>
-            <button onclick="var b=document.querySelector('[onclick*=\\'scoring\\']');if(b)b.click();" style="font-size:10px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0;font-family:inherit;">التفاصيل الكاملة ←</button>
+            <button onclick="document.querySelectorAll('.firm-content').forEach(function(f){f.classList.remove('active')});var fs=document.getElementById('firm-scoring');if(fs){fs.classList.add('active');fs.scrollIntoView({behavior:'smooth',block:'nearest'});}" style="font-size:10px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0;font-family:inherit;">التفاصيل الكاملة ←</button>
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;">`;
         scoreCards.slice(0,3).forEach((c,i)=>{
@@ -6128,7 +6128,7 @@ function renderSignals(text, weeklyData){
           const scoreColor = scoreNum>=8?'var(--green)':scoreNum>=7?'var(--gold)':'var(--text2)';
           const scoreBg = scoreNum>=8?'rgba(29,158,117,0.1)':scoreNum>=7?'rgba(186,117,23,0.1)':'rgba(136,135,128,0.1)';
           const rank = i===0?'🥇':i===1?'🥈':'🥉';
-          scoringHtml += `<div onclick="var b=document.querySelector('[onclick*=\\'scoring\\']');if(b)b.click();" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg3);border-radius:10px;border-right:3px solid ${scoreColor};cursor:pointer;">
+          scoringHtml += `<div onclick="document.querySelectorAll('.firm-content').forEach(function(f){f.classList.remove('active')});var fs=document.getElementById('firm-scoring');if(fs){fs.classList.add('active');fs.scrollIntoView({behavior:'smooth',block:'nearest'});}" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg3);border-radius:10px;border-right:3px solid ${scoreColor};cursor:pointer;">
             <div style="flex:0 0 24px;text-align:center;font-size:13px;">${rank}</div>
             <div style="flex:1;min-width:0;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
