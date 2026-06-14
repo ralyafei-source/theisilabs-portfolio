@@ -2670,7 +2670,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.12 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.13 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -5465,8 +5465,13 @@ async function loadAnalysis(){
   document.getElementById('advisorEmpty').style.display='none';
   document.getElementById('advisorContent').style.display='none';
   document.getElementById('advisorDateDisplay').textContent=advisorDate;
-  // Always send a nickname — default to rashed so weekly/monthly files are found
-  const nickname = localStorage.getItem(AUTH_NICK_KEY) || 'rashed';
+  // Read nickname from localStorage — always set after first login and persists across sessions
+  const nickname = (localStorage.getItem(AUTH_NICK_KEY)||'').trim();
+  if(!nickname){
+    document.getElementById('advisorLoading').style.display='none';
+    document.getElementById('advisorEmpty').style.display='block';
+    return;
+  }
   const nickParam = `&nickname=${encodeURIComponent(nickname)}`;
   try{
     const r=await fetch(`/api/analysis?date=${advisorDate}${nickParam}`);
