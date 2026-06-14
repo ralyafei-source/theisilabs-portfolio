@@ -1909,6 +1909,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
     </div>
     <div class="dash-health-card">
       <div class="cmd-lbl" data-en="Portfolio health" data-ar="صحة المحفظة">صحة المحفظة</div>
+      <div id="cmd-health-summary" style="font-size:12px;color:var(--text2);margin:4px 0 8px"></div>
       <div id="cmd-snapshot"><div class="hlayer"><span class="hlbl">—</span><div class="hbar"><i style="width:0%"></i></div><span class="hval">—</span></div></div>
     </div>
   </div>
@@ -1923,17 +1924,15 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
   <!-- ═══ 3. HOLDINGS (left) + SMALLER MOVES (right) ═══ -->
   <div class="dash-row dash-cols">
     <div class="dash-col">
-      <div class="sec-head">
-        <span class="sec-title" data-en="Your portfolio today" data-ar="محفظتك اليوم">محفظتك اليوم</span>
-        <span class="sec-health" id="sec-health"></span>
-      </div>
+      <div class="sec-head"><span class="sec-title" data-en="Your portfolio today" data-ar="محفظتك اليوم">محفظتك اليوم</span></div>
       <div class="sec-sub" data-en="what needs your attention — you decide" data-ar="ما يستحق انتباهك — القرار لك">ما يستحق انتباهك — القرار لك</div>
       <div class="zone2" id="zone2">
         <div class="z2-state"><span class="z2-ico"></span><div><div class="z2-head" data-en="Checking your portfolio…" data-ar="جاري فحص محفظتك…">جاري فحص محفظتك…</div></div></div>
       </div>
     </div>
     <div class="dash-col">
-      <div class="cmd-stitle tmoves-lbl" id="tmoves-title" style="display:none;font-size:12px;color:var(--text2);margin:0 0 8px" data-en="Smaller moves" data-ar="تحركات أصغر">تحركات أصغر</div>
+      <div class="sec-head"><span class="sec-title" id="tmoves-title" data-en="Smaller moves" data-ar="تحركات أصغر">تحركات أصغر</span></div>
+      <div class="sec-sub" id="tmoves-sub" data-en="other holdings that moved today" data-ar="مراكز أخرى تحركت اليوم">مراكز أخرى تحركت اليوم</div>
       <div id="tmoves" class="tmoves"></div>
     </div>
   </div>
@@ -1942,19 +1941,19 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
   <div class="dash-row dash-cols" style="margin-top:22px">
     <div class="dash-col">
       <div class="sec-head"><span class="sec-title" data-en="An opportunity THEISI sees" data-ar="فرصة يراها ثيسي">فرصة يراها ثيسي</span></div>
-      <div class="z-card pick" onclick="calmOpenOpportunities()" style="margin-top:8px">
+      <div class="sec-sub" data-en="worth researching — not a recommendation" data-ar="تستحق البحث — ليست توصية">تستحق البحث — ليست توصية</div>
+      <div class="z-card pick" onclick="calmOpenOpportunities()">
         <div class="z-card-tag" data-en="THEISI picks · opportunity" data-ar="ثيسي تختار · فرصة">ثيسي تختار · فرصة</div>
         <div id="zone3" class="zone3"><div class="skel" style="height:48px;border-radius:10px"></div></div>
       </div>
     </div>
     <div class="dash-col">
-      <div class="news-strip-wrap">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span class="sec-title" id="cmd-news-title" data-en="Latest news" data-ar="آخر الأخبار" style="font-size:14px">آخر الأخبار</span>
-          <a href="#" onclick="document.querySelector('.sb-item[data-tab=portfolio]').click();return false;" style="color:var(--accent);font-size:11px;text-decoration:none" data-en="all in Portfolio →" data-ar="الكل في المحفظة ←">الكل في المحفظة ←</a>
-        </div>
-        <div class="news-grid news-strip" id="cmd-news"></div>
+      <div class="sec-head">
+        <span class="sec-title" id="cmd-news-title" data-en="Latest news" data-ar="آخر الأخبار">آخر الأخبار</span>
+        <a href="#" onclick="document.querySelector('.sb-item[data-tab=portfolio]').click();return false;" style="color:var(--accent);font-size:11px;text-decoration:none" data-en="all in Portfolio →" data-ar="الكل في المحفظة ←">الكل في المحفظة ←</a>
       </div>
+      <div class="sec-sub" data-en="full articles in Portfolio tab" data-ar="المقالات الكاملة في تبويب المحفظة">المقالات الكاملة في تبويب المحفظة</div>
+      <div class="news-grid news-strip" id="cmd-news"></div>
     </div>
   </div>
 
@@ -6074,11 +6073,10 @@ function _renderPortfolioSnapshot(total, largest){
   if(ringLabel) ringLabel.textContent=t('in profit','رابحة');
   if(ringCount) ringCount.textContent=stocks.length+' '+t('holdings','مركز');
 
-  // Surface a compact health summary in the merged section header
-  const secH=document.getElementById('sec-health');
+  // Surface a compact health summary in the top health card
+  const secH=document.getElementById('cmd-health-summary');
   if(secH){
-    const winLossTxt = t(profitPct+'% in profit','رابحة '+profitPct+'%');
-    secH.textContent = winLossTxt + ' · ' + stocks.length + ' ' + t('holdings','مركز');
+    secH.textContent = profitPct+'% '+t('in profit','رابحة')+' · ' + stocks.length + ' ' + t('holdings','مركز');
   }
 }
 
@@ -9206,11 +9204,12 @@ function evaluateZone2(){
 
 function renderTodayMoves(fyi){
   const t=document.getElementById('tmoves-title'), w=document.getElementById('tmoves');
+  const sub=document.getElementById('tmoves-sub');
   if(!w||!t)return;
-  if(!fyi||!fyi.length){t.style.display='none';w.style.display='none';return;}
+  if(!fyi||!fyi.length){t.style.display='none';w.style.display='none';if(sub)sub.style.display='none';return;}
   const ar=_calmAr();
   fyi.sort((x,y)=>Math.abs(y.pct||0)-Math.abs(x.pct||0));
-  t.style.display='';w.style.display='block';
+  t.style.display='';w.style.display='block';if(sub)sub.style.display='';
   w.innerHTML=fyi.slice(0,8).map(r=>{
     const up=(r.pct||0)>=0;
     return '<div class="tm-row"><span class="z2-sym" style="font-size:12.5px">'+r.sym+'</span>'
