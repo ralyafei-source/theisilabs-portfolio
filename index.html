@@ -2670,7 +2670,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.15 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.16 · 2026-06-14</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -6113,10 +6113,10 @@ function parseAnalysisSections(content, type){
       macro:     ['MACRO TODAY','MACRO','ماكرو اليوم','القسم الثالث','الماكرو اليوم','الاقتصاد العالمي اليوم']
     },
     weekly: {
-      risk:      ['RISK RADAR','رادار المخاطر'],
-      fairvalue: ['FAIR VALUE','القيمة العادلة'],
-      momentum:  ['MOMENTUM','إشارات الزخم'],
-      scoring:   ['SCORING ENGINE','محرك القرار']
+      risk:      ['═══ RISK RADAR','RISK RADAR ═══'],
+      fairvalue: ['═══ FAIR VALUE','FAIR VALUE ═══'],
+      momentum:  ['═══ MOMENTUM','MOMENTUM ═══'],
+      scoring:   ['═══ SCORING ENGINE','SCORING ENGINE ═══']
     },
     monthly: {
       competitive: ['COMPETITIVE EDGE','الميزة التنافسية','القسم الأول'],
@@ -6856,28 +6856,31 @@ function renderWeeklyIntegrated(scoringText, fairvalueText, momentumText, riskTe
 function _parseWeeklyScoreCards(text){
   if(!text) return [];
   const cards = [];
-  // Match blocks: SYM | Score X/10 | ...
-  const blocks = text.split(/(?=\n\*\*[A-Z]{2,5}\s*\|)/);
-  blocks.forEach(block=>{
-    const headerM = block.match(/\*\*([A-Z]{2,5})\s*\|\s*Score\s*([\d.]+)\/10/);
-    if(!headerM) return;
-    const sym = headerM[1], score = headerM[2];
-    // Extract layer scores
-    const layers = [];
-    const layerMatches = [...block.matchAll(/الطبقة\s*(\d+)[^:]*:\s*\n([\s\S]*?)→\s*\*\*درجة هذه الطبقة:\s*([\d.]+)\/10\*\*/g)];
-    layerMatches.slice(0,5).forEach((m,i)=>{
-      const grade = parseFloat(m[3])||0;
-      const labels = ['مركزك','التقييم','التقني','الأساسيات','الخارجي'];
-      // Extract key metric from the layer block
-      const block2 = m[2];
-      const pctM = block2.match(/[+\-][\d.]+%/);
-      const dollarM = block2.match(/\$[\d,]+/);
-      const value = pctM?pctM[0]:dollarM?dollarM[0]:`${grade}/10`;
-      layers.push({label:labels[i]||`طبقة ${i+1}`,value,good:grade>=7});
+  const layerNames = ['مركزك','التقييم','التقني','الأساسيات','الخارجي'];
+  // Split on each stock block — format: <b>SYM | Score X/10
+  const headerRe = /<b>([A-Z]{2,5})\s*\|\s*Score\s*([\d.]+)\/10[^<]*<\/b>/g;
+  const matches = [...text.matchAll(headerRe)];
+  matches.forEach((m, mi)=>{
+    const sym = m[1], score = m[2];
+    const start = m.index;
+    const end = matches[mi+1]?matches[mi+1].index:text.length;
+    const block = text.slice(start, end);
+    // Extract layer scores and key metrics
+    const layerMatches = [...block.matchAll(/درجة هذه الطبقة:\s*([\d.]+)\/10\*\*([^<\n]*)/g)];
+    const layers = layerMatches.slice(0,5).map((lm,i)=>{
+      const grade = parseFloat(lm[1])||0;
+      // Get a key metric from the layer content before the score line
+      const beforeScore = block.slice(0, block.indexOf(lm[0]));
+      const lastLines = beforeScore.split('\n').filter(l=>l.trim()).slice(-3);
+      const keyLine = lastLines.find(l=>l.match(/[+\-][\d.]+%|\$[\d,]+|[\d]+\/[\d]+/))||'';
+      const pctM = keyLine.match(/([+\-][\d.]+%)/);
+      const dolM = keyLine.match(/(\$[\d,]+)/);
+      const val = pctM?pctM[1]:dolM?dolM[1]:`${grade}/10`;
+      return {label:layerNames[i]||`طبقة ${i+1}`,value:val,good:grade>=7};
     });
     // Extract action
-    const actionM = block.match(/اشتري?\s+[\d]+\s+سهم[^=]+=\s*\$[\d,]+/);
-    const action = actionM?actionM[0].replace(/\*\*/g,'').trim():'';
+    const actM = block.match(/اشتري?\s+[\d]+\s+سهم[^<\n=]*=\s*[\$]?[\d,]+/);
+    const action = actM?actM[0].replace(/<[^>]+>/g,'').trim():'';
     cards.push({sym,score,layers,action});
   });
   return cards;
