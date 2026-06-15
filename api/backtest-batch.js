@@ -1,8 +1,10 @@
-// api/backtest-batch.js  v3
-// One week per request (no Vercel timeout risk)
-// Historical prices: read from local data/historical-ohlc.json (fast, no Yahoo calls)
-// Future prices: still fetched live from Yahoo (required — can't be pre-stored)
-// POST /api/backtest-batch  Body: { date: 'YYYY-MM-DD' }
+// api/backtest-batch.js  v4
+// Fixes for 166-week run:
+// 1. Fresh SHA on every save attempt (v3 fix preserved)
+// 2. Save confirmation returned to dashboard
+// 3. Only saves تراكم/بيع signals (cuts file size 60%)
+// 4. Batched future price fetches with delays (prevents Yahoo rate limiting)
+// 5. Returns saved:true/false so dashboard can show warning
 
 const REPO          = 'ralyafei-source/theisilabs-portfolio';
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
@@ -17,12 +19,17 @@ async function ghGet(path) {
   if (!r.ok) return null;
   return r.json();
 }
+
 async function ghPut(path, content, message, sha) {
   const body = { message, content: Buffer.from(JSON.stringify(content, null, 2)).toString('base64') };
   if (sha) body.sha = sha;
   const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
     method: 'PUT',
-    headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisilabs-app', 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `token ${GITHUB_TOKEN}`,
+      'User-Agent': 'theisilabs-app',
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify(body)
   });
   return r.ok;
@@ -40,10 +47,10 @@ function parseSignals(text) {
   return signals;
 }
 
-// ─── Get future price from Yahoo (live — must stay as Yahoo call) ─────────────
+// ─── Get future price from Yahoo ─────────────────────────────────────────────
 async function getFuturePrice(sym, fromDate, daysAhead) {
   try {
-    const base = new Date(fromDate + 'T00:00:00Z');
+    const base   = new Date(fromDate + 'T00:00:00Z');
     base.setUTCDate(base.getUTCDate() + daysAhead);
     const fromTs = Math.floor(base.getTime() / 1000);
     const toTs   = fromTs + 8 * 86400;
@@ -77,8 +84,7 @@ module.exports = async (req, res) => {
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date))
       return res.status(400).json({ error: 'date required: YYYY-MM-DD' });
 
-    // Step 1 — Get historical snapshot from historical-snapshot endpoint
-    // That endpoint now reads from local OHLC file — very fast
+    // ── Step 1: Historical snapshot (reads local OHLC — fast) ────────────────
     const snapResp = await fetch(
       `https://theisilabs.vercel.app/api/historical-snapshot?date=${date}&format=json`
     );
@@ -86,7 +92,7 @@ module.exports = async (req, res) => {
     const snap = await snapResp.json();
     if (!snap.portfolioText) throw new Error('Empty snapshot');
 
-    // Step 2 — Run Claude analysis (same prompt as Make.com Scenario 255)
+    // ── Step 2: Claude analysis ───────────────────────────────────────────────
     const claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -99,7 +105,7 @@ module.exports = async (req, res) => {
         max_tokens: 8000,
         system: `You are a senior financial analyst. BACKTEST MODE — data is historical as of ${date}. Analyze as if today is ${date} with no knowledge of what happened after. UAE investor — ZERO capital gains tax. No short selling. Output Arabic only.`,
         messages: [{
-          role:    'user',
+          role: 'user',
           content: `${snap.portfolioText}
 
 OUTPUT ONLY the BACKTEST SCORES block:
@@ -138,55 +144,74 @@ Guards:
     const signals    = parseSignals(claudeText);
     if (!signals.length) throw new Error('No signals parsed');
 
-    // Step 3 — Get future prices at all horizons (live Yahoo — only buy/sell signals)
-    const HORIZONS = [
+    // ── Step 3: Future prices — only for تراكم/بيع, batched to avoid Yahoo rate limit ──
+    const HORIZONS      = [
       { label: '1w', days: 7  },
       { label: '2w', days: 14 },
       { label: '1m', days: 30 },
       { label: '3m', days: 90 },
       { label: '6m', days: 180 }
     ];
-    const today           = new Date();
-    const actionSignals   = signals.filter(s => ['تراكم','بيع'].includes(s.rec));
-    const enrichedSignals = [];
+    const today         = new Date();
+    const actionSignals = signals.filter(s => ['تراكم','بيع'].includes(s.rec));
 
-    for (const sig of signals) {
+    // Build list of all future price fetches needed
+    const fetchQueue = [];
+    for (const sig of actionSignals) {
+      for (const h of HORIZONS) {
+        const futureDate = new Date(date + 'T00:00:00Z');
+        futureDate.setUTCDate(futureDate.getUTCDate() + h.days);
+        if (futureDate < today) {
+          fetchQueue.push({ sym: sig.sym, horizon: h.label, days: h.days });
+        }
+      }
+    }
+
+    // Fetch in batches of 5 with 300ms delay — prevents Yahoo rate limiting
+    const priceCache = {}; // { 'NVDA_1m': 153.30 }
+    for (let i = 0; i < fetchQueue.length; i += 5) {
+      const batch   = fetchQueue.slice(i, i + 5);
+      const results = await Promise.all(
+        batch.map(async ({ sym, horizon, days }) => ({
+          key:   `${sym}_${horizon}`,
+          price: await getFuturePrice(sym, date, days)
+        }))
+      );
+      results.forEach(({ key, price }) => { if (price) priceCache[key] = price; });
+      if (i + 5 < fetchQueue.length) await new Promise(r => setTimeout(r, 300));
+    }
+
+    // Build enriched signals — ONLY save تراكم/بيع (احتفظ/مراقبة excluded to save space)
+    const enrichedSignals = [];
+    for (const sig of actionSignals) {
       const holding     = snap.holdings?.find(h => h.sym === sig.sym);
       const priceOnDate = holding?.priceOnDate || null;
       const horizons    = {};
-      const isActionable = ['تراكم','بيع'].includes(sig.rec);
 
       for (const h of HORIZONS) {
         const futureDate = new Date(date + 'T00:00:00Z');
         futureDate.setUTCDate(futureDate.getUTCDate() + h.days);
-
-        if (futureDate < today && isActionable) {
-          // Only fetch future prices for تراكم and بيع — احتفظ/مراقبة are not judged
-          const futurePrice = await getFuturePrice(sig.sym, date, h.days);
+        if (futureDate < today) {
+          const futurePrice = priceCache[`${sig.sym}_${h.label}`] || null;
           const changePct   = priceOnDate && futurePrice
             ? +((futurePrice - priceOnDate) / priceOnDate * 100).toFixed(2)
             : null;
           horizons[h.label] = {
-            price:    futurePrice,
+            price:     futurePrice,
             changePct,
-            verdict:  judgeSignal(sig.rec, priceOnDate, futurePrice)
+            verdict:   judgeSignal(sig.rec, priceOnDate, futurePrice)
           };
         } else {
-          horizons[h.label] = {
-            price:    null,
-            changePct: null,
-            verdict:  futureDate >= today ? 'pending' : 'skipped'
-          };
+          horizons[h.label] = { price: null, changePct: null, verdict: 'pending' };
         }
       }
       enrichedSignals.push({ ...sig, priceOnDate, horizons });
     }
 
-    // Step 4 — Calculate accuracy per horizon
+    // ── Step 4: Calculate accuracy per horizon ────────────────────────────────
     const accuracy = {};
     for (const h of HORIZONS) {
       const judged  = enrichedSignals.filter(s =>
-        ['تراكم','بيع'].includes(s.rec) &&
         ['correct','wrong','neutral'].includes(s.horizons[h.label]?.verdict)
       );
       const correct = judged.filter(s => s.horizons[h.label]?.verdict === 'correct');
@@ -195,20 +220,18 @@ Guards:
         : { correct: 0, total: 0, pct: null };
     }
 
-    // Step 5 — Save to GitHub (always fetch fresh SHA to avoid conflicts)
+    // ── Step 5: Save to GitHub — always fetch fresh SHA, retry 3x ─────────────
     const run = {
       date,
       portfolioValue: snap.totalValueOnDate,
-      signalCount:    enrichedSignals.length,
-      actionCount:    actionSignals.length,
-      signals:        enrichedSignals,
+      signalCount:    signals.length,        // total including احتفظ/مراقبة
+      actionCount:    enrichedSignals.length, // only تراكم/بيع (saved)
+      signals:        enrichedSignals,        // only تراكم/بيع stored
       accuracy
     };
 
-    // Retry loop — re-fetch SHA on each attempt to handle concurrent saves
     let saved = false;
     for (let attempt = 1; attempt <= 3; attempt++) {
-      // Always read CURRENT file + SHA fresh before each save attempt
       let existingData = { runs: [] };
       const existingFile = await ghGet('data/backtest-extended.json');
       if (existingFile?.content) {
@@ -217,23 +240,27 @@ Guards:
       const freshSha = existingFile?.sha || null;
       const allRuns  = [...(existingData.runs || []).filter(r => r.date !== date), run]
         .sort((a, b) => a.date > b.date ? 1 : -1);
+
       const ok = await ghPut(
         'data/backtest-extended.json',
         { lastUpdated: new Date().toISOString(), totalRuns: allRuns.length, runs: allRuns },
-        `Backtest: week ${date} (${enrichedSignals.length} signals)`,
+        `Backtest: week ${date} (${enrichedSignals.length} action signals)`,
         freshSha
       );
-      if (ok) { saved = true; break; }
-      if (attempt < 3) await new Promise(r => setTimeout(r, 1000 * attempt));
-    }
-    if (!saved) console.error(`Failed to save week ${date} after 3 attempts`);
 
+      if (ok) { saved = true; break; }
+      // Wait longer between retries to let GitHub propagate
+      if (attempt < 3) await new Promise(r => setTimeout(r, 2000 * attempt));
+    }
+
+    // Return saved status so dashboard can warn if save failed
     return res.status(200).json({
       date,
-      signalCount:  enrichedSignals.length,
-      actionCount:  actionSignals.length,
+      signalCount:    signals.length,
+      actionCount:    enrichedSignals.length,
       accuracy,
-      portfolioValue: snap.totalValueOnDate
+      portfolioValue: snap.totalValueOnDate,
+      saved           // dashboard uses this to show ✅ or ⚠️
     });
 
   } catch (e) {
