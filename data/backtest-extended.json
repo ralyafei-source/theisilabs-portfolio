@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T14:53:28.765Z",
-  "totalRuns": 67,
+  "lastUpdated": "2026-06-15T14:54:29.948Z",
+  "totalRuns": 68,
   "runs": [
     {
       "date": "2021-09-20",
@@ -6508,6 +6508,381 @@
           "correct": 4,
           "total": 13,
           "pct": 31
+        }
+      }
+    },
+    {
+      "date": "2022-01-03",
+      "portfolioValue": 613955,
+      "signalCount": 46,
+      "actionCount": 10,
+      "signals": [
+        {
+          "sym": "AAPL",
+          "rec": "تراكم",
+          "score": 7.8,
+          "reason": "RSI 66 + Golden Cross + فوق EMA20 + FCF استثنائي + أقوى موت في العالم",
+          "priceOnDate": 182.01,
+          "horizons": {
+            "1w": {
+              "price": 172.19000244140625,
+              "changePct": -5.4,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 169.8000030517578,
+              "changePct": -6.71,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 175.83999633789062,
+              "changePct": -3.39,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 178.44000244140625,
+              "changePct": -1.96,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 141.55999755859375,
+              "changePct": -22.22,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "MVST",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "Death Cross + MACD هابط + RSI 35 + أدنى EMA20 + عقوبة مضاربة -1.0",
+          "priceOnDate": 5.98,
+          "horizons": {
+            "1w": {
+              "price": 5.010000228881836,
+              "changePct": -16.22,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 5.260000228881836,
+              "changePct": -12.04,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 6.340000152587891,
+              "changePct": 6.02,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 6.010000228881836,
+              "changePct": 0.5,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 2.240000009536743,
+              "changePct": -62.54,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "BTBT",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "RSI 31 + Death Cross + MACD هابط + أدنى EMA20 + عقوبة تشفير مضاربة -1.0",
+          "priceOnDate": 6.08,
+          "horizons": {
+            "1w": {
+              "price": 5.349999904632568,
+              "changePct": -12.01,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 5.5,
+              "changePct": -9.54,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 3.7699999809265137,
+              "changePct": -37.99,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 3.7100000381469727,
+              "changePct": -38.98,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.5,
+              "changePct": -75.33,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "MSTR",
+          "rec": "بيع",
+          "score": 2.9,
+          "reason": "خسارة -84% + RSI 40 + أدنى EMA20 + ارتباط كامل بالبيتكوين + عقوبة مضاربة -1.0",
+          "priceOnDate": 55.826,
+          "horizons": {
+            "1w": {
+              "price": 48.19499969482422,
+              "changePct": -13.67,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 46.827999114990234,
+              "changePct": -16.12,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 34.88399887084961,
+              "changePct": -37.51,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 50.125999450683594,
+              "changePct": -10.21,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 18.76799964904785,
+              "changePct": -66.38,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "SMMT",
+          "rec": "بيع",
+          "score": 2.4,
+          "reason": "RSI 33 + Death Cross + MACD هابط + خسارة -85% + بدون إيرادات + سقف بايوتك",
+          "priceOnDate": 2.82,
+          "horizons": {
+            "1w": {
+              "price": 2.6600000858306885,
+              "changePct": -5.67,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 2.25,
+              "changePct": -20.21,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 2.319999933242798,
+              "changePct": -17.73,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 2.380000114440918,
+              "changePct": -15.6,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 0.9919999837875366,
+              "changePct": -64.82,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "B",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "Death Cross + خسارة -61% + أدنى EMA20 + MACD ضعيف + تعدين صغير",
+          "priceOnDate": 18.54,
+          "horizons": {
+            "1w": {
+              "price": 18.6200008392334,
+              "changePct": 0.43,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 18.559999465942383,
+              "changePct": 0.11,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 19.219999313354492,
+              "changePct": 3.67,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 24.860000610351562,
+              "changePct": 34.09,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 17.420000076293945,
+              "changePct": -6.04,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "SPY",
+          "rec": "تراكم",
+          "score": 7.6,
+          "reason": "RSI 60 + Golden Cross + فوق EMA20 + MACD قوي + مؤشر سوق واسع متين",
+          "priceOnDate": 477.71,
+          "horizons": {
+            "1w": {
+              "price": 465.510009765625,
+              "changePct": -2.55,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 456.489990234375,
+              "changePct": -4.44,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 457.3500061035156,
+              "changePct": -4.26,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 456.79998779296875,
+              "changePct": -4.38,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 381.9599914550781,
+              "changePct": -20.04,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "XLP",
+          "rec": "تراكم",
+          "score": 7.7,
+          "reason": "RSI 69 قريب من قوة + Golden Cross + فوق EMA20 + دفاعي في بيئة تضخم",
+          "priceOnDate": 77.1,
+          "horizons": {
+            "1w": {
+              "price": 76.80999755859375,
+              "changePct": -0.38,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 75.91999816894531,
+              "changePct": -1.53,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 76.80999755859375,
+              "changePct": -0.38,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 76.41000366210938,
+              "changePct": -0.89,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 72.75,
+              "changePct": -5.64,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "VOO",
+          "rec": "تراكم",
+          "score": 7.5,
+          "reason": "RSI 60 + Golden Cross + فوق EMA20 + أوسع تنويع + تكاليف منخفضة",
+          "priceOnDate": 439.25,
+          "horizons": {
+            "1w": {
+              "price": 428.0299987792969,
+              "changePct": -2.55,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 419.739990234375,
+              "changePct": -4.44,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 420.3599853515625,
+              "changePct": -4.3,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 419.8500061035156,
+              "changePct": -4.42,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 351.05999755859375,
+              "changePct": -20.08,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "IVV",
+          "rec": "تراكم",
+          "score": 7.6,
+          "reason": "RSI 60 + Golden Cross + فوق EMA20 + MACD قوي + مؤشر S&P500",
+          "priceOnDate": 479.84,
+          "horizons": {
+            "1w": {
+              "price": 467.2200012207031,
+              "changePct": -2.63,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 458.5,
+              "changePct": -4.45,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 459.260009765625,
+              "changePct": -4.29,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 458.79998779296875,
+              "changePct": -4.38,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 383.9100036621094,
+              "changePct": -19.99,
+              "verdict": "wrong"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 4,
+          "total": 10,
+          "pct": 40
+        },
+        "2w": {
+          "correct": 4,
+          "total": 10,
+          "pct": 40
+        },
+        "1m": {
+          "correct": 3,
+          "total": 10,
+          "pct": 30
+        },
+        "3m": {
+          "correct": 3,
+          "total": 10,
+          "pct": 30
+        },
+        "6m": {
+          "correct": 5,
+          "total": 10,
+          "pct": 50
         }
       }
     },
