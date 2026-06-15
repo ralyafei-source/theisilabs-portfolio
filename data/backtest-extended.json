@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T15:33:57.062Z",
-  "totalRuns": 21,
+  "lastUpdated": "2026-06-15T15:35:07.641Z",
+  "totalRuns": 22,
   "runs": [
     {
       "date": "2022-03-28",
@@ -8418,6 +8418,143 @@
           "correct": 4,
           "total": 10,
           "pct": 40
+        }
+      }
+    },
+    {
+      "date": "2022-08-22",
+      "portfolioValue": 355746,
+      "signalCount": 46,
+      "actionCount": 3,
+      "signals": [
+        {
+          "sym": "BTBT",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "خسارة 62.8%، Death Cross، تحت EMA20، عقوبة مضاربة -1.0، تعدين بيتكوين دورة هابطة حادة",
+          "priceOnDate": 1.5,
+          "horizons": {
+            "1w": {
+              "price": 1.4800000190734863,
+              "changePct": -1.33,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 1.3700000047683716,
+              "changePct": -8.67,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 1.2400000095367432,
+              "changePct": -17.33,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 0.875,
+              "changePct": -41.67,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.409999966621399,
+              "changePct": -6,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "MSTR",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "خسارة 92.2% كارثية، Death Cross حاد، عقوبة مضاربة -1.0، تعرض كامل للبيتكوين في بيئة انكماشية",
+          "priceOnDate": 26.809,
+          "horizons": {
+            "1w": {
+              "price": 24.496000289916992,
+              "changePct": -8.63,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 20.424999237060547,
+              "changePct": -23.81,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 19.591999053955078,
+              "changePct": -26.92,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 15.722000122070312,
+              "changePct": -41.36,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 26.992000579833984,
+              "changePct": 0.68,
+              "verdict": "neutral"
+            }
+          }
+        },
+        {
+          "sym": "SMMT",
+          "rec": "بيع",
+          "score": 3.1,
+          "reason": "خسارة 91.2%، RSI 78.4 في منطقة تشبع شراء مع Death Cross — مخاطر تصحيح حاد وشيك",
+          "priceOnDate": 1.63,
+          "horizons": {
+            "1w": {
+              "price": 1.090000033378601,
+              "changePct": -33.13,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 1.1100000143051147,
+              "changePct": -31.9,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 1.2400000095367432,
+              "changePct": -23.93,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 0.8880000114440918,
+              "changePct": -45.52,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 2.2699999809265137,
+              "changePct": 39.26,
+              "verdict": "wrong"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 2,
+          "total": 3,
+          "pct": 67
+        },
+        "2w": {
+          "correct": 3,
+          "total": 3,
+          "pct": 100
+        },
+        "1m": {
+          "correct": 3,
+          "total": 3,
+          "pct": 100
+        },
+        "3m": {
+          "correct": 3,
+          "total": 3,
+          "pct": 100
+        },
+        "6m": {
+          "correct": 1,
+          "total": 3,
+          "pct": 33
         }
       }
     }
