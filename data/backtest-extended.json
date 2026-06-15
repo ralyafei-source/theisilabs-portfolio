@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T14:11:43.542Z",
-  "totalRuns": 45,
+  "lastUpdated": "2026-06-15T14:12:56.387Z",
+  "totalRuns": 46,
   "runs": [
     {
       "date": "2022-09-26",
@@ -14761,6 +14761,211 @@
           "correct": 4,
           "total": 6,
           "pct": 67
+        }
+      }
+    },
+    {
+      "date": "2023-07-03",
+      "portfolioValue": 365609,
+      "signalCount": 46,
+      "actionCount": 5,
+      "signals": [
+        {
+          "sym": "NVDA",
+          "rec": "تراكم",
+          "score": 8.1,
+          "reason": "Golden Cross قوي، فوق EMA20، اتجاه صعودي قوي في الذكاء الاصطناعي، رغم الخسارة 47.7% لكن الزخم الفني والأساسي ممتاز",
+          "priceOnDate": 42.413,
+          "horizons": {
+            "1w": {
+              "price": 42.18000030517578,
+              "changePct": -0.55,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 46.46099853515625,
+              "changePct": 9.54,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 44.26900100708008,
+              "changePct": 4.38,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 44.78200149536133,
+              "changePct": 5.59,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 48.167999267578125,
+              "changePct": 13.57,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "AAPL",
+          "rec": "تراكم",
+          "score": 7.6,
+          "reason": "RSI 72.19 مشبع لكن Momentum قوي، MACD صاعد، Golden Cross، ربح 9.1%، احتياطي نقدي ضخم",
+          "priceOnDate": 192.46,
+          "horizons": {
+            "1w": {
+              "price": 188.61000061035156,
+              "changePct": -2,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 193.99000549316406,
+              "changePct": 0.79,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 192.5800018310547,
+              "changePct": 0.06,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 173.75,
+              "changePct": -9.72,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 185.63999938964844,
+              "changePct": -3.54,
+              "verdict": "neutral"
+            }
+          }
+        },
+        {
+          "sym": "VISN",
+          "rec": "بيع",
+          "score": 2.9,
+          "reason": "خسارة 63.3%، Death Cross، RSI 72.52 مشبع شراءً لكن الأساسيات ضعيفة جداً، انعدام الإيرادات",
+          "priceOnDate": 5.900000095367432,
+          "horizons": {
+            "1w": {
+              "price": 6.320000171661377,
+              "changePct": 7.12,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 5.199999809265137,
+              "changePct": -11.86,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 4.420000076293945,
+              "changePct": -25.08,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 3.440000057220459,
+              "changePct": -41.69,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 2.859999895095825,
+              "changePct": -51.53,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "MVST",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "خسارة 63.5%، Death Cross، عقوبة مضاربة -1.0، أساسيات ضعيفة في قطاع بطاريات مزدحم",
+          "priceOnDate": 1.67,
+          "horizons": {
+            "1w": {
+              "price": 2.2300000190734863,
+              "changePct": 33.53,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 2.4000000953674316,
+              "changePct": 43.71,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 2.6649999618530273,
+              "changePct": 59.58,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 1.75,
+              "changePct": 4.79,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 1.409999966621399,
+              "changePct": -15.57,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "SMMT",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "خسارة 87% كارثية، Death Cross، بيوتك بلا إيرادات، Death Cross، مخاطر تمييعية عالية",
+          "priceOnDate": 2.42,
+          "horizons": {
+            "1w": {
+              "price": 2.1500000953674316,
+              "changePct": -11.16,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 2.1500000953674316,
+              "changePct": -11.16,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 1.9500000476837158,
+              "changePct": -19.42,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 1.7699999809265137,
+              "changePct": -26.86,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 2.640000104904175,
+              "changePct": 9.09,
+              "verdict": "wrong"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 1,
+          "total": 5,
+          "pct": 20
+        },
+        "2w": {
+          "correct": 3,
+          "total": 5,
+          "pct": 60
+        },
+        "1m": {
+          "correct": 2,
+          "total": 5,
+          "pct": 40
+        },
+        "3m": {
+          "correct": 3,
+          "total": 5,
+          "pct": 60
+        },
+        "6m": {
+          "correct": 3,
+          "total": 5,
+          "pct": 60
         }
       }
     },
