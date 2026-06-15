@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T13:56:12.228Z",
-  "totalRuns": 33,
+  "lastUpdated": "2026-06-15T13:57:22.448Z",
+  "totalRuns": 34,
   "runs": [
     {
       "date": "2022-09-26",
@@ -9649,6 +9649,313 @@
           "correct": 11,
           "total": 15,
           "pct": 73
+        }
+      }
+    },
+    {
+      "date": "2023-04-10",
+      "portfolioValue": 309273,
+      "signalCount": 46,
+      "actionCount": 8,
+      "signals": [
+        {
+          "sym": "VISN",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "خسارة 63%، Death Cross، MACD هابط، تحت EMA20، RSI ضعيف، أساسيات هشة جداً",
+          "priceOnDate": 5.840000152587891,
+          "horizons": {
+            "1w": {
+              "price": 4.949999809265137,
+              "changePct": -15.24,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 4.599999904632568,
+              "changePct": -21.23,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 4.289999961853027,
+              "changePct": -26.54,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 6.320000171661377,
+              "changePct": 8.22,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 2.7799999713897705,
+              "changePct": -52.4,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "DY",
+          "rec": "بيع",
+          "score": 3,
+          "reason": "خسارة 79% من التكلفة، Death Cross، MACD هابط، تحت EMA20، زخم سلبي واضح",
+          "priceOnDate": 90.33999633789062,
+          "horizons": {
+            "1w": {
+              "price": 92.62000274658203,
+              "changePct": 2.52,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 91.11000061035156,
+              "changePct": 0.85,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 95.77999877929688,
+              "changePct": 6.02,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 112.25,
+              "changePct": 24.25,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 85.12000274658203,
+              "changePct": -5.78,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "CRDO",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "خسارة 93% من التكلفة، Death Cross، تحت EMA20، خسائر متراكمة ضخمة وأساسيات ضعيفة",
+          "priceOnDate": 9.15,
+          "horizons": {
+            "1w": {
+              "price": 9.029999732971191,
+              "changePct": -1.31,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 8.420000076293945,
+              "changePct": -7.98,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 7.880000114440918,
+              "changePct": -13.88,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 16.450000762939453,
+              "changePct": 79.78,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 16.639999389648438,
+              "changePct": 81.86,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "CLS",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "خسارة 72% من التكلفة، MACD هابط، تحت EMA20، رغم Golden Cross فإن الزخم سلبي",
+          "priceOnDate": 12.25,
+          "horizons": {
+            "1w": {
+              "price": 12.539999961853027,
+              "changePct": 2.37,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 11.770000457763672,
+              "changePct": -3.92,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 10.930000305175781,
+              "changePct": -10.78,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 15.369999885559082,
+              "changePct": 25.47,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 26.700000762939453,
+              "changePct": 117.96,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "BTBT",
+          "rec": "بيع",
+          "score": 3.1,
+          "reason": "خسارة 58%، مضاربة على بيتكوين، عقوبة -1.0، رغم RSI 66 والإشارات الإيجابية فالمخاطر عالية جداً",
+          "priceOnDate": 1.67,
+          "horizons": {
+            "1w": {
+              "price": 2.0299999713897705,
+              "changePct": 21.56,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 1.690000057220459,
+              "changePct": 1.2,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 2.2799999713897705,
+              "changePct": 36.53,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 3.990000009536743,
+              "changePct": 138.92,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 2.190000057220459,
+              "changePct": 31.14,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "MVST",
+          "rec": "بيع",
+          "score": 3,
+          "reason": "خسارة 71%، Death Cross، عقوبة -1.0 مضاربة، أساسيات هشة في قطاع البطاريات",
+          "priceOnDate": 1.31,
+          "horizons": {
+            "1w": {
+              "price": 1.2599999904632568,
+              "changePct": -3.82,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 1.059999942779541,
+              "changePct": -19.08,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 1.8700000047683716,
+              "changePct": 42.75,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 2.2300000190734863,
+              "changePct": 70.23,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 1.6799999475479126,
+              "changePct": 28.24,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "ATYR",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "خسارة 16%، Death Cross، MACD هابط، تحت EMA20، biotech بلا إيرادات سقف 5.0 ثم عقوبة",
+          "priceOnDate": 1.9,
+          "horizons": {
+            "1w": {
+              "price": 1.9199999570846558,
+              "changePct": 1.05,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 2.1500000953674316,
+              "changePct": 13.16,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 2.259999990463257,
+              "changePct": 18.95,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 2.009999990463257,
+              "changePct": 5.79,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 1.4500000476837158,
+              "changePct": -23.68,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "SMMT",
+          "rec": "بيع",
+          "score": 2.2,
+          "reason": "خسارة 91% من التكلفة، RSI ضعيف، MACD هابط، تحت EMA20، biotech صغير بلا إيرادات واضحة",
+          "priceOnDate": 1.53,
+          "horizons": {
+            "1w": {
+              "price": 1.600000023841858,
+              "changePct": 4.58,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 1.5099999904632568,
+              "changePct": -1.31,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 2.119999885559082,
+              "changePct": 38.56,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 2.1500000953674316,
+              "changePct": 40.52,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 1.6699999570846558,
+              "changePct": 9.15,
+              "verdict": "wrong"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 1,
+          "total": 8,
+          "pct": 13
+        },
+        "2w": {
+          "correct": 3,
+          "total": 8,
+          "pct": 38
+        },
+        "1m": {
+          "correct": 3,
+          "total": 8,
+          "pct": 38
+        },
+        "3m": {
+          "correct": 0,
+          "total": 8,
+          "pct": 0
+        },
+        "6m": {
+          "correct": 3,
+          "total": 8,
+          "pct": 38
         }
       }
     },
