@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T14:54:29.948Z",
-  "totalRuns": 68,
+  "lastUpdated": "2026-06-15T14:55:48.233Z",
+  "totalRuns": 69,
   "runs": [
     {
       "date": "2021-09-20",
@@ -6883,6 +6883,211 @@
           "correct": 5,
           "total": 10,
           "pct": 50
+        }
+      }
+    },
+    {
+      "date": "2022-01-10",
+      "portfolioValue": 558832,
+      "signalCount": 46,
+      "actionCount": 5,
+      "signals": [
+        {
+          "sym": "VISN",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "تراجع -37.5%، Death Cross، MACD سلبي، RSI 37.7، شركة صغيرة بضعف هيكلي واضح",
+          "priceOnDate": 10.039999961853027,
+          "horizons": {
+            "1w": {
+              "price": 10.029999732971191,
+              "changePct": -0.1,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 9.270000457763672,
+              "changePct": -7.67,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 9.529999732971191,
+              "changePct": -5.08,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 6.659999847412109,
+              "changePct": -33.67,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 6.050000190734863,
+              "changePct": -39.74,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "MVST",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "RSI 26.5 في ذروة البيع التقنية، Death Cross، MACD سلبي، غرامة المضاربة -1.0، شركة بدون ربحية واضحة",
+          "priceOnDate": 5.01,
+          "horizons": {
+            "1w": {
+              "price": 5.260000228881836,
+              "changePct": 4.99,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 5.139999866485596,
+              "changePct": 2.59,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 7.150000095367432,
+              "changePct": 42.71,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 5.440000057220459,
+              "changePct": 8.58,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 2.2799999713897705,
+              "changePct": -54.49,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "BTBT",
+          "rec": "بيع",
+          "score": 2.3,
+          "reason": "RSI 27.5 ذروة بيع، Death Cross، MACD سلبي، غرامة المضاربة -1.0، تعرض مباشر للعملات الرقمية بتقلب عالٍ",
+          "priceOnDate": 5.35,
+          "horizons": {
+            "1w": {
+              "price": 5.5,
+              "changePct": 2.8,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 4.570000171661377,
+              "changePct": -14.58,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 4.690000057220459,
+              "changePct": -12.34,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 2.9600000381469727,
+              "changePct": -44.67,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.5800000429153442,
+              "changePct": -70.47,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "MSTR",
+          "rec": "بيع",
+          "score": 2.4,
+          "reason": "تراجع -86% من التكلفة، RSI 30 في ذروة البيع، MACD سلبي، غرامة المضاربة -1.0، ارتباط تام بالبيتكوين",
+          "priceOnDate": 48.195,
+          "horizons": {
+            "1w": {
+              "price": 46.827999114990234,
+              "changePct": -2.84,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 37.04499816894531,
+              "changePct": -23.14,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 44.65999984741211,
+              "changePct": -7.33,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 43.638999938964844,
+              "changePct": -9.45,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 20.09000015258789,
+              "changePct": -58.32,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "SMMT",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "تراجع -85.7%، Death Cross، RSI 32.4، يستوجب 8.0+ للتراكم ولم يبلغها، بيوتك مرحلة مبكرة",
+          "priceOnDate": 2.66,
+          "horizons": {
+            "1w": {
+              "price": 2.25,
+              "changePct": -15.41,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 2.0899999141693115,
+              "changePct": -21.43,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 2.2200000286102295,
+              "changePct": -16.54,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 2.1700000762939453,
+              "changePct": -18.42,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1,
+              "changePct": -62.41,
+              "verdict": "correct"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 1,
+          "total": 5,
+          "pct": 20
+        },
+        "2w": {
+          "correct": 4,
+          "total": 5,
+          "pct": 80
+        },
+        "1m": {
+          "correct": 4,
+          "total": 5,
+          "pct": 80
+        },
+        "3m": {
+          "correct": 4,
+          "total": 5,
+          "pct": 80
+        },
+        "6m": {
+          "correct": 5,
+          "total": 5,
+          "pct": 100
         }
       }
     },
