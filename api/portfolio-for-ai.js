@@ -1599,12 +1599,22 @@ ${JSON.stringify(facts)}`;
   }
   // ─────────────────────────────────────────────────────────────────────────
 
-  // Auth check
-  const authHeader = req.headers['authorization'] || '';
-  const key = authHeader.replace('Bearer ', '').trim();
-  if (key && key !== API_KEY) {
+  // Auth check — accepts EITHER a valid login session token OR the BRIEFING_API_KEY
+const { verifySession } = require('./_auth');
+const githubToken = process.env.GITHUB_TOKEN;
+const authHeader = req.headers['authorization'] || '';
+const key = authHeader.replace('Bearer ', '').trim();
+
+if (key) {
+  // First: check if it's a valid login session token
+  const user = await verifySession(req, githubToken);
+  // Second: or a valid BRIEFING_API_KEY (for Make.com / server-to-server)
+  const isBriefingKey = (key === API_KEY);
+  if (!user && !isBriefingKey) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
+}
+// No key at all → pass through (same behaviour as before)
 
   if (req.query.mode === 'score') return handleScore(req, res);
 
