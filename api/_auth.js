@@ -1,8 +1,7 @@
 // api/_auth.js
-// ── Shared session-validation helper ──
-// Used by auth.js and any endpoint that needs to verify a login token.
-// Accepts: the request object + a GitHub token (process.env.GITHUB_TOKEN)
-// Returns: the user object if valid, or null if invalid/expired.
+// Shared session-validation helper.
+// Used by any endpoint that needs to verify a login token.
+// Returns the user object if valid, or null if invalid/expired.
 
 const https = require('https');
 const REPO = 'ralyafei-source/theisilabs-portfolio';
@@ -22,7 +21,6 @@ async function ghGet(path, token) {
   });
 }
 
-// Returns the authenticated user object, or null if token is missing/invalid/expired.
 async function verifySession(req, githubToken) {
   const authHeader = req.headers.authorization || '';
   const sessionToken = authHeader.replace('Bearer ', '').trim();
@@ -33,7 +31,7 @@ async function verifySession(req, githubToken) {
     const user = users.find(u => u.sessionToken === sessionToken);
     if (!user) return null;
     if (new Date(user.sessionExpiry) < new Date()) return null;
-    return user; // { nickname, isAdmin, portfolioFile, telegram_chat_id, ... }
+    return user;
   } catch(e) {
     console.error('verifySession error:', e);
     return null;
