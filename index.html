@@ -6009,6 +6009,13 @@ function initBacktestPanel(){
   if(body.dataset.init) return;
   body.dataset.init = '1';
   setTimeout(() => renderExtendedBacktest(), 300);
+  // Set today as default end date for OHLC downloader
+  const ohlcTo = document.getElementById('ohlc-to-date');
+  if (ohlcTo) ohlcTo.value = new Date().toISOString().slice(0,10);
+  // Check if historical data already exists
+  fetch('https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/historical-ohlc.json')
+    .then(r => { if(r.ok) { const s=document.getElementById('ohlc-status'); if(s) s.innerHTML='✅ البيانات التاريخية محملة مسبقاً — يمكنك البدء بالاختبار الموسّع مباشرة'; s.style.color='var(--green)'; }})
+    .catch(()=>{});
 
   // Default date: 6 months ago
   const sixMonthsAgo = new Date(Date.now() - 180*86400000).toISOString().slice(0,10);
@@ -6054,7 +6061,40 @@ function initBacktestPanel(){
 
       <!-- Progress / Results area -->
       <div id="bt-results"></div>
-      <div style="margin-top:32px;border-top:1px solid var(--border);padding-top:24px;">
+      <div style="margin-top:32px;border-top:1px solid var(--border);padding-top:24px;margin-bottom:24px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">📦 تحميل البيانات التاريخية — خطوة أولى</div>
+        <div style="font-size:11.5px;color:var(--text2);margin-bottom:16px;line-height:1.7;">
+          يحمّل بيانات OHLC اليومية لجميع 46 سهماً من Yahoo Finance ويحفظها في GitHub.<br>
+          <b>تُنفّذ مرة واحدة فقط</b> — بعدها جميع الاختبارات تقرأ من الملف المحفوظ بدلاً من الاتصال بـ Yahoo في كل مرة.<br>
+          <span style="color:var(--text3);">الحجم المتوقع: ~1.5 MB · الوقت: ~2 دقيقة</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;">
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">من تاريخ</div>
+            <input type="date" id="ohlc-from-date" value="2020-01-01"
+              style="background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:12px;">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">إلى تاريخ</div>
+            <input type="date" id="ohlc-to-date"
+              style="background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 10px;font-size:12px;">
+          </div>
+          <button id="ohlc-download-btn" onclick="downloadHistoricalData()"
+            style="padding:9px 20px;background:rgba(56,189,248,0.15);border:1px solid #38BDF8;color:#38BDF8;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">
+            ⬇ تحميل البيانات التاريخية
+          </button>
+        </div>
+        <div id="ohlc-progress" style="display:none;">
+          <div style="background:rgba(255,255,255,0.06);border-radius:6px;height:6px;margin-bottom:6px;overflow:hidden;">
+            <div id="ohlc-progress-fill" style="width:0%;height:100%;background:#38BDF8;transition:width 0.3s;border-radius:6px;"></div>
+          </div>
+          <div id="ohlc-progress-text" style="font-size:10px;color:var(--text3);margin-bottom:6px;"></div>
+          <div id="ohlc-progress-log" style="max-height:100px;overflow-y:auto;background:var(--bg1);border-radius:6px;padding:8px;font-size:10px;font-family:monospace;color:var(--text3);"></div>
+        </div>
+        <div id="ohlc-status" style="font-size:11px;color:var(--text3);margin-top:8px;"></div>
+      </div>
+
+      <div style="border-top:1px solid var(--border);padding-top:24px;">
         <div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:6px;">📊 اختبار الدقة الموسّع — 30 أسبوعاً</div>
         <div style="font-size:11.5px;color:var(--text2);margin-bottom:16px;line-height:1.6;">يختبر النظام على 30 أسبوعاً متتالياً ويقيس الدقة عند أفق 1 أسبوع، 2 أسبوع، 1 شهر، 3 أشهر، 6 أشهر.<br>يستغرق ~25 دقيقة ويكلف ~$3 في API. النتائج تُحفظ تلقائياً ولا تحتاج لإعادة تشغيله.</div>
         <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;">
@@ -6326,6 +6366,122 @@ function renderExtendedCharts(container, data) {
     sBars.innerHTML=stockRates.slice(0,15).map(({sym,pct,total})=>{const col=pct>=70?'var(--green)':pct>=50?'var(--gold)':'var(--rose)';
       return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><div style="width:55px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text);text-align:right;">${sym}</div><div style="flex:1;background:rgba(255,255,255,0.06);border-radius:4px;height:16px;overflow:hidden;"><div style="width:${pct}%;background:${col};height:100%;border-radius:4px;"></div></div><div style="width:45px;font-size:11px;font-weight:600;color:${col};">${pct}% <span style="color:var(--text3);font-weight:400;">(${total}x)</span></div></div>`;
     }).join('');
+  }
+}
+
+// ─── Historical OHLC downloader ───────────────────────────────────────────────
+async function downloadHistoricalData(retrySymbols = null) {
+  const btn      = document.getElementById('ohlc-download-btn');
+  const progress = document.getElementById('ohlc-progress');
+  const fill     = document.getElementById('ohlc-progress-fill');
+  const text     = document.getElementById('ohlc-progress-text');
+  const log      = document.getElementById('ohlc-progress-log');
+  const status   = document.getElementById('ohlc-status');
+
+  const fromDate = document.getElementById('ohlc-from-date')?.value || '2024-01-01';
+  const toDate   = document.getElementById('ohlc-to-date')?.value   || new Date().toISOString().slice(0,10);
+
+  btn.disabled = true;
+  btn.textContent = retrySymbols ? '⏳ إعادة المحاولة...' : '⏳ جاري التحميل...';
+  progress.style.display = 'block';
+  log.innerHTML = '';
+  status.innerHTML = '';
+
+  let url = `/api/download-historical?from=${fromDate}&to=${toDate}`;
+  if (retrySymbols) url += `&retry=${retrySymbols.join(',')}`;
+
+  try {
+    const resp    = await fetch(url);
+    const reader  = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer    = '';
+    let done_count = 0;
+    let total     = 45;
+    const failedSyms = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const event = JSON.parse(line.slice(6));
+
+          if (event.type === 'start') {
+            total = event.symbols;
+            text.textContent = `0 / ${total} رمز`;
+          }
+          else if (event.type === 'progress') {
+            done_count++;
+            const pct = Math.round(done_count / total * 100);
+            fill.style.width = pct + '%';
+            text.textContent = `${done_count} / ${total} رمز`;
+
+            const row = document.createElement('div');
+            row.style.marginBottom = '1px';
+
+            if (event.status === 'ok') {
+              const v = event.validation;
+              row.innerHTML = `<span style="color:var(--green)">✅ ${event.sym}</span> <span style="color:var(--text3)">${event.bars} يوم | ${v.firstBar} → ${v.lastBar}</span>`;
+            } else if (event.status === 'warning') {
+              failedSyms.push(event.sym);
+              row.innerHTML = `<span style="color:var(--gold)">⚠️ ${event.sym}</span> <span style="color:var(--text3)">${event.bars} يوم لكن: ${event.issues?.join(', ')}</span>`;
+            } else {
+              failedSyms.push(event.sym);
+              row.innerHTML = `<span style="color:var(--rose)">❌ ${event.sym}</span> <span style="color:var(--text3)">${event.error || 'فشل'}</span>`;
+            }
+
+            log.appendChild(row);
+            log.scrollTop = log.scrollHeight;
+          }
+          else if (event.type === 'saving') {
+            text.textContent = '💾 حفظ في GitHub...';
+          }
+          else if (event.type === 'complete') {
+            fill.style.width = '100%';
+            text.textContent = '✅ اكتمل';
+
+            const allGood = event.failCount === 0 && event.warningCount === 0;
+            status.innerHTML = `
+              <div style="margin-bottom:8px;">
+                ✅ <b>${event.validCount}</b> رمز مكتمل البيانات &nbsp;
+                ${event.warningCount > 0 ? `⚠️ <b>${event.warningCount}</b> رمز بتحذيرات &nbsp;` : ''}
+                ${event.failCount > 0    ? `❌ <b>${event.failCount}</b> رمز فشل &nbsp;` : ''}
+              </div>
+              <div style="color:var(--text3);margin-bottom:8px;">
+                📊 ${event.totalBars?.toLocaleString()} يوم تداول · ${event.sizeKB} KB محفوظة في <code>data/historical-ohlc.json</code>
+              </div>
+              ${allGood
+                ? `<div style="color:var(--green);font-weight:600;">✅ جميع البيانات مكتملة — يمكنك بدء الاختبار الموسّع الآن</div>`
+                : `<div style="color:var(--gold);">
+                    ⚠️ بعض الرموز تحتاج مراجعة: ${event.failed?.map(f=>f.sym).join(', ')}<br>
+                    <button onclick="downloadHistoricalData(${JSON.stringify(event.failed?.map(f=>f.sym))})"
+                      style="margin-top:8px;padding:6px 14px;background:rgba(251,191,36,0.15);border:1px solid var(--gold);color:var(--gold);border-radius:6px;font-size:11px;cursor:pointer;font-family:'Almarai',sans-serif;">
+                      🔄 إعادة تحميل الرموز الفاشلة فقط
+                    </button>
+                  </div>`
+              }
+            `;
+            status.style.color = allGood ? 'var(--green)' : 'var(--gold)';
+            btn.textContent = allGood ? '✅ البيانات جاهزة' : '⬇ إعادة التحميل الكامل';
+            btn.disabled = false;
+          }
+          else if (event.type === 'error') {
+            text.textContent = `❌ ${event.message}`;
+            btn.disabled = false;
+            btn.textContent = '⬇ تحميل البيانات التاريخية';
+          }
+        } catch {}
+      }
+    }
+  } catch (e) {
+    text.textContent = `❌ ${e.message}`;
+    btn.disabled = false;
+    btn.textContent = '⬇ تحميل البيانات التاريخية';
   }
 }
 
