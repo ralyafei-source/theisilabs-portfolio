@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T15:04:21.523Z",
-  "totalRuns": 76,
+  "lastUpdated": "2026-06-15T15:05:37.228Z",
+  "totalRuns": 77,
   "runs": [
     {
       "date": "2021-09-20",
@@ -9203,6 +9203,245 @@
           "correct": 2,
           "total": 2,
           "pct": 100
+        }
+      }
+    },
+    {
+      "date": "2022-03-07",
+      "portfolioValue": 441091,
+      "signalCount": 46,
+      "actionCount": 6,
+      "signals": [
+        {
+          "sym": "IOT",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "انخفاض 60% من التكلفة، MACD هبوطي، بدون SMA200 يعني شركة حديثة غير مثبتة، خسارة متعمقة",
+          "priceOnDate": 14.65,
+          "horizons": {
+            "1w": {
+              "price": 13.989999771118164,
+              "changePct": -4.51,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 16.540000915527344,
+              "changePct": 12.9,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 14.470000267028809,
+              "changePct": -1.23,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 10.869999885559082,
+              "changePct": -25.8,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 13.039999961853027,
+              "changePct": -10.99,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "VISN",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "انخفاض 52% من التكلفة، Death Cross، MACD هبوطي، شركة صغيرة مع ضعف أساسي واضح",
+          "priceOnDate": 7.619999885559082,
+          "horizons": {
+            "1w": {
+              "price": 7.090000152587891,
+              "changePct": -6.96,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 8.680000305175781,
+              "changePct": 13.91,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 6.829999923706055,
+              "changePct": -10.37,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 8.529999732971191,
+              "changePct": 11.94,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 11.930000305175781,
+              "changePct": 56.56,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "PONY",
+          "rec": "بيع",
+          "score": 3,
+          "reason": "بدون بيانات تقنية، شركة ناشئة في التنقل الذكي بدون إيرادات مثبتة، غرامة مضاربة -1.0",
+          "priceOnDate": 20.07,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            }
+          }
+        },
+        {
+          "sym": "BTBT",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "انخفاض 21% من التكلفة، Death Cross، MACD هبوطي، RSI 31، تعدين بيتكوين عالي المخاطر مع غرامة -1.0",
+          "priceOnDate": 3.17,
+          "horizons": {
+            "1w": {
+              "price": 2.819999933242798,
+              "changePct": -11.04,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 3.5899999141693115,
+              "changePct": 13.25,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 3.2200000286102295,
+              "changePct": 1.58,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 1.6200000047683716,
+              "changePct": -48.9,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.3700000047683716,
+              "changePct": -56.78,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "SERV",
+          "rec": "بيع",
+          "score": 3,
+          "reason": "بدون بيانات تقنية، شركة ناشئة في روبوتات التوصيل، غرامة مضاربة -1.0، بدون إيرادات واضحة",
+          "priceOnDate": 14.86,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            }
+          }
+        },
+        {
+          "sym": "MSTR",
+          "rec": "بيع",
+          "score": 2.2,
+          "reason": "انخفاض 88% من التكلفة، Death Cross، MACD صعودي لكن ضعيف، تعرض بيتكوين مضاعف مع رفع مالي، غرامة -1.0",
+          "priceOnDate": 38.891,
+          "horizons": {
+            "1w": {
+              "price": 36.99300003051758,
+              "changePct": -4.88,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 43.64799880981445,
+              "changePct": 12.23,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 45.51100158691406,
+              "changePct": 17.02,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 23.54400062561035,
+              "changePct": -39.46,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 20.424999237060547,
+              "changePct": -47.48,
+              "verdict": "correct"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 2,
+          "total": 4,
+          "pct": 50
+        },
+        "2w": {
+          "correct": 0,
+          "total": 4,
+          "pct": 0
+        },
+        "1m": {
+          "correct": 1,
+          "total": 4,
+          "pct": 25
+        },
+        "3m": {
+          "correct": 3,
+          "total": 4,
+          "pct": 75
+        },
+        "6m": {
+          "correct": 3,
+          "total": 4,
+          "pct": 75
         }
       }
     },
