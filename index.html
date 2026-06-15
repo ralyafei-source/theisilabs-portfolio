@@ -2681,7 +2681,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.28 · 2026-06-14</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.29 · 2026-06-15</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -6387,12 +6387,33 @@ function renderBtTuning(rows){
     </div>`;
 }
 
-// ─── Hook backtest into showGroup ─────────────────────────────────────────────
-const _origShowGroup = showGroup;
-function showGroup(group, btn){
-  _origShowGroup(group, btn);
-  if(group==='backtest') initBacktestPanel();
-}
+// ─── Hook backtest into showGroup — override must come AFTER showGroup is defined ─
+document.addEventListener('DOMContentLoaded', function(){
+  const _orig = window.showGroup;
+  window.showGroup = function(group, btn){
+    _orig(group, btn);
+    if(group==='backtest') initBacktestPanel();
+  };
+});
+// Also override immediately in case DOM already loaded
+(function(){
+  const _orig = window.showGroup;
+  if(typeof _orig === 'function'){
+    window.showGroup = function(group, btn){
+      if(group==='backtest'){
+        // Handle backtest manually
+        document.querySelectorAll('.firm-tab').forEach(b=>b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        document.querySelectorAll('.firm-content').forEach(c=>{c.classList.remove('active');c.style.cssText='';});
+        const el=document.getElementById('firm-backtest');
+        if(el) el.classList.add('active');
+        initBacktestPanel();
+        return;
+      }
+      _orig(group, btn);
+    };
+  }
+})();
 
 function colorizePercent(text){
   return text.replace(/([+\-]?\d+\.?\d*%)/g,(match)=>{
