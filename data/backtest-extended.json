@@ -1,7 +1,552 @@
 {
-  "lastUpdated": "2026-06-15T13:07:00.568Z",
-  "totalRuns": 5,
+  "lastUpdated": "2026-06-15T13:20:41.518Z",
+  "totalRuns": 6,
   "runs": [
+    {
+      "date": "2022-09-26",
+      "portfolioValue": 307013,
+      "signalCount": 46,
+      "actionCount": 15,
+      "signals": [
+        {
+          "sym": "OKTA",
+          "rec": "بيع",
+          "score": 3.4,
+          "reason": "خسارة 42.5%، RSI 23.96 تشبع بيعي حاد، Death Cross، ضغط تنافسي شديد، هوامش سلبية، لا مسار واضح للربحية",
+          "priceOnDate": 52.84,
+          "horizons": {
+            "1w": {
+              "price": 57.81999969482422,
+              "changePct": 9.42,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 52.02000045776367,
+              "changePct": -1.55,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 56.97999954223633,
+              "changePct": 7.83,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 64.95999908447266,
+              "changePct": 22.94,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 83.33000183105469,
+              "changePct": 57.7,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "VISN",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "خسارة 38%، شركة صغيرة بلا أرباح، حجم تداول ضعيف، أساسيات هشة، مخاطر عالية جداً على رأس المال",
+          "priceOnDate": 9.970000267028809,
+          "horizons": {
+            "1w": {
+              "price": 9.5600004196167,
+              "changePct": -4.11,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 11.119999885559082,
+              "changePct": 11.53,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 13.430000305175781,
+              "changePct": 34.7,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 7.079999923706055,
+              "changePct": -28.99,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 6.150000095367432,
+              "changePct": -38.31,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "IOT",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "خسارة 68.8%، RSI 32.46، Death Cross، شركة حديثة بلا أرباح، تنافس شرس في قطاع IoT، ضغط سيولة",
+          "priceOnDate": 11.6,
+          "horizons": {
+            "1w": {
+              "price": 11.869999885559082,
+              "changePct": 2.33,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 12.430000305175781,
+              "changePct": 7.16,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 12.010000228881836,
+              "changePct": 3.53,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 11.859999656677246,
+              "changePct": 2.24,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 18.59000015258789,
+              "changePct": 60.26,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "CRDO",
+          "rec": "بيع",
+          "score": 3.1,
+          "reason": "خسارة 91.1%، Death Cross، RSI 34، شركة اتصالات صغيرة بلا أرباح موثقة، خسارة شبه كاملة تستوجب إعادة النظر الجذرية",
+          "priceOnDate": 11.61,
+          "horizons": {
+            "1w": {
+              "price": 11.3100004196167,
+              "changePct": -2.58,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 10.34000015258789,
+              "changePct": -10.94,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 13.15999984741211,
+              "changePct": 13.35,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 12.619999885559082,
+              "changePct": 8.7,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 8.899999618530273,
+              "changePct": -23.34,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "IONQ",
+          "rec": "بيع",
+          "score": 2.9,
+          "reason": "خسارة 91.9%، Death Cross، RSI 35، الحوسبة الكمية لا تزال بعيدة عن الربحية التجارية، خسارة كارثية، مضاربة بحتة",
+          "priceOnDate": 4.79,
+          "horizons": {
+            "1w": {
+              "price": 5.260000228881836,
+              "changePct": 9.81,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 5.070000171661377,
+              "changePct": 5.85,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 5.53000020980835,
+              "changePct": 15.45,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 3.0999999046325684,
+              "changePct": -35.28,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 5.119999885559082,
+              "changePct": 6.89,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "CLS",
+          "rec": "بيع",
+          "score": 2.7,
+          "reason": "خسارة 81.6%، RSI 23.87 تشبع بيعي حاد، Death Cross، أساسيات ضعيفة جداً، لا مسار واضح للتعافي في المدى المنظور",
+          "priceOnDate": 8.28,
+          "horizons": {
+            "1w": {
+              "price": 8.699999809265137,
+              "changePct": 5.07,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 8.729999542236328,
+              "changePct": 5.43,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 10.880000114440918,
+              "changePct": 31.4,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 10.84000015258789,
+              "changePct": 30.92,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 12.539999961853027,
+              "changePct": 51.45,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "PONY",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "لا بيانات تقنية، +0% من التكلفة، شركة ناشئة تنافسية جداً في قطاع متشبع، عقوبة المضاربة -1.0 مطبقة",
+          "priceOnDate": 20.07,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            }
+          }
+        },
+        {
+          "sym": "MVST",
+          "rec": "بيع",
+          "score": 2.2,
+          "reason": "خسارة 58.5%، Death Cross، MACD هابط، شركة بطاريات ناشئة بلا إيرادات مستدامة، عقوبة مضاربة -1.0، خطر إفلاس قائم",
+          "priceOnDate": 1.9,
+          "horizons": {
+            "1w": {
+              "price": 1.940000057220459,
+              "changePct": 2.11,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 1.809999942779541,
+              "changePct": -4.74,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 2.2799999713897705,
+              "changePct": 20,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 1.4600000381469727,
+              "changePct": -23.16,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.090000033378601,
+              "changePct": -42.63,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "SERV",
+          "rec": "بيع",
+          "score": 2.4,
+          "reason": "لا بيانات تقنية، +0% من التكلفة، شركة روبوتيات ناشئة بلا أرباح، عقوبة مضاربة -1.0، مضاربة عالية الخطر",
+          "priceOnDate": 14.86,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            }
+          }
+        },
+        {
+          "sym": "BTBT",
+          "rec": "بيع",
+          "score": 2.3,
+          "reason": "خسارة 71%، Death Cross، RSI 34، تعدين بيتكوين بتكاليف مرتفعة، عقوبة مضاربة -1.0، ضغط تنظيمي وسعري مزدوج",
+          "priceOnDate": 1.17,
+          "horizons": {
+            "1w": {
+              "price": 1.2400000095367432,
+              "changePct": 5.98,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 1.090000033378601,
+              "changePct": -6.84,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 1.1200000047683716,
+              "changePct": -4.27,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 0.5440000295639038,
+              "changePct": -53.5,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.3300000429153442,
+              "changePct": 13.68,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "SEZL",
+          "rec": "بيع",
+          "score": 3,
+          "reason": "لا بيانات تقنية، +0% من التكلفة، عقوبة مضاربة -1.0، شركة دفع صغيرة في سوق شديد التنافس",
+          "priceOnDate": 90.74,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            }
+          }
+        },
+        {
+          "sym": "MSTR",
+          "rec": "بيع",
+          "score": 1.8,
+          "reason": "خسارة 94.2%، Death Cross، RSI 37، رهان ليفرج على بيتكوين، عقوبة مضاربة -1.0، خسارة شبه كاملة، خطر الرافعة المالية حاد",
+          "priceOnDate": 20.018,
+          "horizons": {
+            "1w": {
+              "price": 22.45199966430664,
+              "changePct": 12.16,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 22.065000534057617,
+              "changePct": 10.23,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 27.27199935913086,
+              "changePct": 36.24,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 14.77400016784668,
+              "changePct": -26.2,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 23.895999908447266,
+              "changePct": 19.37,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "SOFI",
+          "rec": "بيع",
+          "score": 3.3,
+          "reason": "خسارة 69.1%، Death Cross، RSI 33، بنك رقمي ناشئ في بيئة رفع فائدة، ضغط على هوامش الإقراض، لا أرباح بعد",
+          "priceOnDate": 5.079999923706055,
+          "horizons": {
+            "1w": {
+              "price": 5.130000114440918,
+              "changePct": 0.98,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 4.96999979019165,
+              "changePct": -2.17,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 5.539999961853027,
+              "changePct": 9.06,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 4.389999866485596,
+              "changePct": -13.58,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 5.760000228881836,
+              "changePct": 13.39,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "SMMT",
+          "rec": "بيع",
+          "score": 2.1,
+          "reason": "خسارة 93.5%، Death Cross، RSI 49، شركة أدوية صغيرة بلا أرباح، فشل تجريبي واضح من مسار السعر، خسارة شبه كاملة",
+          "priceOnDate": 1.21,
+          "horizons": {
+            "1w": {
+              "price": 1.2100000381469727,
+              "changePct": 0,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 1.1299999952316284,
+              "changePct": -6.61,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 1.0700000524520874,
+              "changePct": -11.57,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 4,
+              "changePct": 230.58,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 1.7200000286102295,
+              "changePct": 42.15,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "B",
+          "rec": "بيع",
+          "score": 3,
+          "reason": "خسارة 70.2%، Death Cross، RSI 32، شركة تعدين صغيرة بأساسيات ضعيفة، ضغط السلع العالمي يفاقم الوضع",
+          "priceOnDate": 14.19,
+          "horizons": {
+            "1w": {
+              "price": 15.920000076293945,
+              "changePct": 12.19,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 15.270000457763672,
+              "changePct": 7.61,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 15.699999809265137,
+              "changePct": 10.64,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 17.770000457763672,
+              "changePct": 25.23,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 18.5,
+              "changePct": 30.37,
+              "verdict": "wrong"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 0,
+          "total": 12,
+          "pct": 0
+        },
+        "2w": {
+          "correct": 3,
+          "total": 12,
+          "pct": 25
+        },
+        "1m": {
+          "correct": 1,
+          "total": 12,
+          "pct": 8
+        },
+        "3m": {
+          "correct": 6,
+          "total": 12,
+          "pct": 50
+        },
+        "6m": {
+          "correct": 3,
+          "total": 12,
+          "pct": 25
+        }
+      }
+    },
     {
       "date": "2023-08-21",
       "portfolioValue": 339829,
