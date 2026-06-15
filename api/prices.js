@@ -1,7 +1,8 @@
-// api/prices.js — reads symbols from portfolio.json, fetches prices with timeout
+// api/prices.js — FMP primary + Yahoo fallback, chunked for reliability
 
-const REPO = 'ralyafei-source/theisilabs-portfolio';
-const UA   = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
+const REPO        = 'ralyafei-source/theisilabs-portfolio';
+const UA          = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
+const FMP_API_KEY = process.env.FMP_API_KEY;
 
 // Fetch with timeout helper
 async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
@@ -33,7 +34,6 @@ module.exports = async (req, res) => {
   let symbols = fallbackSymbols;
 
   // ?list=symbols — return the UNION of ALL users' holdings (no prices).
-  // Used by 922 Data Collector so baselines cover every user's stocks (spec v1.1 Fix 2).
   if (req.query.list === 'symbols') {
     const set = new Set();
     try {
@@ -82,42 +82,70 @@ module.exports = async (req, res) => {
     }
   }
 
-  // Fetch each price with 4 second timeout
-  async function fetchOne(symbol) {
-    try {
-      const r = await fetchWithTimeout(
-        `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`,
-        { headers: { 'User-Agent': UA } },
-        4000
-      );
-      if (!r.ok) return null;
-      const d = await r.json();
-      const meta = d?.chart?.result?.[0]?.meta;
-      if (!meta?.regularMarketPrice) return null;
-      return {
-        symbol,
-        price:     meta.regularMarketPrice,
-        change:    meta.regularMarketPrice - (meta.chartPreviousClose || meta.regularMarketPrice),
-        changePct: meta.chartPreviousClose
-          ? ((meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose) * 100
-          : 0,
-        name: symbol
-      };
-    } catch {
-      return null;
+  // ── STEP 1: FMP batch call — one request for all symbols ─────────────────
+  let results = [];
+  const fmpFailed = new Set(symbols); // tracks which symbols still need prices
+
+  try {
+    const fmpUrl = `https://financialmodelingprep.com/stable/batch-request-end-of-day-prices?symbols=${symbols.join(',')}&apikey=${FMP_API_KEY}`;
+    const fmpRes = await fetchWithTimeout(fmpUrl, { headers: { 'User-Agent': 'theisilabs/1.0' } }, 8000);
+    if (fmpRes.ok) {
+      const fmpData = await fmpRes.json();
+      if (Array.isArray(fmpData)) {
+        fmpData.forEach(q => {
+          if (q.symbol && q.price) {
+            results.push({
+              symbol:    q.symbol,
+              price:     q.price,
+              change:    q.change || 0,
+              changePct: q.changesPercentage || 0,
+              name:      q.name || q.symbol
+            });
+            fmpFailed.delete(q.symbol); // FMP got this one — remove from fallback list
+          }
+        });
+      }
     }
+  } catch (e) {
+    console.error('FMP batch error:', e);
+    // fmpFailed stays as full set — Yahoo will handle everything
   }
 
-  // Run all fetches in parallel — return whatever completes within time
- // Chunked fetch — 10 at a time with 150ms pause, prevents Yahoo rate limiting
-const results = [];
-for (let i = 0; i < symbols.length; i += 10) {
-  const batch = symbols.slice(i, i + 10);
-  const batchResults = await Promise.all(batch.map(fetchOne));
-  results.push(...batchResults);
-  if (i + 10 < symbols.length) await new Promise(r => setTimeout(r, 150));
-}
+  // ── STEP 2: Yahoo fallback — only for symbols FMP missed ─────────────────
+  if (fmpFailed.size > 0) {
+    console.log(`FMP missed ${fmpFailed.size} symbols, falling back to Yahoo:`, [...fmpFailed]);
 
+    async function fetchOneYahoo(symbol) {
+      try {
+        const r = await fetchWithTimeout(
+          `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`,
+          { headers: { 'User-Agent': UA } },
+          4000
+        );
+        if (!r.ok) return null;
+        const d = await r.json();
+        const meta = d?.chart?.result?.[0]?.meta;
+        if (!meta?.regularMarketPrice) return null;
+        return {
+          symbol,
+          price:     meta.regularMarketPrice,
+          change:    meta.regularMarketPrice - (meta.chartPreviousClose || meta.regularMarketPrice),
+          changePct: meta.chartPreviousClose
+            ? ((meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose) * 100
+            : 0,
+          name: symbol
+        };
+      } catch {
+        return null;
+      }
+    }
+
+    // Missing symbols are few — safe to run in parallel without chunking
+    const yahooResults = await Promise.all([...fmpFailed].map(fetchOneYahoo));
+    yahooResults.forEach(q => { if (q) results.push(q); });
+  }
+
+  // ── STEP 3: Build response ────────────────────────────────────────────────
   const prices = {};
   results.forEach(q => {
     if (q) prices[q.symbol] = {
@@ -128,11 +156,14 @@ for (let i = 0; i < symbols.length; i += 10) {
     };
   });
 
+  const fmpCount   = symbols.length - fmpFailed.size;
+  const yahooCount = results.length - fmpCount;
+
   res.json({
     prices,
     count:   Object.keys(prices).length,
     total:   symbols.length,
     updated: new Date().toISOString(),
-    source:  'Yahoo Finance'
+    source:  `FMP(${fmpCount}) + Yahoo(${yahooCount})`
   });
 };
