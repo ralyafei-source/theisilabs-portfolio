@@ -2681,7 +2681,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.30 · 2026-06-15</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.31 · 2026-06-15</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -6082,43 +6082,24 @@ async function runBacktest(){
     _btState.snapshotText = snap.portfolioText;
     _btState.holdings = snap.holdings;
 
-    // ── Step 2: Run Claude analysis on historical data ─────────────────────
+    // ── Step 2: Run Claude analysis via server-side proxy ─────────────────────
     showBtStep(res, 2, 4, 'تشغيل محرك التحليل بالبيانات التاريخية…', 'نفس البرومت المستخدم في Make.com · يستغرق 30-60 ثانية');
-    const claudeResp = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
+    const claudeResp = await fetch('/api/backtest-analyze', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 4000,
-        system: `أنت محلل مالي متخصص تُحلل محفظة رشيد الاستثمارية.
-هذا اختبار رجعي — البيانات المقدمة هي كما كانت في ${date}.
-قدم تحليلاً صادقاً كأنك لا تعرف ما حدث بعد ذلك التاريخ.
-
-لكل سهم في المحفظة، قدم:
-- التوصية: تراكم | احتفظ | مراقبة | بيع (اختر واحدة فقط)
-- الدرجة من 10 (بناءً على 5 طبقات: مركزك 15% · التقييم 30% · التقني 20% · الأساسيات 25% · الخارجي 10%)
-- السبب الرئيسي في جملة واحدة
-
-استخدم هذا الصيغة بالضبط لكل سهم:
-[[SYM|توصية|X/10|السبب]]
-
-مثال:
-[[NVDA|تراكم|8.2|Golden Cross + DCF +31% + ROE 111%]]
-[[PLTR|مراقبة|5.5|RSI 78 تشبع + P/E مرتفع جداً]]
-
-بعد قائمة الأسهم، أضف:
-[[TOP_BUY|SYM|السبب الكامل]]
-[[TOP_RISK|SYM|السبب الكامل]]`,
-        messages:[{
-          role:'user',
-          content: `هذه بيانات المحفظة كما كانت في ${date}:\n\n${_btState.snapshotText}`
-        }]
+        portfolioText: _btState.snapshotText,
+        date
       })
     });
 
+    if (!claudeResp.ok) {
+      const errData = await claudeResp.json().catch(() => ({}));
+      throw new Error(errData.error || `خطأ في الاتصال بـ Claude (${claudeResp.status}). تأكد من إضافة ANTHROPIC_API_KEY في Vercel Environment Variables`);
+    }
     const claudeData = await claudeResp.json();
-    const claudeText = claudeData?.content?.[0]?.text || '';
-    if(!claudeText) throw new Error('Claude لم يُعد استجابة. تحقق من الاتصال.');
+    const claudeText = claudeData?.analysis || '';
+    if (!claudeText) throw new Error('Claude لم يُعد استجابة');
     _btState.claudeOutput = claudeText;
 
     // ── Step 3: Fetch actual prices today for comparison ───────────────────
