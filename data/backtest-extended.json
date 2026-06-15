@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T15:17:47.687Z",
-  "totalRuns": 8,
+  "lastUpdated": "2026-06-15T15:19:05.274Z",
+  "totalRuns": 9,
   "runs": [
     {
       "date": "2022-03-28",
@@ -3747,6 +3747,279 @@
           "correct": 5,
           "total": 13,
           "pct": 38
+        }
+      }
+    },
+    {
+      "date": "2022-05-23",
+      "portfolioValue": 333506,
+      "signalCount": 46,
+      "actionCount": 7,
+      "signals": [
+        {
+          "sym": "CRDO",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "خسارة -92.3% مدمرة وRSI ضعيف وبدون SMA200، شركة ناشئة بلا مسار ربحية واضح",
+          "priceOnDate": 10,
+          "horizons": {
+            "1w": {
+              "price": 10.229999542236328,
+              "changePct": 2.3,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 12.739999771118164,
+              "changePct": 27.4,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 12.880000114440918,
+              "changePct": 28.8,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 14.84000015258789,
+              "changePct": 48.4,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 14.109999656677246,
+              "changePct": 41.1,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "IONQ",
+          "rec": "بيع",
+          "score": 3,
+          "reason": "خسارة -90.2% وDeath Cross وRSI 37، تقنية كمومية مبكرة جداً وخسائر ضخمة متوقعة",
+          "priceOnDate": 5.76,
+          "horizons": {
+            "1w": {
+              "price": 5.75,
+              "changePct": -0.17,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 5.639999866485596,
+              "changePct": -2.08,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 4.989999771118164,
+              "changePct": -13.37,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 6.420000076293945,
+              "changePct": 11.46,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 4.800000190734863,
+              "changePct": -16.67,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "MVST",
+          "rec": "بيع",
+          "score": 3.4,
+          "reason": "خسارة -1.7% فقط لكن Death Cross وغياب إيرادات حقيقية + عقوبة المضاربة -1.0",
+          "priceOnDate": 4.5,
+          "horizons": {
+            "1w": {
+              "price": 5,
+              "changePct": 11.11,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 4.610000133514404,
+              "changePct": 2.44,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 2.8399999141693115,
+              "changePct": -36.89,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 2.759999990463257,
+              "changePct": -38.67,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 2.190000057220459,
+              "changePct": -51.33,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "BTBT",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "خسارة -59.8% وDeath Cross الحاد وارتباط بالبيتكوين في سوق هابط + عقوبة مضاربة -1.0",
+          "priceOnDate": 1.62,
+          "horizons": {
+            "1w": {
+              "price": 1.7799999713897705,
+              "changePct": 9.88,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 1.6200000047683716,
+              "changePct": 0,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 1.440000057220459,
+              "changePct": -11.11,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 1.5,
+              "changePct": -7.41,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 0.875,
+              "changePct": -45.99,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "MSTR",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "خسارة -94.1% كارثية وRSI 34 وDeath Cross وتعرض مكشوف للبيتكوين + عقوبة -1.0",
+          "priceOnDate": 20.437,
+          "horizons": {
+            "1w": {
+              "price": 26.4689998626709,
+              "changePct": 29.52,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 23.54400062561035,
+              "changePct": 15.2,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 17.090999603271484,
+              "changePct": -16.37,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 26.80900001525879,
+              "changePct": 31.18,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 15.722000122070312,
+              "changePct": -23.07,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "ATYR",
+          "rec": "بيع",
+          "score": 3.5,
+          "reason": "RSI 23.36 مبالغ في البيع لكن Death Cross حاد وMACD هابط، حد أقصى 5.0 للبايوتك بلا إيرادات",
+          "priceOnDate": 2.98,
+          "horizons": {
+            "1w": {
+              "price": 2.809999942779541,
+              "changePct": -5.7,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 2.8399999141693115,
+              "changePct": -4.7,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 2.700000047683716,
+              "changePct": -9.4,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 3.609999895095825,
+              "changePct": 21.14,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 2.130000114440918,
+              "changePct": -28.52,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "SMMT",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "خسارة -94.8% وRSI 23 وDeath Cross، شركة بايوتك صغيرة بلا إيرادات قرب الصفر",
+          "priceOnDate": 0.966,
+          "horizons": {
+            "1w": {
+              "price": 1.3300000429153442,
+              "changePct": 37.68,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 0.9900000095367432,
+              "changePct": 2.48,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 1.0800000429153442,
+              "changePct": 11.8,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 1.6299999952316284,
+              "changePct": 68.74,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 0.8880000114440918,
+              "changePct": -8.07,
+              "verdict": "correct"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 1,
+          "total": 7,
+          "pct": 14
+        },
+        "2w": {
+          "correct": 0,
+          "total": 7,
+          "pct": 0
+        },
+        "1m": {
+          "correct": 5,
+          "total": 7,
+          "pct": 71
+        },
+        "3m": {
+          "correct": 2,
+          "total": 7,
+          "pct": 29
+        },
+        "6m": {
+          "correct": 6,
+          "total": 7,
+          "pct": 86
         }
       }
     }
