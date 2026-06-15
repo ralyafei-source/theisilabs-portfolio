@@ -4,7 +4,7 @@
 
 const https = require('https');
 const crypto = require('crypto');
-const { verifySession } = require('./_auth');   // ← ADD THIS LINE
+
 
 const REPO = 'ralyafei-source/theisilabs-portfolio';
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
