@@ -6572,8 +6572,9 @@ async function runExtendedBacktest(){
         const result = await resp.json();
         const acc1m  = result.accuracy?.['1m'];
         const accText = acc1m?.pct != null ? `دقة 1م: ${acc1m.pct}%` : 'لا يوجد حكم بعد';
-        logLine.textContent = `${date}  ✅ ${accText} — ${result.signalCount} إشارة`;
-        logLine.style.color = 'var(--green)';
+        const saveIcon = result.saved === false ? ' ⚠️ لم يُحفظ' : '';
+        logLine.textContent = `${date}  ✅ ${accText} — ${result.signalCount} إشارة${saveIcon}`;
+        logLine.style.color = result.saved === false ? 'var(--gold)' : 'var(--green)';
         newRuns++;
       }
     } catch (e) {
@@ -6583,8 +6584,8 @@ async function runExtendedBacktest(){
 
     progressLog.scrollTop = progressLog.scrollHeight;
 
-    // Small pause between requests to avoid overwhelming the server
-    if (i < toProcess.length - 1) await new Promise(r => setTimeout(r, 1000));
+    // 3 second pause between weeks — ensures GitHub save propagates before next read
+    if (i < toProcess.length - 1) await new Promise(r => setTimeout(r, 3000));
   }
 
   // All done
