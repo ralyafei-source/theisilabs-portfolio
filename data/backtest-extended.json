@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T14:48:33.248Z",
-  "totalRuns": 63,
+  "lastUpdated": "2026-06-15T14:50:09.255Z",
+  "totalRuns": 64,
   "runs": [
     {
       "date": "2021-09-20",
@@ -4974,6 +4974,347 @@
           "correct": 5,
           "total": 8,
           "pct": 63
+        }
+      }
+    },
+    {
+      "date": "2021-12-06",
+      "portfolioValue": 613381,
+      "signalCount": 46,
+      "actionCount": 9,
+      "signals": [
+        {
+          "sym": "VISN",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "Death Cross ⚠️ وMACD سلبي رغم إشارة صغيرة، خسارة 36.4%، شركة صغيرة بلا ميزة تنافسية واضحة",
+          "priceOnDate": 10.220000267028809,
+          "horizons": {
+            "1w": {
+              "price": 11.1899995803833,
+              "changePct": 9.49,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 10.399999618530273,
+              "changePct": 1.76,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 11.239999771118164,
+              "changePct": 9.98,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 7.619999885559082,
+              "changePct": -25.44,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 8.529999732971191,
+              "changePct": -16.54,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "PLTR",
+          "rec": "بيع",
+          "score": 3.5,
+          "reason": "RSI 26.79 ذروة بيع لكن Death Cross ⚠️ وMACD هابط بقوة وتحت EMA20، خسارة 19.7%، تقييم مرتفع جداً",
+          "priceOnDate": 18.8,
+          "horizons": {
+            "1w": {
+              "price": 18.399999618530273,
+              "changePct": -2.13,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 17.959999084472656,
+              "changePct": -4.47,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 16.959999084472656,
+              "changePct": -9.79,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 11.109999656677246,
+              "changePct": -40.9,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 8.979999542236328,
+              "changePct": -52.23,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "MVST",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "Death Cross ⚠️ وMACD هابط وتحت EMA20، RSI 31، عقوبة المضاربة -1.0، شركة EVs بخسائر متراكمة",
+          "priceOnDate": 7.06,
+          "horizons": {
+            "1w": {
+              "price": 7.369999885559082,
+              "changePct": 4.39,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 6.380000114440918,
+              "changePct": -9.63,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 5.489999771118164,
+              "changePct": -22.24,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 7.489999771118164,
+              "changePct": 6.09,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 4.610000133514404,
+              "changePct": -34.7,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "BTBT",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "Death Cross ⚠️ وMACD هابط وRSI 33، عقوبة المضاربة -1.0، تعدين بيتكوين شديد التقلب",
+          "priceOnDate": 7.9,
+          "horizons": {
+            "1w": {
+              "price": 6.889999866485596,
+              "changePct": -12.78,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 6.489999771118164,
+              "changePct": -17.85,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 5.650000095367432,
+              "changePct": -28.48,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 3.1700000762939453,
+              "changePct": -59.87,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.6200000047683716,
+              "changePct": -79.49,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "PONY",
+          "rec": "بيع",
+          "score": 3,
+          "reason": "لا بيانات تقنية، عقوبة المضاربة -1.0، شركة سيارات ذاتية القيادة بخسائر ضخمة وعدم يقين تنظيمي",
+          "priceOnDate": 20.07,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            }
+          }
+        },
+        {
+          "sym": "SERV",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "لا بيانات تقنية، عقوبة المضاربة -1.0، شركة ناشئة في خدمات الروبوت بإيرادات شبه معدومة",
+          "priceOnDate": 14.86,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "unknown"
+            }
+          }
+        },
+        {
+          "sym": "MSTR",
+          "rec": "بيع",
+          "score": 2.3,
+          "reason": "RSI 30 وMACD هابط بقوة، عقوبة المضاربة -1.0، خسارة 82.7%، مرتبط بالبيتكوين مع رافعة مالية خطيرة",
+          "priceOnDate": 59.647,
+          "horizons": {
+            "1w": {
+              "price": 57.16400146484375,
+              "changePct": -4.16,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 54.638999938964844,
+              "changePct": -8.4,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 50.90999984741211,
+              "changePct": -14.65,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 38.89099884033203,
+              "changePct": -34.8,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 23.54400062561035,
+              "changePct": -60.53,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "SMMT",
+          "rec": "بيع",
+          "score": 3,
+          "reason": "Death Cross ⚠️ وMACD هابط وتحت EMA20، خسارة 73%، بايوتك مرحلة مبكرة بمخاطر عالية",
+          "priceOnDate": 5.03,
+          "horizons": {
+            "1w": {
+              "price": 4.71999979019165,
+              "changePct": -6.16,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 2.5899999141693115,
+              "changePct": -48.51,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 2.740000009536743,
+              "changePct": -45.53,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 2.8399999141693115,
+              "changePct": -43.54,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 0.9900000095367432,
+              "changePct": -80.32,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "B",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "Death Cross ⚠️ وMACD هابط وتحت EMA20، خسارة 61%، شركة تعدين صغيرة بنموذج أعمال ضعيف",
+          "priceOnDate": 18.49,
+          "horizons": {
+            "1w": {
+              "price": 17.969999313354492,
+              "changePct": -2.81,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 18.329999923706055,
+              "changePct": -0.87,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 18.56999969482422,
+              "changePct": 0.43,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 24.860000610351562,
+              "changePct": 34.45,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 20.510000228881836,
+              "changePct": 10.92,
+              "verdict": "wrong"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 2,
+          "total": 7,
+          "pct": 29
+        },
+        "2w": {
+          "correct": 4,
+          "total": 7,
+          "pct": 57
+        },
+        "1m": {
+          "correct": 5,
+          "total": 7,
+          "pct": 71
+        },
+        "3m": {
+          "correct": 5,
+          "total": 7,
+          "pct": 71
+        },
+        "6m": {
+          "correct": 6,
+          "total": 7,
+          "pct": 86
         }
       }
     },
