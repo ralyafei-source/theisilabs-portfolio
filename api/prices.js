@@ -109,7 +109,14 @@ module.exports = async (req, res) => {
   }
 
   // Run all fetches in parallel — return whatever completes within time
-  const results = await Promise.all(symbols.map(fetchOne));
+ // Chunked fetch — 10 at a time with 150ms pause, prevents Yahoo rate limiting
+const results = [];
+for (let i = 0; i < symbols.length; i += 10) {
+  const batch = symbols.slice(i, i + 10);
+  const batchResults = await Promise.all(batch.map(fetchOne));
+  results.push(...batchResults);
+  if (i + 10 < symbols.length) await new Promise(r => setTimeout(r, 150));
+}
 
   const prices = {};
   results.forEach(q => {
