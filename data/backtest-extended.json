@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T13:35:43.677Z",
-  "totalRuns": 17,
+  "lastUpdated": "2026-06-15T13:37:13.188Z",
+  "totalRuns": 18,
   "runs": [
     {
       "date": "2022-09-26",
@@ -3853,6 +3853,279 @@
           "correct": 3,
           "total": 9,
           "pct": 33
+        }
+      }
+    },
+    {
+      "date": "2022-12-19",
+      "portfolioValue": 268136,
+      "signalCount": 46,
+      "actionCount": 7,
+      "signals": [
+        {
+          "sym": "VISN",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "خسارة -56.2%، RSI 28.3 تشبع بيعي مع استمرار الاتجاه الهابط، MACD سلبي، شركة صغيرة مضاربية بلا حجم كافٍ، رغم Golden Cross ضعيف",
+          "priceOnDate": 7.039999961853027,
+          "horizons": {
+            "1w": {
+              "price": 7.079999923706055,
+              "changePct": 0.57,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 7.420000076293945,
+              "changePct": 5.4,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 9.100000381469727,
+              "changePct": 29.26,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 6.079999923706055,
+              "changePct": -13.64,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 4.909999847412109,
+              "changePct": -30.26,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "PLTR",
+          "rec": "بيع",
+          "score": 3.5,
+          "reason": "خسارة -72.9%، RSI 33.9 محايد-منخفض، MACD سلبي، Death Cross، تحت EMA20، تقييم لا يزال مرتفعاً مقارنة بالنمو",
+          "priceOnDate": 6.35,
+          "horizons": {
+            "1w": {
+              "price": 6,
+              "changePct": -5.51,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 6.389999866485596,
+              "changePct": 0.63,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 6.900000095367432,
+              "changePct": 8.66,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 8.079999923706055,
+              "changePct": 27.24,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 15.789999961853027,
+              "changePct": 148.66,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "IONQ",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "خسارة -93.7% كارثية، RSI 29.3 تشبع بيعي مع استمرار الهبوط، MACD سلبي، Death Cross، الحوسبة الكمومية لا تزال سنوات عديدة من التطبيق التجاري",
+          "priceOnDate": 3.7,
+          "horizons": {
+            "1w": {
+              "price": 3.0999999046325684,
+              "changePct": -16.22,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 3.4600000381469727,
+              "changePct": -6.49,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 4.199999809265137,
+              "changePct": 13.51,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 4.610000133514404,
+              "changePct": 24.59,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 9.3100004196167,
+              "changePct": 151.62,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "MVST",
+          "rec": "بيع",
+          "score": 2.2,
+          "reason": "خسارة -65.1%، RSI 28.5 تشبع بيعي مستمر، MACD سلبي، Death Cross، شركة بطاريات صغيرة بسيولة محدودة، عقوبة مضاربية -1.0",
+          "priceOnDate": 1.6,
+          "horizons": {
+            "1w": {
+              "price": 1.4600000381469727,
+              "changePct": -8.75,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 1.5099999904632568,
+              "changePct": -5.63,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 1.7300000190734863,
+              "changePct": 8.13,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 1.2100000381469727,
+              "changePct": -24.37,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.6399999856948853,
+              "changePct": 2.5,
+              "verdict": "neutral"
+            }
+          }
+        },
+        {
+          "sym": "BTBT",
+          "rec": "بيع",
+          "score": 1.5,
+          "reason": "خسارة -86.2%، RSI 23.6 تشبع بيعي حاد، MACD سلبي، Death Cross، تعدين بيتكوين في سوق هابط، عقوبة مضاربية -1.0",
+          "priceOnDate": 0.556,
+          "horizons": {
+            "1w": {
+              "price": 0.5440000295639038,
+              "changePct": -2.16,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 0.6480000019073486,
+              "changePct": 16.55,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 1.2300000190734863,
+              "changePct": 121.22,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 1.2999999523162842,
+              "changePct": 133.81,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 3.8499999046325684,
+              "changePct": 592.45,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "MSTR",
+          "rec": "بيع",
+          "score": 1.8,
+          "reason": "خسارة -95.1% كارثية، RSI 38.1 محايد-منخفض، MACD سلبي، Death Cross، رهان مركّز على بيتكوين دون تنويع، عقوبة مضاربية -1.0",
+          "priceOnDate": 17.021,
+          "horizons": {
+            "1w": {
+              "price": 14.77400016784668,
+              "changePct": -13.2,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 14.501999855041504,
+              "changePct": -14.8,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 22.118999481201172,
+              "changePct": 29.95,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 26.395999908447266,
+              "changePct": 55.08,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 31.34000015258789,
+              "changePct": 84.13,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "SOFI",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "خسارة -73%، RSI 41.5 محايد، MACD إيجابي خفيف، Death Cross، بيئة أسعار فائدة مرتفعة ضاغطة على فنتك",
+          "priceOnDate": 4.429999828338623,
+          "horizons": {
+            "1w": {
+              "price": 4.389999866485596,
+              "changePct": -0.9,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 4.5,
+              "changePct": 1.58,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 5.559999942779541,
+              "changePct": 25.51,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 5.21999979019165,
+              "changePct": 17.83,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 8.59000015258789,
+              "changePct": 93.91,
+              "verdict": "wrong"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 4,
+          "total": 7,
+          "pct": 57
+        },
+        "2w": {
+          "correct": 3,
+          "total": 7,
+          "pct": 43
+        },
+        "1m": {
+          "correct": 0,
+          "total": 7,
+          "pct": 0
+        },
+        "3m": {
+          "correct": 2,
+          "total": 7,
+          "pct": 29
+        },
+        "6m": {
+          "correct": 1,
+          "total": 7,
+          "pct": 14
         }
       }
     },
