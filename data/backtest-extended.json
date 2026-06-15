@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T13:28:35.665Z",
-  "totalRuns": 12,
+  "lastUpdated": "2026-06-15T13:30:15.915Z",
+  "totalRuns": 13,
   "runs": [
     {
       "date": "2022-09-26",
@@ -2250,6 +2250,211 @@
           "correct": 0,
           "total": 1,
           "pct": 0
+        }
+      }
+    },
+    {
+      "date": "2022-11-14",
+      "portfolioValue": 303893,
+      "signalCount": 46,
+      "actionCount": 5,
+      "signals": [
+        {
+          "sym": "VISN",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "انخفاض -43.2%، MACD سلبي، RSI منخفض 35.7، تحت EMA20 — شركة صغيرة بلا ميزة تنافسية واضحة، مخاطر عالية جداً",
+          "priceOnDate": 9.119999885559082,
+          "horizons": {
+            "1w": {
+              "price": 9.15999984741211,
+              "changePct": 0.44,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 8.550000190734863,
+              "changePct": -6.25,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 8.069999694824219,
+              "changePct": -11.51,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 8.649999618530273,
+              "changePct": -5.15,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 4.380000114440918,
+              "changePct": -51.97,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "MVST",
+          "rec": "بيع",
+          "score": 2.9,
+          "reason": "انخفاض -48.3%، عقوبة المضاربة -1.0، Death Cross واسع (2.14 vs 3.94) — بطاريات EV بمنافسة حادة وخسائر هيكلية، وضع مالي هش",
+          "priceOnDate": 2.37,
+          "horizons": {
+            "1w": {
+              "price": 2.190000057220459,
+              "changePct": -7.59,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 2.119999885559082,
+              "changePct": -10.55,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 1.8600000143051147,
+              "changePct": -21.52,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 1.5399999618530273,
+              "changePct": -35.02,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.7999999523162842,
+              "changePct": -24.05,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "BTBT",
+          "rec": "بيع",
+          "score": 2.7,
+          "reason": "انخفاض -71.7%، عقوبة المضاربة -1.0، Death Cross حاد — تعدين بيتكوين في بيئة FTX المنهارة وضغوط تشغيلية شديدة، نموذج أعمال هش",
+          "priceOnDate": 1.14,
+          "horizons": {
+            "1w": {
+              "price": 0.875,
+              "changePct": -23.25,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 0.8669999837875366,
+              "changePct": -23.95,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 0.75,
+              "changePct": -34.21,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 1.1799999475479126,
+              "changePct": 3.51,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 2.190000057220459,
+              "changePct": 92.11,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "MSTR",
+          "rec": "بيع",
+          "score": 2.2,
+          "reason": "انخفاض -95.2% — الأسوأ في المحفظة، عقوبة المضاربة -1.0، MACD سلبي، RSI منخفض 32.8، Death Cross — انهيار بسبب Bitcoin وFTX، مخاطر وجودية",
+          "priceOnDate": 16.59,
+          "horizons": {
+            "1w": {
+              "price": 15.722000122070312,
+              "changePct": -5.23,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 17.66699981689453,
+              "changePct": 6.49,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 20.273000717163086,
+              "changePct": 22.2,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 24.924999237060547,
+              "changePct": 50.24,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 28.25,
+              "changePct": 70.28,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "SMMT",
+          "rec": "بيع",
+          "score": 1.8,
+          "reason": "انخفاض -94.4%، MACD سلبي، تحت EMA20، Death Cross — شركة بيوتك فاشلة، خسارة شبه كاملة من التكلفة، لا إيرادات، خزينة آخذة في النضوب",
+          "priceOnDate": 1.05,
+          "horizons": {
+            "1w": {
+              "price": 0.8880000114440918,
+              "changePct": -15.43,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 0.9399999976158142,
+              "changePct": -10.48,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 3.2699999809265137,
+              "changePct": 211.43,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 2.069999933242798,
+              "changePct": 97.14,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 1.8300000429153442,
+              "changePct": 74.29,
+              "verdict": "wrong"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 4,
+          "total": 5,
+          "pct": 80
+        },
+        "2w": {
+          "correct": 4,
+          "total": 5,
+          "pct": 80
+        },
+        "1m": {
+          "correct": 3,
+          "total": 5,
+          "pct": 60
+        },
+        "3m": {
+          "correct": 2,
+          "total": 5,
+          "pct": 40
+        },
+        "6m": {
+          "correct": 2,
+          "total": 5,
+          "pct": 40
         }
       }
     },
