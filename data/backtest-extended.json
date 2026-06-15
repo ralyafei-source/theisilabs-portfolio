@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T13:24:28.335Z",
-  "totalRuns": 9,
+  "lastUpdated": "2026-06-15T13:25:44.781Z",
+  "totalRuns": 10,
   "runs": [
     {
       "date": "2022-09-26",
@@ -1465,6 +1465,177 @@
           "correct": 2,
           "total": 9,
           "pct": 22
+        }
+      }
+    },
+    {
+      "date": "2022-10-24",
+      "portfolioValue": 299139,
+      "signalCount": 46,
+      "actionCount": 4,
+      "signals": [
+        {
+          "sym": "MVST",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "انخفاض -53.7%، Death Cross حاد، MACD سلبي، عقوبة المضاربة -1.0، شركة بطاريات صغيرة بلا ربحية واضحة",
+          "priceOnDate": 2.12,
+          "horizons": {
+            "1w": {
+              "price": 2.450000047683716,
+              "changePct": 15.57,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 2.3499999046325684,
+              "changePct": 10.85,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 2.25,
+              "changePct": 6.13,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 1.690000057220459,
+              "changePct": -20.28,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.059999942779541,
+              "changePct": -50,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "BTBT",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "انخفاض -74.7%، RSI 37، Death Cross، تحت EMA20، عقوبة المضاربة -1.0، شركة تعدين بيتكوين متأثرة بالسوق الدببي للعملات",
+          "priceOnDate": 1.02,
+          "horizons": {
+            "1w": {
+              "price": 1.059999942779541,
+              "changePct": 3.92,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 1.1100000143051147,
+              "changePct": 8.82,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 0.9200000166893005,
+              "changePct": -9.8,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 1.4199999570846558,
+              "changePct": 39.22,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 1.690000057220459,
+              "changePct": 65.69,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "ATYR",
+          "rec": "بيع",
+          "score": 3.1,
+          "reason": "RSI 29 ذروة بيع، MACD هبوطي، Death Cross، تحت EMA20، الحد الأقصى بيوتك 5.0 غير مطبق لأن الأساسيات أضعف",
+          "priceOnDate": 2.37,
+          "horizons": {
+            "1w": {
+              "price": 2.4700000286102295,
+              "changePct": 4.22,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 2.4000000953674316,
+              "changePct": 1.27,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 2.109999895095825,
+              "changePct": -10.97,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 2.4100000858306885,
+              "changePct": 1.69,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 2.1500000953674316,
+              "changePct": -9.28,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "SMMT",
+          "rec": "بيع",
+          "score": 2,
+          "reason": "انخفاض -94.5%، MACD هبوطي، Death Cross، تحت EMA20، شركة بيوتك صغيرة بلا مسار واضح",
+          "priceOnDate": 1.02,
+          "horizons": {
+            "1w": {
+              "price": 1.090000033378601,
+              "changePct": 6.86,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 1.0499999523162842,
+              "changePct": 2.94,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 0.9100000262260437,
+              "changePct": -10.78,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 4.460000038146973,
+              "changePct": 337.25,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 1.5099999904632568,
+              "changePct": 48.04,
+              "verdict": "wrong"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 0,
+          "total": 4,
+          "pct": 0
+        },
+        "2w": {
+          "correct": 0,
+          "total": 4,
+          "pct": 0
+        },
+        "1m": {
+          "correct": 3,
+          "total": 4,
+          "pct": 75
+        },
+        "3m": {
+          "correct": 1,
+          "total": 4,
+          "pct": 25
+        },
+        "6m": {
+          "correct": 2,
+          "total": 4,
+          "pct": 50
         }
       }
     },
