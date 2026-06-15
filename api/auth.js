@@ -4,6 +4,7 @@
 
 const https = require('https');
 const crypto = require('crypto');
+const { verifySession } = require('./_auth');   // ← ADD THIS LINE
 
 const REPO = 'ralyafei-source/theisilabs-portfolio';
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
@@ -226,19 +227,17 @@ async function handleSignup(req, res, token) {
 // ══════════════════════════════════════════
 // ACTION: ME (session check)
 // ══════════════════════════════════════════
-async function handleMe(req, res, token) {
-  const authHeader = req.headers.authorization || '';
-  const sessionToken = authHeader.replace('Bearer ', '').trim();
-  if (!sessionToken) return res.status(401).json({ error: 'No session token' });
+const { verifySession } = require('./_auth');
 
-  const usersFile = await ghGet('data/users.json', token);
-  const users = JSON.parse(Buffer.from(usersFile.content, 'base64').toString());
-  const user = users.find(u => u.sessionToken === sessionToken);
-
-  if (!user) return res.status(401).json({ error: 'Invalid session' });
-  if (new Date(user.sessionExpiry) < new Date()) return res.status(401).json({ error: 'Session expired' });
-
-  return res.status(200).json({ nickname: user.nickname, isAdmin: user.isAdmin || false, portfolioFile: user.portfolioFile || null, telegram_chat_id: user.telegram_chat_id || null });
+async function handleMe(req, res, githubToken) {
+  const user = await verifySession(req, githubToken);
+  if (!user) return res.status(401).json({ error: 'Invalid or expired session' });
+  return res.status(200).json({
+    nickname: user.nickname,
+    isAdmin: user.isAdmin || false,
+    portfolioFile: user.portfolioFile || null,
+    telegram_chat_id: user.telegram_chat_id || null
+  });
 }
 
 // ── SET TELEGRAM (Session 29): save/clear the user's Telegram chat id ──────
