@@ -6521,35 +6521,43 @@ async function runExtendedBacktest(){
   const weeks   = parseInt(document.getElementById('bt-weeks-input')?.value || '30');
   const endDate = document.getElementById('bt-end-date-input')?.value || null;
 
-  // Get all dates to process
-  const allDates      = getMondayDates(Math.min(weeks, 52), endDate);
+  // Get dates to process
+  const allDates       = getMondayDates(weeks, endDate);
   const processedDates = await getProcessedDates();
+  const toProcess      = allDates.filter(d => !processedDates.has(d));
+  const total          = allDates.length;
+  let completed        = allDates.filter(d => processedDates.has(d)).length;
 
-  // Filter to only unprocessed dates
-  const toProcess = allDates.filter(d => !processedDates.has(d));
-  const total     = allDates.length;
-  let completed   = processedDates.size > 0 ? allDates.filter(d => processedDates.has(d)).length : 0;
-  let newRuns     = 0;
+  progressText.textContent = `${toProcess.length} أسبوع جديد — ${processedDates.size} موجود مسبقاً`;
 
-  progressText.textContent = `${completed} / ${total} أسبوع — ${toProcess.length} جديد للمعالجة`;
-
-  // Add skipped weeks to log
+  // Show skipped weeks
   allDates.filter(d => processedDates.has(d)).forEach(d => {
-    const logLine = document.createElement('div');
-    logLine.style.cssText = 'font-size:10px;color:var(--text3);margin-bottom:2px;font-family:monospace;';
-    logLine.textContent = `${d}  (موجود مسبقاً ✓)`;
-    progressLog.appendChild(logLine);
+    const line = document.createElement('div');
+    line.style.cssText = 'font-size:10px;color:var(--text3);margin-bottom:2px;font-family:monospace;';
+    line.textContent = `${d}  ✓ موجود`;
+    progressLog.appendChild(line);
   });
 
-  // Process each new date one at a time
+  if (toProcess.length === 0) {
+    progressBar.style.width = '100%';
+    progressText.textContent = '✅ جميع الأسابيع موجودة مسبقاً';
+    btn.disabled = false;
+    btn.textContent = '▶ اختبار';
+    await renderExtendedBacktest();
+    return;
+  }
+
+  // ── STEP 1: Collect all results in memory ────────────────────────────────
+  const newResults = []; // accumulate here — NO GitHub saves during loop
+  let failed = 0;
+
   for (let i = 0; i < toProcess.length; i++) {
     const date = toProcess[i];
     completed++;
 
-    // Update progress
     const pct = Math.round((completed / total) * 100);
     progressBar.style.width = pct + '%';
-    progressText.textContent = `${completed} / ${total} أسبوع`;
+    progressText.textContent = `${i+1} / ${toProcess.length} يُحلَّل... (${pct}% اكتمل)`;
 
     const logLine = document.createElement('div');
     logLine.style.cssText = 'font-size:10px;color:var(--text3);margin-bottom:2px;font-family:monospace;';
@@ -6566,35 +6574,64 @@ async function runExtendedBacktest(){
 
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({}));
-        logLine.textContent = `${date}  ❌ فشل — ${err.error || resp.status}`;
+        logLine.textContent = `${date}  ❌ ${err.error || resp.status}`;
         logLine.style.color = 'var(--rose)';
+        failed++;
       } else {
         const result = await resp.json();
-        const acc1m  = result.accuracy?.['1m'];
-        const accText = acc1m?.pct != null ? `دقة 1م: ${acc1m.pct}%` : 'لا يوجد حكم بعد';
-        const saveIcon = result.saved === false ? ' ⚠️ لم يُحفظ' : '';
-        logLine.textContent = `${date}  ✅ ${accText} — ${result.signalCount} إشارة${saveIcon}`;
-        logLine.style.color = result.saved === false ? 'var(--gold)' : 'var(--green)';
-        newRuns++;
+        newResults.push(result); // accumulate in memory
+        const acc1m = result.accuracy?.['1m'];
+        const accText = acc1m?.pct != null ? `دقة 1م: ${acc1m.pct}%` : 'لا حكم بعد';
+        logLine.textContent = `${date}  ✅ ${accText} — ${result.actionCount} إشارة قابلة للتقييم`;
+        logLine.style.color = 'var(--green)';
       }
     } catch (e) {
       logLine.textContent = `${date}  ❌ ${e.message}`;
       logLine.style.color = 'var(--rose)';
+      failed++;
     }
 
     progressLog.scrollTop = progressLog.scrollHeight;
-
-    // 3 second pause between weeks — ensures GitHub save propagates before next read
-    if (i < toProcess.length - 1) await new Promise(r => setTimeout(r, 3000));
+    // Small pause to avoid overwhelming the server — no need for 3s anymore
+    if (i < toProcess.length - 1) await new Promise(r => setTimeout(r, 500));
   }
 
-  // All done
-  progressBar.style.width = '100%';
-  progressText.textContent = `✅ اكتمل — ${newRuns} أسبوع جديد معالج من أصل ${total}`;
-  btn.disabled = false;
-  btn.textContent = '✅ اكتمل — أعد التشغيل';
+  // ── STEP 2: Save ALL results to GitHub in ONE write ──────────────────────
+  if (newResults.length > 0) {
+    progressText.textContent = `💾 حفظ ${newResults.length} أسبوع في GitHub...`;
 
-  // Reload charts
+    const saveLog = document.createElement('div');
+    saveLog.style.cssText = 'font-size:10px;color:var(--gold);margin-bottom:2px;font-family:monospace;margin-top:6px;';
+    saveLog.textContent = `💾 حفظ ${newResults.length} أسبوع في GitHub — لحظة واحدة...`;
+    progressLog.appendChild(saveLog);
+
+    try {
+      const resp = await fetch('/api/backtest-save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ runs: newResults })
+      });
+
+      if (resp.ok) {
+        const result = await resp.json();
+        saveLog.textContent = `✅ محفوظ — ${result.totalRuns} أسبوع إجمالي في GitHub`;
+        saveLog.style.color = 'var(--green)';
+      } else {
+        const err = await resp.json().catch(() => ({}));
+        saveLog.textContent = `❌ فشل الحفظ: ${err.error || resp.status}`;
+        saveLog.style.color = 'var(--rose)';
+      }
+    } catch (e) {
+      saveLog.textContent = `❌ فشل الحفظ: ${e.message}`;
+      saveLog.style.color = 'var(--rose)';
+    }
+  }
+
+  progressBar.style.width = '100%';
+  progressText.textContent = `✅ اكتمل — ${newResults.length} جديد، ${failed} فشل، ${processedDates.size} موجود مسبقاً`;
+  btn.disabled = false;
+  btn.textContent = '▶ اختبار مرة أخرى';
+
   await renderExtendedBacktest();
 }
 // ═══════════════════════════════════════════════════════
