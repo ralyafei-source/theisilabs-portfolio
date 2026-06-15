@@ -88,7 +88,7 @@ module.exports = async (req, res) => {
       const r = await fetchWithTimeout(
         `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`,
         { headers: { 'User-Agent': UA } },
-        8000
+        4000
       );
       if (!r.ok) return null;
       const d = await r.json();
@@ -111,11 +111,11 @@ module.exports = async (req, res) => {
   // Run all fetches in parallel — return whatever completes within time
  // Chunked fetch — 10 at a time with 150ms pause, prevents Yahoo rate limiting
 const results = [];
-for (let i = 0; i < symbols.length; i += 6) {
-  const batch = symbols.slice(i, i + 6);
+for (let i = 0; i < symbols.length; i += 10) {
+  const batch = symbols.slice(i, i + 10);
   const batchResults = await Promise.all(batch.map(fetchOne));
   results.push(...batchResults);
-  if (i + 6 < symbols.length) await new Promise(r => setTimeout(r, 300));
+  if (i + 10 < symbols.length) await new Promise(r => setTimeout(r, 150));
 }
 
   const prices = {};
