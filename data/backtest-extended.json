@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T15:29:02.282Z",
-  "totalRuns": 17,
+  "lastUpdated": "2026-06-15T15:30:16.649Z",
+  "totalRuns": 18,
   "runs": [
     {
       "date": "2022-03-28",
@@ -6680,6 +6680,279 @@
           "correct": 3,
           "total": 8,
           "pct": 38
+        }
+      }
+    },
+    {
+      "date": "2022-07-25",
+      "portfolioValue": 358458,
+      "signalCount": 46,
+      "actionCount": 7,
+      "signals": [
+        {
+          "sym": "AMZN",
+          "rec": "تراكم",
+          "score": 7.8,
+          "reason": "زخم تقني إيجابي (MACD صاعد، فوق EMA20)، أساسيات قوية (AWS + تجارة إلكترونية)، الخسارة -41% لكن التقييم عند مستويات جذابة تاريخياً",
+          "priceOnDate": 121.14,
+          "horizons": {
+            "1w": {
+              "price": 135.38999938964844,
+              "changePct": 11.76,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 139.41000366210938,
+              "changePct": 15.08,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 133.8000030517578,
+              "changePct": 10.45,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 119.81999969482422,
+              "changePct": -1.09,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 97.5199966430664,
+              "changePct": -19.5,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "MVST",
+          "rec": "بيع",
+          "score": 2.9,
+          "reason": "عقوبة مضاربة -1.0، RSI 42.22 ضعيف، MACD سلبي، تحت EMA20، Death Cross، خسارة -50%، أساسيات هشة",
+          "priceOnDate": 2.29,
+          "horizons": {
+            "1w": {
+              "price": 2.6500000953674316,
+              "changePct": 15.72,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 2.759999990463257,
+              "changePct": 20.52,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 2.569999933242798,
+              "changePct": 12.23,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 2.119999885559082,
+              "changePct": -7.42,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.690000057220459,
+              "changePct": -26.2,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "BTBT",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "عقوبة مضاربة -1.0، Death Cross حاد (1.59 vs 4.92)، خسارة -57.8%، مرتبط بتقلبات البيتكوين الشديدة",
+          "priceOnDate": 1.7,
+          "horizons": {
+            "1w": {
+              "price": 1.4500000476837158,
+              "changePct": -14.71,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 1.6200000047683716,
+              "changePct": -4.71,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 1.5700000524520874,
+              "changePct": -7.65,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 1.0199999809265137,
+              "changePct": -40,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.4199999570846558,
+              "changePct": -16.47,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "SMMT",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "خسارة -94.3% كارثية، Death Cross حاد، أساسيات biotech ضعيفة جداً",
+          "priceOnDate": 1.07,
+          "horizons": {
+            "1w": {
+              "price": 1,
+              "changePct": -6.54,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 1,
+              "changePct": -6.54,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 1.2999999523162842,
+              "changePct": 21.5,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 1.0199999809265137,
+              "changePct": -4.67,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 4.460000038146973,
+              "changePct": 316.82,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "NVO",
+          "rec": "تراكم",
+          "score": 7.6,
+          "reason": "Golden Cross ✅، RSI 60.34، MACD صاعد، فوق EMA20، قطاع دوائي دفاعي، ربح طفيف +5.4%، أساسيات ممتازة (Ozempic)",
+          "priceOnDate": 57.96500015258789,
+          "horizons": {
+            "1w": {
+              "price": 58.04499816894531,
+              "changePct": 0.14,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 51.209999084472656,
+              "changePct": -11.65,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 55.0099983215332,
+              "changePct": -5.1,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 53.27000045776367,
+              "changePct": -8.1,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 70.54000091552734,
+              "changePct": 21.69,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "NEM",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "RSI 13.17 ذروة بيع حادة، MACD سلبي قوي -3.94، Death Cross، تحت EMA20، خسارة -63.6%، ضغط أسعار ذهب",
+          "priceOnDate": 44.59,
+          "horizons": {
+            "1w": {
+              "price": 44.939998626708984,
+              "changePct": 0.78,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 44.779998779296875,
+              "changePct": 0.43,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 44.79999923706055,
+              "changePct": 0.47,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 42.08000183105469,
+              "changePct": -5.63,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 53.630001068115234,
+              "changePct": 20.27,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "B",
+          "rec": "بيع",
+          "score": 2.6,
+          "reason": "RSI 22 ذروة بيع، MACD سلبي -1.14، Death Cross، تحت EMA20، خسارة -68.7%، تعدين بضغط تشغيلي شديد",
+          "priceOnDate": 14.91,
+          "horizons": {
+            "1w": {
+              "price": 15.720000267028809,
+              "changePct": 5.43,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 16.200000762939453,
+              "changePct": 8.65,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 16.350000381469727,
+              "changePct": 9.66,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 15.050000190734863,
+              "changePct": 0.94,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 19.229999542236328,
+              "changePct": 28.97,
+              "verdict": "wrong"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 3,
+          "total": 7,
+          "pct": 43
+        },
+        "2w": {
+          "correct": 2,
+          "total": 7,
+          "pct": 29
+        },
+        "1m": {
+          "correct": 2,
+          "total": 7,
+          "pct": 29
+        },
+        "3m": {
+          "correct": 3,
+          "total": 7,
+          "pct": 43
+        },
+        "6m": {
+          "correct": 3,
+          "total": 7,
+          "pct": 43
         }
       }
     }
