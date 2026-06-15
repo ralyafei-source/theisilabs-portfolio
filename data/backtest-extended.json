@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T06:04:33.253Z",
-  "totalRuns": 21,
+  "lastUpdated": "2026-06-15T06:05:43.269Z",
+  "totalRuns": 22,
   "runs": [
     {
       "date": "2024-10-28",
@@ -33612,6 +33612,1605 @@
           "correct": 2,
           "total": 11,
           "pct": 18
+        }
+      }
+    },
+    {
+      "date": "2025-03-24",
+      "portfolioValue": 477622,
+      "signalCount": 46,
+      "actionCount": 6,
+      "signals": [
+        {
+          "sym": "NVDA",
+          "rec": "تراكم",
+          "score": 7.6,
+          "reason": "أرباح قوية + Golden Cross قريب + موقع متقدم في الذكاء الاصطناعي، تراجع مؤقت عن القمة",
+          "priceOnDate": 121.41,
+          "horizons": {
+            "1w": {
+              "price": 108.37999725341797,
+              "changePct": -10.73,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 97.63999938964844,
+              "changePct": -19.58,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 102.70999908447266,
+              "changePct": -15.4,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 144.1699981689453,
+              "changePct": 18.75,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 183.61000061035156,
+              "changePct": 51.23,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "OKTA",
+          "rec": "تراكم",
+          "score": 7.5,
+          "reason": "Golden Cross ✅ + RSI 64 صاعد + MACD إيجابي + نمو إيرادات مستمر في الأمن السيبراني",
+          "priceOnDate": 116.38,
+          "horizons": {
+            "1w": {
+              "price": 105.22000122070312,
+              "changePct": -9.59,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 91.23999786376953,
+              "changePct": -21.6,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 98.33000183105469,
+              "changePct": -15.51,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 98.66000366210938,
+              "changePct": -15.23,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 92.37999725341797,
+              "changePct": -20.62,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "AMZN",
+          "rec": "مراقبة",
+          "score": 5.8,
+          "reason": "تحت سعر التكلفة -1.2% + Golden Cross ✅ لكن MACD سلبي + ضغط تقييم",
+          "priceOnDate": 203.26,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "SEZL",
+          "rec": "مراقبة",
+          "score": 4.2,
+          "reason": "خسارة -53.5% من التكلفة + عقوبة المضاربة -1.0 + رغم Golden Cross فالزخم ضعيف",
+          "priceOnDate": 42.1517,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "MU",
+          "rec": "مراقبة",
+          "score": 5.1,
+          "reason": "Death Cross ⚠️ + خسارة -43.9% + ضغط دورة أشباه الموصلات، MACD إيجابي فقط",
+          "priceOnDate": 96.94,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "PANW",
+          "rec": "احتفظ",
+          "score": 6.5,
+          "reason": "Golden Cross ✅ + MACD إيجابي + أمن سيبراني قوي، لكن تقييم مرتفع نسبياً",
+          "priceOnDate": 184.79,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "ONTO",
+          "rec": "مراقبة",
+          "score": 4.5,
+          "reason": "Death Cross ⚠️ + خسارة -21.5% + تحت EMA20 + ضغط قطاع أشباه الموصلات",
+          "priceOnDate": 140.92,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "DUOL",
+          "rec": "احتفظ",
+          "score": 6.8,
+          "reason": "Golden Cross ✅ + نمو مستخدمين قوي + RSI محايد، لكن تقييم مرتفع P/E",
+          "priceOnDate": 330,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "GOOGL",
+          "rec": "مراقبة",
+          "score": 5.2,
+          "reason": "خسارة -35.7% + تحت EMA20 + مخاوف منافسة الذكاء الاصطناعي + MACD سلبي",
+          "priceOnDate": 167.68,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "QQQ",
+          "rec": "احتفظ",
+          "score": 6.9,
+          "reason": "Golden Cross ✅ + تنويع ممتاز + RSI محايد، ضغط قصير الأمد على التقنية",
+          "priceOnDate": 490.66,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "MSFT",
+          "rec": "احتفظ",
+          "score": 6.6,
+          "reason": "Death Cross ⚠️ لكن أساسيات قوية + Copilot AI + خسارة طفيفة -7.3%",
+          "priceOnDate": 393.08,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "CRM",
+          "rec": "مراقبة",
+          "score": 5.5,
+          "reason": "Golden Cross ✅ لكن تحت EMA20 + MACD سلبي كبير + تقييم مرتفع مع تباطؤ نمو",
+          "priceOnDate": 285.96,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "SPY",
+          "rec": "احتفظ",
+          "score": 7,
+          "reason": "Golden Cross ✅ + تنويع واسع + RSI محايد، محور أساسي في المحفظة",
+          "priceOnDate": 574.08,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "NTLA",
+          "rec": "مراقبة",
+          "score": 4,
+          "reason": "Death Cross ⚠️ + خسارة -49.4% + MACD سلبي + بيوتك بلا إيرادات (max 5.0)",
+          "priceOnDate": 9.31,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "CRDO",
+          "rec": "مراقبة",
+          "score": 5.3,
+          "reason": "Golden Cross ✅ لكن خسارة -61.3% + تحت سعر التكلفة بشكل حاد + MACD سلبي",
+          "priceOnDate": 50.53,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "APH",
+          "rec": "مراقبة",
+          "score": 5,
+          "reason": "Golden Cross ✅ + RSI 59 لكن خسارة -44.6% من التكلفة + ضغط شديد على السعر",
+          "priceOnDate": 69.3,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "PLTR",
+          "rec": "تراكم",
+          "score": 8.5,
+          "reason": "+313.3% ربح ضخم + Golden Cross ✅ + RSI 57 + MACD إيجابي + نمو AI حكومي/مؤسسي",
+          "priceOnDate": 96.75,
+          "horizons": {
+            "1w": {
+              "price": 84.4000015258789,
+              "changePct": -12.76,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 77.83999633789062,
+              "changePct": -19.55,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 100.81999969482422,
+              "changePct": 4.21,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 139.9199981689453,
+              "changePct": 44.62,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 179.3300018310547,
+              "changePct": 85.35,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "IOT",
+          "rec": "احتفظ",
+          "score": 6.7,
+          "reason": "Golden Cross ✅ + ربح +13.3% + نمو إيرادات Samsara قوي + RSI محايد",
+          "priceOnDate": 42.08,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "IONQ",
+          "rec": "مراقبة",
+          "score": 5,
+          "reason": "Golden Cross ✅ + خسارة -55.7% + الحوسبة الكمية مبكرة جداً + تقييم مضارباتي",
+          "priceOnDate": 26.12,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "FTNT",
+          "rec": "مراقبة",
+          "score": 5.8,
+          "reason": "Golden Cross ✅ لكن MACD سلبي + تحت EMA20 + ربح +50% لكن زخم يتراجع",
+          "priceOnDate": 99.79,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "AAPL",
+          "rec": "مراقبة",
+          "score": 5.5,
+          "reason": "Golden Cross ✅ لكن MACD سلبي + تحت EMA20 + تباطؤ نمو iPhone + تقييم مرتفع",
+          "priceOnDate": 220.73,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "PATH",
+          "rec": "مراقبة",
+          "score": 4.5,
+          "reason": "خسارة -24.3% + تحت EMA20 + MACD إيجابي ضعيف + ضغط المنافسة في RPA",
+          "priceOnDate": 11.21,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "CLS",
+          "rec": "تراكم",
+          "score": 7.8,
+          "reason": "+122.1% ربح + Golden Cross ✅ + فوق EMA20 + نمو تصنيع إلكترونيات قوي",
+          "priceOnDate": 99.98,
+          "horizons": {
+            "1w": {
+              "price": 78.80999755859375,
+              "changePct": -21.17,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 70.38999938964844,
+              "changePct": -29.6,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 88.19000244140625,
+              "changePct": -11.79,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 136.33999633789062,
+              "changePct": 36.37,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 254.7899932861328,
+              "changePct": 154.84,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "ADBE",
+          "rec": "مراقبة",
+          "score": 4.2,
+          "reason": "Death Cross ⚠️ + خسارة -26.2% + RSI 37 + MACD سلبي كبير + تحديات AI التنافسية",
+          "priceOnDate": 394.4700012207031,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "VISN",
+          "rec": "مراقبة",
+          "score": 4,
+          "reason": "خسارة -63.9% + شركة صغيرة عالية المخاطر + رغم Golden Cross و MACD إيجابي ضعيف",
+          "priceOnDate": 5.800000190734863,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "DY",
+          "rec": "مراقبة",
+          "score": 4.8,
+          "reason": "خسارة -62.8% + Death Cross ⚠️ + تراجع حاد من التكلفة + فوق EMA20 فقط نقطة إيجابية",
+          "priceOnDate": 161.57000732421875,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "MSTR",
+          "rec": "مراقبة",
+          "score": 4.8,
+          "reason": "عقوبة المضاربة -1.0 + ارتباط كامل ببيتكوين + خسارة -2.5% + Golden Cross ✅",
+          "priceOnDate": 335.72,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "MVST",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "خسارة -72.3% + RSI 36 + MACD سلبي + تحت EMA20 + عقوبة المضاربة -1.0 + بطاريات صلبة بلا إيرادات",
+          "priceOnDate": 1.27,
+          "horizons": {
+            "1w": {
+              "price": 1.1699999570846558,
+              "changePct": -7.87,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 1.7999999523162842,
+              "changePct": 41.73,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 2.3299999237060547,
+              "changePct": 83.46,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 3.740000009536743,
+              "changePct": 194.49,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 3.8499999046325684,
+              "changePct": 203.15,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "PONY",
+          "rec": "مراقبة",
+          "score": 4.1,
+          "reason": "خسارة -34.2% + MACD سلبي + تحت EMA20 + عقوبة المضاربة -1.0 + مخاطر تنظيمية",
+          "priceOnDate": 13.21,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "BTBT",
+          "rec": "مراقبة",
+          "score": 4.3,
+          "reason": "خسارة -38.2% + Death Cross ⚠️ + عقوبة المضاربة -1.0 + تعدين بيتكوين متقلب",
+          "priceOnDate": 2.49,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "SERV",
+          "rec": "مراقبة",
+          "score": 4,
+          "reason": "خسارة -47.6% + تحت EMA20 + عقوبة المضاربة -1.0 + شركة ناشئة روبوتات بلا أرباح",
+          "priceOnDate": 7.79,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "SOFI",
+          "rec": "احتفظ",
+          "score": 6,
+          "reason": "Golden Cross ✅ + RSI 53 + MACD إيجابي + تحسن ملف الإيرادات المصرفية",
+          "priceOnDate": 13.720000267028809,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "ATYR",
+          "rec": "مراقبة",
+          "score": 4.5,
+          "reason": "بيوتك بلا إيرادات كافية (max 5.0) + ربح +63% + Golden Cross ✅ + RSI محايد",
+          "priceOnDate": 3.7,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "SMMT",
+          "rec": "مراقبة",
+          "score": 5.5,
+          "reason": "Golden Cross ✅ + ربح +11.2% + RSI 54 + بيوتك مرحلة متأخرة لكن مخاطر تجارية",
+          "priceOnDate": 20.69,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "COR",
+          "rec": "تراكم",
+          "score": 7.5,
+          "reason": "RSI 68 + MACD إيجابي قوي + Golden Cross ✅ + توزيع أدوية دفاعي + فوق EMA20",
+          "priceOnDate": 267.5,
+          "horizons": {
+            "1w": {
+              "price": 278.0899963378906,
+              "changePct": 3.96,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 274.55999755859375,
+              "changePct": 2.64,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 284.7099914550781,
+              "changePct": 6.43,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 293.1300048828125,
+              "changePct": 9.58,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 288.7900085449219,
+              "changePct": 7.96,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "NVO",
+          "rec": "مراقبة",
+          "score": 4.5,
+          "reason": "Death Cross ⚠️ + RSI 36 + MACD سلبي + تراجع حاد رغم أساسيات Ozempic القوية",
+          "priceOnDate": 75.33000183105469,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "NEM",
+          "rec": "مراقبة",
+          "score": 5.5,
+          "reason": "Death Cross ⚠️ + خسارة -61.8% + لكن RSI 58 + MACD إيجابي + ذهب في صعود",
+          "priceOnDate": 46.82,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "B",
+          "rec": "مراقبة",
+          "score": 4.8,
+          "reason": "Death Cross ⚠️ + خسارة -60.3% + MACD سلبي + رغم RSI 58 وفوق EMA20 + تعدين صغير",
+          "priceOnDate": 18.89,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "VGT",
+          "rec": "مراقبة",
+          "score": 5.8,
+          "reason": "Golden Cross ✅ لكن تحت EMA20 + خسارة طفيفة -3.7% + تركيز تقني مرتفع",
+          "priceOnDate": 71.9238,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "SPUS",
+          "rec": "مراقبة",
+          "score": 5.2,
+          "reason": "Golden Cross ✅ لكن تحت EMA20 + خسارة -17.9% + ETF إسلامي محدود التنويع",
+          "priceOnDate": 40.51,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "IBIT",
+          "rec": "احتفظ",
+          "score": 6.8,
+          "reason": "Golden Cross ✅ + ربح +41.6% + RSI 51 + تدفقات ETF بيتكوين إيجابية مستمرة",
+          "priceOnDate": 50.18,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "IVV",
+          "rec": "احتفظ",
+          "score": 6.9,
+          "reason": "Golden Cross ✅ + فوق EMA20 + تنويع S&P500 + خسارة طفيفة جداً -0.3%",
+          "priceOnDate": 576.72,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "VOO",
+          "rec": "احتفظ",
+          "score": 6.9,
+          "reason": "Golden Cross ✅ + تنويع Vanguard + رسوم منخفضة + RSI محايد + أساسيات سوق قوية",
+          "priceOnDate": 529.39,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "XLP",
+          "rec": "مراقبة",
+          "score": 5,
+          "reason": "Death Cross ⚠️ + MACD سلبي + تحت EMA20 + قطاع دفاعي لكن زخم ضعيف",
+          "priceOnDate": 79.4,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "SMH",
+          "rec": "مراقبة",
+          "score": 5.3,
+          "reason": "Death Cross ⚠️ + خسارة -9% + ضغط دورة أشباه الموصلات + MACD إيجابي ضعيف",
+          "priceOnDate": 230.63,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        },
+        {
+          "sym": "QQQM",
+          "rec": "مراقبة",
+          "score": 5.8,
+          "reason": "Golden Cross ✅ + MACD إيجابي + فوق EMA20 لكن خسارة -8.5% + مكرر لـQQQ",
+          "priceOnDate": 201.88,
+          "horizons": {
+            "1w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "2w": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "1m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "3m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            },
+            "6m": {
+              "price": null,
+              "changePct": null,
+              "verdict": "skipped"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 1,
+          "total": 6,
+          "pct": 17
+        },
+        "2w": {
+          "correct": 0,
+          "total": 6,
+          "pct": 0
+        },
+        "1m": {
+          "correct": 1,
+          "total": 6,
+          "pct": 17
+        },
+        "3m": {
+          "correct": 4,
+          "total": 6,
+          "pct": 67
+        },
+        "6m": {
+          "correct": 4,
+          "total": 6,
+          "pct": 67
         }
       }
     }
