@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T14:39:54.746Z",
-  "totalRuns": 56,
+  "lastUpdated": "2026-06-15T14:41:04.967Z",
+  "totalRuns": 57,
   "runs": [
     {
       "date": "2021-09-20",
@@ -1431,6 +1431,517 @@
           "correct": 3,
           "total": 6,
           "pct": 50
+        }
+      }
+    },
+    {
+      "date": "2021-10-18",
+      "portfolioValue": 700353,
+      "signalCount": 46,
+      "actionCount": 14,
+      "signals": [
+        {
+          "sym": "OKTA",
+          "rec": "تراكم",
+          "score": 8.1,
+          "reason": "زيادة 183% من التكلفة، Golden Cross، MACD صاعد، RSI محايد، زخم قوي في قطاع الهوية السحابية",
+          "priceOnDate": 259.92,
+          "horizons": {
+            "1w": {
+              "price": 261.04998779296875,
+              "changePct": 0.43,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 250.1999969482422,
+              "changePct": -3.74,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 266.4200134277344,
+              "changePct": 2.5,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 197.1999969482422,
+              "changePct": -24.13,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 139.7100067138672,
+              "changePct": -46.25,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "CRM",
+          "rec": "تراكم",
+          "score": 7.6,
+          "reason": "RSI 71.22 مرتفع قليلاً لكن Golden Cross قوي، MACD صاعد بقوة، أساسيات قوية لـ Salesforce",
+          "priceOnDate": 291.7,
+          "horizons": {
+            "1w": {
+              "price": 293.9200134277344,
+              "changePct": 0.76,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 302.760009765625,
+              "changePct": 3.79,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 308.0199890136719,
+              "changePct": 5.59,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 226.05999755859375,
+              "changePct": -22.5,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 187.00999450683594,
+              "changePct": -35.89,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "AMZN",
+          "rec": "تراكم",
+          "score": 7.5,
+          "reason": "خسارة 16.2% من التكلفة، Golden Cross، MACD صاعد، RSI محايد، تقييم أفضل بعد التراجع",
+          "priceOnDate": 172.337,
+          "horizons": {
+            "1w": {
+              "price": 166.01849365234375,
+              "changePct": -3.67,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 165.90550231933594,
+              "changePct": -3.73,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 177.4499969482422,
+              "changePct": 2.97,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 158.91749572753906,
+              "changePct": -7.79,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 152.78500366210938,
+              "changePct": -11.35,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "MSFT",
+          "rec": "تراكم",
+          "score": 7.8,
+          "reason": "Golden Cross قوي جداً، MACD صاعد، RSI 64.75، أساسيات ممتازة، السعر الحالي أقل من التكلفة لكن الشركة قوية",
+          "priceOnDate": 307.29,
+          "horizons": {
+            "1w": {
+              "price": 308.1300048828125,
+              "changePct": 0.27,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 329.3699951171875,
+              "changePct": 7.19,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 339.1199951171875,
+              "changePct": 10.36,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 302.6499938964844,
+              "changePct": -1.51,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 280.5199890136719,
+              "changePct": -8.71,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "ADBE",
+          "rec": "تراكم",
+          "score": 7.7,
+          "reason": "Golden Cross، MACD صاعد، RSI محايد، أساسيات قوية، هامش ربح مرتفع، نمو مستدام",
+          "priceOnDate": 622.8300170898438,
+          "horizons": {
+            "1w": {
+              "price": 646.969970703125,
+              "changePct": 3.88,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 640.2000122070312,
+              "changePct": 2.79,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 670.6699829101562,
+              "changePct": 7.68,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 513.3400268554688,
+              "changePct": -17.58,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 425.4700012207031,
+              "changePct": -31.69,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "VISN",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "خسارة 27.1%، Death Cross، RSI قريب من 30، تحت EMA20، ضعف أساسي واضح",
+          "priceOnDate": 11.720000267028809,
+          "horizons": {
+            "1w": {
+              "price": 11.390000343322754,
+              "changePct": -2.82,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 11.220000267028809,
+              "changePct": -4.27,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 10.100000381469727,
+              "changePct": -13.82,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 10.029999732971191,
+              "changePct": -14.42,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 6.210000038146973,
+              "changePct": -47.01,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "NVDA",
+          "rec": "تراكم",
+          "score": 8.3,
+          "reason": "Golden Cross قوي، MACD صاعد، RSI 60.25، سعر منخفض جداً من التكلفة لكن الأساسيات استثنائية في شبه الموصلات وAI",
+          "priceOnDate": 22.222,
+          "horizons": {
+            "1w": {
+              "price": 23.166000366210938,
+              "changePct": 4.25,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 25.82699966430664,
+              "changePct": 16.22,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 29.26099967956543,
+              "changePct": 31.68,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 25.902999877929688,
+              "changePct": 16.56,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 21.783000946044922,
+              "changePct": -1.98,
+              "verdict": "neutral"
+            }
+          }
+        },
+        {
+          "sym": "APH",
+          "rec": "تراكم",
+          "score": 7.6,
+          "reason": "Golden Cross، MACD صاعد، RSI محايد، السعر منخفض كثيراً من التكلفة لكن الإشارات التقنية إيجابية",
+          "priceOnDate": 38.74,
+          "horizons": {
+            "1w": {
+              "price": 39.560001373291016,
+              "changePct": 2.12,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 38.47999954223633,
+              "changePct": -0.67,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 42.45000076293945,
+              "changePct": 9.58,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 39.92499923706055,
+              "changePct": 3.06,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 35.21500015258789,
+              "changePct": -9.1,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "PANW",
+          "rec": "تراكم",
+          "score": 7.9,
+          "reason": "Golden Cross، MACD صاعد قوي، RSI مرتفع 71.39 (تحذير بسيط)، أساسيات الأمن السيبراني ممتازة",
+          "priceOnDate": 85.8617,
+          "horizons": {
+            "1w": {
+              "price": 82.961669921875,
+              "changePct": -3.38,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 84.71833038330078,
+              "changePct": -1.33,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 85.62666320800781,
+              "changePct": -0.27,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 83.72833251953125,
+              "changePct": -2.48,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 102.96499633789062,
+              "changePct": 19.92,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "AAPL",
+          "rec": "تراكم",
+          "score": 7.5,
+          "reason": "Golden Cross، MACD صاعد، RSI محايد، خسارة بسيطة 16.9%، أساسيات استثنائية",
+          "priceOnDate": 146.55,
+          "horizons": {
+            "1w": {
+              "price": 148.63999938964844,
+              "changePct": 1.43,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 148.9600067138672,
+              "changePct": 1.64,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 153.49000549316406,
+              "changePct": 4.74,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 169.8000030517578,
+              "changePct": 15.86,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 165.07000732421875,
+              "changePct": 12.64,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "FTNT",
+          "rec": "تراكم",
+          "score": 7.7,
+          "reason": "Golden Cross قوي جداً، MACD صاعد، RSI 67.1، قطاع أمن سيبراني متنامٍ",
+          "priceOnDate": 65.348,
+          "horizons": {
+            "1w": {
+              "price": 66.38200378417969,
+              "changePct": 1.58,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 64.8219985961914,
+              "changePct": -0.8,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 68.2699966430664,
+              "changePct": 4.47,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 61.694000244140625,
+              "changePct": -5.59,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 66.08399963378906,
+              "changePct": 1.13,
+              "verdict": "neutral"
+            }
+          }
+        },
+        {
+          "sym": "DY",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "خسارة 83.7% من التكلفة، Death Cross، ضعف أساسي حاد، رغم MACD إيجابي طفيف",
+          "priceOnDate": 70.88999938964844,
+          "horizons": {
+            "1w": {
+              "price": 81.44999694824219,
+              "changePct": 14.9,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 81.55000305175781,
+              "changePct": 15.04,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 84.41999816894531,
+              "changePct": 19.09,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 90.58999633789062,
+              "changePct": 27.79,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 93.1500015258789,
+              "changePct": 31.4,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "SMMT",
+          "rec": "بيع",
+          "score": 3.1,
+          "reason": "خسارة 72.8%، Death Cross، RSI منخفض 36.31، تحت EMA20، ضعف أساسي حاد",
+          "priceOnDate": 5.06,
+          "horizons": {
+            "1w": {
+              "price": 5.079999923706055,
+              "changePct": 0.4,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 5.230000019073486,
+              "changePct": 3.36,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 5.409999847412109,
+              "changePct": 6.92,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 2.25,
+              "changePct": -55.53,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 2.0799999237060547,
+              "changePct": -58.89,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "NVO",
+          "rec": "تراكم",
+          "score": 7.6,
+          "reason": "Golden Cross قوي، MACD صاعد، RSI محايد، أساسيات دوائية قوية في قطاع السكري والسمنة",
+          "priceOnDate": 51.71500015258789,
+          "horizons": {
+            "1w": {
+              "price": 53.084999084472656,
+              "changePct": 2.65,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 54.720001220703125,
+              "changePct": 5.81,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 57.20500183105469,
+              "changePct": 10.62,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 48.19499969482422,
+              "changePct": -6.81,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 58.185001373291016,
+              "changePct": 12.51,
+              "verdict": "correct"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 0,
+          "total": 14,
+          "pct": 0
+        },
+        "2w": {
+          "correct": 3,
+          "total": 14,
+          "pct": 21
+        },
+        "1m": {
+          "correct": 7,
+          "total": 14,
+          "pct": 50
+        },
+        "3m": {
+          "correct": 4,
+          "total": 14,
+          "pct": 29
+        },
+        "6m": {
+          "correct": 5,
+          "total": 14,
+          "pct": 36
         }
       }
     },
