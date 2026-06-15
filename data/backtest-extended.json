@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T15:05:37.228Z",
-  "totalRuns": 77,
+  "lastUpdated": "2026-06-15T15:06:43.764Z",
+  "totalRuns": 78,
   "runs": [
     {
       "date": "2021-09-20",
@@ -9422,6 +9422,177 @@
           "correct": 2,
           "total": 4,
           "pct": 50
+        },
+        "2w": {
+          "correct": 0,
+          "total": 4,
+          "pct": 0
+        },
+        "1m": {
+          "correct": 1,
+          "total": 4,
+          "pct": 25
+        },
+        "3m": {
+          "correct": 3,
+          "total": 4,
+          "pct": 75
+        },
+        "6m": {
+          "correct": 3,
+          "total": 4,
+          "pct": 75
+        }
+      }
+    },
+    {
+      "date": "2022-03-14",
+      "portfolioValue": 425924,
+      "signalCount": 46,
+      "actionCount": 4,
+      "signals": [
+        {
+          "sym": "VISN",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "خسارة 56%، Death Cross، MACD هابط، شركة صغيرة جداً بلا أرباح، نموذج أعمال غير واضح",
+          "priceOnDate": 7.090000152587891,
+          "horizons": {
+            "1w": {
+              "price": 8.680000305175781,
+              "changePct": 22.43,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 7.639999866485596,
+              "changePct": 7.76,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 6.739999771118164,
+              "changePct": -4.94,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 7.079999923706055,
+              "changePct": -0.14,
+              "verdict": "neutral"
+            },
+            "6m": {
+              "price": 12.460000038146973,
+              "changePct": 75.74,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "CRDO",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "خسارة 90% من التكلفة، لا SMA تاريخية كافية، RSI محايد لكن الضرر ضخم",
+          "priceOnDate": 13.67,
+          "horizons": {
+            "1w": {
+              "price": 12.760000228881836,
+              "changePct": -6.66,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 14.300000190734863,
+              "changePct": 4.61,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 12.09000015258789,
+              "changePct": -11.56,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 11.960000038146973,
+              "changePct": -12.51,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 12.869999885559082,
+              "changePct": -5.85,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "BTBT",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "خسارة 30%، Death Cross، MACD هابط، تعدين بيتكوين عالي التكلفة، عقوبة -1.0",
+          "priceOnDate": 2.82,
+          "horizons": {
+            "1w": {
+              "price": 3.5899999141693115,
+              "changePct": 27.3,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 4.079999923706055,
+              "changePct": 44.68,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 2.9700000286102295,
+              "changePct": 5.32,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 1.2300000190734863,
+              "changePct": -56.38,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.559999942779541,
+              "changePct": -44.68,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "MSTR",
+          "rec": "بيع",
+          "score": 2.2,
+          "reason": "خسارة 89%، Death Cross، ارتباط كامل بالبيتكوين مع رافعة مالية، عقوبة -1.0",
+          "priceOnDate": 36.993,
+          "horizons": {
+            "1w": {
+              "price": 43.64799880981445,
+              "changePct": 17.99,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 51,
+              "changePct": 37.86,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 46.358001708984375,
+              "changePct": 25.32,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 15.21500015258789,
+              "changePct": -58.87,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 26.29800033569336,
+              "changePct": -28.91,
+              "verdict": "correct"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 1,
+          "total": 4,
+          "pct": 25
         },
         "2w": {
           "correct": 0,
