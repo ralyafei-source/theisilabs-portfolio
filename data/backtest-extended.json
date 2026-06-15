@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T13:52:11.735Z",
-  "totalRuns": 30,
+  "lastUpdated": "2026-06-15T13:53:28.695Z",
+  "totalRuns": 31,
   "runs": [
     {
       "date": "2022-09-26",
@@ -8116,6 +8116,347 @@
           "correct": 2,
           "total": 7,
           "pct": 29
+        }
+      }
+    },
+    {
+      "date": "2023-03-20",
+      "portfolioValue": 304718,
+      "signalCount": 46,
+      "actionCount": 9,
+      "signals": [
+        {
+          "sym": "CRM",
+          "rec": "تراكم",
+          "score": 7.6,
+          "reason": "MACD صاعد قوي، Golden Cross، أساسيات CRM متينة مع نمو الإيرادات والتحول نحو الربحية",
+          "priceOnDate": 185.25,
+          "horizons": {
+            "1w": {
+              "price": 191.25999450683594,
+              "changePct": 3.24,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 196.49000549316406,
+              "changePct": 6.07,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 198.9199981689453,
+              "changePct": 7.38,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 216.97000122070312,
+              "changePct": 17.12,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 215,
+              "changePct": 16.06,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "NVDA",
+          "rec": "تراكم",
+          "score": 8.2,
+          "reason": "Golden Cross + MACD صاعد + فوق EMA20، RSI 69 يعكس زخماً قوياً، أساسيات AI استثنائية، خسارة دفترية -68% فرصة تاريخية",
+          "priceOnDate": 25.9,
+          "horizons": {
+            "1w": {
+              "price": 26.5310001373291,
+              "changePct": 2.44,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 27.96500015258789,
+              "changePct": 7.97,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 27.930999755859375,
+              "changePct": 7.84,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 43.80799865722656,
+              "changePct": 69.14,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 43.965999603271484,
+              "changePct": 69.75,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "VISN",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "Death Cross + MACD هابط + تحت EMA20، RSI 30.9 قرب الذعر، خسارة -62.2%، نموذج عمل ضعيف",
+          "priceOnDate": 6.079999923706055,
+          "horizons": {
+            "1w": {
+              "price": 6.150000095367432,
+              "changePct": 1.15,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 6.130000114440918,
+              "changePct": 0.82,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 4.730000019073486,
+              "changePct": -22.2,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 4.909999847412109,
+              "changePct": -19.24,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 3.4000000953674316,
+              "changePct": -44.08,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "MVST",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "Death Cross + تحت EMA20، خسارة -73.6%، -1.0 غرامة المضاربة، نموذج عمل البطاريات تنافسي جداً",
+          "priceOnDate": 1.21,
+          "horizons": {
+            "1w": {
+              "price": 1.090000033378601,
+              "changePct": -9.92,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 1.309999942779541,
+              "changePct": 8.26,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 1.149999976158142,
+              "changePct": -4.96,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 1.6399999856948853,
+              "changePct": 35.54,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 1.9600000381469727,
+              "changePct": 61.98,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "BTBT",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "Golden Cross لكن -1.0 غرامة المضاربة، تعدين البيتكوين مرتبط بسعر BTC، خسارة -67.7%",
+          "priceOnDate": 1.3,
+          "horizons": {
+            "1w": {
+              "price": 1.3300000429153442,
+              "changePct": 2.31,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 1.5399999618530273,
+              "changePct": 18.46,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 2.049999952316284,
+              "changePct": 57.69,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 3.8499999046325684,
+              "changePct": 196.15,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 2.319999933242798,
+              "changePct": 78.46,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "MSTR",
+          "rec": "بيع",
+          "score": 3.1,
+          "reason": "Golden Cross لكن -1.0 غرامة المضاربة، تركز شبه كلي على BTC، خسارة -92.3%",
+          "priceOnDate": 26.396,
+          "horizons": {
+            "1w": {
+              "price": 23.895999908447266,
+              "changePct": -9.47,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 29.73900032043457,
+              "changePct": 12.66,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 31.472000122070312,
+              "changePct": 19.23,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 31.34000015258789,
+              "changePct": 18.73,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 34.0620002746582,
+              "changePct": 29.04,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "ATYR",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "بايوتك بدون إيرادات = حد أقصى 5.0، Death Cross + MACD هابط + تحت EMA20، خسارة -15.4% مع ضعف تقني",
+          "priceOnDate": 1.92,
+          "horizons": {
+            "1w": {
+              "price": 1.9700000286102295,
+              "changePct": 2.6,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 2.0999999046325684,
+              "changePct": 9.37,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 1.8700000047683716,
+              "changePct": -2.6,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 2.3299999237060547,
+              "changePct": 21.35,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 1.6100000143051147,
+              "changePct": -16.15,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "SMMT",
+          "rec": "بيع",
+          "score": 2.7,
+          "reason": "بايوتك حد أقصى 5.0، خسارة -91.2% كارثية، تحت EMA20، مخاطر التخفيف المستمر",
+          "priceOnDate": 1.63,
+          "horizons": {
+            "1w": {
+              "price": 1.7200000286102295,
+              "changePct": 5.52,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 1.8300000429153442,
+              "changePct": 12.27,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 1.6200000047683716,
+              "changePct": -0.61,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 2.4600000381469727,
+              "changePct": 50.92,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 1.809999942779541,
+              "changePct": 11.04,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "SMH",
+          "rec": "تراكم",
+          "score": 7.8,
+          "reason": "Golden Cross + MACD صاعد + فوق EMA20، دورة أشباه الموصلات تنتعش، AI driver قوي جداً، خسارة -50.1% فرصة",
+          "priceOnDate": 126.42,
+          "horizons": {
+            "1w": {
+              "price": 125.82499694824219,
+              "changePct": -0.47,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 130.84500122070312,
+              "changePct": 3.5,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 125.31500244140625,
+              "changePct": -0.87,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 152.83999633789062,
+              "changePct": 20.9,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 147.3000030517578,
+              "changePct": 16.52,
+              "verdict": "correct"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 2,
+          "total": 9,
+          "pct": 22
+        },
+        "2w": {
+          "correct": 2,
+          "total": 9,
+          "pct": 22
+        },
+        "1m": {
+          "correct": 3,
+          "total": 9,
+          "pct": 33
+        },
+        "3m": {
+          "correct": 4,
+          "total": 9,
+          "pct": 44
+        },
+        "6m": {
+          "correct": 5,
+          "total": 9,
+          "pct": 56
         }
       }
     },
