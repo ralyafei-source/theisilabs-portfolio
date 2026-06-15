@@ -2681,7 +2681,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
   </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.31 · 2026-06-15</div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.32 · 2026-06-15</div>
 </div>
 
 <!-- ===== PROMPT TAB ===== -->
@@ -6102,20 +6102,23 @@ async function runBacktest(){
     if (!claudeText) throw new Error('Claude لم يُعد استجابة');
     _btState.claudeOutput = claudeText;
 
-    // ── Step 3: Fetch actual prices today for comparison ───────────────────
+    // ── Step 3: Get current prices from snapshot holdings (already fetched) ──
     showBtStep(res, 3, 4, 'جلب الأسعار الحالية للمقارنة…', `ما حدث فعلاً من ${date} حتى اليوم`);
-    const syms = (snap.holdings || []).map(h=>h.sym);
-    const today = new Date().toISOString().slice(0,10);
-    const priceResp = await fetch(`/api/portfolio-for-ai?nickname=rashed`, {
-      headers:{'Authorization':'Bearer theisilabs2026'}
-    });
-    const priceText = await priceResp.text();
-    // Parse current prices from the portfolio text
     const actualPrices = {};
-    syms.forEach(sym=>{
-      const m = priceText.match(new RegExp(`${sym}\\s+[\\d.]+\\s+sh\\s+cost \\$[\\d.]+\\s+now \\$(\\d+\\.\\d+)`));
-      if(m) actualPrices[sym] = parseFloat(m[1]);
+    (snap.holdings||[]).forEach(h=>{
+      if(h.currentPrice) actualPrices[h.sym] = h.currentPrice;
     });
+    // Fill any missing with a second pass via portfolio-for-ai text
+    if(Object.keys(actualPrices).length < 10){
+      const priceResp = await fetch(`/api/portfolio-for-ai?nickname=rashed`);
+      const priceText = await priceResp.text();
+      (snap.holdings||[]).forEach(h=>{
+        if(!actualPrices[h.sym]){
+          const m = priceText.match(new RegExp(`${h.sym}\\s+[\\d.]+\\s+sh\\s+cost \\$[\\d.]+\\s+now \\$(\\d+\\.\\d+)`));
+          if(m) actualPrices[h.sym] = parseFloat(m[1]);
+        }
+      });
+    }
     _btState.actualPrices = actualPrices;
 
     // ── Step 4: Parse and score ────────────────────────────────────────────
@@ -6161,7 +6164,8 @@ function showBtError(msg, container){
 
 function parseBtOutput(text){
   const recs = [];
-  const recRe = /\[\[([A-Z]{1,5})\|([^\|]+)\|([\d.]+)\/10\|([^\]]+)\]\]/g;
+  // Match [[SYM|rec|8.5|reason]] OR [[SYM|rec|8.5/10|reason]]
+  const recRe = /\[\[([A-Z]{1,5})\|([^\|]+)\|([\d.]+)(?:\/10)?\|([^\]]+)\]\]/g;
   let m;
   while((m=recRe.exec(text))!==null){
     recs.push({sym:m[1], rec:m[2].trim(), score:parseFloat(m[3]), reason:m[4].trim()});
