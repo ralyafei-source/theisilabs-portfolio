@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T13:27:05.884Z",
-  "totalRuns": 11,
+  "lastUpdated": "2026-06-15T13:28:35.665Z",
+  "totalRuns": 12,
   "runs": [
     {
       "date": "2022-09-26",
@@ -2181,6 +2181,75 @@
           "correct": 10,
           "total": 15,
           "pct": 67
+        }
+      }
+    },
+    {
+      "date": "2022-11-07",
+      "portfolioValue": 290253,
+      "signalCount": 46,
+      "actionCount": 1,
+      "signals": [
+        {
+          "sym": "SMMT",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "خسارة -94.4% شبه كاملة، Death Cross، MACD هابط، RSI محايد لكن الكارثة المالية واضحة — خروج فوري",
+          "priceOnDate": 1.05,
+          "horizons": {
+            "1w": {
+              "price": 1.0499999523162842,
+              "changePct": 0,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 0.8880000114440918,
+              "changePct": -15.43,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 3.0799999237060547,
+              "changePct": 193.33,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 2.9800000190734863,
+              "changePct": 183.81,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 1.940000057220459,
+              "changePct": 84.76,
+              "verdict": "wrong"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 0,
+          "total": 1,
+          "pct": 0
+        },
+        "2w": {
+          "correct": 1,
+          "total": 1,
+          "pct": 100
+        },
+        "1m": {
+          "correct": 0,
+          "total": 1,
+          "pct": 0
+        },
+        "3m": {
+          "correct": 0,
+          "total": 1,
+          "pct": 0
+        },
+        "6m": {
+          "correct": 0,
+          "total": 1,
+          "pct": 0
         }
       }
     },
