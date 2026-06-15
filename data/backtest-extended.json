@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T15:00:31.972Z",
-  "totalRuns": 73,
+  "lastUpdated": "2026-06-15T15:01:47.100Z",
+  "totalRuns": 74,
   "runs": [
     {
       "date": "2021-09-20",
@@ -8690,6 +8690,211 @@
           "correct": 5,
           "total": 8,
           "pct": 63
+        }
+      }
+    },
+    {
+      "date": "2022-02-14",
+      "portfolioValue": 502259,
+      "signalCount": 46,
+      "actionCount": 5,
+      "signals": [
+        {
+          "sym": "VISN",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "خسارة -46%، Death Cross، RSI 37 ضعيف، MACD سلبي، شركة صغيرة بمخاطر عالية وزخم سلبي",
+          "priceOnDate": 8.680000305175781,
+          "horizons": {
+            "1w": {
+              "price": 10.079999923706055,
+              "changePct": 16.13,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 9.539999961853027,
+              "changePct": 9.91,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 8.020000457763672,
+              "changePct": -7.6,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 7.010000228881836,
+              "changePct": -19.24,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 10.8100004196167,
+              "changePct": 24.54,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "CRDO",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "خسارة -88.6% كارثية، لا بيانات تقنية متاحة، خسارة شبه تامة تستوجب إعادة النظر الجذرية",
+          "priceOnDate": 14.86,
+          "horizons": {
+            "1w": {
+              "price": 15.619999885559082,
+              "changePct": 5.11,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 16.899999618530273,
+              "changePct": 13.73,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 14.630000114440918,
+              "changePct": -1.55,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 9.800000190734863,
+              "changePct": -34.05,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 14.920000076293945,
+              "changePct": 0.4,
+              "verdict": "neutral"
+            }
+          }
+        },
+        {
+          "sym": "BTBT",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "ربح +6% ضئيل، Death Cross، RSI 41، MACD سلبي، عقوبة مضاربة -1.0، مرتبط بتقلبات البيتكوين",
+          "priceOnDate": 4.27,
+          "horizons": {
+            "1w": {
+              "price": 3.690000057220459,
+              "changePct": -13.58,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 3.930000066757202,
+              "changePct": -7.96,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 3.1700000762939453,
+              "changePct": -25.76,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 1.6100000143051147,
+              "changePct": -62.3,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.9600000381469727,
+              "changePct": -54.1,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "MSTR",
+          "rec": "بيع",
+          "score": 3,
+          "reason": "خسارة -88.1%، Death Cross، MACD سلبي، RSI 45، عقوبة مضاربة -1.0، تعرض مفرط للبيتكوين",
+          "priceOnDate": 40.949,
+          "horizons": {
+            "1w": {
+              "price": 37.77000045776367,
+              "changePct": -7.76,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 44.29999923706055,
+              "changePct": 8.18,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 42.87799835205078,
+              "changePct": 4.71,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 20.150999069213867,
+              "changePct": -50.79,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 34.90800094604492,
+              "changePct": -14.75,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "SMMT",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "خسارة -89.1% شبه تامة، Death Cross، RSI 35، MACD سلبي، خطر إفلاس مرتفع",
+          "priceOnDate": 2.03,
+          "horizons": {
+            "1w": {
+              "price": 2.180000066757202,
+              "changePct": 7.39,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 2.740000009536743,
+              "changePct": 34.98,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 2.9000000953674316,
+              "changePct": 42.86,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 1.0499999523162842,
+              "changePct": -48.28,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.059999942779541,
+              "changePct": -47.78,
+              "verdict": "correct"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 2,
+          "total": 5,
+          "pct": 40
+        },
+        "2w": {
+          "correct": 1,
+          "total": 5,
+          "pct": 20
+        },
+        "1m": {
+          "correct": 2,
+          "total": 5,
+          "pct": 40
+        },
+        "3m": {
+          "correct": 5,
+          "total": 5,
+          "pct": 100
+        },
+        "6m": {
+          "correct": 3,
+          "total": 5,
+          "pct": 60
         }
       }
     },
