@@ -195,14 +195,7 @@ Guards:
         : { correct: 0, total: 0, pct: null };
     }
 
-    // Step 5 — Save to GitHub (merge with existing)
-    let existingData = { runs: [], lastUpdated: null };
-    const existingFile = await ghGet('data/backtest-extended.json');
-    if (existingFile?.content) {
-      try { existingData = JSON.parse(Buffer.from(existingFile.content, 'base64').toString()); } catch {}
-    }
-    const existingSha = existingFile?.sha || null;
-
+    // Step 5 — Save to GitHub (always fetch fresh SHA to avoid conflicts)
     const run = {
       date,
       portfolioValue: snap.totalValueOnDate,
@@ -212,15 +205,28 @@ Guards:
       accuracy
     };
 
-    const allRuns = [...(existingData.runs || []).filter(r => r.date !== date), run]
-      .sort((a, b) => a.date > b.date ? 1 : -1);
-
-    await ghPut(
-      'data/backtest-extended.json',
-      { lastUpdated: new Date().toISOString(), totalRuns: allRuns.length, runs: allRuns },
-      `Backtest: week ${date} (${enrichedSignals.length} signals)`,
-      existingSha
-    );
+    // Retry loop — re-fetch SHA on each attempt to handle concurrent saves
+    let saved = false;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      // Always read CURRENT file + SHA fresh before each save attempt
+      let existingData = { runs: [] };
+      const existingFile = await ghGet('data/backtest-extended.json');
+      if (existingFile?.content) {
+        try { existingData = JSON.parse(Buffer.from(existingFile.content, 'base64').toString()); } catch {}
+      }
+      const freshSha = existingFile?.sha || null;
+      const allRuns  = [...(existingData.runs || []).filter(r => r.date !== date), run]
+        .sort((a, b) => a.date > b.date ? 1 : -1);
+      const ok = await ghPut(
+        'data/backtest-extended.json',
+        { lastUpdated: new Date().toISOString(), totalRuns: allRuns.length, runs: allRuns },
+        `Backtest: week ${date} (${enrichedSignals.length} signals)`,
+        freshSha
+      );
+      if (ok) { saved = true; break; }
+      if (attempt < 3) await new Promise(r => setTimeout(r, 1000 * attempt));
+    }
+    if (!saved) console.error(`Failed to save week ${date} after 3 attempts`);
 
     return res.status(200).json({
       date,
