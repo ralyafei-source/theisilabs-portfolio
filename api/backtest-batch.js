@@ -132,7 +132,7 @@ function judgeSignal(rec, priceOnDate, futurePrice) {
 async function analyzeDate(date, portfolioSymbols) {
   // Step 1: Get historical snapshot
   const snapResp = await fetch(
-    `https://theisilabs-portfolio.vercel.app/api/historical-snapshot?date=${date}&format=json`
+    `https://theisilabs.vercel.app/api/historical-snapshot?date=${date}&format=json`
   );
   if (!snapResp.ok) return null;
   const snap = await snapResp.json();
