@@ -1,21 +1,19 @@
 {
-  "ignoreCommand": "! git diff HEAD~1 --name-only | grep -qvE '^data/'",
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "functions": {
     "api/portfolio-for-ai.js": {
       "maxDuration": 60
+    },
+    "api/historical-snapshot.js": {
+      "maxDuration": 60
+    },
+    "api/backtest-analyze.js": {
+      "maxDuration": 60
+    },
+    "api/backtest-batch.js": {
+      "maxDuration": 300
     }
-  },
-  "headers": [
-    {
-      "source": "/index.html",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
-        { "key": "Pragma", "value": "no-cache" },
-        { "key": "Expires", "value": "0" }
-      ]
-    }
-  ]
+  }
 }
