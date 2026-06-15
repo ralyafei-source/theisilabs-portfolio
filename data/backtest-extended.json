@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T15:03:12.728Z",
-  "totalRuns": 75,
+  "lastUpdated": "2026-06-15T15:04:21.523Z",
+  "totalRuns": 76,
   "runs": [
     {
       "date": "2021-09-20",
@@ -9100,6 +9100,109 @@
           "correct": 3,
           "total": 4,
           "pct": 75
+        }
+      }
+    },
+    {
+      "date": "2022-02-28",
+      "portfolioValue": 507457,
+      "signalCount": 46,
+      "actionCount": 2,
+      "signals": [
+        {
+          "sym": "BTBT",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "خسارة -2.5%، Death Cross وتحت EMA20، تطبيق عقوبة المضاربة -1.0، تعدين بيتكوين ضعيف جداً",
+          "priceOnDate": 3.93,
+          "horizons": {
+            "1w": {
+              "price": 3.1700000762939453,
+              "changePct": -19.34,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 2.819999933242798,
+              "changePct": -28.24,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 3.759999990463257,
+              "changePct": -4.33,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 1.7799999713897705,
+              "changePct": -54.71,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.4800000190734863,
+              "changePct": -62.34,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "MSTR",
+          "rec": "بيع",
+          "score": 3.1,
+          "reason": "خسارة -87%، Death Cross، تطبيق عقوبة المضاربة -1.0، مرتبط بالبيتكوين بشكل كامل ومخاطر عالية",
+          "priceOnDate": 44.3,
+          "horizons": {
+            "1w": {
+              "price": 38.89099884033203,
+              "changePct": -12.21,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 36.99300003051758,
+              "changePct": -16.49,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 50.069000244140625,
+              "changePct": 13.02,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 26.4689998626709,
+              "changePct": -40.25,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 24.496000289916992,
+              "changePct": -44.7,
+              "verdict": "correct"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 2,
+          "total": 2,
+          "pct": 100
+        },
+        "2w": {
+          "correct": 2,
+          "total": 2,
+          "pct": 100
+        },
+        "1m": {
+          "correct": 0,
+          "total": 2,
+          "pct": 0
+        },
+        "3m": {
+          "correct": 2,
+          "total": 2,
+          "pct": 100
+        },
+        "6m": {
+          "correct": 2,
+          "total": 2,
+          "pct": 100
         }
       }
     },
