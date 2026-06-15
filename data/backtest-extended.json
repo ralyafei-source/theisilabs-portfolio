@@ -1,6 +1,6 @@
 {
-  "lastUpdated": "2026-06-15T13:59:51.752Z",
-  "totalRuns": 36,
+  "lastUpdated": "2026-06-15T14:00:58.981Z",
+  "totalRuns": 37,
   "runs": [
     {
       "date": "2022-09-26",
@@ -10978,6 +10978,347 @@
           "correct": 2,
           "total": 8,
           "pct": 25
+        }
+      }
+    },
+    {
+      "date": "2023-05-01",
+      "portfolioValue": 312113,
+      "signalCount": 46,
+      "actionCount": 9,
+      "signals": [
+        {
+          "sym": "CRM",
+          "rec": "تراكم",
+          "score": 7.6,
+          "reason": "Golden Cross + MACD إيجابي + EMA20 صاعد + أساسيات قوية لـ Salesforce مع FCF ضخم",
+          "priceOnDate": 197.79,
+          "horizons": {
+            "1w": {
+              "price": 197.89999389648438,
+              "changePct": 0.06,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 203.3300018310547,
+              "changePct": 2.8,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 223.3800048828125,
+              "changePct": 12.94,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 225.00999450683594,
+              "changePct": 13.76,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 199.27000427246094,
+              "changePct": 0.75,
+              "verdict": "neutral"
+            }
+          }
+        },
+        {
+          "sym": "MSFT",
+          "rec": "تراكم",
+          "score": 7.8,
+          "reason": "RSI 66.7 + Golden Cross + MACD صاعد + أعلى EMA20 + أساسيات استثنائية + AI Copilot محرك نمو",
+          "priceOnDate": 305.56,
+          "horizons": {
+            "1w": {
+              "price": 308.6499938964844,
+              "changePct": 1.01,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 309.4599914550781,
+              "changePct": 1.28,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 328.3900146484375,
+              "changePct": 7.47,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 335.9200134277344,
+              "changePct": 9.94,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 337.30999755859375,
+              "changePct": 10.39,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "NVDA",
+          "rec": "تراكم",
+          "score": 8.5,
+          "reason": "Golden Cross قوي + أعلى EMA20 + RSI 66.8 + موجة AI استثنائية + FCF قوي + أعلى نقطة إيجابية بالمحفظة",
+          "priceOnDate": 28.91,
+          "horizons": {
+            "1w": {
+              "price": 29.150999069213867,
+              "changePct": 0.83,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 28.952999114990234,
+              "changePct": 0.15,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 37.83399963378906,
+              "changePct": 30.87,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 46.729000091552734,
+              "changePct": 61.64,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 41.1609992980957,
+              "changePct": 42.38,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "AAPL",
+          "rec": "تراكم",
+          "score": 7.9,
+          "reason": "RSI 65.8 + MACD صاعد + Golden Cross + أعلى EMA20 + خندق اقتصادي ضخم + FCF استثنائي",
+          "priceOnDate": 169.59,
+          "horizons": {
+            "1w": {
+              "price": 173.5,
+              "changePct": 2.31,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 172.07000732421875,
+              "changePct": 1.46,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 177.25,
+              "changePct": 4.52,
+              "verdict": "neutral"
+            },
+            "3m": {
+              "price": 196.4499969482422,
+              "changePct": 15.84,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 170.2899932861328,
+              "changePct": 0.41,
+              "verdict": "neutral"
+            }
+          }
+        },
+        {
+          "sym": "VISN",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "Death Cross + MACD إيجابي ضعيف + أسفل EMA20 + خسارة 69% + شركة صغيرة عالية المخاطر + ضعف أساسي",
+          "priceOnDate": 4.920000076293945,
+          "horizons": {
+            "1w": {
+              "price": 4.630000114440918,
+              "changePct": -5.89,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 4.380000114440918,
+              "changePct": -10.98,
+              "verdict": "correct"
+            },
+            "1m": {
+              "price": 4.159999847412109,
+              "changePct": -15.45,
+              "verdict": "correct"
+            },
+            "3m": {
+              "price": 4.5,
+              "changePct": -8.54,
+              "verdict": "correct"
+            },
+            "6m": {
+              "price": 1.4800000190734863,
+              "changePct": -69.92,
+              "verdict": "correct"
+            }
+          }
+        },
+        {
+          "sym": "CRDO",
+          "rec": "بيع",
+          "score": 3.2,
+          "reason": "Death Cross + أسفل EMA20 + خسارة 93.8% + RSI 38 + أساسيات هشة",
+          "priceOnDate": 8.14,
+          "horizons": {
+            "1w": {
+              "price": 7.579999923706055,
+              "changePct": -6.88,
+              "verdict": "correct"
+            },
+            "2w": {
+              "price": 8.609999656677246,
+              "changePct": 5.77,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 13.420000076293945,
+              "changePct": 64.86,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 16.969999313354492,
+              "changePct": 108.48,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 13.600000381469727,
+              "changePct": 67.08,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "CLS",
+          "rec": "بيع",
+          "score": 3.5,
+          "reason": "RSI 27.6 ذروة بيع + MACD سلبي + أسفل EMA20 + خسارة 76% + Golden Cross لكن أساسيات ضعيفة",
+          "priceOnDate": 10.7,
+          "horizons": {
+            "1w": {
+              "price": 11.140000343322754,
+              "changePct": 4.11,
+              "verdict": "neutral"
+            },
+            "2w": {
+              "price": 11.050000190734863,
+              "changePct": 3.27,
+              "verdict": "neutral"
+            },
+            "1m": {
+              "price": 12.729999542236328,
+              "changePct": 18.97,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 21.979999542236328,
+              "changePct": 105.42,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 22.25,
+              "changePct": 107.94,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "MVST",
+          "rec": "بيع",
+          "score": 2.5,
+          "reason": "Death Cross + MACD سلبي + أسفل EMA20 + خسارة 79% + عقوبة مضارب -1.0 + احتراق نقدي عالٍ",
+          "priceOnDate": 0.95,
+          "horizons": {
+            "1w": {
+              "price": 1.190000057220459,
+              "changePct": 25.26,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 1.7999999523162842,
+              "changePct": 89.47,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 1.2400000095367432,
+              "changePct": 30.53,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 2.869999885559082,
+              "changePct": 202.11,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 1.2699999809265137,
+              "changePct": 33.68,
+              "verdict": "wrong"
+            }
+          }
+        },
+        {
+          "sym": "SMMT",
+          "rec": "بيع",
+          "score": 2.8,
+          "reason": "Death Cross + MACD سلبي + أسفل EMA20 + خسارة 92% + بيوتك مبكرة + لا إيرادات",
+          "priceOnDate": 1.49,
+          "horizons": {
+            "1w": {
+              "price": 1.940000057220459,
+              "changePct": 30.2,
+              "verdict": "wrong"
+            },
+            "2w": {
+              "price": 1.8300000429153442,
+              "changePct": 22.82,
+              "verdict": "wrong"
+            },
+            "1m": {
+              "price": 1.6299999952316284,
+              "changePct": 9.4,
+              "verdict": "wrong"
+            },
+            "3m": {
+              "price": 2.0999999046325684,
+              "changePct": 40.94,
+              "verdict": "wrong"
+            },
+            "6m": {
+              "price": 1.9249999523162842,
+              "changePct": 29.19,
+              "verdict": "wrong"
+            }
+          }
+        }
+      ],
+      "accuracy": {
+        "1w": {
+          "correct": 2,
+          "total": 9,
+          "pct": 22
+        },
+        "2w": {
+          "correct": 1,
+          "total": 9,
+          "pct": 11
+        },
+        "1m": {
+          "correct": 4,
+          "total": 9,
+          "pct": 44
+        },
+        "3m": {
+          "correct": 5,
+          "total": 9,
+          "pct": 56
+        },
+        "6m": {
+          "correct": 3,
+          "total": 9,
+          "pct": 33
         }
       }
     },
