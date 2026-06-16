@@ -12278,9 +12278,14 @@ ${cash > 0 ? `كيف يوزع $${Math.round(usd).toLocaleString()} على أفض
 
     // Parse sections
     function extractSection(tag, txt) {
-      const re = new RegExp('\[' + tag + '\]([\s\S]*?)\[\/' + tag + '\]', 'i');
-      const m = txt.match(re);
-      return m ? m[1].trim() : '';
+      // Match [TAG] or ## [TAG] style
+      const openRe = new RegExp('(?:#+\\s*)?\\[' + tag + '\\].*?\\n', 'i');
+      const closeRe = new RegExp('(?:#+\\s*)?\\[\\/' + tag + '\\]', 'i');
+      const start = txt.search(openRe);
+      if (start === -1) return '';
+      const afterOpen = txt.slice(start).replace(openRe, '');
+      const end = afterOpen.search(closeRe);
+      return end > 0 ? afterOpen.slice(0, end).trim() : afterOpen.trim();
     }
 
     function renderSection(content, type) {
