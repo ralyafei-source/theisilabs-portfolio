@@ -12484,7 +12484,7 @@ ${dataBlock}
     const res = await fetch('/api/sa-analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inputs, prompt })
+      body: JSON.stringify({ prompt })
     });
     const data = await res.json();
 
