@@ -1874,6 +1874,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
   <div class="sb-item" data-tab="alerts"              onclick="showTab('alerts',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9"/><path d="M10.2 20a2 2 0 0 0 3.6 0"/></svg></span><span class="sb-lbl">Alerts</span></div>
   <div class="sb-item" data-tab="transactions"        onclick="showTab('transactions',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 4 3 8 7 12"/><line x1="3" y1="8" x2="16" y2="8"/><polyline points="17 12 21 16 17 20"/><line x1="8" y1="16" x2="21" y2="16"/></svg></span><span class="sb-lbl">Transactions</span></div>
   <div class="sb-item" data-tab="health" id="healthNavTab" style="display:none;" onclick="showTab('health',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.6-9.2-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.2 11C19 15.4 12 20 12 20z"/></svg></span><span class="sb-lbl">Health</span></div>
+  <div class="sb-item" data-tab="sa-intel" onclick="showTab('sa-intel',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><circle cx="8" cy="10" r="2"/><line x1="13" y1="8" x2="19" y2="8"/><line x1="13" y1="11" x2="19" y2="11"/><line x1="13" y1="14" x2="19" y2="14"/></svg></span><span class="sb-lbl">SA Intel</span></div>
   <div class="sb-item" data-tab="setup"               onclick="showTab('setup',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="sb-lbl">Settings</span></div>
 </nav>
 <div id="appMain">
@@ -2745,6 +2746,591 @@ WOLF remains at critical lows<br><br>
       </table>
     </div>
   </div>
+<div id="tab-sa-intel" class="tab-content">
+<style>
+.sa-section{margin-bottom:24px}
+.sa-section-hdr{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.sa-section-title{font-size:14px;font-weight:700;color:var(--text)}
+.sa-step{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px}
+.sa-step-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.sa-step-num{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#000;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sa-step-num.monthly{background:var(--gold)}
+.sa-step-num.ondemand{background:var(--text3)}
+.sa-step-title{font-size:13px;font-weight:700;color:var(--text)}
+.sa-step-freq{font-size:10px;background:var(--bg3);color:var(--text3);padding:2px 8px;border-radius:10px;margin-right:auto}
+.sa-step-where{font-size:11px;color:var(--text2);margin-bottom:10px;padding:6px 10px;background:var(--bg3);border-radius:6px;font-family:monospace}
+.sa-input-area{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--text);font-family:inherit;resize:vertical;min-height:80px;direction:rtl}
+.sa-input-area::placeholder{color:var(--text3)}
+.sa-input-area.has-data{border-color:var(--accent2)}
+.sa-upload-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:11px;cursor:pointer;margin-top:6px}
+.sa-upload-btn:hover{border-color:var(--accent);color:var(--accent)}
+.sa-status{font-size:10px;margin-top:4px;height:14px}
+.sa-status.ok{color:var(--accent2)}
+.sa-status.empty{color:var(--text3)}
+.sa-analyze-btn{width:100%;padding:14px;border-radius:10px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:14px;font-weight:700;font-family:var(--font,inherit);cursor:pointer;transition:all .2s;margin-top:8px}
+.sa-analyze-btn:hover{background:rgba(0,212,255,0.08)}
+.sa-analyze-btn:disabled{border-color:var(--border);color:var(--text3);cursor:not-allowed}
+.sa-result-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:16px;direction:rtl;line-height:2;font-size:13px}
+.sa-result-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px;flex-wrap:wrap}
+.sa-rtab{padding:8px 14px;border:none;background:transparent;color:var(--text2);border-bottom:2px solid transparent;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;transition:all .15s}
+.sa-rtab.active{color:var(--rose);border-bottom-color:var(--rose)}
+.sa-rtab-content{display:none}.sa-rtab-content.active{display:block}
+.sa-warn-card{background:rgba(226,75,74,0.08);border:1px solid rgba(226,75,74,0.3);border-radius:10px;padding:14px;margin-bottom:8px;border-right:3px solid var(--red)}
+.sa-good-card{background:rgba(0,200,100,0.06);border:1px solid rgba(0,200,100,0.25);border-radius:10px;padding:14px;margin-bottom:8px;border-right:3px solid var(--accent2)}
+.sa-cash-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px}
+.sa-card-sym{font-size:15px;font-weight:700;font-family:monospace;color:var(--text)}
+.sa-card-body{font-size:12px;color:var(--text2);margin-top:4px;line-height:1.7}
+.sa-card-action{font-size:12px;color:var(--text);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.sa-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;margin-right:4px}
+.sa-badge.sell{background:rgba(226,75,74,0.15);color:var(--red)}
+.sa-badge.buy{background:rgba(0,200,100,0.12);color:var(--accent2)}
+.sa-badge.hold{background:rgba(255,165,0,0.12);color:var(--gold)}
+.sa-badge.new{background:rgba(0,212,255,0.12);color:var(--accent)}
+.sa-badge.pqp{background:rgba(168,85,247,0.12);color:#a855f7}
+.sa-loading{text-align:center;padding:30px;color:var(--text2);font-size:13px}
+.sa-spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sa-checklist{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.sa-check-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+.sa-check-dot{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0}
+.sa-check-dot.filled{background:var(--accent2)}
+.sa-progress{height:4px;background:var(--border);border-radius:2px;margin:12px 0;overflow:hidden}
+.sa-progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
+</style>
+
+<div style="padding:20px">
+
+<!-- Header -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+  <div>
+    <div class="section-title" style="margin-bottom:4px">مستشار SA PRO</div>
+    <div class="section-sub">أدخل بيانات Seeking Alpha الأسبوعية — Claude يحلل ويخبرك بالقرار</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div id="sa-last-update" style="font-size:11px;color:var(--text3)">لم يُحدَّث بعد</div>
+    <div style="font-size:10px;background:rgba(0,212,255,0.1);color:var(--accent);border:1px solid rgba(0,212,255,0.3);border-radius:5px;padding:2px 8px">Seeking Alpha PRO ✓</div>
+  </div>
+</div>
+
+<!-- Progress bar -->
+<div style="margin-bottom:16px">
+  <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px">
+    <span>اكتمال البيانات</span>
+    <span id="sa-progress-pct">0%</span>
+  </div>
+  <div class="sa-progress"><div class="sa-progress-fill" id="sa-progress-fill" style="width:0%"></div></div>
+  <div class="sa-checklist" id="sa-checklist">
+    <div class="sa-check-item"><div class="sa-check-dot" id="chk-excel"></div><span>ملف Excel (المحفظة)</span></div>
+    <div class="sa-check-item"><div class="sa-check-dot" id="chk-short"></div><span>Short Ideas</span></div>
+    <div class="sa-check-item"><div class="sa-check-dot" id="chk-updown-mine"></div><span>Upgrades — أسهمك</span></div>
+    <div class="sa-check-item"><div class="sa-check-dot" id="chk-updown-market"></div><span>Upgrades — السوق</span></div>
+    <div class="sa-check-item"><div class="sa-check-dot" id="chk-pqp"></div><span>PRO Quant Portfolio</span></div>
+    <div class="sa-check-item"><div class="sa-check-dot" id="chk-toprated"></div><span>Top Rated Stocks</span></div>
+    <div class="sa-check-item"><div class="sa-check-dot" id="chk-exclusive"></div><span>Exclusive Coverage</span></div>
+    <div class="sa-check-item"><div class="sa-check-dot" id="chk-quant"></div><span>Stocks by Quant</span></div>
+    <div class="sa-check-item"><div class="sa-check-dot" id="chk-alpha"></div><span>Alpha Picks (شهري)</span></div>
+    <div class="sa-check-item"><div class="sa-check-dot" id="chk-cash"></div><span>المبلغ المتاح</span></div>
+  </div>
+</div>
+
+<!-- WEEKLY INPUTS -->
+<div class="sa-section">
+  <div class="sa-section-hdr">
+    <div style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></div>
+    <span class="sa-section-title">المدخلات الأسبوعية — كل أحد</span>
+  </div>
+
+  <!-- Step 1: Excel -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">1</div>
+      <div>
+        <div class="sa-step-title">ملف Excel — المحفظة الكاملة</div>
+        <div class="sa-step-freq">أسبوعي</div>
+      </div>
+    </div>
+    <div class="sa-step-where">SA → Portfolios → Summery → Ratings tab → Export (أيقونة التحميل أعلى اليمين)</div>
+    <label class="sa-upload-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      رفع ملف Excel
+      <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="saHandleExcel(this)" id="sa-excel-input">
+    </label>
+    <div class="sa-status" id="sa-excel-status">—</div>
+  </div>
+
+  <!-- Step 2: Short Ideas -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">2</div>
+      <div>
+        <div class="sa-step-title">Short Ideas</div>
+        <div class="sa-step-freq">أسبوعي</div>
+      </div>
+    </div>
+    <div class="sa-step-where">SA → PRO → Short Ideas → Ctrl+A → Copy → Paste هنا</div>
+    <textarea class="sa-input-area" id="sa-short-ideas" placeholder="الصق نص صفحة Short Ideas هنا..." oninput="saMarkFilled('sa-short-ideas','chk-short','sa-short-status')"></textarea>
+    <div class="sa-status" id="sa-short-status">—</div>
+  </div>
+
+  <!-- Step 3: Upgrades mine -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">3</div>
+      <div>
+        <div class="sa-step-title">Upgrades & Downgrades — أسهمك</div>
+        <div class="sa-step-freq">أسبوعي</div>
+      </div>
+    </div>
+    <div class="sa-step-where">SA → Portfolios → Summery → Up/Downgrades tab → آخر شهر → Copy → Paste</div>
+    <textarea class="sa-input-area" id="sa-updown-mine" placeholder="الصق تغييرات تقييم أسهمك هنا..." oninput="saMarkFilled('sa-updown-mine','chk-updown-mine','sa-updown-mine-status')"></textarea>
+    <div class="sa-status" id="sa-updown-mine-status">—</div>
+  </div>
+
+  <!-- Step 4: Upgrades market -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">4</div>
+      <div>
+        <div class="sa-step-title">Upgrades & Downgrades — السوق العام</div>
+        <div class="sa-step-freq">أسبوعي</div>
+      </div>
+    </div>
+    <div class="sa-step-where">SA → PRO → Upgrades & Downgrades → Last Day → Upgrade → Quant → Copy → Paste</div>
+    <textarea class="sa-input-area" id="sa-updown-market" placeholder="الصق ترقيات السوق العام هنا..." oninput="saMarkFilled('sa-updown-market','chk-updown-market','sa-updown-market-status')"></textarea>
+    <div class="sa-status" id="sa-updown-market-status">—</div>
+  </div>
+
+  <!-- Step 5: PRO Quant Portfolio -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">5</div>
+      <div>
+        <div class="sa-step-title">PRO Quant Portfolio — الـ 30 سهم</div>
+        <div class="sa-step-freq">أسبوعي</div>
+      </div>
+    </div>
+    <div class="sa-step-where">SA → PRO → PRO Quant Portfolio → Portfolio tab → Copy → Paste</div>
+    <textarea class="sa-input-area" id="sa-pqp" placeholder="الصق قائمة الـ 30 سهم هنا..." oninput="saMarkFilled('sa-pqp','chk-pqp','sa-pqp-status')"></textarea>
+    <div class="sa-status" id="sa-pqp-status">—</div>
+  </div>
+
+  <!-- Step 6: Top Rated Stocks -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">6</div>
+      <div>
+        <div class="sa-step-title">Top Rated Stocks — 38 سهم بتأكيد ثلاثي</div>
+        <div class="sa-step-freq">أسبوعي</div>
+      </div>
+    </div>
+    <div class="sa-step-where">SA → Find & Compare → Top Stocks → Copy → Paste</div>
+    <textarea class="sa-input-area" id="sa-toprated" placeholder="الصق قائمة Top Rated Stocks هنا..." oninput="saMarkFilled('sa-toprated','chk-toprated','sa-toprated-status')"></textarea>
+    <div class="sa-status" id="sa-toprated-status">—</div>
+  </div>
+
+  <!-- Step 7: Exclusive Coverage -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">7</div>
+      <div>
+        <div class="sa-step-title">Exclusive Coverage — فرص مخفية</div>
+        <div class="sa-step-freq">أسبوعي</div>
+      </div>
+    </div>
+    <div class="sa-step-where">SA → PRO → Exclusive Coverage → Copy → Paste</div>
+    <textarea class="sa-input-area" id="sa-exclusive" placeholder="الصق Exclusive Coverage هنا..." oninput="saMarkFilled('sa-exclusive','chk-exclusive','sa-exclusive-status')"></textarea>
+    <div class="sa-status" id="sa-exclusive-status">—</div>
+  </div>
+
+  <!-- Step 8: Stocks by Quant -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">8</div>
+      <div>
+        <div class="sa-step-title">Stocks by Quant — أفضل 50 سهم</div>
+        <div class="sa-step-freq">أسبوعي</div>
+      </div>
+    </div>
+    <div class="sa-step-where">SA → Screeners → Stocks by Quant → أول 50 نتيجة → Copy → Paste</div>
+    <textarea class="sa-input-area" id="sa-quant-screen" placeholder="الصق أفضل 50 سهم من Stocks by Quant..." oninput="saMarkFilled('sa-quant-screen','chk-quant','sa-quant-status')"></textarea>
+    <div class="sa-status" id="sa-quant-status">—</div>
+  </div>
+</div>
+
+<!-- MONTHLY INPUTS -->
+<div class="sa-section">
+  <div class="sa-section-hdr">
+    <div style="width:8px;height:8px;border-radius:50%;background:var(--gold)"></div>
+    <span class="sa-section-title">المدخلات الشهرية</span>
+  </div>
+
+  <!-- Step 9: Alpha Picks -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num monthly">9</div>
+      <div>
+        <div class="sa-step-title">Alpha Picks — الاختيارات الشهرية</div>
+        <div class="sa-step-freq">شهري</div>
+      </div>
+    </div>
+    <div class="sa-step-where">SA → Alpha Picks → Portfolio tab → Current → Copy → Paste</div>
+    <textarea class="sa-input-area" id="sa-alpha-picks" placeholder="الصق Alpha Picks الحالية هنا..." oninput="saMarkFilled('sa-alpha-picks','chk-alpha','sa-alpha-status')"></textarea>
+    <div class="sa-status" id="sa-alpha-status">—</div>
+  </div>
+</div>
+
+<!-- CASH INPUT -->
+<div class="sa-section">
+  <div class="sa-section-hdr">
+    <div style="width:8px;height:8px;border-radius:50%;background:var(--accent2)"></div>
+    <span class="sa-section-title">المبلغ المتاح للاستثمار</span>
+  </div>
+  <div class="sa-step">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <input type="number" id="sa-cash-amount" placeholder="0" style="flex:1;min-width:140px;padding:10px 14px;font-size:18px;font-weight:700;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:monospace" oninput="saUpdateCash()">
+      <div style="display:flex;gap:4px">
+        <button onclick="saCurrency('AED')" id="sa-btn-aed" style="padding:10px 14px;border-radius:8px;border:1px solid var(--accent);background:rgba(0,212,255,0.1);color:var(--accent);cursor:pointer;font-weight:700;font-size:12px">AED</button>
+        <button onclick="saCurrency('USD')" id="sa-btn-usd" style="padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-weight:700;font-size:12px">USD</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+      <button onclick="document.getElementById('sa-cash-amount').value=600000;saUpdateCash()" style="padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-family:monospace">600,000</button>
+      <button onclick="document.getElementById('sa-cash-amount').value=250000;saUpdateCash()" style="padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-family:monospace">250,000</button>
+      <button onclick="document.getElementById('sa-cash-amount').value=100000;saUpdateCash()" style="padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;font-family:monospace">100,000</button>
+    </div>
+    <div class="sa-status ok" id="sa-cash-status">—</div>
+  </div>
+</div>
+
+<!-- ON DEMAND -->
+<div class="sa-section">
+  <div class="sa-section-hdr">
+    <div style="width:8px;height:8px;border-radius:50%;background:var(--text3)"></div>
+    <span class="sa-section-title">عند الحاجة — قبل أي قرار كبير</span>
+  </div>
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num ondemand">10</div>
+      <div>
+        <div class="sa-step-title">تحليل سهم محدد</div>
+        <div class="sa-step-freq">عند الحاجة</div>
+      </div>
+    </div>
+    <div class="sa-step-where">SA → ابحث عن السهم → Summary (Virtual Analyst Report) + Earnings tab → Copy → Paste</div>
+    <textarea class="sa-input-area" id="sa-stock-detail" placeholder="الصق Virtual Analyst Report + Earnings لأي سهم تريد تحليله..." oninput="saMarkFilled('sa-stock-detail',null,'sa-detail-status')"></textarea>
+    <div class="sa-status" id="sa-detail-status">—</div>
+  </div>
+</div>
+
+<!-- ANALYZE BUTTON -->
+<button class="sa-analyze-btn" id="sa-analyze-btn" onclick="saRunAnalysis()">
+  🤖 حلّل وأعطني قرار الأسبوع
+</button>
+
+<!-- RESULT PANEL -->
+<div id="sa-result-panel" style="display:none;margin-top:16px">
+  <div class="sa-result-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;font-weight:700;color:var(--accent)">تحليل Seeking Alpha PRO</div>
+      <div style="font-size:10px;color:var(--text3)" id="sa-result-time"></div>
+    </div>
+    <div class="sa-result-tabs">
+      <button class="sa-rtab active" onclick="saShowRTab('warnings',this)">🔴 تحذيرات</button>
+      <button class="sa-rtab" onclick="saShowRTab('strong',this)">🟢 أسهمك القوية</button>
+      <button class="sa-rtab" onclick="saShowRTab('cash',this)">💰 قرار الكاش</button>
+      <button class="sa-rtab" onclick="saShowRTab('new',this)">🆕 فرص جديدة</button>
+      <button class="sa-rtab" onclick="saShowRTab('summary',this)">📋 الخلاصة</button>
+    </div>
+    <div id="sa-rtab-warnings" class="sa-rtab-content active" id="sa-rtab-warnings"></div>
+    <div id="sa-rtab-strong" class="sa-rtab-content"></div>
+    <div id="sa-rtab-cash" class="sa-rtab-content"></div>
+    <div id="sa-rtab-new" class="sa-rtab-content"></div>
+    <div id="sa-rtab-summary" class="sa-rtab-content"></div>
+  </div>
+</div>
+
+</div><!-- end padding div -->
+
+<script>
+// SA Intel — state
+window.saData = {
+  excelText: '',
+  shortIdeas: '',
+  updownMine: '',
+  updownMarket: '',
+  pqp: '',
+  topRated: '',
+  exclusive: '',
+  quantScreen: '',
+  alphaPicks: '',
+  cash: 0,
+  currency: 'AED'
+};
+
+function saMarkFilled(textareaId, dotId, statusId) {
+  const val = document.getElementById(textareaId).value.trim();
+  if (dotId) {
+    const dot = document.getElementById(dotId);
+    if (dot) dot.className = val.length > 20 ? 'sa-check-dot filled' : 'sa-check-dot';
+  }
+  const status = document.getElementById(statusId);
+  if (status) {
+    if (val.length > 20) {
+      status.textContent = '✓ تم الإدخال (' + val.split('\n').length + ' سطر)';
+      status.className = 'sa-status ok';
+    } else {
+      status.textContent = '—';
+      status.className = 'sa-status empty';
+    }
+  }
+  saUpdateProgress();
+}
+
+function saUpdateProgress() {
+  const checks = [
+    document.getElementById('sa-excel-input')?.files?.length > 0 || window.saData.excelText.length > 0,
+    document.getElementById('sa-short-ideas')?.value?.trim().length > 20,
+    document.getElementById('sa-updown-mine')?.value?.trim().length > 20,
+    document.getElementById('sa-updown-market')?.value?.trim().length > 20,
+    document.getElementById('sa-pqp')?.value?.trim().length > 20,
+    document.getElementById('sa-toprated')?.value?.trim().length > 20,
+    document.getElementById('sa-exclusive')?.value?.trim().length > 20,
+    document.getElementById('sa-quant-screen')?.value?.trim().length > 20,
+    document.getElementById('sa-alpha-picks')?.value?.trim().length > 20,
+    window.saData.cash > 0
+  ];
+  const filled = checks.filter(Boolean).length;
+  const pct = Math.round(filled / checks.length * 100);
+  document.getElementById('sa-progress-fill').style.width = pct + '%';
+  document.getElementById('sa-progress-pct').textContent = pct + '%';
+}
+
+function saCurrency(c) {
+  window.saData.currency = c;
+  document.getElementById('sa-btn-aed').style.borderColor = c === 'AED' ? 'var(--accent)' : 'var(--border)';
+  document.getElementById('sa-btn-aed').style.background = c === 'AED' ? 'rgba(0,212,255,0.1)' : 'transparent';
+  document.getElementById('sa-btn-aed').style.color = c === 'AED' ? 'var(--accent)' : 'var(--text2)';
+  document.getElementById('sa-btn-usd').style.borderColor = c === 'USD' ? 'var(--accent)' : 'var(--border)';
+  document.getElementById('sa-btn-usd').style.background = c === 'USD' ? 'rgba(0,212,255,0.1)' : 'transparent';
+  document.getElementById('sa-btn-usd').style.color = c === 'USD' ? 'var(--accent)' : 'var(--text2)';
+  saUpdateCash();
+}
+
+function saUpdateCash() {
+  const raw = parseFloat(document.getElementById('sa-cash-amount').value) || 0;
+  window.saData.cash = raw;
+  const usd = window.saData.currency === 'AED' ? raw / 3.67 : raw;
+  const status = document.getElementById('sa-cash-status');
+  if (raw > 0) {
+    status.textContent = '✓ ' + (window.saData.currency === 'AED' ? raw.toLocaleString() + ' درهم = $' + usd.toLocaleString(undefined,{maximumFractionDigits:0}) : '$' + raw.toLocaleString()) + ' USD';
+    status.className = 'sa-status ok';
+    document.getElementById('chk-cash').className = 'sa-check-dot filled';
+  } else {
+    status.textContent = '—';
+    status.className = 'sa-status empty';
+    document.getElementById('chk-cash').className = 'sa-check-dot';
+  }
+  saUpdateProgress();
+}
+
+function saHandleExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('sa-excel-status');
+  status.textContent = '⏳ جاري قراءة الملف...';
+  status.className = 'sa-status';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      // Store filename as indicator
+      window.saData.excelText = 'FILE:' + file.name + ' SIZE:' + file.size;
+      window.saData.excelFile = e.target.result;
+      status.textContent = '✓ تم رفع: ' + file.name;
+      status.className = 'sa-status ok';
+      document.getElementById('chk-excel').className = 'sa-check-dot filled';
+      saUpdateProgress();
+    } catch(err) {
+      status.textContent = '❌ خطأ في قراءة الملف';
+      status.className = 'sa-status';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function saShowRTab(id, btn) {
+  document.querySelectorAll('.sa-rtab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sa-rtab-content').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sa-rtab-' + id).classList.add('active');
+}
+
+async function saRunAnalysis() {
+  const btn = document.getElementById('sa-analyze-btn');
+  const panel = document.getElementById('sa-result-panel');
+
+  // Collect all data
+  const shortIdeas = document.getElementById('sa-short-ideas').value.trim();
+  const updownMine = document.getElementById('sa-updown-mine').value.trim();
+  const updownMarket = document.getElementById('sa-updown-market').value.trim();
+  const pqp = document.getElementById('sa-pqp').value.trim();
+  const topRated = document.getElementById('sa-toprated').value.trim();
+  const exclusive = document.getElementById('sa-exclusive').value.trim();
+  const quantScreen = document.getElementById('sa-quant-screen').value.trim();
+  const alphaPicks = document.getElementById('sa-alpha-picks').value.trim();
+  const stockDetail = document.getElementById('sa-stock-detail').value.trim();
+  const cash = parseFloat(document.getElementById('sa-cash-amount').value) || 0;
+  const currency = window.saData.currency;
+  const usd = currency === 'AED' ? cash / 3.67 : cash;
+
+  if (!shortIdeas && !pqp && !topRated) {
+    alert('أدخل على الأقل: Short Ideas + PRO Quant Portfolio + Top Rated Stocks');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Claude يحلل البيانات...';
+  panel.style.display = 'block';
+
+  // Show loading in all tabs
+  ['warnings','strong','cash','new','summary'].forEach(id => {
+    const el = document.getElementById('sa-rtab-' + id);
+    if (el) el.innerHTML = '<div class="sa-loading"><div class="sa-spinner"></div><br>جاري التحليل...</div>';
+  });
+
+  const prompt = `أنت مستشار استثمار متخصص لمستثمر عربي في أبوظبي، الإمارات.
+محفظته: ~46 سهم، قيمة تقريبية $644,000، لا ضريبة أرباح رأسمالية.
+${cash > 0 ? `كاش متاح للاستثمار: $${Math.round(usd).toLocaleString()} USD (${cash.toLocaleString()} ${currency})` : ''}
+
+أسهمه الرئيسية: NVDA (9.7% وزن، ربح +92%)، MU (12.7% وزن، ربح +459%)، SEZL (7.5%، ربح +61%)، AMZN (5.8%، ربح +20%)، DUOL (3.8%، خسارة -60%)، ONTO (4.4%، ربح +90%)، CRDO (2.2%، ربح +100%)، CLS (1.5%، ربح +794%)، PLTR (1.8%، ربح +451%)، MSTR (1.5%، خسارة -62%)، ADBE (0.3%، خسارة -61%)، SERV (0.8%، خسارة -51%)
+
+${shortIdeas ? `=== SHORT IDEAS (أسهم SA محللون يحذرون منها) ===
+${shortIdeas.slice(0,3000)}
+
+` : ''}
+${updownMine ? `=== UPGRADES & DOWNGRADES — أسهمه ===
+${updownMine.slice(0,2000)}
+
+` : ''}
+${updownMarket ? `=== UPGRADES — السوق العام (فرص جديدة) ===
+${updownMarket.slice(0,1500)}
+
+` : ''}
+${pqp ? `=== PRO QUANT PORTFOLIO (أفضل 30 سهم SA) ===
+${pqp.slice(0,2000)}
+
+` : ''}
+${topRated ? `=== TOP RATED STOCKS (تأكيد ثلاثي) ===
+${topRated.slice(0,2000)}
+
+` : ''}
+${exclusive ? `=== EXCLUSIVE COVERAGE (فرص مخفية) ===
+${exclusive.slice(0,1500)}
+
+` : ''}
+${quantScreen ? `=== STOCKS BY QUANT (أعلى تقييم) ===
+${quantScreen.slice(0,1500)}
+
+` : ''}
+${alphaPicks ? `=== ALPHA PICKS ===
+${alphaPicks.slice(0,1000)}
+
+` : ''}
+${stockDetail ? `=== تحليل سهم محدد ===
+${stockDetail.slice(0,2000)}
+
+` : ''}
+
+بناءً على كل هذه البيانات، قدّم تحليلاً شاملاً باللغة العربية منظماً في 5 أقسام بالضبط:
+
+[WARNINGS]
+قائمة بأسهمه التي تظهر في Short Ideas أو خُفِّضت تقييماتها. لكل سهم: الرمز، السبب، وإجراء محدد.
+[/WARNINGS]
+
+[STRONG]
+أسهمه التي SA تدعمها بقوة (في PRO Quant أو Top Rated أو رُفِّعت). لكل سهم: الرمز، مصدر الدعم، والموقف المقترح.
+[/STRONG]
+
+[CASH]
+${cash > 0 ? `كيف يوزع $${Math.round(usd).toLocaleString()} على أفضل الفرص. أرقام محددة لكل سهم.` : 'لا يوجد كاش محدد — اذكر أفضل 3 فرص للاستثمار المستقبلي.'}
+[/CASH]
+
+[NEW]
+أسهم جديدة لا يمتلكها من PRO Quant + Top Rated + Market Upgrades + Exclusive Coverage. مرتبة حسب الأولوية.
+[/NEW]
+
+[SUMMARY]
+ملخص تنفيذي في 4-5 جمل فقط: أهم قرار هذا الأسبوع.
+[/SUMMARY]
+
+الأسلوب: مباشر، واضح، عملي. لا تشرح كثيراً.
+اختم بـ: "⚠️ هذا تحليل معلوماتي وليس نصيحة مالية مرخصة"`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || 'لم يتمكن النظام من التحليل';
+
+    // Parse sections
+    function extractSection(tag, txt) {
+      const re = new RegExp('\[' + tag + '\]([\s\S]*?)\[\/' + tag + '\]', 'i');
+      const m = txt.match(re);
+      return m ? m[1].trim() : '';
+    }
+
+    function renderSection(content, type) {
+      if (!content) return '<div style="color:var(--text3);font-size:12px;padding:12px">لا توجد بيانات كافية لهذا القسم</div>';
+      // Convert markdown-like to HTML
+      let html = content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/^#{1,3}\s+(.+)$/gm, '<div style="font-size:13px;font-weight:700;color:var(--accent);margin:12px 0 6px">$1</div>')
+        .replace(/^[-•]\s+(.+)$/gm, '<div style="padding:3px 0 3px 12px;border-right:2px solid var(--border);margin-bottom:4px">$1</div>')
+        .replace(/
+
+/g, '<br>')
+        .replace(/
+/g, '<br>');
+      return '<div style="font-size:13px;line-height:2;color:var(--text)">' + html + '</div>';
+    }
+
+    const warnings = extractSection('WARNINGS', text);
+    const strong = extractSection('STRONG', text);
+    const cashSection = extractSection('CASH', text);
+    const newStocks = extractSection('NEW', text);
+    const summary = extractSection('SUMMARY', text);
+
+    document.getElementById('sa-rtab-warnings').innerHTML = renderSection(warnings, 'warn') || renderSection(text, 'default');
+    document.getElementById('sa-rtab-strong').innerHTML = renderSection(strong);
+    document.getElementById('sa-rtab-cash').innerHTML = renderSection(cashSection);
+    document.getElementById('sa-rtab-new').innerHTML = renderSection(newStocks);
+    document.getElementById('sa-rtab-summary').innerHTML = renderSection(summary || text.slice(0, 800));
+
+    document.getElementById('sa-result-time').textContent = 'آخر تحليل: ' + new Date().toLocaleString('ar-SA');
+    document.getElementById('sa-last-update').textContent = 'آخر تحديث: ' + new Date().toLocaleDateString('ar-SA');
+
+  } catch(e) {
+    ['warnings','strong','cash','new','summary'].forEach(id => {
+      const el = document.getElementById('sa-rtab-' + id);
+      if (el) el.innerHTML = '<div style="color:var(--red);padding:12px">خطأ في الاتصال: ' + e.message + '</div>';
+    });
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🤖 تحديث التحليل';
+}
+</script>
+
+</div><!-- end tab-sa-intel -->
+
+
 
 <script>
 // â”€â”€ Portfolio data — loaded dynamically per logged-in user â”€â”€
