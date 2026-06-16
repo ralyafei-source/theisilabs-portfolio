@@ -1,6 +1,9 @@
 {
   "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
   ],
   "functions": {
     "api/portfolio-for-ai.js": {
@@ -16,6 +19,9 @@
       "maxDuration": 60
     },
     "api/download-historical.js": {
+      "maxDuration": 60
+    },
+    "api/sa-analyze.js": {
       "maxDuration": 60
     }
   }
