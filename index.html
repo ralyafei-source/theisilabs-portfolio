@@ -12402,7 +12402,7 @@ function saStockCard(s, type) {
     return '<span style="font-size:10px;font-family:monospace;padding:1px 5px;border-radius:3px;background:var(--bg3);color:'+gc+'">' + k + ': ' + v + '</span>';
   }).join(' ') : '';
   return '<div style="background:' + bg + ';border:1px solid var(--border);border-right:3px solid ' + color + ';border-radius:0 10px 10px 0;padding:12px 14px;margin-bottom:10px">' +
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">' +
     '<div>' +
     '<span style="font-size:15px;font-weight:700;font-family:monospace;color:var(--text)">' + (s.symbol || '') + '</span>' +
     '<span style="margin-right:8px"></span>' + badges +
