@@ -1718,6 +1718,8 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 .sa-rtab{padding:8px 14px;border:none;background:transparent;color:var(--text2);border-bottom:2px solid transparent;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;transition:all .15s}
 .sa-rtab.active{color:var(--rose);border-bottom-color:var(--rose)}
 .sa-rtab-content{display:none}.sa-rtab-content.active{display:block}
+.sa-result-tabs{display:none !important;}
+.sa-rtab-content{display:block !important;}
 .sa-warn-card{background:rgba(226,75,74,0.08);border:1px solid rgba(226,75,74,0.3);border-radius:10px;padding:14px;margin-bottom:8px;border-right:3px solid var(--red)}
 .sa-good-card{background:rgba(0,200,100,0.06);border:1px solid rgba(0,200,100,0.25);border-radius:10px;padding:14px;margin-bottom:8px;border-right:3px solid var(--accent2)}
 .sa-cash-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px}
@@ -12284,70 +12286,83 @@ function extractSymbols(text, n) {
 
 // ── Render structured JSON result into cards ──
 function saRenderCards(parsed) {
-  // Executive Summary
-  const execEl = document.getElementById('sa-rtab-exec');
-  if (execEl && parsed.executive_summary) {
-    const es = parsed.executive_summary;
-    execEl.innerHTML = '<div style="direction:rtl">' +
-      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px">' +
-      saMetricCard('قيمة المحفظة', es.portfolio_value || '—', '') +
-      saMetricCard('أداء الأسبوع', es.weekly_performance || '—', '') +
-      saMetricCard('أكبر خطر', es.biggest_risk_symbol || '—', '') +
-      saMetricCard('أفضل فرصة', es.best_opportunity || '—', '') +
-      '</div>' +
-      '<div style="background:var(--bg2);border-radius:10px;padding:14px;font-size:13px;line-height:2;color:var(--text)">' +
-      (es.summary_text || '') +
-      '</div>' +
-      '<div style="margin-top:12px;padding:12px 14px;background:rgba(255,10,120,0.08);border-radius:8px;border-right:3px solid var(--rose);font-size:13px;font-weight:700;color:var(--text)">' +
-      '⚡ القرار الأسبوعي: ' + (es.weekly_decision || '—') +
-      '</div></div>';
+  const host = document.getElementById('sa-rtab-exec');
+  if (!host) return;
+  // make sure this container is the visible one
+  ['warnings','strong','cash','new','conflicts'].forEach(id => {
+    const el = document.getElementById('sa-rtab-' + id);
+    if (el) el.style.display = 'none';
+  });
+  host.style.display = 'block';
+
+  const es = parsed.executive_summary || {};
+  let html = '<div style="direction:rtl;text-align:right">';
+
+  // Decision banner
+  if (es.weekly_decision) {
+    html += '<div style="background:rgba(255,10,120,0.10);border-right:3px solid var(--rose);border-radius:0 10px 10px 0;padding:12px 14px;margin-bottom:16px">' +
+      '<div style="font-size:11px;color:var(--text2);margin-bottom:4px">⚡ القرار الأسبوعي</div>' +
+      '<div style="font-size:14px;font-weight:700;color:var(--text)">' + es.weekly_decision + '</div></div>';
   }
 
+  // Metric band
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:14px">' +
+    saMetricCard('قيمة المحفظة', es.portfolio_value || '—', '') +
+    saMetricCard('أداء الأسبوع', es.weekly_performance || '—', '') +
+    saMetricCard('أكبر خطر', es.biggest_risk_symbol || '—', '') +
+    saMetricCard('أفضل فرصة', es.best_opportunity || '—', '') +
+    '</div>';
+
+  // Summary
+  if (es.summary_text) {
+    html += '<div style="background:var(--bg);border-radius:10px;padding:13px 15px;font-size:13px;line-height:1.9;color:var(--text);margin-bottom:18px">' + es.summary_text + '</div>';
+  }
+
+  // Section helper
+  const section = (title, color, count, body) =>
+    '<div style="font-size:14px;font-weight:700;color:' + color + ';margin:18px 0 10px">' + title +
+    (count != null ? ' · ' + count : '') + '</div>' + body;
+
   // Warnings
-  const warnEl = document.getElementById('sa-rtab-warnings');
-  if (warnEl && parsed.warnings) {
-    warnEl.innerHTML = '<div style="direction:rtl">' +
-      (parsed.warnings.length === 0 ? '<div style="color:var(--text3);padding:20px;text-align:center">لا تحذيرات هذا الأسبوع</div>' :
-      parsed.warnings.map(w => saStockCard(w, 'danger')).join('')) +
-      '</div>';
+  if (parsed.warnings) {
+    const body = parsed.warnings.length === 0
+      ? '<div style="color:var(--text3);padding:14px;text-align:center;font-size:13px">لا تحذيرات هذا الأسبوع</div>'
+      : parsed.warnings.map(w => saStockCard(w, 'danger')).join('');
+    html += section('⚠️ التحذيرات', 'var(--red)', parsed.warnings.length, body);
   }
 
   // Strong positions
-  const strongEl = document.getElementById('sa-rtab-strong');
-  if (strongEl && parsed.strong_positions) {
-    strongEl.innerHTML = '<div style="direction:rtl">' +
-      parsed.strong_positions.map(s => saStockCard(s, 'success')).join('') +
-      '</div>';
+  if (parsed.strong_positions) {
+    html += section('✓ المراكز القوية', 'var(--accent2)', parsed.strong_positions.length,
+      parsed.strong_positions.map(s => saStockCard(s, 'success')).join(''));
   }
 
-  // Cash decision
-  const cashEl = document.getElementById('sa-rtab-cash');
-  if (cashEl && parsed.cash_decisions) {
+  // Cash decisions
+  if (parsed.cash_decisions) {
     const cd = parsed.cash_decisions;
-    cashEl.innerHTML = '<div style="direction:rtl">' +
-      '<div style="background:var(--bg2);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px">' +
-      '<span style="color:var(--text2)">إجمالي الكاش: </span><strong style="color:var(--accent)">' + (cd.total_available || '—') + '</strong>' +
-      '</div>' +
-      (cd.allocations || []).map((a, i) => saCashCard(a, i+1)).join('') +
-      '</div>';
+    let body = '<div style="background:var(--bg2);border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:13px">' +
+      '<span style="color:var(--text2)">إجمالي الكاش: </span><strong style="color:var(--accent)">' + (cd.total_available || '—') + '</strong></div>' +
+      (cd.allocations || []).map((a, i) => saCashCard(a, i + 1)).join('');
+    html += section('💵 قرارات الكاش', 'var(--text)', null, body);
   }
 
-  // New opportunities
-  const newEl = document.getElementById('sa-rtab-new');
-  if (newEl && parsed.new_opportunities) {
-    newEl.innerHTML = '<div style="direction:rtl">' +
-      parsed.new_opportunities.map(o => saStockCard(o, 'info')).join('') +
-      '</div>';
+  // New opportunities + Conflicts (two columns)
+  let cols = '<div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">';
+  if (parsed.new_opportunities) {
+    cols += '<div style="flex:1;min-width:240px"><div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px">فرص جديدة</div>' +
+      parsed.new_opportunities.map(o => saStockCard(o, 'info')).join('') + '</div>';
   }
+  if (parsed.conflicts) {
+    const cbody = parsed.conflicts.length === 0
+      ? '<div style="color:var(--text3);padding:14px;text-align:center;font-size:13px">لا إشارات متضاربة</div>'
+      : parsed.conflicts.map(c => saConflictCard(c)).join('');
+    cols += '<div style="flex:1;min-width:240px"><div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:8px">إشارات متضاربة</div>' + cbody + '</div>';
+  }
+  cols += '</div>';
+  html += cols;
 
-  // Conflicts
-  const confEl = document.getElementById('sa-rtab-conflicts');
-  if (confEl && parsed.conflicts) {
-    confEl.innerHTML = '<div style="direction:rtl">' +
-      (parsed.conflicts.length === 0 ? '<div style="color:var(--text3);padding:20px;text-align:center">لا إشارات متضاربة</div>' :
-      parsed.conflicts.map(c => saConflictCard(c)).join('')) +
-      '</div>';
-  }
+  html += '</div>';
+  host.innerHTML = html;
 }
 
 function saMetricCard(label, value, sub) {
