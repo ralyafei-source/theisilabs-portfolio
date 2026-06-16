@@ -12411,10 +12411,10 @@ function saStockCard(s, type) {
     '</div>' +
     '<div style="text-align:left;flex-shrink:0">' +
     '<div style="font-size:13px;font-weight:700;color:' + color + '">' + (s.rating || '') + '</div>' +
-    (s.sources ? '<div style="font-size:10px;color:var(--text3);margin-top:3px">' + s.sources + '</div>' : '') +
+    (s.sources ? '<div dir="auto" style="font-size:10px;color:var(--text3);margin-top:3px">' + s.sources + '</div>' : '') +
     '</div></div>' +
-    (s.reason ? '<div style="font-size:12px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);line-height:1.7">' + s.reason + '</div>' : '') +
-    (s.action ? '<div style="font-size:12px;font-weight:700;color:var(--text);margin-top:6px;padding:7px 10px;background:var(--bg3);border-radius:6px">' + s.action + '</div>' : '') +
+    (s.reason ? '<div dir="auto" style="font-size:12px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);line-height:1.7">' + s.reason + '</div>' : '') +
+    (s.action ? '<div dir="auto" style="font-size:12px;font-weight:700;color:var(--text);margin-top:6px;padding:7px 10px;background:var(--bg3);border-radius:6px">' + s.action + '</div>' : '') +
     '</div>';
 }
 
@@ -12443,10 +12443,10 @@ function saConflictCard(c) {
     '<span style="font-size:11px;background:rgba(255,165,0,0.15);color:var(--gold);padding:2px 8px;border-radius:4px">⚡ تعارض</span>' +
     '</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">' +
-    '<div style="padding:8px;background:rgba(226,75,74,0.08);border-radius:6px"><div style="color:var(--red);font-weight:700;margin-bottom:3px">يقول بيع</div><div style="color:var(--text2)">' + (c.sell_sources || '') + '</div></div>' +
-    '<div style="padding:8px;background:rgba(0,200,100,0.06);border-radius:6px"><div style="color:var(--accent2);font-weight:700;margin-bottom:3px">يقول اشترِ</div><div style="color:var(--text2)">' + (c.buy_sources || '') + '</div></div>' +
+    '<div style="padding:8px;background:rgba(226,75,74,0.08);border-radius:6px"><div style="color:var(--red);font-weight:700;margin-bottom:3px">يقول بيع</div><div dir="auto" style="color:var(--text2)">' + (c.sell_sources || '') + '</div></div>' +
+    '<div style="padding:8px;background:rgba(0,200,100,0.06);border-radius:6px"><div style="color:var(--accent2);font-weight:700;margin-bottom:3px">يقول اشترِ</div><div dir="auto" style="color:var(--text2)">' + (c.buy_sources || '') + '</div></div>' +
     '</div>' +
-    '<div style="font-size:12px;color:var(--text);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-weight:600">' + (c.recommendation || '') + '</div>' +
+    '<div dir="auto" style="font-size:12px;color:var(--text);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-weight:600">' + (c.recommendation || '') + '</div>' +
     '</div>';
 }
 
