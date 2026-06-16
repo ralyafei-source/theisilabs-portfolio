@@ -2921,282 +2921,7 @@ WOLF remains at critical lows<br><br>
 
 </div><!-- end padding div -->
 
-<script>
-// SA Intel — state
-window.saData = {
-  excelText: '',
-  shortIdeas: '',
-  updownMine: '',
-  updownMarket: '',
-  pqp: '',
-  topRated: '',
-  exclusive: '',
-  quantScreen: '',
-  alphaPicks: '',
-  cash: 0,
-  currency: 'AED'
-};
 
-function saMarkFilled(textareaId, dotId, statusId) {
-  const val = document.getElementById(textareaId).value.trim();
-  if (dotId) {
-    const dot = document.getElementById(dotId);
-    if (dot) dot.className = val.length > 20 ? 'sa-check-dot filled' : 'sa-check-dot';
-  }
-  const status = document.getElementById(statusId);
-  if (status) {
-    if (val.length > 20) {
-      status.textContent = '✓ تم الإدخال (' + val.split('\n').length + ' سطر)';
-      status.className = 'sa-status ok';
-    } else {
-      status.textContent = '—';
-      status.className = 'sa-status empty';
-    }
-  }
-  saUpdateProgress();
-}
-
-function saUpdateProgress() {
-  const checks = [
-    document.getElementById('sa-excel-input')?.files?.length > 0 || window.saData.excelText.length > 0,
-    document.getElementById('sa-short-ideas')?.value?.trim().length > 20,
-    document.getElementById('sa-updown-mine')?.value?.trim().length > 20,
-    document.getElementById('sa-updown-market')?.value?.trim().length > 20,
-    document.getElementById('sa-pqp')?.value?.trim().length > 20,
-    document.getElementById('sa-toprated')?.value?.trim().length > 20,
-    document.getElementById('sa-exclusive')?.value?.trim().length > 20,
-    document.getElementById('sa-quant-screen')?.value?.trim().length > 20,
-    document.getElementById('sa-alpha-picks')?.value?.trim().length > 20,
-    window.saData.cash > 0
-  ];
-  const filled = checks.filter(Boolean).length;
-  const pct = Math.round(filled / checks.length * 100);
-  document.getElementById('sa-progress-fill').style.width = pct + '%';
-  document.getElementById('sa-progress-pct').textContent = pct + '%';
-}
-
-function saCurrency(c) {
-  window.saData.currency = c;
-  document.getElementById('sa-btn-aed').style.borderColor = c === 'AED' ? 'var(--accent)' : 'var(--border)';
-  document.getElementById('sa-btn-aed').style.background = c === 'AED' ? 'rgba(0,212,255,0.1)' : 'transparent';
-  document.getElementById('sa-btn-aed').style.color = c === 'AED' ? 'var(--accent)' : 'var(--text2)';
-  document.getElementById('sa-btn-usd').style.borderColor = c === 'USD' ? 'var(--accent)' : 'var(--border)';
-  document.getElementById('sa-btn-usd').style.background = c === 'USD' ? 'rgba(0,212,255,0.1)' : 'transparent';
-  document.getElementById('sa-btn-usd').style.color = c === 'USD' ? 'var(--accent)' : 'var(--text2)';
-  saUpdateCash();
-}
-
-function saUpdateCash() {
-  const raw = parseFloat(document.getElementById('sa-cash-amount').value) || 0;
-  window.saData.cash = raw;
-  const usd = window.saData.currency === 'AED' ? raw / 3.67 : raw;
-  const status = document.getElementById('sa-cash-status');
-  if (raw > 0) {
-    status.textContent = '✓ ' + (window.saData.currency === 'AED' ? raw.toLocaleString() + ' درهم = $' + usd.toLocaleString(undefined,{maximumFractionDigits:0}) : '$' + raw.toLocaleString()) + ' USD';
-    status.className = 'sa-status ok';
-    document.getElementById('chk-cash').className = 'sa-check-dot filled';
-  } else {
-    status.textContent = '—';
-    status.className = 'sa-status empty';
-    document.getElementById('chk-cash').className = 'sa-check-dot';
-  }
-  saUpdateProgress();
-}
-
-function saHandleExcel(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const status = document.getElementById('sa-excel-status');
-  status.textContent = '⏳ جاري قراءة الملف...';
-  status.className = 'sa-status';
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      // Store filename as indicator
-      window.saData.excelText = 'FILE:' + file.name + ' SIZE:' + file.size;
-      window.saData.excelFile = e.target.result;
-      status.textContent = '✓ تم رفع: ' + file.name;
-      status.className = 'sa-status ok';
-      document.getElementById('chk-excel').className = 'sa-check-dot filled';
-      saUpdateProgress();
-    } catch(err) {
-      status.textContent = '❌ خطأ في قراءة الملف';
-      status.className = 'sa-status';
-    }
-  };
-  reader.readAsDataURL(file);
-}
-
-function saShowRTab(id, btn) {
-  document.querySelectorAll('.sa-rtab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.sa-rtab-content').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('sa-rtab-' + id).classList.add('active');
-}
-
-async function saRunAnalysis() {
-  const btn = document.getElementById('sa-analyze-btn');
-  const panel = document.getElementById('sa-result-panel');
-
-  // Collect all data
-  const shortIdeas = document.getElementById('sa-short-ideas').value.trim();
-  const updownMine = document.getElementById('sa-updown-mine').value.trim();
-  const updownMarket = document.getElementById('sa-updown-market').value.trim();
-  const pqp = document.getElementById('sa-pqp').value.trim();
-  const topRated = document.getElementById('sa-toprated').value.trim();
-  const exclusive = document.getElementById('sa-exclusive').value.trim();
-  const quantScreen = document.getElementById('sa-quant-screen').value.trim();
-  const alphaPicks = document.getElementById('sa-alpha-picks').value.trim();
-  const stockDetail = document.getElementById('sa-stock-detail').value.trim();
-  const cash = parseFloat(document.getElementById('sa-cash-amount').value) || 0;
-  const currency = window.saData.currency;
-  const usd = currency === 'AED' ? cash / 3.67 : cash;
-
-  if (!shortIdeas && !pqp && !topRated) {
-    alert('أدخل على الأقل: Short Ideas + PRO Quant Portfolio + Top Rated Stocks');
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = '⏳ Claude يحلل البيانات...';
-  panel.style.display = 'block';
-
-  // Show loading in all tabs
-  ['warnings','strong','cash','new','summary'].forEach(id => {
-    const el = document.getElementById('sa-rtab-' + id);
-    if (el) el.innerHTML = '<div class="sa-loading"><div class="sa-spinner"></div><br>جاري التحليل...</div>';
-  });
-
-  const prompt = `أنت مستشار استثمار متخصص لمستثمر عربي في أبوظبي، الإمارات.
-محفظته: ~46 سهم، قيمة تقريبية $644,000، لا ضريبة أرباح رأسمالية.
-${cash > 0 ? `كاش متاح للاستثمار: $${Math.round(usd).toLocaleString()} USD (${cash.toLocaleString()} ${currency})` : ''}
-
-أسهمه الرئيسية: NVDA (9.7% وزن، ربح +92%)، MU (12.7% وزن، ربح +459%)، SEZL (7.5%، ربح +61%)، AMZN (5.8%، ربح +20%)، DUOL (3.8%، خسارة -60%)، ONTO (4.4%، ربح +90%)، CRDO (2.2%، ربح +100%)، CLS (1.5%، ربح +794%)، PLTR (1.8%، ربح +451%)، MSTR (1.5%، خسارة -62%)، ADBE (0.3%، خسارة -61%)، SERV (0.8%، خسارة -51%)
-
-${shortIdeas ? `=== SHORT IDEAS (أسهم SA محللون يحذرون منها) ===
-${shortIdeas.slice(0,3000)}
-
-` : ''}
-${updownMine ? `=== UPGRADES & DOWNGRADES — أسهمه ===
-${updownMine.slice(0,2000)}
-
-` : ''}
-${updownMarket ? `=== UPGRADES — السوق العام (فرص جديدة) ===
-${updownMarket.slice(0,1500)}
-
-` : ''}
-${pqp ? `=== PRO QUANT PORTFOLIO (أفضل 30 سهم SA) ===
-${pqp.slice(0,2000)}
-
-` : ''}
-${topRated ? `=== TOP RATED STOCKS (تأكيد ثلاثي) ===
-${topRated.slice(0,2000)}
-
-` : ''}
-${exclusive ? `=== EXCLUSIVE COVERAGE (فرص مخفية) ===
-${exclusive.slice(0,1500)}
-
-` : ''}
-${quantScreen ? `=== STOCKS BY QUANT (أعلى تقييم) ===
-${quantScreen.slice(0,1500)}
-
-` : ''}
-${alphaPicks ? `=== ALPHA PICKS ===
-${alphaPicks.slice(0,1000)}
-
-` : ''}
-${stockDetail ? `=== تحليل سهم محدد ===
-${stockDetail.slice(0,2000)}
-
-` : ''}
-
-بناءً على كل هذه البيانات، قدّم تحليلاً شاملاً باللغة العربية منظماً في 5 أقسام بالضبط:
-
-[WARNINGS]
-قائمة بأسهمه التي تظهر في Short Ideas أو خُفِّضت تقييماتها. لكل سهم: الرمز، السبب، وإجراء محدد.
-[/WARNINGS]
-
-[STRONG]
-أسهمه التي SA تدعمها بقوة (في PRO Quant أو Top Rated أو رُفِّعت). لكل سهم: الرمز، مصدر الدعم، والموقف المقترح.
-[/STRONG]
-
-[CASH]
-${cash > 0 ? `كيف يوزع $${Math.round(usd).toLocaleString()} على أفضل الفرص. أرقام محددة لكل سهم.` : 'لا يوجد كاش محدد — اذكر أفضل 3 فرص للاستثمار المستقبلي.'}
-[/CASH]
-
-[NEW]
-أسهم جديدة لا يمتلكها من PRO Quant + Top Rated + Market Upgrades + Exclusive Coverage. مرتبة حسب الأولوية.
-[/NEW]
-
-[SUMMARY]
-ملخص تنفيذي في 4-5 جمل فقط: أهم قرار هذا الأسبوع.
-[/SUMMARY]
-
-الأسلوب: مباشر، واضح، عملي. لا تشرح كثيراً.
-اختم بـ: "⚠️ هذا تحليل معلوماتي وليس نصيحة مالية مرخصة"`;
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    const data = await res.json();
-    const text = data.content?.[0]?.text || 'لم يتمكن النظام من التحليل';
-
-    // Parse sections
-    function extractSection(tag, txt) {
-      const re = new RegExp('\[' + tag + '\]([\s\S]*?)\[\/' + tag + '\]', 'i');
-      const m = txt.match(re);
-      return m ? m[1].trim() : '';
-    }
-
-    function renderSection(content, type) {
-      if (!content) return '<div style="color:var(--text3);font-size:12px;padding:12px">لا توجد بيانات كافية لهذا القسم</div>';
-      // Convert markdown-like to HTML
-      let html = content
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/^#{1,3}\s+(.+)$/gm, '<div style="font-size:13px;font-weight:700;color:var(--accent);margin:12px 0 6px">$1</div>')
-        .replace(/^[-•]\s+(.+)$/gm, '<div style="padding:3px 0 3px 12px;border-right:2px solid var(--border);margin-bottom:4px">$1</div>')
-        .replace(/
-
-/g, '<br>')
-        .replace(/
-/g, '<br>');
-      return '<div style="font-size:13px;line-height:2;color:var(--text)">' + html + '</div>';
-    }
-
-    const warnings = extractSection('WARNINGS', text);
-    const strong = extractSection('STRONG', text);
-    const cashSection = extractSection('CASH', text);
-    const newStocks = extractSection('NEW', text);
-    const summary = extractSection('SUMMARY', text);
-
-    document.getElementById('sa-rtab-warnings').innerHTML = renderSection(warnings, 'warn') || renderSection(text, 'default');
-    document.getElementById('sa-rtab-strong').innerHTML = renderSection(strong);
-    document.getElementById('sa-rtab-cash').innerHTML = renderSection(cashSection);
-    document.getElementById('sa-rtab-new').innerHTML = renderSection(newStocks);
-    document.getElementById('sa-rtab-summary').innerHTML = renderSection(summary || text.slice(0, 800));
-
-    document.getElementById('sa-result-time').textContent = 'آخر تحليل: ' + new Date().toLocaleString('ar-SA');
-    document.getElementById('sa-last-update').textContent = 'آخر تحديث: ' + new Date().toLocaleDateString('ar-SA');
-
-  } catch(e) {
-    ['warnings','strong','cash','new','summary'].forEach(id => {
-      const el = document.getElementById('sa-rtab-' + id);
-      if (el) el.innerHTML = '<div style="color:var(--red);padding:12px">خطأ في الاتصال: ' + e.message + '</div>';
-    });
-  }
-
-  btn.disabled = false;
-  btn.textContent = '🤖 تحديث التحليل';
-}
-</script>
 
 </div><!-- end tab-sa-intel -->
 
@@ -12326,5 +12051,282 @@ function switchTab(tabId, btn) {
 
   </div>
 </div>
+
+<script>
+// SA Intel — state
+window.saData = {
+  excelText: '',
+  shortIdeas: '',
+  updownMine: '',
+  updownMarket: '',
+  pqp: '',
+  topRated: '',
+  exclusive: '',
+  quantScreen: '',
+  alphaPicks: '',
+  cash: 0,
+  currency: 'AED'
+};
+
+function saMarkFilled(textareaId, dotId, statusId) {
+  const val = document.getElementById(textareaId).value.trim();
+  if (dotId) {
+    const dot = document.getElementById(dotId);
+    if (dot) dot.className = val.length > 20 ? 'sa-check-dot filled' : 'sa-check-dot';
+  }
+  const status = document.getElementById(statusId);
+  if (status) {
+    if (val.length > 20) {
+      status.textContent = '✓ تم الإدخال (' + val.split('\n').length + ' سطر)';
+      status.className = 'sa-status ok';
+    } else {
+      status.textContent = '—';
+      status.className = 'sa-status empty';
+    }
+  }
+  saUpdateProgress();
+}
+
+function saUpdateProgress() {
+  const checks = [
+    document.getElementById('sa-excel-input')?.files?.length > 0 || window.saData.excelText.length > 0,
+    document.getElementById('sa-short-ideas')?.value?.trim().length > 20,
+    document.getElementById('sa-updown-mine')?.value?.trim().length > 20,
+    document.getElementById('sa-updown-market')?.value?.trim().length > 20,
+    document.getElementById('sa-pqp')?.value?.trim().length > 20,
+    document.getElementById('sa-toprated')?.value?.trim().length > 20,
+    document.getElementById('sa-exclusive')?.value?.trim().length > 20,
+    document.getElementById('sa-quant-screen')?.value?.trim().length > 20,
+    document.getElementById('sa-alpha-picks')?.value?.trim().length > 20,
+    window.saData.cash > 0
+  ];
+  const filled = checks.filter(Boolean).length;
+  const pct = Math.round(filled / checks.length * 100);
+  document.getElementById('sa-progress-fill').style.width = pct + '%';
+  document.getElementById('sa-progress-pct').textContent = pct + '%';
+}
+
+function saCurrency(c) {
+  window.saData.currency = c;
+  document.getElementById('sa-btn-aed').style.borderColor = c === 'AED' ? 'var(--accent)' : 'var(--border)';
+  document.getElementById('sa-btn-aed').style.background = c === 'AED' ? 'rgba(0,212,255,0.1)' : 'transparent';
+  document.getElementById('sa-btn-aed').style.color = c === 'AED' ? 'var(--accent)' : 'var(--text2)';
+  document.getElementById('sa-btn-usd').style.borderColor = c === 'USD' ? 'var(--accent)' : 'var(--border)';
+  document.getElementById('sa-btn-usd').style.background = c === 'USD' ? 'rgba(0,212,255,0.1)' : 'transparent';
+  document.getElementById('sa-btn-usd').style.color = c === 'USD' ? 'var(--accent)' : 'var(--text2)';
+  saUpdateCash();
+}
+
+function saUpdateCash() {
+  const raw = parseFloat(document.getElementById('sa-cash-amount').value) || 0;
+  window.saData.cash = raw;
+  const usd = window.saData.currency === 'AED' ? raw / 3.67 : raw;
+  const status = document.getElementById('sa-cash-status');
+  if (raw > 0) {
+    status.textContent = '✓ ' + (window.saData.currency === 'AED' ? raw.toLocaleString() + ' درهم = $' + usd.toLocaleString(undefined,{maximumFractionDigits:0}) : '$' + raw.toLocaleString()) + ' USD';
+    status.className = 'sa-status ok';
+    document.getElementById('chk-cash').className = 'sa-check-dot filled';
+  } else {
+    status.textContent = '—';
+    status.className = 'sa-status empty';
+    document.getElementById('chk-cash').className = 'sa-check-dot';
+  }
+  saUpdateProgress();
+}
+
+function saHandleExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('sa-excel-status');
+  status.textContent = '⏳ جاري قراءة الملف...';
+  status.className = 'sa-status';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      // Store filename as indicator
+      window.saData.excelText = 'FILE:' + file.name + ' SIZE:' + file.size;
+      window.saData.excelFile = e.target.result;
+      status.textContent = '✓ تم رفع: ' + file.name;
+      status.className = 'sa-status ok';
+      document.getElementById('chk-excel').className = 'sa-check-dot filled';
+      saUpdateProgress();
+    } catch(err) {
+      status.textContent = '❌ خطأ في قراءة الملف';
+      status.className = 'sa-status';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function saShowRTab(id, btn) {
+  document.querySelectorAll('.sa-rtab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sa-rtab-content').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sa-rtab-' + id).classList.add('active');
+}
+
+async function saRunAnalysis() {
+  const btn = document.getElementById('sa-analyze-btn');
+  const panel = document.getElementById('sa-result-panel');
+
+  // Collect all data
+  const shortIdeas = document.getElementById('sa-short-ideas').value.trim();
+  const updownMine = document.getElementById('sa-updown-mine').value.trim();
+  const updownMarket = document.getElementById('sa-updown-market').value.trim();
+  const pqp = document.getElementById('sa-pqp').value.trim();
+  const topRated = document.getElementById('sa-toprated').value.trim();
+  const exclusive = document.getElementById('sa-exclusive').value.trim();
+  const quantScreen = document.getElementById('sa-quant-screen').value.trim();
+  const alphaPicks = document.getElementById('sa-alpha-picks').value.trim();
+  const stockDetail = document.getElementById('sa-stock-detail').value.trim();
+  const cash = parseFloat(document.getElementById('sa-cash-amount').value) || 0;
+  const currency = window.saData.currency;
+  const usd = currency === 'AED' ? cash / 3.67 : cash;
+
+  if (!shortIdeas && !pqp && !topRated) {
+    alert('أدخل على الأقل: Short Ideas + PRO Quant Portfolio + Top Rated Stocks');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Claude يحلل البيانات...';
+  panel.style.display = 'block';
+
+  // Show loading in all tabs
+  ['warnings','strong','cash','new','summary'].forEach(id => {
+    const el = document.getElementById('sa-rtab-' + id);
+    if (el) el.innerHTML = '<div class="sa-loading"><div class="sa-spinner"></div><br>جاري التحليل...</div>';
+  });
+
+  const prompt = `أنت مستشار استثمار متخصص لمستثمر عربي في أبوظبي، الإمارات.
+محفظته: ~46 سهم، قيمة تقريبية $644,000، لا ضريبة أرباح رأسمالية.
+${cash > 0 ? `كاش متاح للاستثمار: $${Math.round(usd).toLocaleString()} USD (${cash.toLocaleString()} ${currency})` : ''}
+
+أسهمه الرئيسية: NVDA (9.7% وزن، ربح +92%)، MU (12.7% وزن، ربح +459%)، SEZL (7.5%، ربح +61%)، AMZN (5.8%، ربح +20%)، DUOL (3.8%، خسارة -60%)، ONTO (4.4%، ربح +90%)، CRDO (2.2%، ربح +100%)، CLS (1.5%، ربح +794%)، PLTR (1.8%، ربح +451%)، MSTR (1.5%، خسارة -62%)، ADBE (0.3%، خسارة -61%)، SERV (0.8%، خسارة -51%)
+
+${shortIdeas ? `=== SHORT IDEAS (أسهم SA محللون يحذرون منها) ===
+${shortIdeas.slice(0,3000)}
+
+` : ''}
+${updownMine ? `=== UPGRADES & DOWNGRADES — أسهمه ===
+${updownMine.slice(0,2000)}
+
+` : ''}
+${updownMarket ? `=== UPGRADES — السوق العام (فرص جديدة) ===
+${updownMarket.slice(0,1500)}
+
+` : ''}
+${pqp ? `=== PRO QUANT PORTFOLIO (أفضل 30 سهم SA) ===
+${pqp.slice(0,2000)}
+
+` : ''}
+${topRated ? `=== TOP RATED STOCKS (تأكيد ثلاثي) ===
+${topRated.slice(0,2000)}
+
+` : ''}
+${exclusive ? `=== EXCLUSIVE COVERAGE (فرص مخفية) ===
+${exclusive.slice(0,1500)}
+
+` : ''}
+${quantScreen ? `=== STOCKS BY QUANT (أعلى تقييم) ===
+${quantScreen.slice(0,1500)}
+
+` : ''}
+${alphaPicks ? `=== ALPHA PICKS ===
+${alphaPicks.slice(0,1000)}
+
+` : ''}
+${stockDetail ? `=== تحليل سهم محدد ===
+${stockDetail.slice(0,2000)}
+
+` : ''}
+
+بناءً على كل هذه البيانات، قدّم تحليلاً شاملاً باللغة العربية منظماً في 5 أقسام بالضبط:
+
+[WARNINGS]
+قائمة بأسهمه التي تظهر في Short Ideas أو خُفِّضت تقييماتها. لكل سهم: الرمز، السبب، وإجراء محدد.
+[/WARNINGS]
+
+[STRONG]
+أسهمه التي SA تدعمها بقوة (في PRO Quant أو Top Rated أو رُفِّعت). لكل سهم: الرمز، مصدر الدعم، والموقف المقترح.
+[/STRONG]
+
+[CASH]
+${cash > 0 ? `كيف يوزع $${Math.round(usd).toLocaleString()} على أفضل الفرص. أرقام محددة لكل سهم.` : 'لا يوجد كاش محدد — اذكر أفضل 3 فرص للاستثمار المستقبلي.'}
+[/CASH]
+
+[NEW]
+أسهم جديدة لا يمتلكها من PRO Quant + Top Rated + Market Upgrades + Exclusive Coverage. مرتبة حسب الأولوية.
+[/NEW]
+
+[SUMMARY]
+ملخص تنفيذي في 4-5 جمل فقط: أهم قرار هذا الأسبوع.
+[/SUMMARY]
+
+الأسلوب: مباشر، واضح، عملي. لا تشرح كثيراً.
+اختم بـ: "⚠️ هذا تحليل معلوماتي وليس نصيحة مالية مرخصة"`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || 'لم يتمكن النظام من التحليل';
+
+    // Parse sections
+    function extractSection(tag, txt) {
+      const re = new RegExp('\[' + tag + '\]([\s\S]*?)\[\/' + tag + '\]', 'i');
+      const m = txt.match(re);
+      return m ? m[1].trim() : '';
+    }
+
+    function renderSection(content, type) {
+      if (!content) return '<div style="color:var(--text3);font-size:12px;padding:12px">لا توجد بيانات كافية لهذا القسم</div>';
+      // Convert markdown-like to HTML
+      let html = content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/^#{1,3}\s+(.+)$/gm, '<div style="font-size:13px;font-weight:700;color:var(--accent);margin:12px 0 6px">$1</div>')
+        .replace(/^[-•]\s+(.+)$/gm, '<div style="padding:3px 0 3px 12px;border-right:2px solid var(--border);margin-bottom:4px">$1</div>')
+        .replace(/
+
+/g, '<br>')
+        .replace(/
+/g, '<br>');
+      return '<div style="font-size:13px;line-height:2;color:var(--text)">' + html + '</div>';
+    }
+
+    const warnings = extractSection('WARNINGS', text);
+    const strong = extractSection('STRONG', text);
+    const cashSection = extractSection('CASH', text);
+    const newStocks = extractSection('NEW', text);
+    const summary = extractSection('SUMMARY', text);
+
+    document.getElementById('sa-rtab-warnings').innerHTML = renderSection(warnings, 'warn') || renderSection(text, 'default');
+    document.getElementById('sa-rtab-strong').innerHTML = renderSection(strong);
+    document.getElementById('sa-rtab-cash').innerHTML = renderSection(cashSection);
+    document.getElementById('sa-rtab-new').innerHTML = renderSection(newStocks);
+    document.getElementById('sa-rtab-summary').innerHTML = renderSection(summary || text.slice(0, 800));
+
+    document.getElementById('sa-result-time').textContent = 'آخر تحليل: ' + new Date().toLocaleString('ar-SA');
+    document.getElementById('sa-last-update').textContent = 'آخر تحديث: ' + new Date().toLocaleDateString('ar-SA');
+
+  } catch(e) {
+    ['warnings','strong','cash','new','summary'].forEach(id => {
+      const el = document.getElementById('sa-rtab-' + id);
+      if (el) el.innerHTML = '<div style="color:var(--red);padding:12px">خطأ في الاتصال: ' + e.message + '</div>';
+    });
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🤖 تحديث التحليل';
+}
+</script>
 </body>
 </html>
