@@ -112,10 +112,11 @@ module.exports = async (req, res) => {
     }
   }
 
-  // ── loadResult: return latest result for today ───────────────────
+  // ── loadResult: return a result (optionally a specific date/version) ──
   if (req.body && req.body.loadResult && GITHUB_TOKEN) {
     try {
-      const date = new Date().toISOString().slice(0,10);
+      const date = (req.body.date && /^\d{4}-\d{2}-\d{2}$/.test(req.body.date))
+        ? req.body.date : new Date().toISOString().slice(0,10);
       const fp = `data/sa-analysis-${date}.json`;
       const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
         headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
@@ -125,10 +126,35 @@ module.exports = async (req, res) => {
       const data = JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
       const runs = Array.isArray(data.runs) ? data.runs : [];
       if (!runs.length) return res.status(200).json({ result: null });
-      const last = runs[runs.length-1];
-      return res.status(200).json({ result: last.result, savedAt: last.savedAt, version: last.version, count: runs.length });
+      let run = runs[runs.length-1];
+      if (req.body.version != null) {
+        const found = runs.find(r => r.version === req.body.version);
+        if (found) run = found;
+      }
+      return res.status(200).json({
+        result: run.result, savedAt: run.savedAt, version: run.version,
+        count: runs.length, versions: runs.map(r => ({ version: r.version, savedAt: r.savedAt })), date
+      });
     } catch(e) {
       return res.status(200).json({ result: null, error: e.message });
+    }
+  }
+
+  // ── listAnalyses: return dates that have a saved analysis ────────
+  if (req.body && req.body.listAnalyses && GITHUB_TOKEN) {
+    try {
+      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, {
+        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
+      });
+      if (!ex.ok) return res.status(200).json({ dates: [] });
+      const files = await ex.json();
+      const dates = (Array.isArray(files) ? files : [])
+        .map(f => (f.name || '').match(/^sa-analysis-(\d{4}-\d{2}-\d{2})\.json$/))
+        .filter(Boolean).map(m => m[1])
+        .sort().reverse();
+      return res.status(200).json({ dates });
+    } catch(e) {
+      return res.status(200).json({ dates: [], error: e.message });
     }
   }
 
