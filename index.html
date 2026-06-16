@@ -12156,6 +12156,28 @@ function saShowRTab(id, btn) {
   if (el) el.classList.add('active');
 }
 
+async function saLoadSavedResult() {
+  try {
+    const r = await fetch('/api/sa-analyze', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ loadResult: true })
+    });
+    const data = await r.json();
+    if (!data.result) return;
+    let parsed = null;
+    try {
+      let clean = data.result.replace(/```json\s*/gi,'').replace(/```\s*/g,'');
+      const a = clean.indexOf('{'), b = clean.lastIndexOf('}');
+      if (a!==-1 && b!==-1 && b>a) clean = clean.slice(a,b+1);
+      parsed = JSON.parse(clean.trim());
+    } catch(e) { return; }
+    const panel = document.getElementById('sa-result-panel');
+    if (panel) panel.style.display = 'block';
+    saRenderCards(parsed);
+    const tEl = document.getElementById('sa-result-time');
+    if (tEl && data.savedAt) tEl.textContent = 'آخر تحليل: ' + new Date(data.savedAt).toLocaleString('ar') + ' · نسخة ' + (data.version||1);
+  } catch(e) {}
+}
 async function saLoadSavedInputs() {
   try {
     const r = await fetch('/api/sa-analyze', {
@@ -12196,7 +12218,7 @@ async function saLoadSavedInputs() {
     const _origShowTab = showTab;
     showTab = function(name, el) {
       _origShowTab(name, el);
-      if (name === 'sa-intel') saLoadSavedInputs();
+      if (name === 'sa-intel') { saLoadSavedInputs(); saLoadSavedResult(); }
     };
     showTab.__saWrapped = true;
   }
@@ -12585,6 +12607,13 @@ ${dataBlock}
     }
 
     saRenderCards(parsed);
+
+    try {
+      fetch('/api/sa-analyze', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ saveResult: true, result: text })
+      });
+    } catch(e) {}
 
     // Update timestamp
     const timeEl = document.getElementById('sa-result-time');

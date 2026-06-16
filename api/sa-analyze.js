@@ -81,6 +81,57 @@ module.exports = async (req, res) => {
     }
   }
 
+  // ── saveResult: store analysis result, keep last 3 per day ───────
+  if (req.body && req.body.saveResult && req.body.result && GITHUB_TOKEN) {
+    try {
+      const date = new Date().toISOString().slice(0,10);
+      const fp = `data/sa-analysis-${date}.json`;
+      let runs = [], sha = null;
+      try {
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
+          headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
+        });
+        if (ex.ok) {
+          const f = await ex.json(); sha = f.sha;
+          const prev = JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
+          runs = Array.isArray(prev.runs) ? prev.runs : [];
+        }
+      } catch {}
+      const version = (runs.length ? (runs[runs.length-1].version || runs.length) : 0) + 1;
+      runs.push({ version, savedAt: new Date().toISOString(), result: req.body.result });
+      if (runs.length > 3) runs = runs.slice(runs.length - 3);
+      const body = JSON.stringify({ date, runs }, null, 2);
+      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
+        body: JSON.stringify({ message: `SA analysis ${date} v${version}`, content: Buffer.from(body).toString('base64'), ...(sha?{sha}:{}) })
+      });
+      return res.status(200).json({ saved: sr.ok, version });
+    } catch(e) {
+      return res.status(200).json({ saved: false, error: e.message });
+    }
+  }
+
+  // ── loadResult: return latest result for today ───────────────────
+  if (req.body && req.body.loadResult && GITHUB_TOKEN) {
+    try {
+      const date = new Date().toISOString().slice(0,10);
+      const fp = `data/sa-analysis-${date}.json`;
+      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
+        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
+      });
+      if (!ex.ok) return res.status(200).json({ result: null });
+      const f = await ex.json();
+      const data = JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
+      const runs = Array.isArray(data.runs) ? data.runs : [];
+      if (!runs.length) return res.status(200).json({ result: null });
+      const last = runs[runs.length-1];
+      return res.status(200).json({ result: last.result, savedAt: last.savedAt, version: last.version, count: runs.length });
+    } catch(e) {
+      return res.status(200).json({ result: null, error: e.message });
+    }
+  }
+
   // ── Analysis: build prompt + call Claude (NO GitHub save here) ────────────
   const finalPrompt = inputs ? buildPrompt(inputs) : prompt;
   if (!finalPrompt) return res.status(400).json({ error: 'inputs or prompt required' });
