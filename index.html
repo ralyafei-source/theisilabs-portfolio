@@ -12529,13 +12529,28 @@ ${inputs.stockDetail ? '=== تحليل سهم محدد ===\n' + inputs.stockDeta
     // Parse JSON from response
     let parsed = null;
     try {
-      const clean = text.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+      // Try multiple extraction methods
+      let clean = text;
+      // Remove markdown code fences
+      clean = clean.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+      // Find first { and last }
+      const firstBrace = clean.indexOf('{');
+      const lastBrace = clean.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        clean = clean.slice(firstBrace, lastBrace + 1);
+      }
+      clean = clean.trim();
       parsed = JSON.parse(clean);
     } catch(e) {
-      // Fallback: show raw in summary
+      // Fallback: show raw text in exec tab
       parsed = {
-        executive_summary: { summary_text: text.slice(0,500), weekly_decision: '— تعذّر تحليل البيانات بشكل منظم' },
-        warnings: [], strong_positions: [], cash_decisions: { allocations: [] },
+        executive_summary: { 
+          portfolio_value: '$551K', weekly_performance: '—',
+          biggest_risk_symbol: '—', best_opportunity: '—',
+          summary_text: text.slice(0, 1000),
+          weekly_decision: '— تعذّر تحليل JSON — Claude أجاب بنص عادي'
+        },
+        warnings: [], strong_positions: [], cash_decisions: { total_available: '—', allocations: [] },
         new_opportunities: [], conflicts: []
       };
     }
