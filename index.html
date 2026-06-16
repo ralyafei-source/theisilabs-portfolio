@@ -12486,7 +12486,13 @@ ${dataBlock}
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ inputs })
     });
-    const data = await res.json();
+    const raw = await res.text();
+    let data;
+    if (!res.ok || raw.trim()[0] !== '{') {
+      data = { result: '', _serverError: raw.slice(0, 200) };
+    } else {
+      data = JSON.parse(raw);
+    }
 
     // Show token info
     if (tokenDiv && data.usage) {
