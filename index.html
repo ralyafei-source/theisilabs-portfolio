@@ -2893,6 +2893,7 @@ WOLF remains at critical lows<br><br>
 </div>
 
 <!-- ANALYZE BUTTON -->
+<div id="sa-save-status" style="font-size:11px;color:var(--text3);margin-bottom:8px;direction:rtl;text-align:center"></div>
 <button class="sa-analyze-btn" id="sa-analyze-btn" onclick="saRunAnalysis()">
   🤖 حلّل وأعطني قرار الأسبوع
 </button>
@@ -2904,18 +2905,22 @@ WOLF remains at critical lows<br><br>
       <div style="font-size:13px;font-weight:700;color:var(--accent)">تحليل Seeking Alpha PRO</div>
       <div style="font-size:10px;color:var(--text3)" id="sa-result-time"></div>
     </div>
+    <div id="sa-confirm-table" style="display:none;margin-bottom:16px;background:var(--bg2);border-radius:10px;padding:14px;overflow-x:auto"></div>
+    <div id="sa-token-info" style="display:none;font-size:11px;color:var(--text2);background:var(--bg3);border-radius:6px;padding:6px 12px;margin-bottom:12px;gap:10px;flex-wrap:wrap;direction:rtl;justify-content:center"></div>
     <div class="sa-result-tabs">
-      <button class="sa-rtab active" onclick="saShowRTab('warnings',this)">🔴 تحذيرات</button>
+      <button class="sa-rtab active" onclick="saShowRTab('exec',this)">📊 الملخص التنفيذي</button>
+      <button class="sa-rtab" onclick="saShowRTab('warnings',this)">🔴 تحذيرات</button>
       <button class="sa-rtab" onclick="saShowRTab('strong',this)">🟢 أسهمك القوية</button>
       <button class="sa-rtab" onclick="saShowRTab('cash',this)">💰 قرار الكاش</button>
       <button class="sa-rtab" onclick="saShowRTab('new',this)">🆕 فرص جديدة</button>
-      <button class="sa-rtab" onclick="saShowRTab('summary',this)">📋 الخلاصة</button>
+      <button class="sa-rtab" onclick="saShowRTab('conflicts',this)">⚡ تعارضات</button>
     </div>
-    <div id="sa-rtab-warnings" class="sa-rtab-content active" id="sa-rtab-warnings"></div>
+    <div id="sa-rtab-exec" class="sa-rtab-content active"></div>
+    <div id="sa-rtab-warnings" class="sa-rtab-content"></div>
     <div id="sa-rtab-strong" class="sa-rtab-content"></div>
     <div id="sa-rtab-cash" class="sa-rtab-content"></div>
     <div id="sa-rtab-new" class="sa-rtab-content"></div>
-    <div id="sa-rtab-summary" class="sa-rtab-content"></div>
+    <div id="sa-rtab-conflicts" class="sa-rtab-content"></div>
   </div>
 </div>
 
@@ -12053,35 +12058,30 @@ function switchTab(tabId, btn) {
 </div>
 
 <script>
+<script>
+
 // SA Intel — state
 window.saData = {
-  excelText: '',
-  shortIdeas: '',
-  updownMine: '',
-  updownMarket: '',
-  pqp: '',
-  topRated: '',
-  exclusive: '',
-  quantScreen: '',
-  alphaPicks: '',
-  cash: 0,
-  currency: 'AED'
+  excelText: '', shortIdeas: '', updownMine: '', updownMarket: '',
+  pqp: '', topRated: '', exclusive: '', quantScreen: '',
+  alphaPicks: '', stockDetail: '', cash: 0, currency: 'AED'
 };
 
-function saMarkFilled(textareaId, dotId, statusId) {
-  const val = document.getElementById(textareaId).value.trim();
+function saMarkFilled(id, dotId, statusId) {
+  const val = document.getElementById(id)?.value?.trim() || '';
   if (dotId) {
     const dot = document.getElementById(dotId);
     if (dot) dot.className = val.length > 20 ? 'sa-check-dot filled' : 'sa-check-dot';
   }
-  const status = document.getElementById(statusId);
-  if (status) {
+  const st = document.getElementById(statusId);
+  if (st) {
     if (val.length > 20) {
-      status.textContent = '✓ تم الإدخال (' + val.split('\n').length + ' سطر)';
-      status.className = 'sa-status ok';
+      const lines = val.split('\n').filter(l => l.trim()).length;
+      st.textContent = '✓ ' + lines + ' سطر مُدخل';
+      st.className = 'sa-status ok';
     } else {
-      status.textContent = '—';
-      status.className = 'sa-status empty';
+      st.textContent = '—';
+      st.className = 'sa-status empty';
     }
   }
   saUpdateProgress();
@@ -12089,47 +12089,46 @@ function saMarkFilled(textareaId, dotId, statusId) {
 
 function saUpdateProgress() {
   const checks = [
-    document.getElementById('sa-excel-input')?.files?.length > 0 || window.saData.excelText.length > 0,
-    document.getElementById('sa-short-ideas')?.value?.trim().length > 20,
-    document.getElementById('sa-updown-mine')?.value?.trim().length > 20,
-    document.getElementById('sa-updown-market')?.value?.trim().length > 20,
-    document.getElementById('sa-pqp')?.value?.trim().length > 20,
-    document.getElementById('sa-toprated')?.value?.trim().length > 20,
-    document.getElementById('sa-exclusive')?.value?.trim().length > 20,
-    document.getElementById('sa-quant-screen')?.value?.trim().length > 20,
-    document.getElementById('sa-alpha-picks')?.value?.trim().length > 20,
-    window.saData.cash > 0
+    (document.getElementById('sa-excel-input')?.files?.length > 0 || window.saData.excelText.length > 0),
+    (document.getElementById('sa-short-ideas')?.value?.trim().length > 20),
+    (document.getElementById('sa-updown-mine')?.value?.trim().length > 20),
+    (document.getElementById('sa-updown-market')?.value?.trim().length > 20),
+    (document.getElementById('sa-pqp')?.value?.trim().length > 20),
+    (document.getElementById('sa-toprated')?.value?.trim().length > 20),
+    (document.getElementById('sa-exclusive')?.value?.trim().length > 20),
+    (document.getElementById('sa-quant-screen')?.value?.trim().length > 20),
+    (document.getElementById('sa-alpha-picks')?.value?.trim().length > 20),
+    (window.saData.cash > 0)
   ];
   const filled = checks.filter(Boolean).length;
   const pct = Math.round(filled / checks.length * 100);
-  document.getElementById('sa-progress-fill').style.width = pct + '%';
-  document.getElementById('sa-progress-pct').textContent = pct + '%';
+  const bar = document.getElementById('sa-progress-fill');
+  const pctEl = document.getElementById('sa-progress-pct');
+  if (bar) bar.style.width = pct + '%';
+  if (pctEl) pctEl.textContent = pct + '%';
 }
 
 function saCurrency(c) {
   window.saData.currency = c;
-  document.getElementById('sa-btn-aed').style.borderColor = c === 'AED' ? 'var(--accent)' : 'var(--border)';
-  document.getElementById('sa-btn-aed').style.background = c === 'AED' ? 'rgba(0,212,255,0.1)' : 'transparent';
-  document.getElementById('sa-btn-aed').style.color = c === 'AED' ? 'var(--accent)' : 'var(--text2)';
-  document.getElementById('sa-btn-usd').style.borderColor = c === 'USD' ? 'var(--accent)' : 'var(--border)';
-  document.getElementById('sa-btn-usd').style.background = c === 'USD' ? 'rgba(0,212,255,0.1)' : 'transparent';
-  document.getElementById('sa-btn-usd').style.color = c === 'USD' ? 'var(--accent)' : 'var(--text2)';
+  const aed = document.getElementById('sa-btn-aed');
+  const usd = document.getElementById('sa-btn-usd');
+  if (aed) { aed.style.borderColor = c==='AED'?'var(--accent)':'var(--border)'; aed.style.background = c==='AED'?'rgba(0,212,255,0.1)':'transparent'; aed.style.color = c==='AED'?'var(--accent)':'var(--text2)'; }
+  if (usd) { usd.style.borderColor = c==='USD'?'var(--accent)':'var(--border)'; usd.style.background = c==='USD'?'rgba(0,212,255,0.1)':'transparent'; usd.style.color = c==='USD'?'var(--accent)':'var(--text2)'; }
   saUpdateCash();
 }
 
 function saUpdateCash() {
-  const raw = parseFloat(document.getElementById('sa-cash-amount').value) || 0;
+  const raw = parseFloat(document.getElementById('sa-cash-amount')?.value) || 0;
   window.saData.cash = raw;
   const usd = window.saData.currency === 'AED' ? raw / 3.67 : raw;
-  const status = document.getElementById('sa-cash-status');
+  const st = document.getElementById('sa-cash-status');
+  const dot = document.getElementById('chk-cash');
   if (raw > 0) {
-    status.textContent = '✓ ' + (window.saData.currency === 'AED' ? raw.toLocaleString() + ' درهم = $' + usd.toLocaleString(undefined,{maximumFractionDigits:0}) : '$' + raw.toLocaleString()) + ' USD';
-    status.className = 'sa-status ok';
-    document.getElementById('chk-cash').className = 'sa-check-dot filled';
+    if (st) { st.textContent = '✓ ' + raw.toLocaleString() + ' ' + window.saData.currency + ' = $' + Math.round(usd).toLocaleString() + ' USD'; st.className = 'sa-status ok'; }
+    if (dot) dot.className = 'sa-check-dot filled';
   } else {
-    status.textContent = '—';
-    status.className = 'sa-status empty';
-    document.getElementById('chk-cash').className = 'sa-check-dot';
+    if (st) { st.textContent = '—'; st.className = 'sa-status empty'; }
+    if (dot) dot.className = 'sa-check-dot';
   }
   saUpdateProgress();
 }
@@ -12137,24 +12136,16 @@ function saUpdateCash() {
 function saHandleExcel(input) {
   const file = input.files[0];
   if (!file) return;
-  const status = document.getElementById('sa-excel-status');
-  status.textContent = '⏳ جاري قراءة الملف...';
-  status.className = 'sa-status';
-
+  const st = document.getElementById('sa-excel-status');
+  const dot = document.getElementById('chk-excel');
+  if (st) { st.textContent = '⏳ جاري قراءة الملف...'; st.className = 'sa-status'; }
   const reader = new FileReader();
   reader.onload = function(e) {
-    try {
-      // Store filename as indicator
-      window.saData.excelText = 'FILE:' + file.name + ' SIZE:' + file.size;
-      window.saData.excelFile = e.target.result;
-      status.textContent = '✓ تم رفع: ' + file.name;
-      status.className = 'sa-status ok';
-      document.getElementById('chk-excel').className = 'sa-check-dot filled';
-      saUpdateProgress();
-    } catch(err) {
-      status.textContent = '❌ خطأ في قراءة الملف';
-      status.className = 'sa-status';
-    }
+    window.saData.excelText = 'FILE:' + file.name + ' SIZE:' + file.size;
+    window.saData.excelFile = e.target.result;
+    if (st) { st.textContent = '✓ ' + file.name; st.className = 'sa-status ok'; }
+    if (dot) dot.className = 'sa-check-dot filled';
+    saUpdateProgress();
   };
   reader.readAsDataURL(file);
 }
@@ -12163,166 +12154,692 @@ function saShowRTab(id, btn) {
   document.querySelectorAll('.sa-rtab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.sa-rtab-content').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('sa-rtab-' + id).classList.add('active');
+  const el = document.getElementById('sa-rtab-' + id);
+  if (el) el.classList.add('active');
 }
 
+// ── Collect all inputs into structured object ──
+function saCollectInputs() {
+  const g = id => document.getElementById(id)?.value?.trim() || '';
+  return {
+    excel: window.saData.excelText || 'غير مُدخل',
+    shortIdeas: g('sa-short-ideas'),
+    updownMine: g('sa-updown-mine'),
+    updownMarket: g('sa-updown-market'),
+    pqp: g('sa-pqp'),
+    topRated: g('sa-toprated'),
+    exclusive: g('sa-exclusive'),
+    quantScreen: g('sa-quant-screen'),
+    alphaPicks: g('sa-alpha-picks'),
+    stockDetail: g('sa-stock-detail'),
+    cash: window.saData.cash,
+    currency: window.saData.currency,
+    cashUSD: window.saData.currency === 'AED' ? Math.round(window.saData.cash / 3.67) : window.saData.cash
+  };
+}
+
+// ── Build input confirmation table ──
+function saBuildConfirmTable(inputs) {
+  const rows = [
+    ['ملف Excel (المحفظة)', inputs.excel !== 'غير مُدخل', inputs.excel !== 'غير مُدخل' ? inputs.excel.replace('FILE:','').split(' ')[0] : '—'],
+    ['Short Ideas', inputs.shortIdeas.length > 20, inputs.shortIdeas.length > 20 ? countLines(inputs.shortIdeas) + ' سطر — ' + extractSymbols(inputs.shortIdeas, 5) : '—'],
+    ['Upgrades — أسهمك', inputs.updownMine.length > 20, inputs.updownMine.length > 20 ? countLines(inputs.updownMine) + ' سطر' : '—'],
+    ['Upgrades — السوق العام', inputs.updownMarket.length > 20, inputs.updownMarket.length > 20 ? countLines(inputs.updownMarket) + ' سطر' : '—'],
+    ['PRO Quant Portfolio', inputs.pqp.length > 20, inputs.pqp.length > 20 ? countLines(inputs.pqp) + ' سهم' : '—'],
+    ['Top Rated Stocks', inputs.topRated.length > 20, inputs.topRated.length > 20 ? countLines(inputs.topRated) + ' سهم' : '—'],
+    ['Exclusive Coverage', inputs.exclusive.length > 20, inputs.exclusive.length > 20 ? countLines(inputs.exclusive) + ' سهم' : '—'],
+    ['Stocks by Quant', inputs.quantScreen.length > 20, inputs.quantScreen.length > 20 ? countLines(inputs.quantScreen) + ' سهم' : '—'],
+    ['Alpha Picks', inputs.alphaPicks.length > 20, inputs.alphaPicks.length > 20 ? countLines(inputs.alphaPicks) + ' سهم' : '—'],
+    ['الكاش المتاح', inputs.cash > 0, inputs.cash > 0 ? inputs.cash.toLocaleString() + ' ' + inputs.currency + ' = $' + inputs.cashUSD.toLocaleString() : '—'],
+  ];
+  const filled = rows.filter(r => r[1]).length;
+  let html = '<div style="margin-bottom:14px;font-size:12px;color:var(--text2)">';
+  html += 'اكتمال البيانات: <strong style="color:' + (filled >= 6 ? 'var(--accent2)' : 'var(--gold)') + '">' + filled + '/10</strong> مصادر مُدخلة';
+  html += '</div>';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:12px;direction:rtl">';
+  html += '<tr style="background:var(--bg3)"><th style="padding:7px 10px;text-align:right;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border)">المصدر</th><th style="padding:7px 10px;text-align:center;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border)">الحالة</th><th style="padding:7px 10px;text-align:right;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border)">ما سيقرأه Claude</th></tr>';
+  rows.forEach(([label, ok, detail]) => {
+    const icon = ok ? '<span style="color:var(--accent2)">✓ مُدخل</span>' : '<span style="color:var(--text3)">— غير مُدخل</span>';
+    html += '<tr style="border-bottom:1px solid var(--border)">';
+    html += '<td style="padding:6px 10px;color:var(--text)">' + label + '</td>';
+    html += '<td style="padding:6px 10px;text-align:center">' + icon + '</td>';
+    html += '<td style="padding:6px 10px;color:var(--text2)">' + detail + '</td>';
+    html += '</tr>';
+  });
+  html += '</table>';
+  return html;
+}
+
+function countLines(text) { return text.split('\n').filter(l => l.trim().length > 2).length; }
+function extractSymbols(text, n) {
+  const matches = text.match(/\b[A-Z]{2,5}\b/g) || [];
+  const unique = [...new Set(matches)].slice(0, n);
+  return unique.join('·') || '—';
+}
+
+// ── Render structured JSON result into cards ──
+function saRenderCards(parsed) {
+  // Executive Summary
+  const execEl = document.getElementById('sa-rtab-exec');
+  if (execEl && parsed.executive_summary) {
+    const es = parsed.executive_summary;
+    execEl.innerHTML = '<div style="direction:rtl">' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px">' +
+      saMetricCard('قيمة المحفظة', es.portfolio_value || '—', '') +
+      saMetricCard('أداء الأسبوع', es.weekly_performance || '—', '') +
+      saMetricCard('أكبر خطر', es.biggest_risk_symbol || '—', '') +
+      saMetricCard('أفضل فرصة', es.best_opportunity || '—', '') +
+      '</div>' +
+      '<div style="background:var(--bg2);border-radius:10px;padding:14px;font-size:13px;line-height:2;color:var(--text)">' +
+      (es.summary_text || '') +
+      '</div>' +
+      '<div style="margin-top:12px;padding:12px 14px;background:rgba(255,10,120,0.08);border-radius:8px;border-right:3px solid var(--rose);font-size:13px;font-weight:700;color:var(--text)">' +
+      '⚡ القرار الأسبوعي: ' + (es.weekly_decision || '—') +
+      '</div></div>';
+  }
+
+  // Warnings
+  const warnEl = document.getElementById('sa-rtab-warnings');
+  if (warnEl && parsed.warnings) {
+    warnEl.innerHTML = '<div style="direction:rtl">' +
+      (parsed.warnings.length === 0 ? '<div style="color:var(--text3);padding:20px;text-align:center">لا تحذيرات هذا الأسبوع</div>' :
+      parsed.warnings.map(w => saStockCard(w, 'danger')).join('')) +
+      '</div>';
+  }
+
+  // Strong positions
+  const strongEl = document.getElementById('sa-rtab-strong');
+  if (strongEl && parsed.strong_positions) {
+    strongEl.innerHTML = '<div style="direction:rtl">' +
+      parsed.strong_positions.map(s => saStockCard(s, 'success')).join('') +
+      '</div>';
+  }
+
+  // Cash decision
+  const cashEl = document.getElementById('sa-rtab-cash');
+  if (cashEl && parsed.cash_decisions) {
+    const cd = parsed.cash_decisions;
+    cashEl.innerHTML = '<div style="direction:rtl">' +
+      '<div style="background:var(--bg2);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px">' +
+      '<span style="color:var(--text2)">إجمالي الكاش: </span><strong style="color:var(--accent)">' + (cd.total_available || '—') + '</strong>' +
+      '</div>' +
+      (cd.allocations || []).map((a, i) => saCashCard(a, i+1)).join('') +
+      '</div>';
+  }
+
+  // New opportunities
+  const newEl = document.getElementById('sa-rtab-new');
+  if (newEl && parsed.new_opportunities) {
+    newEl.innerHTML = '<div style="direction:rtl">' +
+      parsed.new_opportunities.map(o => saStockCard(o, 'info')).join('') +
+      '</div>';
+  }
+
+  // Conflicts
+  const confEl = document.getElementById('sa-rtab-conflicts');
+  if (confEl && parsed.conflicts) {
+    confEl.innerHTML = '<div style="direction:rtl">' +
+      (parsed.conflicts.length === 0 ? '<div style="color:var(--text3);padding:20px;text-align:center">لا إشارات متضاربة</div>' :
+      parsed.conflicts.map(c => saConflictCard(c)).join('')) +
+      '</div>';
+  }
+}
+
+function saMetricCard(label, value, sub) {
+  return '<div style="background:var(--bg3);border-radius:8px;padding:12px;text-align:center">' +
+    '<div style="font-size:11px;color:var(--text3);margin-bottom:4px">' + label + '</div>' +
+    '<div style="font-size:18px;font-weight:700;color:var(--text)">' + value + '</div>' +
+    (sub ? '<div style="font-size:10px;color:var(--text3);margin-top:2px">' + sub + '</div>' : '') +
+    '</div>';
+}
+
+function saStockCard(s, type) {
+  const colors = { danger: 'var(--red)', success: 'var(--accent2)', info: 'var(--accent)', warning: 'var(--gold)' };
+  const bgs = { danger: 'rgba(226,75,74,0.06)', success: 'rgba(0,200,100,0.05)', info: 'rgba(0,212,255,0.05)', warning: 'rgba(255,165,0,0.05)' };
+  const color = colors[type] || 'var(--text)';
+  const bg = bgs[type] || 'var(--bg2)';
+  const badges = (s.badges || []).map(b => '<span style="font-size:10px;background:var(--bg3);color:var(--text2);padding:2px 7px;border-radius:4px;margin-right:4px">' + b + '</span>').join('');
+  const grades = s.grades ? Object.entries(s.grades).map(([k,v]) => {
+    const gc = v && v[0]==='A' ? 'var(--accent2)' : (v && v[0]==='F' ? 'var(--red)' : (v && v[0]==='D' ? 'var(--gold)' : 'var(--text2)'));
+    return '<span style="font-size:10px;font-family:monospace;padding:1px 5px;border-radius:3px;background:var(--bg3);color:'+gc+'">' + k + ': ' + v + '</span>';
+  }).join(' ') : '';
+  return '<div style="background:' + bg + ';border:1px solid var(--border);border-right:3px solid ' + color + ';border-radius:0 10px 10px 0;padding:12px 14px;margin-bottom:10px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+    '<div>' +
+    '<span style="font-size:15px;font-weight:700;font-family:monospace;color:var(--text)">' + (s.symbol || '') + '</span>' +
+    '<span style="margin-right:8px"></span>' + badges +
+    (s.weight ? '<div style="font-size:11px;color:var(--text2);margin-top:3px">وزن: <strong>' + s.weight + '</strong>' + (s.gl ? ' · ' + s.gl : '') + '</div>' : '') +
+    (grades ? '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">' + grades + '</div>' : '') +
+    '</div>' +
+    '<div style="text-align:left;flex-shrink:0">' +
+    '<div style="font-size:13px;font-weight:700;color:' + color + '">' + (s.rating || '') + '</div>' +
+    (s.sources ? '<div style="font-size:10px;color:var(--text3);margin-top:3px">' + s.sources + '</div>' : '') +
+    '</div></div>' +
+    (s.reason ? '<div style="font-size:12px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);line-height:1.7">' + s.reason + '</div>' : '') +
+    (s.action ? '<div style="font-size:12px;font-weight:700;color:var(--text);margin-top:6px;padding:7px 10px;background:var(--bg3);border-radius:6px">' + s.action + '</div>' : '') +
+    '</div>';
+}
+
+function saCashCard(a, rank) {
+  const isNew = a.is_new;
+  return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:12px">' +
+    '<div style="display:flex;align-items:center;gap:12px;flex:1">' +
+    '<div style="font-size:22px;font-weight:700;color:var(--text3);min-width:28px">' + rank + '</div>' +
+    '<div>' +
+    '<div style="display:flex;align-items:center;gap:6px">' +
+    '<span style="font-size:15px;font-weight:700;font-family:monospace;color:var(--text)">' + (a.symbol || '') + '</span>' +
+    (isNew ? '<span style="font-size:10px;background:rgba(0,212,255,0.12);color:var(--accent);padding:1px 6px;border-radius:4px">جديد</span>' : '<span style="font-size:10px;background:var(--bg3);color:var(--text3);padding:1px 6px;border-radius:4px">تمتلكه</span>') +
+    '</div>' +
+    '<div style="font-size:11px;color:var(--text2);margin-top:3px">' + (a.reason || '') + '</div>' +
+    '</div></div>' +
+    '<div style="text-align:left;flex-shrink:0">' +
+    '<div style="font-size:15px;font-weight:700;color:var(--accent)">' + (a.amount_usd || '—') + '</div>' +
+    '<div style="font-size:10px;color:var(--text3)">' + (a.pct_of_cash || '') + ' من الكاش</div>' +
+    '</div></div>';
+}
+
+function saConflictCard(c) {
+  return '<div style="background:rgba(255,165,0,0.06);border:1px solid var(--border);border-right:3px solid var(--gold);border-radius:0 10px 10px 0;padding:12px 14px;margin-bottom:10px">' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+    '<span style="font-size:15px;font-weight:700;font-family:monospace;color:var(--text)">' + (c.symbol || '') + '</span>' +
+    '<span style="font-size:11px;background:rgba(255,165,0,0.15);color:var(--gold);padding:2px 8px;border-radius:4px">⚡ تعارض</span>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">' +
+    '<div style="padding:8px;background:rgba(226,75,74,0.08);border-radius:6px"><div style="color:var(--red);font-weight:700;margin-bottom:3px">يقول بيع</div><div style="color:var(--text2)">' + (c.sell_sources || '') + '</div></div>' +
+    '<div style="padding:8px;background:rgba(0,200,100,0.06);border-radius:6px"><div style="color:var(--accent2);font-weight:700;margin-bottom:3px">يقول اشترِ</div><div style="color:var(--text2)">' + (c.buy_sources || '') + '</div></div>' +
+    '</div>' +
+    '<div style="font-size:12px;color:var(--text);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-weight:600">' + (c.recommendation || '') + '</div>' +
+    '</div>';
+}
+
+// ── Main analysis function ──
 async function saRunAnalysis() {
   const btn = document.getElementById('sa-analyze-btn');
-  const panel = document.getElementById('sa-result-panel');
+  const confirmDiv = document.getElementById('sa-confirm-table');
+  const resultDiv = document.getElementById('sa-result-panel');
+  const tokenDiv = document.getElementById('sa-token-info');
+  const saveStatus = document.getElementById('sa-save-status');
 
-  // Collect all data
-  const shortIdeas = document.getElementById('sa-short-ideas').value.trim();
-  const updownMine = document.getElementById('sa-updown-mine').value.trim();
-  const updownMarket = document.getElementById('sa-updown-market').value.trim();
-  const pqp = document.getElementById('sa-pqp').value.trim();
-  const topRated = document.getElementById('sa-toprated').value.trim();
-  const exclusive = document.getElementById('sa-exclusive').value.trim();
-  const quantScreen = document.getElementById('sa-quant-screen').value.trim();
-  const alphaPicks = document.getElementById('sa-alpha-picks').value.trim();
-  const stockDetail = document.getElementById('sa-stock-detail').value.trim();
-  const cash = parseFloat(document.getElementById('sa-cash-amount').value) || 0;
-  const currency = window.saData.currency;
-  const usd = currency === 'AED' ? cash / 3.67 : cash;
+  const inputs = saCollectInputs();
 
-  if (!shortIdeas && !pqp && !topRated) {
+  // Show confirmation table
+  if (confirmDiv) {
+    confirmDiv.style.display = 'block';
+    confirmDiv.innerHTML = '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;direction:rtl">الخطوة 1 — تأكيد ما سيقرأه Claude</div>' + saBuildConfirmTable(inputs);
+  }
+
+  if (!inputs.shortIdeas && !inputs.pqp && !inputs.topRated) {
     alert('أدخل على الأقل: Short Ideas + PRO Quant Portfolio + Top Rated Stocks');
     return;
   }
 
-  btn.disabled = true;
-  btn.textContent = '⏳ Claude يحلل البيانات...';
-  panel.style.display = 'block';
+  // Update button state
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ الخطوة 2 — حفظ البيانات...'; }
+  if (saveStatus) { saveStatus.textContent = 'جاري الحفظ...'; saveStatus.style.color = 'var(--gold)'; }
 
-  // Show loading in all tabs
-  ['warnings','strong','cash','new','summary'].forEach(id => {
-    const el = document.getElementById('sa-rtab-' + id);
-    if (el) el.innerHTML = '<div class="sa-loading"><div class="sa-spinner"></div><br>جاري التحليل...</div>';
-  });
+  // Show result panel with loading
+  if (resultDiv) {
+    resultDiv.style.display = 'block';
+    ['exec','warnings','strong','cash','new','conflicts'].forEach(id => {
+      const el = document.getElementById('sa-rtab-' + id);
+      if (el) el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text2);direction:rtl"><div style="font-size:20px;margin-bottom:8px">⏳</div>جاري التحليل...</div>';
+    });
+  }
 
-  const prompt = `أنت مستشار استثمار متخصص لمستثمر عربي في أبوظبي، الإمارات.
-محفظته: ~46 سهم، قيمة تقريبية $644,000، لا ضريبة أرباح رأسمالية.
-${cash > 0 ? `كاش متاح للاستثمار: $${Math.round(usd).toLocaleString()} USD (${cash.toLocaleString()} ${currency})` : ''}
+  // Step 1: Save inputs to GitHub
+  try {
+    const saveRes = await fetch('/api/sa-analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inputs, saveOnly: true })
+    });
+    const saveData = await saveRes.json();
+    if (saveData.saved) {
+      if (saveStatus) { saveStatus.textContent = '✓ محفوظ: ' + saveData.saved; saveStatus.style.color = 'var(--accent2)'; }
+    }
+  } catch (e) {
+    if (saveStatus) { saveStatus.textContent = '⚠️ لم يُحفظ — ' + e.message; saveStatus.style.color = 'var(--gold)'; }
+  }
 
-أسهمه الرئيسية: NVDA (9.7% وزن، ربح +92%)، MU (12.7% وزن، ربح +459%)، SEZL (7.5%، ربح +61%)، AMZN (5.8%، ربح +20%)، DUOL (3.8%، خسارة -60%)، ONTO (4.4%، ربح +90%)، CRDO (2.2%، ربح +100%)، CLS (1.5%، ربح +794%)، PLTR (1.8%، ربح +451%)، MSTR (1.5%، خسارة -62%)، ADBE (0.3%، خسارة -61%)، SERV (0.8%، خسارة -51%)
+  if (btn) btn.textContent = '⏳ الخطوة 3 — Claude يحلل...';
 
-${shortIdeas ? `=== SHORT IDEAS (أسهم SA محللون يحذرون منها) ===
-${shortIdeas.slice(0,3000)}
+  // Build the structured prompt
+  const cashUSD = inputs.cashUSD;
+  const prompt = `أنت محلل استثماري متخصص تقدم تقريراً لـ CEO ومجلس إدارة ومدير محفظة ومحلل أول في شركة استثمار في أبوظبي.
 
-` : ''}
-${updownMine ? `=== UPGRADES & DOWNGRADES — أسهمه ===
-${updownMine.slice(0,2000)}
+المحفظة: ~49 سهم · قيمة ~$551,000 · مستثمر إماراتي · لا ضريبة أرباح رأسمالية
+${cashUSD > 0 ? 'الكاش المتاح: $' + cashUSD.toLocaleString() + ' USD (' + inputs.cash.toLocaleString() + ' ' + inputs.currency + ')' : ''}
 
-` : ''}
-${updownMarket ? `=== UPGRADES — السوق العام (فرص جديدة) ===
-${updownMarket.slice(0,1500)}
+أسهمه الرئيسية بالوزن والربح/الخسارة:
+NVDA: وزن 9.7% ربح +161% | MU: وزن 7.9% ربح +529% | AMZN: وزن 6.8% ربح +19%
+DUOL: وزن 4.4% خسارة -49% | OKTA: وزن 3.7% ربح +28% | QQQ: وزن 3.5% ربح +68%
+ONTO: وزن 3.1% ربح +87% | PANW: وزن 2.2% ربح +61% | GOOGL: وزن 3.4% ربح +41%
+CRDO: وزن 2.6% ربح +98% | CLS: وزن 1.4% ربح +796% | PLTR: وزن 2.2% ربح +475%
+MSTR: وزن 1.8% خسارة -61% | ADBE: وزن 0.4% خسارة -61% | SERV: وزن 0.9% خسارة -51%
+ATYR: وزن 1.1% خسارة -80% | MVST: وزن 1.4% خسارة -71% | SEZL: وزن 1.1% ربح +61%
 
-` : ''}
-${pqp ? `=== PRO QUANT PORTFOLIO (أفضل 30 سهم SA) ===
-${pqp.slice(0,2000)}
+${inputs.shortIdeas ? '=== SHORT IDEAS ===\n' + inputs.shortIdeas.slice(0,3000) + '\n\n' : ''}
+${inputs.updownMine ? '=== UPGRADES & DOWNGRADES — أسهمه ===\n' + inputs.updownMine.slice(0,2000) + '\n\n' : ''}
+${inputs.updownMarket ? '=== UPGRADES — السوق العام ===\n' + inputs.updownMarket.slice(0,2000) + '\n\n' : ''}
+${inputs.pqp ? '=== PRO QUANT PORTFOLIO (30 أفضل سهم — العمود الأخير هو العائد وليس الوزن) ===\n' + inputs.pqp.slice(0,2500) + '\n\n' : ''}
+${inputs.topRated ? '=== TOP RATED STOCKS (تأكيد ثلاثي) ===\n' + inputs.topRated.slice(0,2500) + '\n\n' : ''}
+${inputs.exclusive ? '=== EXCLUSIVE COVERAGE ===\n' + inputs.exclusive.slice(0,1500) + '\n\n' : ''}
+${inputs.alphaPicks ? '=== ALPHA PICKS ===\n' + inputs.alphaPicks.slice(0,2000) + '\n\n' : ''}
+${inputs.quantScreen ? '=== STOCKS BY QUANT ===\n' + inputs.quantScreen.slice(0,1500) + '\n\n' : ''}
+${inputs.stockDetail ? '=== تحليل سهم محدد ===\n' + inputs.stockDetail.slice(0,2000) + '\n\n' : ''}
 
-` : ''}
-${topRated ? `=== TOP RATED STOCKS (تأكيد ثلاثي) ===
-${topRated.slice(0,2000)}
+أعد JSON صارم بهذا الهيكل بالضبط — لا نص خارج JSON:
+{
+  "executive_summary": {
+    "portfolio_value": "القيمة التقريبية",
+    "weekly_performance": "الأداء هذا الأسبوع",
+    "biggest_risk_symbol": "أخطر سهم",
+    "best_opportunity": "أفضل فرصة",
+    "summary_text": "3 جمل: أهم خطر، أهم فرصة، الوضع العام",
+    "weekly_decision": "قرار واحد محدد وقابل للتنفيذ هذا الأسبوع"
+  },
+  "warnings": [
+    {
+      "symbol": "NVDA",
+      "rating": "Strong Sell",
+      "badges": ["Short Ideas ×1", "Quant 3.48"],
+      "weight": "9.7%",
+      "gl": "+161%",
+      "grades": {"Quant": "3.48", "Growth": "A+", "Momentum": "B-", "EPS": "B-"},
+      "sources": "Short Ideas — Jeremy Blum",
+      "reason": "جملة واحدة: لماذا تحذير بالضبط مرتبطة بوضعه في محفظتك",
+      "action": "إجراء محدد بالأرقام: بيع كم سهم أو كم دولار"
+    }
+  ],
+  "strong_positions": [
+    {
+      "symbol": "MU",
+      "rating": "Strong Buy",
+      "badges": ["PRO Quant #1", "Alpha Picks", "Quant 4.99"],
+      "weight": "7.9%",
+      "gl": "+529%",
+      "grades": {"Quant": "4.99", "Growth": "A+", "Profit": "A+", "Momentum": "A+"},
+      "sources": "PRO Quant + Alpha Picks",
+      "reason": "لماذا هو قوي بالضبط مرتبطاً بوضعه في محفظتك",
+      "action": "احتفظ / زد / لا تضف — مع سبب"
+    }
+  ],
+  "cash_decisions": {
+    "total_available": "$163,000 (600,000 AED)",
+    "allocations": [
+      {
+        "symbol": "SNDK",
+        "is_new": true,
+        "amount_usd": "$45,000",
+        "pct_of_cash": "27.5%",
+        "reason": "Quant 4.99 · Top Rated #1 · PRO Quant · Alpha Picks — تأكيد 4 مصادر"
+      }
+    ]
+  },
+  "new_opportunities": [
+    {
+      "symbol": "SNDK",
+      "rating": "Strong Buy",
+      "badges": ["Top Rated #1", "PRO Quant", "Alpha Picks"],
+      "grades": {"Quant": "4.99", "Growth": "A+", "Momentum": "A+"},
+      "sources": "3 مصادر SA",
+      "reason": "لماذا هذا السهم تحديداً مناسب لمحفظتك",
+      "action": "شراء — راجع التوزيع في تبويب الكاش"
+    }
+  ],
+  "conflicts": [
+    {
+      "symbol": "MU",
+      "sell_sources": "Short Ideas: Sell — David McMillan",
+      "buy_sources": "PRO Quant 4.99 + Alpha Picks +470%",
+      "recommendation": "الترجيح: Quant 4.99 أقوى من رأي محلل واحد — احتفظ مع مراقبة"
+    }
+  ]
+}
 
-` : ''}
-${exclusive ? `=== EXCLUSIVE COVERAGE (فرص مخفية) ===
-${exclusive.slice(0,1500)}
-
-` : ''}
-${quantScreen ? `=== STOCKS BY QUANT (أعلى تقييم) ===
-${quantScreen.slice(0,1500)}
-
-` : ''}
-${alphaPicks ? `=== ALPHA PICKS ===
-${alphaPicks.slice(0,1000)}
-
-` : ''}
-${stockDetail ? `=== تحليل سهم محدد ===
-${stockDetail.slice(0,2000)}
-
-` : ''}
-
-بناءً على كل هذه البيانات، قدّم تحليلاً شاملاً باللغة العربية منظماً في 5 أقسام بالضبط:
-
-[WARNINGS]
-قائمة بأسهمه التي تظهر في Short Ideas أو خُفِّضت تقييماتها. لكل سهم: الرمز، السبب، وإجراء محدد.
-[/WARNINGS]
-
-[STRONG]
-أسهمه التي SA تدعمها بقوة (في PRO Quant أو Top Rated أو رُفِّعت). لكل سهم: الرمز، مصدر الدعم، والموقف المقترح.
-[/STRONG]
-
-[CASH]
-${cash > 0 ? `كيف يوزع $${Math.round(usd).toLocaleString()} على أفضل الفرص. أرقام محددة لكل سهم.` : 'لا يوجد كاش محدد — اذكر أفضل 3 فرص للاستثمار المستقبلي.'}
-[/CASH]
-
-[NEW]
-أسهم جديدة لا يمتلكها من PRO Quant + Top Rated + Market Upgrades + Exclusive Coverage. مرتبة حسب الأولوية.
-[/NEW]
-
-[SUMMARY]
-ملخص تنفيذي في 4-5 جمل فقط: أهم قرار هذا الأسبوع.
-[/SUMMARY]
-
-الأسلوب: مباشر، واضح، عملي. لا تشرح كثيراً.
-اختم بـ: "⚠️ هذا تحليل معلوماتي وليس نصيحة مالية مرخصة"`;
+القواعد:
+- JSON فقط — لا مقدمة ولا خاتمة نصية
+- كل تحذير يجب أن يكون لسهم تمتلكه
+- كل فرصة كاش يجب أن تكون بمبلغ محدد بالدولار
+- الأسباب جمل عربية قصيرة ومباشرة — لا bullet points
+- الإجراءات محددة وقابلة للتنفيذ`;
 
   try {
     const res = await fetch('/api/sa-analyze', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer theisilabs2026' },
-      body: JSON.stringify({ prompt: prompt })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inputs, prompt })
     });
     const data = await res.json();
-    const text = data.result || 'لم يتمكن النظام من التحليل';
 
-    // Parse sections
-    function extractSection(tag, txt) {
-      // Match [TAG] or ## [TAG] style
-      const openRe = new RegExp('(?:#+\\s*)?\\[' + tag + '\\].*?\\n', 'i');
-      const closeRe = new RegExp('(?:#+\\s*)?\\[\\/' + tag + '\\]', 'i');
-      const start = txt.search(openRe);
-      if (start === -1) return '';
-      const afterOpen = txt.slice(start).replace(openRe, '');
-      const end = afterOpen.search(closeRe);
-      return end > 0 ? afterOpen.slice(0, end).trim() : afterOpen.trim();
+    // Show token info
+    if (tokenDiv && data.usage) {
+      const u = data.usage;
+      tokenDiv.style.display = 'flex';
+      tokenDiv.innerHTML =
+        '<span>⚡ ' + u.total_tokens.toLocaleString() + ' token</span>' +
+        '<span style="color:var(--text3)">|</span>' +
+        '<span>مدخل: ' + u.input_tokens.toLocaleString() + '</span>' +
+        '<span style="color:var(--text3)">|</span>' +
+        '<span>مخرج: ' + u.output_tokens.toLocaleString() + '</span>' +
+        '<span style="color:var(--text3)">|</span>' +
+        '<span style="color:var(--gold)">التكلفة: $' + u.total_cost + '</span>';
     }
 
-    function renderSection(content, type) {
-      if (!content) return '<div style="color:var(--text3);font-size:12px;padding:12px">لا توجد بيانات كافية لهذا القسم</div>';
-      // Convert markdown-like to HTML
-      let html = content
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/^#{1,3}\s+(.+)$/gm, '<div style="font-size:13px;font-weight:700;color:var(--accent);margin:12px 0 6px">$1</div>')
-        .replace(/^[-•]\s+(.+)$/gm, '<div style="padding:3px 0 3px 12px;border-right:2px solid var(--border);margin-bottom:4px">$1</div>')
-        .replace(/\n\n/g, '<br>').replace(/\n/g, '<br>');
-      return '<div style="font-size:13px;line-height:2;color:var(--text)">' + html + '</div>';
+    const text = data.result || '';
+
+    // Parse JSON from response
+    let parsed = null;
+    try {
+      const clean = text.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+      parsed = JSON.parse(clean);
+    } catch(e) {
+      // Fallback: show raw in summary
+      parsed = {
+        executive_summary: { summary_text: text.slice(0,500), weekly_decision: '— تعذّر تحليل البيانات بشكل منظم' },
+        warnings: [], strong_positions: [], cash_decisions: { allocations: [] },
+        new_opportunities: [], conflicts: []
+      };
     }
 
-    const warnings = extractSection('WARNINGS', text);
-    const strong = extractSection('STRONG', text);
-    const cashSection = extractSection('CASH', text);
-    const newStocks = extractSection('NEW', text);
-    const summary = extractSection('SUMMARY', text);
+    saRenderCards(parsed);
 
-    document.getElementById('sa-rtab-warnings').innerHTML = renderSection(warnings, 'warn') || renderSection(text, 'default');
-    document.getElementById('sa-rtab-strong').innerHTML = renderSection(strong);
-    document.getElementById('sa-rtab-cash').innerHTML = renderSection(cashSection);
-    document.getElementById('sa-rtab-new').innerHTML = renderSection(newStocks);
-    document.getElementById('sa-rtab-summary').innerHTML = renderSection(summary || text.slice(0, 800));
+    // Update timestamp
+    const timeEl = document.getElementById('sa-result-time');
+    if (timeEl) timeEl.textContent = 'آخر تحليل: ' + new Date().toLocaleString('ar-SA');
 
-    document.getElementById('sa-result-time').textContent = 'آخر تحليل: ' + new Date().toLocaleString('ar-SA');
-    document.getElementById('sa-last-update').textContent = 'آخر تحديث: ' + new Date().toLocaleDateString('ar-SA');
+    const lastUpdate = document.getElementById('sa-last-update');
+    if (lastUpdate) lastUpdate.textContent = 'آخر تحديث: ' + new Date().toLocaleDateString('ar-SA');
 
   } catch(e) {
-    ['warnings','strong','cash','new','summary'].forEach(id => {
+    ['exec','warnings','strong','cash','new','conflicts'].forEach(id => {
       const el = document.getElementById('sa-rtab-' + id);
-      if (el) el.innerHTML = '<div style="color:var(--red);padding:12px">خطأ في الاتصال: ' + e.message + '</div>';
+      if (el) el.innerHTML = '<div style="color:var(--red);padding:16px;direction:rtl">❌ خطأ: ' + e.message + '</div>';
     });
   }
 
-  btn.disabled = false;
-  btn.textContent = '🤖 تحديث التحليل';
+  if (btn) { btn.disabled = false; btn.textContent = '🔄 تحديث التحليل'; }
+}
+</script>t3);padding:20px;text-align:center">لا إشارات متضاربة</div>' :
+      parsed.conflicts.map(c => saConflictCard(c)).join('')) +
+      '</div>';
+  }
+}
+
+function saMetricCard(label, value, sub) {
+  return '<div style="background:var(--bg3);border-radius:8px;padding:12px;text-align:center">' +
+    '<div style="font-size:11px;color:var(--text3);margin-bottom:4px">' + label + '</div>' +
+    '<div style="font-size:18px;font-weight:700;color:var(--text)">' + value + '</div>' +
+    (sub ? '<div style="font-size:10px;color:var(--text3);margin-top:2px">' + sub + '</div>' : '') +
+    '</div>';
+}
+
+function saStockCard(s, type) {
+  const colors = { danger: 'var(--red)', success: 'var(--accent2)', info: 'var(--accent)', warning: 'var(--gold)' };
+  const bgs = { danger: 'rgba(226,75,74,0.06)', success: 'rgba(0,200,100,0.05)', info: 'rgba(0,212,255,0.05)', warning: 'rgba(255,165,0,0.05)' };
+  const color = colors[type] || 'var(--text)';
+  const bg = bgs[type] || 'var(--bg2)';
+  const badges = (s.badges || []).map(b => '<span style="font-size:10px;background:var(--bg3);color:var(--text2);padding:2px 7px;border-radius:4px;margin-right:4px">' + b + '</span>').join('');
+  const grades = s.grades ? Object.entries(s.grades).map(([k,v]) => {
+    const gc = v && v[0]==='A' ? 'var(--accent2)' : (v && v[0]==='F' ? 'var(--red)' : (v && v[0]==='D' ? 'var(--gold)' : 'var(--text2)'));
+    return '<span style="font-size:10px;font-family:monospace;padding:1px 5px;border-radius:3px;background:var(--bg3);color:'+gc+'">' + k + ': ' + v + '</span>';
+  }).join(' ') : '';
+  return '<div style="background:' + bg + ';border:1px solid var(--border);border-right:3px solid ' + color + ';border-radius:0 10px 10px 0;padding:12px 14px;margin-bottom:10px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+    '<div>' +
+    '<span style="font-size:15px;font-weight:700;font-family:monospace;color:var(--text)">' + (s.symbol || '') + '</span>' +
+    '<span style="margin-right:8px"></span>' + badges +
+    (s.weight ? '<div style="font-size:11px;color:var(--text2);margin-top:3px">وزن: <strong>' + s.weight + '</strong>' + (s.gl ? ' · ' + s.gl : '') + '</div>' : '') +
+    (grades ? '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">' + grades + '</div>' : '') +
+    '</div>' +
+    '<div style="text-align:left;flex-shrink:0">' +
+    '<div style="font-size:13px;font-weight:700;color:' + color + '">' + (s.rating || '') + '</div>' +
+    (s.sources ? '<div style="font-size:10px;color:var(--text3);margin-top:3px">' + s.sources + '</div>' : '') +
+    '</div></div>' +
+    (s.reason ? '<div style="font-size:12px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);line-height:1.7">' + s.reason + '</div>' : '') +
+    (s.action ? '<div style="font-size:12px;font-weight:700;color:var(--text);margin-top:6px;padding:7px 10px;background:var(--bg3);border-radius:6px">' + s.action + '</div>' : '') +
+    '</div>';
+}
+
+function saCashCard(a, rank) {
+  const isNew = a.is_new;
+  return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:12px">' +
+    '<div style="display:flex;align-items:center;gap:12px;flex:1">' +
+    '<div style="font-size:22px;font-weight:700;color:var(--text3);min-width:28px">' + rank + '</div>' +
+    '<div>' +
+    '<div style="display:flex;align-items:center;gap:6px">' +
+    '<span style="font-size:15px;font-weight:700;font-family:monospace;color:var(--text)">' + (a.symbol || '') + '</span>' +
+    (isNew ? '<span style="font-size:10px;background:rgba(0,212,255,0.12);color:var(--accent);padding:1px 6px;border-radius:4px">جديد</span>' : '<span style="font-size:10px;background:var(--bg3);color:var(--text3);padding:1px 6px;border-radius:4px">تمتلكه</span>') +
+    '</div>' +
+    '<div style="font-size:11px;color:var(--text2);margin-top:3px">' + (a.reason || '') + '</div>' +
+    '</div></div>' +
+    '<div style="text-align:left;flex-shrink:0">' +
+    '<div style="font-size:15px;font-weight:700;color:var(--accent)">' + (a.amount_usd || '—') + '</div>' +
+    '<div style="font-size:10px;color:var(--text3)">' + (a.pct_of_cash || '') + ' من الكاش</div>' +
+    '</div></div>';
+}
+
+function saConflictCard(c) {
+  return '<div style="background:rgba(255,165,0,0.06);border:1px solid var(--border);border-right:3px solid var(--gold);border-radius:0 10px 10px 0;padding:12px 14px;margin-bottom:10px">' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+    '<span style="font-size:15px;font-weight:700;font-family:monospace;color:var(--text)">' + (c.symbol || '') + '</span>' +
+    '<span style="font-size:11px;background:rgba(255,165,0,0.15);color:var(--gold);padding:2px 8px;border-radius:4px">⚡ تعارض</span>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">' +
+    '<div style="padding:8px;background:rgba(226,75,74,0.08);border-radius:6px"><div style="color:var(--red);font-weight:700;margin-bottom:3px">يقول بيع</div><div style="color:var(--text2)">' + (c.sell_sources || '') + '</div></div>' +
+    '<div style="padding:8px;background:rgba(0,200,100,0.06);border-radius:6px"><div style="color:var(--accent2);font-weight:700;margin-bottom:3px">يقول اشترِ</div><div style="color:var(--text2)">' + (c.buy_sources || '') + '</div></div>' +
+    '</div>' +
+    '<div style="font-size:12px;color:var(--text);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-weight:600">' + (c.recommendation || '') + '</div>' +
+    '</div>';
+}
+
+// ── Main analysis function ──
+async function saRunAnalysis() {
+  const btn = document.getElementById('sa-analyze-btn');
+  const confirmDiv = document.getElementById('sa-confirm-table');
+  const resultDiv = document.getElementById('sa-result-panel');
+  const tokenDiv = document.getElementById('sa-token-info');
+  const saveStatus = document.getElementById('sa-save-status');
+
+  const inputs = saCollectInputs();
+
+  // Show confirmation table
+  if (confirmDiv) {
+    confirmDiv.style.display = 'block';
+    confirmDiv.innerHTML = '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;direction:rtl">الخطوة 1 — تأكيد ما سيقرأه Claude</div>' + saBuildConfirmTable(inputs);
+  }
+
+  if (!inputs.shortIdeas && !inputs.pqp && !inputs.topRated) {
+    alert('أدخل على الأقل: Short Ideas + PRO Quant Portfolio + Top Rated Stocks');
+    return;
+  }
+
+  // Update button state
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ الخطوة 2 — حفظ البيانات...'; }
+  if (saveStatus) { saveStatus.textContent = 'جاري الحفظ...'; saveStatus.style.color = 'var(--gold)'; }
+
+  // Show result panel with loading
+  if (resultDiv) {
+    resultDiv.style.display = 'block';
+    ['exec','warnings','strong','cash','new','conflicts'].forEach(id => {
+      const el = document.getElementById('sa-rtab-' + id);
+      if (el) el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text2);direction:rtl"><div style="font-size:20px;margin-bottom:8px">⏳</div>جاري التحليل...</div>';
+    });
+  }
+
+  // Step 1: Save inputs to GitHub
+  try {
+    const saveRes = await fetch('/api/sa-analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inputs, saveOnly: true })
+    });
+    const saveData = await saveRes.json();
+    if (saveData.saved) {
+      if (saveStatus) { saveStatus.textContent = '✓ محفوظ: ' + saveData.saved; saveStatus.style.color = 'var(--accent2)'; }
+    }
+  } catch (e) {
+    if (saveStatus) { saveStatus.textContent = '⚠️ لم يُحفظ — ' + e.message; saveStatus.style.color = 'var(--gold)'; }
+  }
+
+  if (btn) btn.textContent = '⏳ الخطوة 3 — Claude يحلل...';
+
+  // Build the structured prompt
+  const cashUSD = inputs.cashUSD;
+  const prompt = `أنت محلل استثماري متخصص تقدم تقريراً لـ CEO ومجلس إدارة ومدير محفظة ومحلل أول في شركة استثمار في أبوظبي.
+
+المحفظة: ~49 سهم · قيمة ~$551,000 · مستثمر إماراتي · لا ضريبة أرباح رأسمالية
+${cashUSD > 0 ? 'الكاش المتاح: $' + cashUSD.toLocaleString() + ' USD (' + inputs.cash.toLocaleString() + ' ' + inputs.currency + ')' : ''}
+
+أسهمه الرئيسية بالوزن والربح/الخسارة:
+NVDA: وزن 9.7% ربح +161% | MU: وزن 7.9% ربح +529% | AMZN: وزن 6.8% ربح +19%
+DUOL: وزن 4.4% خسارة -49% | OKTA: وزن 3.7% ربح +28% | QQQ: وزن 3.5% ربح +68%
+ONTO: وزن 3.1% ربح +87% | PANW: وزن 2.2% ربح +61% | GOOGL: وزن 3.4% ربح +41%
+CRDO: وزن 2.6% ربح +98% | CLS: وزن 1.4% ربح +796% | PLTR: وزن 2.2% ربح +475%
+MSTR: وزن 1.8% خسارة -61% | ADBE: وزن 0.4% خسارة -61% | SERV: وزن 0.9% خسارة -51%
+ATYR: وزن 1.1% خسارة -80% | MVST: وزن 1.4% خسارة -71% | SEZL: وزن 1.1% ربح +61%
+
+${inputs.shortIdeas ? '=== SHORT IDEAS ===\n' + inputs.shortIdeas.slice(0,3000) + '\n\n' : ''}
+${inputs.updownMine ? '=== UPGRADES & DOWNGRADES — أسهمه ===\n' + inputs.updownMine.slice(0,2000) + '\n\n' : ''}
+${inputs.updownMarket ? '=== UPGRADES — السوق العام ===\n' + inputs.updownMarket.slice(0,2000) + '\n\n' : ''}
+${inputs.pqp ? '=== PRO QUANT PORTFOLIO (30 أفضل سهم — العمود الأخير هو العائد وليس الوزن) ===\n' + inputs.pqp.slice(0,2500) + '\n\n' : ''}
+${inputs.topRated ? '=== TOP RATED STOCKS (تأكيد ثلاثي) ===\n' + inputs.topRated.slice(0,2500) + '\n\n' : ''}
+${inputs.exclusive ? '=== EXCLUSIVE COVERAGE ===\n' + inputs.exclusive.slice(0,1500) + '\n\n' : ''}
+${inputs.alphaPicks ? '=== ALPHA PICKS ===\n' + inputs.alphaPicks.slice(0,2000) + '\n\n' : ''}
+${inputs.quantScreen ? '=== STOCKS BY QUANT ===\n' + inputs.quantScreen.slice(0,1500) + '\n\n' : ''}
+${inputs.stockDetail ? '=== تحليل سهم محدد ===\n' + inputs.stockDetail.slice(0,2000) + '\n\n' : ''}
+
+أعد JSON صارم بهذا الهيكل بالضبط — لا نص خارج JSON:
+{
+  "executive_summary": {
+    "portfolio_value": "القيمة التقريبية",
+    "weekly_performance": "الأداء هذا الأسبوع",
+    "biggest_risk_symbol": "أخطر سهم",
+    "best_opportunity": "أفضل فرصة",
+    "summary_text": "3 جمل: أهم خطر، أهم فرصة، الوضع العام",
+    "weekly_decision": "قرار واحد محدد وقابل للتنفيذ هذا الأسبوع"
+  },
+  "warnings": [
+    {
+      "symbol": "NVDA",
+      "rating": "Strong Sell",
+      "badges": ["Short Ideas ×1", "Quant 3.48"],
+      "weight": "9.7%",
+      "gl": "+161%",
+      "grades": {"Quant": "3.48", "Growth": "A+", "Momentum": "B-", "EPS": "B-"},
+      "sources": "Short Ideas — Jeremy Blum",
+      "reason": "جملة واحدة: لماذا تحذير بالضبط مرتبطة بوضعه في محفظتك",
+      "action": "إجراء محدد بالأرقام: بيع كم سهم أو كم دولار"
+    }
+  ],
+  "strong_positions": [
+    {
+      "symbol": "MU",
+      "rating": "Strong Buy",
+      "badges": ["PRO Quant #1", "Alpha Picks", "Quant 4.99"],
+      "weight": "7.9%",
+      "gl": "+529%",
+      "grades": {"Quant": "4.99", "Growth": "A+", "Profit": "A+", "Momentum": "A+"},
+      "sources": "PRO Quant + Alpha Picks",
+      "reason": "لماذا هو قوي بالضبط مرتبطاً بوضعه في محفظتك",
+      "action": "احتفظ / زد / لا تضف — مع سبب"
+    }
+  ],
+  "cash_decisions": {
+    "total_available": "$163,000 (600,000 AED)",
+    "allocations": [
+      {
+        "symbol": "SNDK",
+        "is_new": true,
+        "amount_usd": "$45,000",
+        "pct_of_cash": "27.5%",
+        "reason": "Quant 4.99 · Top Rated #1 · PRO Quant · Alpha Picks — تأكيد 4 مصادر"
+      }
+    ]
+  },
+  "new_opportunities": [
+    {
+      "symbol": "SNDK",
+      "rating": "Strong Buy",
+      "badges": ["Top Rated #1", "PRO Quant", "Alpha Picks"],
+      "grades": {"Quant": "4.99", "Growth": "A+", "Momentum": "A+"},
+      "sources": "3 مصادر SA",
+      "reason": "لماذا هذا السهم تحديداً مناسب لمحفظتك",
+      "action": "شراء — راجع التوزيع في تبويب الكاش"
+    }
+  ],
+  "conflicts": [
+    {
+      "symbol": "MU",
+      "sell_sources": "Short Ideas: Sell — David McMillan",
+      "buy_sources": "PRO Quant 4.99 + Alpha Picks +470%",
+      "recommendation": "الترجيح: Quant 4.99 أقوى من رأي محلل واحد — احتفظ مع مراقبة"
+    }
+  ]
+}
+
+القواعد:
+- JSON فقط — لا مقدمة ولا خاتمة نصية
+- كل تحذير يجب أن يكون لسهم تمتلكه
+- كل فرصة كاش يجب أن تكون بمبلغ محدد بالدولار
+- الأسباب جمل عربية قصيرة ومباشرة — لا bullet points
+- الإجراءات محددة وقابلة للتنفيذ`;
+
+  try {
+    const res = await fetch('/api/sa-analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inputs, prompt })
+    });
+    const data = await res.json();
+
+    // Show token info
+    if (tokenDiv && data.usage) {
+      const u = data.usage;
+      tokenDiv.style.display = 'flex';
+      tokenDiv.innerHTML =
+        '<span>⚡ ' + u.total_tokens.toLocaleString() + ' token</span>' +
+        '<span style="color:var(--text3)">|</span>' +
+        '<span>مدخل: ' + u.input_tokens.toLocaleString() + '</span>' +
+        '<span style="color:var(--text3)">|</span>' +
+        '<span>مخرج: ' + u.output_tokens.toLocaleString() + '</span>' +
+        '<span style="color:var(--text3)">|</span>' +
+        '<span style="color:var(--gold)">التكلفة: $' + u.total_cost + '</span>';
+    }
+
+    const text = data.result || '';
+
+    // Parse JSON from response
+    let parsed = null;
+    try {
+      const clean = text.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+      parsed = JSON.parse(clean);
+    } catch(e) {
+      // Fallback: show raw in summary
+      parsed = {
+        executive_summary: { summary_text: text.slice(0,500), weekly_decision: '— تعذّر تحليل البيانات بشكل منظم' },
+        warnings: [], strong_positions: [], cash_decisions: { allocations: [] },
+        new_opportunities: [], conflicts: []
+      };
+    }
+
+    saRenderCards(parsed);
+
+    // Update timestamp
+    const timeEl = document.getElementById('sa-result-time');
+    if (timeEl) timeEl.textContent = 'آخر تحليل: ' + new Date().toLocaleString('ar-SA');
+
+    const lastUpdate = document.getElementById('sa-last-update');
+    if (lastUpdate) lastUpdate.textContent = 'آخر تحديث: ' + new Date().toLocaleDateString('ar-SA');
+
+  } catch(e) {
+    ['exec','warnings','strong','cash','new','conflicts'].forEach(id => {
+      const el = document.getElementById('sa-rtab-' + id);
+      if (el) el.innerHTML = '<div style="color:var(--red);padding:16px;direction:rtl">❌ خطأ: ' + e.message + '</div>';
+    });
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '🔄 تحديث التحليل'; }
 }
 </script>
 </body>
