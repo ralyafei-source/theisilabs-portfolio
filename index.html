@@ -2665,137 +2665,6 @@ WOLF remains at critical lows<br><br>
   </div>
 </div>
 
-<!-- ===== SETUP TAB ===== -->
-<div id="tab-setup" class="tab-content">
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-title" id="s-keys-title">API Keys</div>
-      <div class="form-group">
-        <label class="form-label">Claude API Key</label>
-        <input class="form-input" type="password" placeholder="sk-ant-api03-...">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Telegram Bot Token</label>
-        <input class="form-input" type="password" placeholder="123456:AAF...">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Telegram Chat ID</label>
-        <input class="form-input" type="text" placeholder="-100123456...">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Alpha Vantage Key</label>
-        <input class="form-input" type="password" placeholder="ABCDEF123...">
-      </div>
-      <div class="form-group">
-        <label class="form-label">NewsAPI Key</label>
-        <input class="form-input" type="password" placeholder="abc123...">
-      </div>
-      <button class="btn btn-primary" id="s-save">Save Config</button>
-    </div>
-    <div class="card">
-      <div class="card-title" id="s-steps-title">Make.com Setup Steps</div>
-      <div class="step-item">
-        <div class="step-num">1</div>
-        <div>
-          <div class="step-title" id="st1-title">Create new scenario</div>
-          <div class="step-desc" id="st1-desc">In Make.com click "Create a new scenario" then press the "+" button in the center</div>
-        </div>
-      </div>
-      <div class="step-item">
-        <div class="step-num">2</div>
-        <div>
-          <div class="step-title" id="st2-title">Add Schedule trigger</div>
-          <div class="step-desc" id="st2-desc">Search "Schedule" â†’ Every day â†’ Set time to 03:00 UTC (= 7:00am UAE)</div>
-        </div>
-      </div>
-      <div class="step-item">
-        <div class="step-num">3</div>
-        <div>
-          <div class="step-title" id="st3-title">Add HTTP module for market data</div>
-          <div class="step-desc" id="st3-desc">Search "HTTP" â†’ Make a request â†’ Enter this URL:</div>
-          <div class="code-block" style="margin-top:8px;font-size:10px;">https://www.alphavantage.co/query?function=BATCH_STOCK_QUOTES&symbols=NVDA,AMZN,MSFT,AAPL,GOOGL,MU&apikey=YOUR_KEY</div>
-        </div>
-      </div>
-      <div class="step-item">
-        <div class="step-num">4</div>
-        <div>
-          <div class="step-title" id="st4-title">Add Claude AI module</div>
-          <div class="step-desc" id="st4-desc">Add another HTTP module â†’ POST to https://api.anthropic.com/v1/messages â†’ Copy prompt from Claude Prompt tab</div>
-        </div>
-      </div>
-      <div class="step-item">
-        <div class="step-num">5</div>
-        <div>
-          <div class="step-title" id="st5-title">Add Telegram module</div>
-          <div class="step-desc" id="st5-desc">Search "Telegram Bot" â†’ Send a Message â†’ Enter your Chat ID â†’ Map Claude's response as message</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.32 · 2026-06-15</div>
-</div>
-
-<!-- ===== PROMPT TAB ===== -->
-<div id="tab-prompt" class="tab-content">
-  <div class="card">
-    <div class="section-hdr">
-      <div>
-        <div class="section-title" id="pr-title">Claude API Prompt</div>
-        <div class="section-sub" id="pr-sub">Copy this into Make.com â†’ HTTP Module â†’ Body</div>
-      </div>
-      <button class="btn btn-primary" onclick="copyPrompt()" id="pr-copy">Copy All</button>
-    </div>
-    <div class="code-block" id="promptBlock"></div>
-  </div>
-</div>
-
-</div>
-<div id="tab-health" class="tab-content">
-  <div class="card">
-    <div class="section-hdr" style="margin-bottom:20px;">
-      <div>
-        <div class="section-title" id="health-title">System Health Log</div>
-        <div class="section-sub" id="health-sub">Last 30 analysis runs — source quality and write verification</div>
-      </div>
-      <button class="btn btn-outline" style="font-size:11px;padding:5px 12px;" onclick="loadHealthLog()">â†º Refresh</button>
-    </div>
-
-    <!-- Summary cards -->
-    <div class="grid-4" id="healthSummary" style="margin-bottom:20px;">
-      <div class="stat-card blue"><div class="stat-label">Total runs</div><div class="stat-value" id="hl-total" style="color:var(--accent)">—</div></div>
-      <div class="stat-card green"><div class="stat-label">OK</div><div class="stat-value" id="hl-ok" style="color:var(--accent2)">—</div></div>
-      <div class="stat-card gold"><div class="stat-label">Degraded</div><div class="stat-value" id="hl-degraded" style="color:var(--gold)">—</div></div>
-      <div class="stat-card orange"><div class="stat-label">Failed</div><div class="stat-value" id="hl-failed" style="color:var(--red)">—</div></div>
-    </div>
-
-    <!-- Filter buttons -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-      <button class="t-btn active" onclick="hlFilter('all',this)">All</button>
-      <button class="t-btn" onclick="hlFilter('ok',this)">OK âœ…</button>
-      <button class="t-btn" onclick="hlFilter('degraded',this)">Degraded âš ï¸</button>
-      <button class="t-btn" onclick="hlFilter('failed',this)">Failed âœ—</button>
-    </div>
-
-    <!-- Log table -->
-    <div style="overflow-x:auto;">
-      <table class="ptable js-sortable" id="healthTable">
-        <thead><tr>
-          <th>Time (UAE)</th>
-          <th>Type</th>
-          <th>User</th>
-          <th>Status</th>
-          <th>Note</th>
-          <th class="num">Size</th>
-          <th class="num">Sections</th>
-          <th class="num">Unavailable</th>
-          <th class="num">Write</th>
-        </tr></thead>
-        <tbody id="healthBody">
-          <tr><td colspan="9" style="text-align:center;color:var(--text2);padding:30px;">Loading...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
 <div id="tab-sa-intel" class="tab-content">
 
 
@@ -3330,6 +3199,139 @@ ${cash > 0 ? `كيف يوزع $${Math.round(usd).toLocaleString()} على أفض
 </script>
 
 </div><!-- end tab-sa-intel -->
+
+<!-- ===== SETUP TAB ===== -->
+<div id="tab-setup" class="tab-content">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title" id="s-keys-title">API Keys</div>
+      <div class="form-group">
+        <label class="form-label">Claude API Key</label>
+        <input class="form-input" type="password" placeholder="sk-ant-api03-...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Telegram Bot Token</label>
+        <input class="form-input" type="password" placeholder="123456:AAF...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Telegram Chat ID</label>
+        <input class="form-input" type="text" placeholder="-100123456...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Alpha Vantage Key</label>
+        <input class="form-input" type="password" placeholder="ABCDEF123...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">NewsAPI Key</label>
+        <input class="form-input" type="password" placeholder="abc123...">
+      </div>
+      <button class="btn btn-primary" id="s-save">Save Config</button>
+    </div>
+    <div class="card">
+      <div class="card-title" id="s-steps-title">Make.com Setup Steps</div>
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title" id="st1-title">Create new scenario</div>
+          <div class="step-desc" id="st1-desc">In Make.com click "Create a new scenario" then press the "+" button in the center</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title" id="st2-title">Add Schedule trigger</div>
+          <div class="step-desc" id="st2-desc">Search "Schedule" â†’ Every day â†’ Set time to 03:00 UTC (= 7:00am UAE)</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title" id="st3-title">Add HTTP module for market data</div>
+          <div class="step-desc" id="st3-desc">Search "HTTP" â†’ Make a request â†’ Enter this URL:</div>
+          <div class="code-block" style="margin-top:8px;font-size:10px;">https://www.alphavantage.co/query?function=BATCH_STOCK_QUOTES&symbols=NVDA,AMZN,MSFT,AAPL,GOOGL,MU&apikey=YOUR_KEY</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title" id="st4-title">Add Claude AI module</div>
+          <div class="step-desc" id="st4-desc">Add another HTTP module â†’ POST to https://api.anthropic.com/v1/messages â†’ Copy prompt from Claude Prompt tab</div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">5</div>
+        <div>
+          <div class="step-title" id="st5-title">Add Telegram module</div>
+          <div class="step-desc" id="st5-desc">Search "Telegram Bot" â†’ Send a Message â†’ Enter your Chat ID â†’ Map Claude's response as message</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">THEISI Dashboard · v13.32 · 2026-06-15</div>
+</div>
+
+<!-- ===== PROMPT TAB ===== -->
+<div id="tab-prompt" class="tab-content">
+  <div class="card">
+    <div class="section-hdr">
+      <div>
+        <div class="section-title" id="pr-title">Claude API Prompt</div>
+        <div class="section-sub" id="pr-sub">Copy this into Make.com â†’ HTTP Module â†’ Body</div>
+      </div>
+      <button class="btn btn-primary" onclick="copyPrompt()" id="pr-copy">Copy All</button>
+    </div>
+    <div class="code-block" id="promptBlock"></div>
+  </div>
+</div>
+
+</div>
+<div id="tab-health" class="tab-content">
+  <div class="card">
+    <div class="section-hdr" style="margin-bottom:20px;">
+      <div>
+        <div class="section-title" id="health-title">System Health Log</div>
+        <div class="section-sub" id="health-sub">Last 30 analysis runs — source quality and write verification</div>
+      </div>
+      <button class="btn btn-outline" style="font-size:11px;padding:5px 12px;" onclick="loadHealthLog()">â†º Refresh</button>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="grid-4" id="healthSummary" style="margin-bottom:20px;">
+      <div class="stat-card blue"><div class="stat-label">Total runs</div><div class="stat-value" id="hl-total" style="color:var(--accent)">—</div></div>
+      <div class="stat-card green"><div class="stat-label">OK</div><div class="stat-value" id="hl-ok" style="color:var(--accent2)">—</div></div>
+      <div class="stat-card gold"><div class="stat-label">Degraded</div><div class="stat-value" id="hl-degraded" style="color:var(--gold)">—</div></div>
+      <div class="stat-card orange"><div class="stat-label">Failed</div><div class="stat-value" id="hl-failed" style="color:var(--red)">—</div></div>
+    </div>
+
+    <!-- Filter buttons -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+      <button class="t-btn active" onclick="hlFilter('all',this)">All</button>
+      <button class="t-btn" onclick="hlFilter('ok',this)">OK âœ…</button>
+      <button class="t-btn" onclick="hlFilter('degraded',this)">Degraded âš ï¸</button>
+      <button class="t-btn" onclick="hlFilter('failed',this)">Failed âœ—</button>
+    </div>
+
+    <!-- Log table -->
+    <div style="overflow-x:auto;">
+      <table class="ptable js-sortable" id="healthTable">
+        <thead><tr>
+          <th>Time (UAE)</th>
+          <th>Type</th>
+          <th>User</th>
+          <th>Status</th>
+          <th>Note</th>
+          <th class="num">Size</th>
+          <th class="num">Sections</th>
+          <th class="num">Unavailable</th>
+          <th class="num">Write</th>
+        </tr></thead>
+        <tbody id="healthBody">
+          <tr><td colspan="9" style="text-align:center;color:var(--text2);padding:30px;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 
 
 
@@ -9466,7 +9468,11 @@ fetchLivePrices();
         </svg>
       </button>
     </div>
-  </div>
+  
+
+
+
+</div>
 
 </div>
 
@@ -11993,7 +11999,10 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 </script>
 
-</div></div></div></div>
+</div>
+
+
+</div></div></div>
 <script>
 (function(){
   function tbDate(){var d=new Date(),dy=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];var el=document.getElementById('tbDate');if(el)el.textContent=dy[d.getDay()]+' '+d.getDate()+' '+mo[d.getMonth()];}
