@@ -12417,7 +12417,8 @@ async function saRunAnalysis() {
     inputs.stockDetail ? `[STOCK_DETAIL]\n${inputs.stockDetail.slice(0,1000)}` : ''
   ].filter(Boolean).join('\n\n');
 
-  const prompt = `محلل استثماري — مستثمر إماراتي، لا ضريبة.
+  const cashStr = cashUSD > 0 ? '$'+cashUSD.toLocaleString()+' / '+inputs.cash.toLocaleString()+' '+inputs.currency : 'غير محدد';
+    const prompt = `محلل استثماري — مستثمر إماراتي، لا ضريبة.
 محفظة: ~49 سهم، ~$551K. كاش متاح: ${cashUSD > 0 ? '$'+cashUSD.toLocaleString() : 'غير محدد'}.
 
 أسهم رئيسية (وزن/ربح):
@@ -12456,7 +12457,7 @@ ${dataBlock}
     "action": "احتفظ / زد"
   }],
   "cash_decisions": {
-    "total_available": "${cashUSD > 0 ? '$'+cashUSD.toLocaleString()+' / '+inputs.cash.toLocaleString()+' '+inputs.currency : 'غير محدد'}",
+    "total_available": "${cashStr}",
     "allocations": [{
       "symbol": "SYM", "is_new": true,
       "amount_usd": "$XX,000", "pct_of_cash": "XX%",
