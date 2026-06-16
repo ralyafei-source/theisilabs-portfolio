@@ -11,13 +11,14 @@ function buildPrompt(inputs) {
   const cashStr = cashUSD > 0 ? '$' + Number(cashUSD).toLocaleString() + ' / ' + Number(inputs.cash||0).toLocaleString() + ' ' + (inputs.currency||'AED') : 'غير محدد';
 
   const parts = [
-    inputs.updownMine   ? `[UPGRADES_MINE]\n${inputs.updownMine.slice(0,800)}`  : '',
-    inputs.updownMarket ? `[UPGRADES_MARKET]\n${inputs.updownMarket.slice(0,600)}` : '',
-    inputs.pqp          ? `[PRO_QUANT_30]\n${inputs.pqp.slice(0,1200)}`         : '',
-    inputs.topRated     ? `[TOP_RATED_38]\n${inputs.topRated.slice(0,1200)}`    : '',
-    inputs.alphaPicks   ? `[ALPHA_PICKS]\n${inputs.alphaPicks.slice(0,800)}`    : '',
-    inputs.exclusive    ? `[EXCLUSIVE]\n${inputs.exclusive.slice(0,600)}`        : '',
-    inputs.stockDetail  ? `[STOCK_DETAIL]\n${inputs.stockDetail.slice(0,800)}`  : ''
+    inputs.updownMine   ? `[UPGRADES_MINE]\n${inputs.updownMine.slice(0,4000)}`  : '',
+    inputs.updownMarket ? `[UPGRADES_MARKET]\n${inputs.updownMarket.slice(0,3000)}` : '',
+    inputs.pqp          ? `[PRO_QUANT_30]\n${inputs.pqp.slice(0,6000)}`         : '',
+    inputs.topRated     ? `[TOP_RATED_38]\n${inputs.topRated.slice(0,6000)}`    : '',
+    inputs.alphaPicks   ? `[ALPHA_PICKS]\n${inputs.alphaPicks.slice(0,3000)}`    : '',
+    inputs.exclusive    ? `[EXCLUSIVE]\n${inputs.exclusive.slice(0,3000)}`        : '',
+    inputs.stockDetail  ? `[STOCK_DETAIL]\n${inputs.stockDetail.slice(0,3000)}`  : '',
+    inputs.quantScreen  ? `[STOCKS_BY_QUANT]\n${inputs.quantScreen.slice(0,8000)}` : ''
   ].filter(Boolean).join('\n\n');
 
   return `محلل استثماري — مستثمر إماراتي لا ضريبة. محفظة ~$551K (~49 سهم). كاش: ${cashStr}.
