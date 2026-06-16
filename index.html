@@ -12238,8 +12238,13 @@ function saBuildViewerTab() {
     item.className = 'sb-item';
     item.setAttribute('data-tab', 'sa-view');
     item.setAttribute('onclick', "showTab('sa-view',this)");
-    item.innerHTML = '<span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/><polyline points="9 14 11 16 15 12"/></svg></span><span class="sb-lbl">التحليل الأسبوعي</span>';
-    nav.appendChild(item);
+    item.innerHTML = '<span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/><polyline points="9 14 11 16 15 12"/></svg></span><span class="sb-lbl">SA Results</span>';
+    const dashItem = [...nav.querySelectorAll('.sb-item')].find(el => (el.getAttribute('onclick')||'').includes("'dashboard'"));
+    if (dashItem && dashItem.nextSibling) {
+      nav.insertBefore(item, dashItem.nextSibling);
+    } else {
+      nav.appendChild(item);
+    }
   }
   // tab content
   const tab = document.createElement('div');
