@@ -12294,11 +12294,7 @@ ${cash > 0 ? `كيف يوزع $${Math.round(usd).toLocaleString()} على أفض
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/^#{1,3}\s+(.+)$/gm, '<div style="font-size:13px;font-weight:700;color:var(--accent);margin:12px 0 6px">$1</div>')
         .replace(/^[-•]\s+(.+)$/gm, '<div style="padding:3px 0 3px 12px;border-right:2px solid var(--border);margin-bottom:4px">$1</div>')
-        .replace(/
-
-/g, '<br>')
-        .replace(/
-/g, '<br>');
+        .replace(/\n\n/g, '<br>').replace(/\n/g, '<br>');
       return '<div style="font-size:13px;line-height:2;color:var(--text)">' + html + '</div>';
     }
 
