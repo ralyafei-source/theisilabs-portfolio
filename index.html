@@ -12268,17 +12268,13 @@ ${cash > 0 ? `كيف يوزع $${Math.round(usd).toLocaleString()} على أفض
 اختم بـ: "⚠️ هذا تحليل معلوماتي وليس نصيحة مالية مرخصة"`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/api/sa-analyze', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
-        messages: [{ role: 'user', content: prompt }]
-      })
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer theisilabs2026' },
+      body: JSON.stringify({ prompt: prompt })
     });
     const data = await res.json();
-    const text = data.content?.[0]?.text || 'لم يتمكن النظام من التحليل';
+    const text = data.result || 'لم يتمكن النظام من التحليل';
 
     // Parse sections
     function extractSection(tag, txt) {
