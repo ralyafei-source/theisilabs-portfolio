@@ -11,7 +11,6 @@ function buildPrompt(inputs) {
   const cashStr = cashUSD > 0 ? '$' + Number(cashUSD).toLocaleString() + ' / ' + Number(inputs.cash||0).toLocaleString() + ' ' + (inputs.currency||'AED') : 'غير محدد';
 
   const parts = [
-    inputs.shortIdeas   ? `[SHORT_IDEAS]\n${inputs.shortIdeas.slice(0,2000)}`   : '',
     inputs.updownMine   ? `[UPGRADES_MINE]\n${inputs.updownMine.slice(0,800)}`  : '',
     inputs.updownMarket ? `[UPGRADES_MARKET]\n${inputs.updownMarket.slice(0,600)}` : '',
     inputs.pqp          ? `[PRO_QUANT_30]\n${inputs.pqp.slice(0,1200)}`         : '',
