@@ -12221,10 +12221,115 @@ async function saLoadSavedInputs() {
     showTab = function(name, el) {
       _origShowTab(name, el);
       if (name === 'sa-intel') { saLoadSavedInputs(); saLoadSavedResult(); }
+      if (name === 'sa-view') { saViewerInit(); }
     };
     showTab.__saWrapped = true;
   }
 })();
+// ===== SA Results Viewer (read-only history tab) =====
+let saViewerDates = [], saViewerDateIdx = 0, saViewerVersions = [], saViewerVerIdx = 0;
+
+function saBuildViewerTab() {
+  if (document.getElementById('tab-sa-view')) return;
+  // nav item
+  const nav = document.querySelector('nav');
+  if (nav) {
+    const item = document.createElement('div');
+    item.className = 'sb-item';
+    item.setAttribute('data-tab', 'sa-view');
+    item.setAttribute('onclick', "showTab('sa-view',this)");
+    item.innerHTML = '<span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/><polyline points="9 14 11 16 15 12"/></svg></span><span class="sb-lbl">التحليل الأسبوعي</span>';
+    nav.appendChild(item);
+  }
+  // tab content
+  const tab = document.createElement('div');
+  tab.id = 'tab-sa-view';
+  tab.className = 'tab-content';
+  tab.innerHTML =
+    '<div style="max-width:1100px;margin:0 auto;direction:rtl">' +
+      '<div id="sa-view-nav" style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:14px"></div>' +
+      '<div id="sa-view-vernav" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px"></div>' +
+      '<div id="sa-view-card"></div>' +
+      '<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:14px">للقراءة فقط — لتشغيل تحليل جديد افتح صفحة SA Pro</div>' +
+    '</div>';
+  document.querySelector('.tab-content').parentElement.appendChild(tab);
+}
+
+async function saViewerInit() {
+  saBuildViewerTab();
+  try {
+    const r = await fetch('/api/sa-analyze', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ listAnalyses:true }) });
+    const d = await r.json();
+    saViewerDates = d.dates || [];
+  } catch(e) { saViewerDates = []; }
+  if (!saViewerDates.length) {
+    document.getElementById('sa-view-card').innerHTML = '<div style="color:var(--text3);text-align:center;padding:40px">لا توجد تحاليل محفوظة بعد</div>';
+    document.getElementById('sa-view-nav').innerHTML = '';
+    document.getElementById('sa-view-vernav').innerHTML = '';
+    return;
+  }
+  saViewerDateIdx = 0;
+  await saViewerLoadDay();
+}
+
+async function saViewerLoadDay() {
+  const date = saViewerDates[saViewerDateIdx];
+  const r = await fetch('/api/sa-analyze', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ loadResult:true, date }) });
+  const d = await r.json();
+  saViewerVersions = d.versions || [];
+  saViewerVerIdx = saViewerVersions.length - 1; // latest
+  saViewerRender(d);
+  saViewerRenderNav(date);
+}
+
+async function saViewerLoadVersion() {
+  const date = saViewerDates[saViewerDateIdx];
+  const ver = saViewerVersions[saViewerVerIdx];
+  const r = await fetch('/api/sa-analyze', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ loadResult:true, date, version: ver.version }) });
+  const d = await r.json();
+  saViewerRender(d);
+  saViewerRenderNav(date);
+}
+
+function saViewerRender(d) {
+  const host = document.getElementById('sa-view-card');
+  if (!d || !d.result) { host.innerHTML = '<div style="color:var(--text3);text-align:center;padding:40px">لا نتيجة</div>'; return; }
+  let parsed = null;
+  try {
+    let c = d.result.replace(/```json\s*/gi,'').replace(/```\s*/g,'');
+    const a=c.indexOf('{'), b=c.lastIndexOf('}'); if(a!==-1&&b>a) c=c.slice(a,b+1);
+    parsed = JSON.parse(c.trim());
+  } catch(e) { host.innerHTML = '<div style="color:var(--red);text-align:center;padding:40px">تعذّر قراءة النتيجة</div>'; return; }
+  saRenderCards(parsed, 'sa-view-card');
+}
+
+function saViewerRenderNav(date) {
+  const fmt = s => { try { return new Date(s).toLocaleDateString('ar', {weekday:'long',day:'numeric',month:'long',year:'numeric'}); } catch(e){ return s; } };
+  const navEl = document.getElementById('sa-view-nav');
+  const prevDis = saViewerDateIdx >= saViewerDates.length-1;
+  const nextDis = saViewerDateIdx <= 0;
+  let dd = '<select onchange="saViewerJump(this.value)" style="background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px">' +
+    saViewerDates.map((dt,i)=>'<option value="'+i+'"'+(i===saViewerDateIdx?' selected':'')+'>'+fmt(dt)+'</option>').join('') + '</select>';
+  navEl.innerHTML =
+    '<button onclick="saViewerStep(1)" '+(prevDis?'disabled':'')+' style="background:var(--bg3);border:1px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:10px;font-size:18px;cursor:pointer">‹</button>' +
+    '<div style="text-align:center;min-width:200px"><div style="font-size:15px;font-weight:700">'+fmt(date)+'</div>'+dd+'</div>' +
+    '<button onclick="saViewerStep(-1)" '+(nextDis?'disabled':'')+' style="background:var(--bg3);border:1px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:10px;font-size:18px;cursor:pointer">›</button>';
+  const verEl = document.getElementById('sa-view-vernav');
+  if (saViewerVersions.length > 1) {
+    const v = saViewerVersions[saViewerVerIdx];
+    verEl.innerHTML =
+      '<button onclick="saViewerVerStep(-1)" '+(saViewerVerIdx<=0?'disabled':'')+' style="background:var(--bg3);border:1px solid var(--border);color:var(--text);width:30px;height:30px;border-radius:8px;cursor:pointer">‹</button>' +
+      '<span style="font-size:12px;color:var(--text2)">نسخة '+v.version+' من '+saViewerVersions.length+'</span>' +
+      '<button onclick="saViewerVerStep(1)" '+(saViewerVerIdx>=saViewerVersions.length-1?'disabled':'')+' style="background:var(--bg3);border:1px solid var(--border);color:var(--text);width:30px;height:30px;border-radius:8px;cursor:pointer">›</button>';
+  } else { verEl.innerHTML = ''; }
+}
+
+function saViewerStep(dir) { const n = saViewerDateIdx + dir; if (n>=0 && n<saViewerDates.length) { saViewerDateIdx=n; saViewerLoadDay(); } }
+function saViewerJump(i) { saViewerDateIdx = parseInt(i,10); saViewerLoadDay(); }
+function saViewerVerStep(dir) { const n = saViewerVerIdx + dir; if (n>=0 && n<saViewerVersions.length) { saViewerVerIdx=n; saViewerLoadVersion(); } }
+
+// Build the viewer tab + nav item on load so the nav item exists before any showTab('sa-view') call
+document.addEventListener('DOMContentLoaded', saBuildViewerTab);
 // ── Collect all inputs into structured object ──
 function saCollectInputs() {
   const g = id => document.getElementById(id)?.value?.trim() || '';
@@ -12285,14 +12390,16 @@ function extractSymbols(text, n) {
 }
 
 // ── Render structured JSON result into cards ──
-function saRenderCards(parsed) {
-  const host = document.getElementById('sa-rtab-exec');
+function saRenderCards(parsed, hostId) {
+  const host = document.getElementById(hostId || 'sa-rtab-exec');
   if (!host) return;
   // make sure this container is the visible one
-  ['warnings','strong','cash','new','conflicts'].forEach(id => {
-    const el = document.getElementById('sa-rtab-' + id);
-    if (el) el.style.display = 'none';
-  });
+  if (!hostId) {
+    ['warnings','strong','cash','new','conflicts'].forEach(id => {
+      const el = document.getElementById('sa-rtab-' + id);
+      if (el) el.style.display = 'none';
+    });
+  }
   host.style.display = 'block';
 
   const es = parsed.executive_summary || {};
