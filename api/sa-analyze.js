@@ -148,7 +148,7 @@ module.exports = async (req, res) => {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 10000, messages: [{ role: 'user', content: finalPrompt }] })
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 4000, messages: [{ role: 'user', content: finalPrompt }] })
     });
     const data = await r.json();
     if (!data.content?.[0]?.text) return res.status(500).json({ error: 'No response from Claude', raw: JSON.stringify(data).slice(0,200) });
