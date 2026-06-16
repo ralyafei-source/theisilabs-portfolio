@@ -64,6 +64,23 @@ module.exports = async (req, res) => {
     }
   }
 
+  // ── loadInputs: return today's saved inputs ──────────────────────
+  if (req.body && req.body.loadInputs && GITHUB_TOKEN) {
+    try {
+      const date = new Date().toISOString().slice(0,10);
+      const fp = `data/sa-inputs-${date}.json`;
+      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
+        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
+      });
+      if (!ex.ok) return res.status(200).json({ inputs: null });
+      const file = await ex.json();
+      const decoded = JSON.parse(Buffer.from(file.content, 'base64').toString('utf8'));
+      return res.status(200).json({ inputs: decoded.inputs || null, savedAt: decoded.savedAt || null });
+    } catch(e) {
+      return res.status(200).json({ inputs: null, error: e.message });
+    }
+  }
+
   // ── Analysis: build prompt + call Claude (NO GitHub save here) ────────────
   const finalPrompt = inputs ? buildPrompt(inputs) : prompt;
   if (!finalPrompt) return res.status(400).json({ error: 'inputs or prompt required' });

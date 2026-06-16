@@ -12156,6 +12156,51 @@ function saShowRTab(id, btn) {
   if (el) el.classList.add('active');
 }
 
+async function saLoadSavedInputs() {
+  try {
+    const r = await fetch('/api/sa-analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ loadInputs: true })
+    });
+    const data = await r.json();
+    if (!data.inputs) return;
+    const inp = data.inputs;
+    const map = {
+      'sa-short-ideas': ['shortIdeas','chk-short','sa-short-status'],
+      'sa-updown-mine': ['updownMine','chk-updown-mine','sa-updown-mine-status'],
+      'sa-updown-market': ['updownMarket','chk-updown-market','sa-updown-market-status'],
+      'sa-pqp': ['pqp','chk-pqp','sa-pqp-status'],
+      'sa-toprated': ['topRated','chk-toprated','sa-toprated-status'],
+      'sa-exclusive': ['exclusive','chk-exclusive','sa-exclusive-status'],
+      'sa-quant-screen': ['quantScreen','chk-quant','sa-quant-status'],
+      'sa-alpha-picks': ['alphaPicks','chk-alpha','sa-alpha-status'],
+      'sa-stock-detail': ['stockDetail',null,'sa-detail-status']
+    };
+    Object.entries(map).forEach(([elId, arr]) => {
+      const key = arr[0], chkId = arr[1], statusId = arr[2];
+      const el = document.getElementById(elId);
+      if (el && inp[key]) {
+        el.value = inp[key];
+        if (chkId) { try { saMarkFilled(elId, chkId, statusId); } catch(e) {} }
+      }
+    });
+    if (inp.cash != null) window.saData.cash = inp.cash;
+    if (inp.currency) window.saData.currency = inp.currency;
+    const lu = document.getElementById('sa-last-update');
+    if (lu && data.savedAt) lu.textContent = 'آخر حفظ: ' + new Date(data.savedAt).toLocaleString('ar');
+  } catch(e) {}
+}
+(function(){
+  if (typeof showTab === 'function' && !showTab.__saWrapped) {
+    const _origShowTab = showTab;
+    showTab = function(name, el) {
+      _origShowTab(name, el);
+      if (name === 'sa-intel') saLoadSavedInputs();
+    };
+    showTab.__saWrapped = true;
+  }
+})();
 // ── Collect all inputs into structured object ──
 function saCollectInputs() {
   const g = id => document.getElementById(id)?.value?.trim() || '';
