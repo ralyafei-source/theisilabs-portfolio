@@ -12323,26 +12323,44 @@ function saRenderCards(parsed) {
     '<div style="font-size:14px;font-weight:700;color:' + color + ';margin:18px 0 10px">' + title +
     (count != null ? ' · ' + count : '') + '</div>' + body;
 
-  // Warnings
-  if (parsed.warnings) {
-    const body = parsed.warnings.length === 0
+  // Warnings + Strong positions (two columns)
+  {
+    let wBody = !parsed.warnings ? '' : (parsed.warnings.length === 0
       ? '<div style="color:var(--text3);padding:14px;text-align:center;font-size:13px">لا تحذيرات هذا الأسبوع</div>'
-      : parsed.warnings.map(w => saStockCard(w, 'danger')).join('');
-    html += section('⚠️ التحذيرات', 'var(--red)', parsed.warnings.length, body);
+      : parsed.warnings.map(w => saStockCard(w, 'danger')).join(''));
+    let sBody = !parsed.strong_positions ? '' : (parsed.strong_positions.length === 0
+      ? '<div style="color:var(--text3);padding:14px;text-align:center;font-size:13px">لا مراكز قوية</div>'
+      : parsed.strong_positions.map(s => saStockCard(s, 'success')).join(''));
+    html += '<div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">' +
+      '<div style="flex:1;min-width:280px">' +
+        '<div style="font-size:14px;font-weight:700;color:var(--red);margin-bottom:10px">⚠️ التحذيرات' +
+        (parsed.warnings ? ' · ' + parsed.warnings.length : '') + '</div>' + wBody +
+      '</div>' +
+      '<div style="flex:1;min-width:280px">' +
+        '<div style="font-size:14px;font-weight:700;color:var(--accent2);margin-bottom:10px">✓ المراكز القوية' +
+        (parsed.strong_positions ? ' · ' + parsed.strong_positions.length : '') + '</div>' + sBody +
+      '</div>' +
+    '</div>';
   }
 
-  // Strong positions
-  if (parsed.strong_positions) {
-    html += section('✓ المراكز القوية', 'var(--accent2)', parsed.strong_positions.length,
-      parsed.strong_positions.map(s => saStockCard(s, 'success')).join(''));
-  }
-
-  // Cash decisions
+  // Cash decisions (equal-height grid, ~4 per row)
   if (parsed.cash_decisions) {
     const cd = parsed.cash_decisions;
+    const cardFor = (a) => {
+      const tag = a.is_new
+        ? '<span style="font-size:10px;background:rgba(255,10,120,0.12);color:var(--accent);padding:1px 6px;border-radius:4px;vertical-align:middle">جديد</span>'
+        : '<span style="font-size:10px;background:var(--bg2);color:var(--text3);padding:1px 6px;border-radius:4px;vertical-align:middle">تمتلكه</span>';
+      return '<div style="background:var(--bg3);border-radius:10px;padding:14px;text-align:center;display:flex;flex-direction:column">' +
+        '<div style="font-size:15px;font-weight:700;font-family:monospace">' + (a.symbol || '—') + ' ' + tag + '</div>' +
+        '<div style="font-size:22px;font-weight:700;color:var(--accent);margin:8px 0 2px">' + (a.amount_usd || '—') + '</div>' +
+        '<div style="font-size:10px;color:var(--text3);margin-bottom:6px">' + (a.pct_of_cash || '') + ' من الكاش</div>' +
+        (a.reason ? '<div style="font-size:11px;color:var(--text2);border-top:1px solid var(--border);padding-top:6px;margin-top:auto;line-height:1.6">' + a.reason + '</div>' : '') +
+        '</div>';
+    };
     let body = '<div style="background:var(--bg2);border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:13px">' +
       '<span style="color:var(--text2)">إجمالي الكاش: </span><strong style="color:var(--accent)">' + (cd.total_available || '—') + '</strong></div>' +
-      (cd.allocations || []).map((a, i) => saCashCard(a, i + 1)).join('');
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">' +
+      (cd.allocations || []).map(cardFor).join('') + '</div>';
     html += section('💵 قرارات الكاش', 'var(--text)', null, body);
   }
 
