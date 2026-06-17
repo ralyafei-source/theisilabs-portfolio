@@ -17,8 +17,7 @@ function buildPrompt(inputs) {
     inputs.topRated     ? `[TOP_RATED_38]\n${inputs.topRated.slice(0,6000)}`    : '',
     inputs.alphaPicks   ? `[ALPHA_PICKS]\n${inputs.alphaPicks.slice(0,3000)}`    : '',
     inputs.exclusive    ? `[EXCLUSIVE]\n${inputs.exclusive.slice(0,3000)}`        : '',
-    inputs.stockDetail  ? `[STOCK_DETAIL]\n${inputs.stockDetail.slice(0,3000)}`  : '',
-    inputs.quantScreen  ? `[STOCKS_BY_QUANT]\n${inputs.quantScreen.slice(0,8000)}` : ''
+    inputs.stockDetail  ? `[STOCK_DETAIL]\n${inputs.stockDetail.slice(0,3000)}`  : ''
   ].filter(Boolean).join('\n\n');
 
   return `محلل استثماري — مستثمر إماراتي لا ضريبة. محفظة ~$551K (~49 سهم). كاش: ${cashStr}.
