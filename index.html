@@ -12180,6 +12180,55 @@ async function saLoadSavedResult() {
     if (tEl && data.savedAt) tEl.textContent = 'آخر تحليل: ' + new Date(data.savedAt).toLocaleString('ar') + ' · نسخة ' + (data.version||1);
   } catch(e) {}
 }
+function saReorganizeInputs() {
+  if (document.getElementById('sa-input-grid')) return; // run once
+  const stepOf = id => { const el = document.getElementById(id); return el ? el.closest('.sa-step') : null; };
+  const ids = ['sa-excel-input','sa-cash-amount','sa-updown-mine','sa-updown-market','sa-pqp','sa-toprated','sa-exclusive','sa-alpha-picks','sa-stock-detail','sa-short-ideas','sa-quant-screen'];
+  const steps = {}; for (const id of ids) { steps[id] = stepOf(id); if (!steps[id]) return; }
+
+  // anchor: insert the grid where the first step currently sits
+  const firstStep = steps['sa-excel-input'];
+  const anchorParent = firstStep.parentElement;
+
+  // main 2-col grid
+  const grid = document.createElement('div');
+  grid.id = 'sa-input-grid';
+  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:14px;direction:rtl';
+  anchorParent.insertBefore(grid, firstStep);
+
+  // rows 1-4 (pairs) go straight into the 2-col grid
+  ['sa-excel-input','sa-cash-amount','sa-updown-mine','sa-updown-market','sa-pqp','sa-toprated','sa-exclusive','sa-alpha-picks']
+    .forEach(id => grid.appendChild(steps[id]));
+
+  // divider (full width)
+  const divider = document.createElement('div');
+  divider.id = 'sa-retired-divider';
+  divider.style.cssText = 'grid-column:1 / -1;margin-top:10px;padding-top:14px;border-top:1px solid var(--border)';
+  divider.innerHTML = '<div style="font-size:13px;font-weight:700;color:var(--text3)">عند الحاجة — قبل أي قرار كبير</div>' +
+    '<div style="font-size:11px;color:var(--text3);margin-top:3px">مصادر اختيارية — Short Ideas وStocks by Quant غير مُستخدمة في التحليل التلقائي</div>';
+  grid.appendChild(divider);
+
+  // row 5: a 3-col sub-grid spanning full width
+  const row5 = document.createElement('div');
+  row5.style.cssText = 'grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px';
+  grid.appendChild(row5);
+  ['sa-stock-detail','sa-short-ideas','sa-quant-screen'].forEach(id => row5.appendChild(steps[id]));
+
+  // grey + disable the two retired ones (stock-detail stays active)
+  ['sa-short-ideas','sa-quant-screen'].forEach(id => {
+    const step = steps[id];
+    step.style.opacity = '0.5';
+    const ta = document.getElementById(id);
+    if (ta) {
+      ta.disabled = true;
+      ta.style.background = 'var(--bg2)';
+      ta.style.color = 'var(--text3)';
+      ta.style.cursor = 'not-allowed';
+      ta.setAttribute('placeholder', 'يتطلب التفعيل — للمراجعة اليدوية قبل القرارات الكبيرة');
+    }
+  });
+}
+
 async function saLoadSavedInputs() {
   try {
     const r = await fetch('/api/sa-analyze', {
@@ -12228,7 +12277,7 @@ async function saLoadSavedInputs() {
     const _origShowTab = showTab;
     showTab = function(name, el) {
       _origShowTab(name, el);
-      if (name === 'sa-intel') { saLoadSavedInputs(); saLoadSavedResult(); }
+      if (name === 'sa-intel') { saReorganizeInputs(); saLoadSavedInputs(); saLoadSavedResult(); }
       if (name === 'sa-view') { saViewerInit(); }
     };
     showTab.__saWrapped = true;
