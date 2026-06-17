@@ -167,6 +167,78 @@ module.exports = async (req, res) => {
     }
   }
 
+  // ── savePortfolio: parse + save SA portfolio Excel data ──────────
+  if (req.body && req.body.savePortfolio && req.body.rows && GITHUB_TOKEN) {
+    try {
+      const date = new Date().toISOString().slice(0,10);
+      const fp = `data/sa-portfolio-${date}.json`;
+      const raw = req.body.rows;
+      const GRADE_MAP = { 'A+':4.3,'A':4.0,'A-':3.7,'B+':3.3,'B':3.0,'B-':2.7,'C+':2.3,'C':2.0,'C-':1.7,'D+':1.3,'D':1.0,'D-':0.7,'F':0 };
+      const labelOf = q => q >= 4.5 ? 'Strong Buy' : q >= 3.5 ? 'Buy' : q >= 2.5 ? 'Hold' : q >= 1.5 ? 'Sell' : 'Strong Sell';
+      const stocks = [], etfs = [];
+      for (const r of raw) {
+        if (!r.sym) continue;
+        const hasGrades = r.valuation !== undefined && r.valuation !== null && r.valuation !== '';
+        if (!hasGrades) {
+          etfs.push({ sym: r.sym, quant: Number(r.quant) || null, quant_label: r.quant ? labelOf(Number(r.quant)) : null, sa_analyst: r.sa_analyst ? Number(r.sa_analyst) : null, days_at_rating: r.days_at_rating ? Number(r.days_at_rating) : null });
+        } else {
+          stocks.push({
+            sym: r.sym,
+            quant: Number(r.quant) || null,
+            quant_label: r.quant ? labelOf(Number(r.quant)) : null,
+            sa_analyst: r.sa_analyst ? Number(r.sa_analyst) : null,
+            wall_st: r.wall_st ? Number(r.wall_st) : null,
+            days_at_rating: r.days_at_rating ? Number(r.days_at_rating) : null,
+            analysts_covering: r.analysts_covering ? Number(r.analysts_covering) : null,
+            grades: { V: r.valuation || null, G: r.growth || null, P: r.profitability || null, M: r.momentum || null, R: r.eps_revision || null },
+            earnings_date: r.earnings_date || null,
+            eps_estimate: r.eps_estimate !== undefined && r.eps_estimate !== '' ? Number(r.eps_estimate) : null,
+            eps_actual: r.eps_actual !== undefined && r.eps_actual !== '' ? Number(r.eps_actual) : null,
+            eps_surprise: r.eps_surprise !== undefined && r.eps_surprise !== '' ? Number(r.eps_surprise) : null,
+          });
+        }
+      }
+      const payload = JSON.stringify({ date, stocks, etfs, saved_at: new Date().toISOString(), count: { stocks: stocks.length, etfs: etfs.length } }, null, 2);
+      let sha = null;
+      try {
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+        if (ex.ok) sha = (await ex.json()).sha;
+      } catch {}
+      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
+        body: JSON.stringify({ message: `SA portfolio ${date}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) })
+      });
+      return res.status(200).json({ saved: sr.ok ? fp : false, stocks: stocks.length, etfs: etfs.length });
+    } catch(e) { return res.status(200).json({ saved: false, error: e.message }); }
+  }
+
+  // ── loadPortfolio: today's portfolio, or carry forward most recent ──
+  if (req.body && req.body.loadPortfolio && GITHUB_TOKEN) {
+    try {
+      const today = new Date().toISOString().slice(0,10);
+      const readDay = async (date) => {
+        const fp = `data/sa-portfolio-${date}.json`;
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+        if (!ex.ok) return null;
+        const f = await ex.json();
+        return JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
+      };
+      let result = await readDay(today);
+      if (result) return res.status(200).json({ ...result, isCarryForward: false });
+      const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+      if (!dir.ok) return res.status(200).json({ stocks: [], etfs: [] });
+      const files = await dir.json();
+      const dates = (Array.isArray(files) ? files : [])
+        .map(f => (f.name||'').match(/^sa-portfolio-(\d{4}-\d{2}-\d{2})\.json$/))
+        .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
+      if (!dates.length) return res.status(200).json({ stocks: [], etfs: [] });
+      const prior = await readDay(dates[0]);
+      if (prior) return res.status(200).json({ ...prior, isCarryForward: true });
+      return res.status(200).json({ stocks: [], etfs: [] });
+    } catch(e) { return res.status(200).json({ stocks: [], etfs: [], error: e.message }); }
+  }
+
   // ── listAnalyses: return dates that have a saved analysis ────────
   if (req.body && req.body.listAnalyses && GITHUB_TOKEN) {
     try {

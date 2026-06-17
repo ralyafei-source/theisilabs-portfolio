@@ -16,6 +16,7 @@
 <meta name="apple-mobile-web-app-title" content="FI Dashboard">
 <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   /* Surfaces — near-black, layered (research: dark gray not pure black) */
@@ -2693,6 +2694,7 @@ WOLF remains at critical lows<br><br>
   <div class="sa-progress"><div class="sa-progress-fill" id="sa-progress-fill" style="width:0%"></div></div>
   <div class="sa-checklist" id="sa-checklist">
     <div class="sa-check-item"><div class="sa-check-dot" id="chk-excel"></div><span>ملف Excel (المحفظة)</span></div>
+    <div class="sa-check-item"><div class="sa-check-dot" id="chk-portfolio-ratings"></div><span>SA Portfolio Ratings</span></div>
     <div class="sa-check-item"><div class="sa-check-dot" id="chk-short"></div><span>Short Ideas</span></div>
     <div class="sa-check-item"><div class="sa-check-dot" id="chk-updown-mine"></div><span>Upgrades — أسهمك</span></div>
     <div class="sa-check-item"><div class="sa-check-dot" id="chk-updown-market"></div><span>Upgrades — السوق</span></div>
@@ -12140,14 +12142,65 @@ function saHandleExcel(input) {
   const dot = document.getElementById('chk-excel');
   if (st) { st.textContent = '⏳ جاري قراءة الملف...'; st.className = 'sa-status'; }
   const reader = new FileReader();
-  reader.onload = function(e) {
-    window.saData.excelText = 'FILE:' + file.name + ' SIZE:' + file.size;
-    window.saData.excelFile = e.target.result;
-    if (st) { st.textContent = '✓ ' + file.name; st.className = 'sa-status ok'; }
-    if (dot) dot.className = 'sa-check-dot filled';
-    saUpdateProgress();
+  reader.onload = async function(e) {
+    try {
+      // Parse Excel using SheetJS
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      if (!rows.length) { if (st) { st.textContent = '❌ الملف فارغ'; st.className = 'sa-status err'; } return; }
+      // Map columns (SA column names → our field names)
+      const COL = {
+        sym: ['Symbol'],
+        quant: ['Quant Rating'],
+        sa_analyst: ['SA Analyst Ratings'],
+        wall_st: ['Wall Street Ratings'],
+        days_at_rating: ['Days at Rating','Consecutive Days at Quant Rating'],
+        analysts_covering: ['# SA Analysts Covering'],
+        valuation: ['Valuation Grade'],
+        growth: ['Growth Grade'],
+        profitability: ['Profitability Grade'],
+        momentum: ['Momentum Grade'],
+        eps_revision: ['EPS Revision Grade'],
+        earnings_date: ['Upcoming Announce Date'],
+        eps_estimate: ['EPS Estimate'],
+        eps_actual: ['EPS Actual'],
+        eps_surprise: ['EPS Surprise'],
+      };
+      const keys = Object.keys(rows[0]);
+      const findCol = (candidates) => candidates.find(c => keys.includes(c)) || null;
+      const colMap = {};
+      for (const [field, cands] of Object.entries(COL)) { colMap[field] = findCol(cands); }
+      const parsed = rows.map(r => {
+        const o = {};
+        for (const [field, col] of Object.entries(colMap)) { o[field] = col ? r[col] : ''; }
+        return o;
+      }).filter(r => r.sym && String(r.sym).trim().length > 0);
+      if (!parsed.length) { if (st) { st.textContent = '❌ لم يُعثر على بيانات'; st.className = 'sa-status err'; } return; }
+      // Store locally so saRunAnalysis can access it
+      window.saData.excelText = 'FILE:' + file.name + ' SIZE:' + file.size;
+      window.saData.portfolioRows = parsed;
+      if (st) { st.textContent = '⏳ جاري الحفظ...'; st.className = 'sa-status'; }
+      // Save to GitHub via sa-analyze
+      const resp = await fetch('/api/sa-analyze', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ savePortfolio: true, rows: parsed })
+      });
+      const result = await resp.json();
+      if (result.saved) {
+        if (st) { st.textContent = `✓ ${parsed.length} سهم (${result.stocks} أسهم + ${result.etfs} صناديق)`; st.className = 'sa-status ok'; }
+        if (dot) dot.className = 'sa-check-dot filled';
+      } else {
+        if (st) { st.textContent = '⚠️ تم التحليل، لم يُحفظ: ' + (result.error || ''); st.className = 'sa-status'; }
+        if (dot) dot.className = 'sa-check-dot filled';
+      }
+      saUpdateProgress();
+    } catch(err) {
+      if (st) { st.textContent = '❌ خطأ في قراءة الملف: ' + err.message; st.className = 'sa-status err'; }
+    }
   };
-  reader.readAsDataURL(file);
+  reader.readAsArrayBuffer(file);
 }
 
 function saShowRTab(id, btn) {
