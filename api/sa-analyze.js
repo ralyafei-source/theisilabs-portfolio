@@ -67,18 +67,42 @@ module.exports = async (req, res) => {
     }
   }
 
-  // ── loadInputs: return today's saved inputs ──────────────────────
+  // ── loadInputs: today's inputs, or fall back to most recent prior day ──
   if (req.body && req.body.loadInputs && GITHUB_TOKEN) {
     try {
-      const date = new Date().toISOString().slice(0,10);
-      const fp = `data/sa-inputs-${date}.json`;
-      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
+      const today = new Date().toISOString().slice(0,10);
+      const readDay = async (date) => {
+        const fp = `data/sa-inputs-${date}.json`;
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
+          headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
+        });
+        if (!ex.ok) return null;
+        const f = await ex.json();
+        const decoded = JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
+        return { inputs: decoded.inputs || null, savedAt: decoded.savedAt || null, date };
+      };
+      // try today first
+      let result = await readDay(today);
+      if (result && result.inputs) {
+        return res.status(200).json({ ...result, isCarryForward: false });
+      }
+      // fall back: list sa-inputs-*.json, pick most recent date < today
+      const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, {
         headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
       });
-      if (!ex.ok) return res.status(200).json({ inputs: null });
-      const file = await ex.json();
-      const decoded = JSON.parse(Buffer.from(file.content, 'base64').toString('utf8'));
-      return res.status(200).json({ inputs: decoded.inputs || null, savedAt: decoded.savedAt || null });
+      if (!dir.ok) return res.status(200).json({ inputs: null });
+      const files = await dir.json();
+      const dates = (Array.isArray(files) ? files : [])
+        .map(f => (f.name||'').match(/^sa-inputs-(\d{4}-\d{2}-\d{2})\.json$/))
+        .filter(Boolean).map(m => m[1])
+        .filter(dt => dt < today)
+        .sort().reverse();
+      if (!dates.length) return res.status(200).json({ inputs: null });
+      const prior = await readDay(dates[0]);
+      if (prior && prior.inputs) {
+        return res.status(200).json({ ...prior, isCarryForward: true });
+      }
+      return res.status(200).json({ inputs: null });
     } catch(e) {
       return res.status(200).json({ inputs: null, error: e.message });
     }

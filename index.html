@@ -12212,7 +12212,15 @@ async function saLoadSavedInputs() {
     if (inp.cash != null) window.saData.cash = inp.cash;
     if (inp.currency) window.saData.currency = inp.currency;
     const lu = document.getElementById('sa-last-update');
-    if (lu && data.savedAt) lu.textContent = 'آخر حفظ: ' + new Date(data.savedAt).toLocaleString('ar');
+    if (lu && data.savedAt) {
+      if (data.isCarryForward) {
+        lu.textContent = '⚠️ محمّل من يوم سابق (' + (data.date||'') + ') — راجع البيانات قبل التشغيل';
+        lu.style.color = 'var(--gold)';
+      } else {
+        lu.textContent = 'آخر حفظ: ' + new Date(data.savedAt).toLocaleString('ar');
+        lu.style.color = '';
+      }
+    }
   } catch(e) {}
 }
 (function(){
