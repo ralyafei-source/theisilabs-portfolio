@@ -1,30 +1,5 @@
 [
   {
-    "ts": "2026-06-05T03:08:15.922Z",
-    "type": "daily",
-    "nickname": "rashed",
-    "status": "degraded",
-    "checks": {
-      "writeOk": true,
-      "contentLength": 14348,
-      "scoresFound": 0,
-      "sectionsFound": [
-        "DAILY SIGNALS",
-        "EARNINGS & EVENTS",
-        "MACRO TODAY"
-      ],
-      "sectionsMissing": [],
-      "totalSentinels": 21,
-      "sentinelHits": {
-        "غير متوفر": 20,
-        "N/A": 1
-      }
-    },
-    "note": "21 unavailable field(s)",
-    "scenario": "255",
-    "dataQuality": "═══ DATA_QUALITY ═══\nFIELDS: ROE, ROIC, PE, PEG, netMargin, grossMargin, DCF, priceTarget\nCROSS_CHECK_FIELDS: ROE, PE, PEG, netMargin, grossMargin (FMP+Finnhub)\nSINGLE_SOURCE_FIELDS: ROIC, DCF, priceTarget (FMP only)\nOKTA: ROE=✓ ROIC=✓ PE=✗ PEG=✗ netMargin=✗ grossMargin=✗ DCF=✓ priceTarget=✓ | missing=4  fh=ROE=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓\nNVDA: ROE=✓ ROIC=✓ PE=✗ PEG=✗ netMargin=✗ grossMargin=✗ DCF=✗ priceTarget=✗ | missing=6  fh=ROE=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓\nSEZL: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0  fh=ROE=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓\nMU: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0  fh=ROE=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓\nAMZN: ROE=✓ ROIC=✓ PE=✗ PEG=✗ netMargin=✗ grossMargin=✗ DCF=✓ priceTarget=✓ | missing=4  fh=ROE=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓\nPANW: ROE=✓ ROIC=✓ PE=✓ PEG=✗ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=1  fh=ROE=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓\nONTO: ROE=✓ ROIC=✓ PE=✓ PEG=✗ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=1  fh=ROE=✓ PE=✓ PEG=✗ netMargin=✓ grossMargin=✓\nDUOL: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0  fh=ROE=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓\nCRM: ROE=✗ ROIC=✗ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=2  fh=ROE=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓\nGOOGL: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0  fh=ROE=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓\nMSFT: ROE=✓ ROIC=✓ PE=✗ PEG=✗ netMargin=✗ grossMargin=✗ DCF=✓ priceTarget=✓ | missing=4  fh=ROE=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓\nCRWD: ROE=✓ ROIC=✓ PE=✗ PEG=✗ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=2  fh=ROE=✓ PE=✗ PEG=✗ netMargin=✓ grossMargin=✓\nNTLA: ROE=✓ ROIC=✓ PE=✗ PEG=✗ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=2  fh=ROE=✓ PE=✗ PEG=✗ netMargin=✓ grossMargin=✗\nAPH: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0  fh=ROE=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓\nSIMO: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0  fh=ROE=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓\nIOT: ROE=✓ ROIC=✓ PE=✗ PEG=✗ netMargin=✗ grossMargin=✗ DCF=✓ priceTarget=✓ | missing=4  fh=ROE=✓ PE=✗ PEG=✗ netMargin=✓ grossMargin=✓\nZETA: ROE=✓ ROIC=✓ PE=✗ PEG=✗ netMargin=✗ grossMargin=✗ DCF=✗ priceTarget=✓ | missing=5  fh=ROE=✓ PE=✗ PEG=✗ netMargin=✓ grossMargin=✓\nPLTR: ROE=✓ ROIC=✓ PE=✗ PEG=✗ netMargin=✗ grossMargin=✗ DCF=✓ priceTarget=✓ | missing=4  fh=ROE=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓\nCRDO: ROE=✓ ROIC=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓ DCF=✓ priceTarget=✓ | missing=0  fh=ROE=✓ PE=✓ PEG=✓ netMargin=✓ grossMargin=✓\nMSTR: ROE=✓ ROIC=✓ PE=✗ PEG=✗ netMargin=✗ grossMargin=✗ DCF=✓ priceTarget=✓ | missing=4  fh=ROE=✓ PE=✗ PEG=✓ netMargin=✓ grossMargin=✓\nSUMMARY: 20 stocks · 43 field(s) missing across 13 stock(s)\nPER_FIELD_MISSING: ROE=1/20 ROIC=1/20 PE=10/20 PEG=12/20 netMargin=8/20 grossMargin=8/20 DCF=2/20 priceTarget=1/20\nFINNHUB_COVERAGE: ROE=20/20 PE=15/20 PEG=15/20 netMargin=20/20 grossMargin=19/20\n═══ END DATA_QUALITY ═══\n\n═══ TRANSPARENCY ═══\nQUALITY SUMMARY: 📊 Data quality: 9/20 stocks fully covered · 11 stock(s) analyzed with partial data\nINSTRUCTION: When writing analysis for each stock below, include the\ntransparency line exactly as written. For stocks with no line, write nothing.\nOKTA: 🔴 OKTA — Score analysis was done without considering: P/E, PEG, net margin, gross margin (low-confidence score)\nNVDA: 🔴 NVDA — Score analysis was done without considering: P/E, PEG, net margin, gross margin, DCF, price target (low-confidence score)\nAMZN: 🔴 AMZN — Score analysis was done without considering: P/E, PEG, net margin, gross margin (low-confidence score)\nCRM: ⚠️ CRM — Score analysis was done without considering: ROE, ROIC\nMSFT: 🔴 MSFT — Score analysis was done without considering: P/E, PEG, net margin, gross margin (low-confidence score)\nCRWD: ⚠️ CRWD — Score analysis was done without considering: P/E, PEG\nNTLA: ⚠️ NTLA — Score analysis was done without considering: P/E, PEG\nIOT: 🔴 IOT — Score analysis was done without considering: P/E, PEG, net margin, gross margin (low-confidence score)\nZETA: 🔴 ZETA — Score analysis was done without considering: P/E, PEG, net margin, gross margin, DCF (low-confidence score)\nPLTR: 🔴 PLTR — Score analysis was done without considering: P/E, PEG, net margin, gross margin (low-confidence score)\nMSTR: 🔴 MSTR — Score analysis was done without considering: P/E, PEG, net margin, gross margin (low-confidence score)\n═══ END TRANSPARENCY ═══"
-  },
-  {
     "ts": "2026-06-05T08:26:06.644Z",
     "type": "daily",
     "nickname": "rashed",
@@ -656,6 +631,31 @@
       }
     },
     "note": "1 section(s) missing; 100 unavailable field(s)",
+    "scenario": "255",
+    "dataQuality": "═══════════════════════"
+  },
+  {
+    "ts": "2026-06-17T20:54:47.875Z",
+    "type": "daily",
+    "nickname": "rashed",
+    "status": "degraded",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 11882,
+      "scoresFound": 0,
+      "sectionsFound": [
+        "DAILY SIGNALS",
+        "MACRO TODAY"
+      ],
+      "sectionsMissing": [
+        "EARNINGS & EVENTS"
+      ],
+      "totalSentinels": 3,
+      "sentinelHits": {
+        "غير متوفر": 3
+      }
+    },
+    "note": "1 section(s) missing; 3 unavailable field(s)",
     "scenario": "255",
     "dataQuality": "═══════════════════════"
   }
