@@ -12418,20 +12418,25 @@ function saRenderCards(parsed, hostId) {
   const es = parsed.executive_summary || {};
   let html = '<div style="direction:rtl;text-align:right">';
 
+  // Performance banner (color reflects up/down) + portfolio value
+  if (es.weekly_performance || es.portfolio_value) {
+    const perf = (es.weekly_performance || '');
+    const isUp = /^\s*\+|ارتفاع|ربح|صعود|نمو|مكاسب/.test(perf) && !/^\s*-|انخفاض|خسارة|تراجع/.test(perf);
+    const isDown = /^\s*-|انخفاض|خسارة|تراجع/.test(perf);
+    const accent = isUp ? 'var(--accent2)' : (isDown ? 'var(--red)' : 'var(--text2)');
+    const bg = isUp ? 'rgba(52,211,153,0.10)' : (isDown ? 'rgba(248,113,113,0.10)' : 'rgba(149,149,168,0.10)');
+    html += '<div style="background:' + bg + ';border-right:3px solid ' + accent + ';border-radius:0 10px 10px 0;padding:12px 14px;margin-bottom:12px">' +
+      '<div style="font-size:11px;color:var(--text2);margin-bottom:4px">📊 أداء الأسبوع' +
+      (es.portfolio_value ? ' · قيمة المحفظة ' + es.portfolio_value : '') + '</div>' +
+      '<div style="font-size:14px;font-weight:700;color:var(--text)">' + (perf || '—') + '</div></div>';
+  }
+
   // Decision banner
   if (es.weekly_decision) {
     html += '<div style="background:rgba(255,10,120,0.10);border-right:3px solid var(--rose);border-radius:0 10px 10px 0;padding:12px 14px;margin-bottom:16px">' +
       '<div style="font-size:11px;color:var(--text2);margin-bottom:4px">⚡ القرار الأسبوعي</div>' +
       '<div style="font-size:14px;font-weight:700;color:var(--text)">' + es.weekly_decision + '</div></div>';
   }
-
-  // Metric band
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:14px">' +
-    saMetricCard('قيمة المحفظة', es.portfolio_value || '—', '') +
-    saMetricCard('أداء الأسبوع', es.weekly_performance || '—', '') +
-    saMetricCard('أكبر خطر', es.biggest_risk_symbol || '—', '') +
-    saMetricCard('أفضل فرصة', es.best_opportunity || '—', '') +
-    '</div>';
 
   // Summary
   if (es.summary_text) {
