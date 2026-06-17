@@ -1,25 +1,5 @@
 [
   {
-    "ts": "2026-06-04T03:11:20.067Z",
-    "type": "daily",
-    "nickname": "rashed",
-    "status": "failed",
-    "checks": {
-      "writeOk": true,
-      "contentLength": 33,
-      "scoresFound": 0,
-      "sectionsFound": [],
-      "sectionsMissing": [
-        "DAILY SIGNALS",
-        "EARNINGS & EVENTS",
-        "MACRO TODAY"
-      ],
-      "totalSentinels": 0,
-      "sentinelHits": {}
-    },
-    "note": "3 section(s) missing; content too short"
-  },
-  {
     "ts": "2026-06-04T04:07:20.787Z",
     "type": "daily",
     "nickname": "rashed",
@@ -648,6 +628,31 @@
       }
     },
     "note": "22 unavailable field(s)",
+    "scenario": "255",
+    "dataQuality": "═══════════════════════"
+  },
+  {
+    "ts": "2026-06-17T19:27:04.674Z",
+    "type": "daily",
+    "nickname": "rashed",
+    "status": "degraded",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 13569,
+      "scoresFound": 0,
+      "sectionsFound": [
+        "DAILY SIGNALS",
+        "EARNINGS & EVENTS",
+        "MACRO TODAY"
+      ],
+      "sectionsMissing": [],
+      "totalSentinels": 145,
+      "sentinelHits": {
+        "غير متوفر": 95,
+        "N/A": 50
+      }
+    },
+    "note": "145 unavailable field(s)",
     "scenario": "255",
     "dataQuality": "═══════════════════════"
   }
