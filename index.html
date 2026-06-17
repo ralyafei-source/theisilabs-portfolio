@@ -12227,6 +12227,16 @@ function saReorganizeInputs() {
       ta.setAttribute('placeholder', 'يتطلب التفعيل — للمراجعة اليدوية قبل القرارات الكبيرة');
     }
   });
+
+  // hide original section shells left empty after moving their steps into the grid
+  document.querySelectorAll('#tab-sa-intel .sa-section').forEach(sec => {
+    if (sec === grid) return;
+    if (!sec.querySelector('.sa-step')) sec.style.display = 'none';
+  });
+  // hide any stray freq label
+  document.querySelectorAll('#tab-sa-intel .sa-step-freq').forEach(el => {
+    if (!el.closest('.sa-step')) el.style.display = 'none';
+  });
 }
 
 async function saLoadSavedInputs() {
