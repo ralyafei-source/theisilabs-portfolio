@@ -6304,78 +6304,127 @@ function renderCollapsibleSections(text, title){
 function renderHealthSummary(text){
   if(!text||text.length<50) return `<div style="padding:20px;text-align:center;color:var(--text3);">لا توجد بيانات صحة المحفظة بعد — يتحدث أول أحد من كل شهر</div>`;
 
-  // Split on --- separators, find sections with score like "12/20"
-  const parts = text.split(/\n---\n/).filter(p=>p.trim());
+  // Strip any HTML the upstream may have added, work on plain markdown lines
+  const plain = text.replace(/<\/?b>/g,'').replace(/\*\*/g,'');
+
+  // ── 1. Criteria: tolerant — catches BOTH "N. label: X/Y" and
+  //        "المعيار N — ... من 20 = NN%" (the real monthly format) ──
   const cards = [];
-  parts.forEach(part=>{
-    // Match <b>N. label: X/Y</b>  format (actual data format)
-    const hm = part.match(/<b>\d+\.\s*([^:<]+):\s*(\d+)\/(\d+)<\/b>/);
-    if(!hm) return;
-    const label = hm[1].trim();
-    const score = parseInt(hm[2]);
-    const max   = parseInt(hm[3]);
-    const pct   = Math.round(score/max*100);
-    const color = pct>=75?'var(--green)':pct>=50?'var(--gold)':'var(--red)';
-    const bg    = pct>=75?'rgba(29,158,117,0.08)':pct>=50?'rgba(186,117,23,0.08)':'rgba(226,75,74,0.08)';
-    // Key bullet points
-    const bullets = part.split('\n')
-      .filter(l=>l.trim().startsWith('-')||l.trim().startsWith('•'))
-      .map(l=>l.replace(/^[-•]\s*/,'').replace(/<[^>]+>/g,'').replace(/\*\*/g,'').trim())
-      .filter(l=>l.length>5&&l.length<120)
-      .slice(0,2);
-    // Warnings
-    const warnM = part.match(/<b>⚠️([^<]{5,80})<\/b>/);
-    const warning = warnM ? warnM[1].trim() : '';
-    cards.push({label, score, max, pct, color, bg, bullets, warning});
+  // a) explicit X/Y fractions
+  const fracRe = /(?:<b>)?\s*\d+\s*[.\-—]\s*([^:<\n]{3,60}?):\s*(\d+)\/(\d+)/g;
+  let m;
+  while((m = fracRe.exec(plain))){
+    const sc = parseInt(m[2]), mx = parseInt(m[3]);
+    if(mx>0) cards.push({label:m[1].trim(), score:sc, max:mx, pct:Math.round(sc/mx*100)});
+  }
+  // b) "المعيار N — <label> ... من 20 = NN%"  /  "تقدير: ~14 من 20 = 70%"
+  if(!cards.length){
+    const lines = plain.split('\n');
+    let pending = null;
+    lines.forEach(l=>{
+      const lab = l.match(/المعيار\s*\d+\s*[—\-:]\s*([^:\n]{3,70})/);
+      if(lab) pending = lab[1].replace(/[:：]\s*$/,'').trim();
+      const pc = l.match(/(\d+)\s*من\s*(\d+)\s*=\s*(\d+)\s*%/) || l.match(/=\s*(\d+)\s*%/);
+      if(pc){
+        const pct = parseInt(pc[pc.length-1]);
+        cards.push({label: pending || `معيار ${cards.length+1}`, score:pct, max:100, pct});
+        pending = null;
+      }
+    });
+  }
+  cards.forEach(c=>{
+    c.color = c.pct>=75?'var(--green)':c.pct>=50?'var(--gold)':'var(--red)';
   });
 
-  if(!cards.length){
-    // Fallback: just collapse the raw text
-    return `<details open style="white-space:normal;"><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--text);padding:10px;background:var(--bg2);border-radius:8px;list-style:none;">صحة المحفظة — اضغط لعرض التفاصيل ▾</summary><div style="padding:12px 0;">${mdToHtml(text)}</div></details>`;
+  // ── 2. Overall score: read "→ 5.9/10" or "= 59.2%" if present, else average ──
+  let overall10=null, overallPct=null;
+  const o10 = plain.match(/→\s*([\d.]+)\s*\/\s*10/);
+  const oPc = plain.match(/الإجمالي[^=\n]*=\s*\(?[\d+\s]*\)?\s*[÷/][^=\n]*=\s*([\d.]+)\s*%/) || plain.match(/=\s*([\d.]+)\s*%\s*→/);
+  if(o10) overall10 = parseFloat(o10[1]);
+  if(oPc) overallPct = Math.round(parseFloat(oPc[1]));
+  if(overall10!=null && overallPct==null) overallPct = Math.round(overall10*10);
+  if(overallPct==null && cards.length) overallPct = Math.round(cards.reduce((a,c)=>a+c.pct,0)/cards.length);
+  if(overall10==null && overallPct!=null) overall10 = +(overallPct/10).toFixed(1);
+  const totalColor = overallPct>=75?'var(--green)':overallPct>=50?'var(--gold)':'var(--red)';
+
+  // ── 3. Allocation tiles: "<sector> NN.N% ... <action>" rows ──
+  const alloc = [];
+  const allocRe = /(تقنية|ETFs?|تخميني|بيوتك|تعدين)\s*[:\s]*([\d.]+)\s*%/g;
+  const seen = new Set();
+  while((m = allocRe.exec(plain))){
+    if(seen.has(m[1])) continue; seen.add(m[1]);
+    const pct = parseFloat(m[2]);
+    let note='', col='var(--text)';
+    if(/تقنية/.test(m[1]) && pct>60){ note='⚠ تجاوز 60%'; col='var(--red)'; }
+    else if(/تخميني/.test(m[1]) && pct>8){ note='↓ قلّل'; col='var(--red)'; }
+    else if(/ETF/.test(m[1]) && pct<20){ note='↑ أضِف'; col='var(--gold)'; }
+    alloc.push({label:m[1], pct, note, col});
   }
 
-  // Total score
-  const totalScore = cards.reduce((a,c)=>a+c.score,0);
-  const totalMax   = cards.reduce((a,c)=>a+c.max,0);
-  const totalPct   = Math.round(totalScore/totalMax*100);
-  const totalColor = totalPct>=75?'var(--green)':totalPct>=50?'var(--gold)':'var(--red)';
+  // ── 4. Rebalance: sell list / buy list (symbols only, compact) ──
+  const grab = (anchor)=>{
+    const i = plain.indexOf(anchor);
+    if(i<0) return [];
+    const chunk = plain.slice(i, i+600);
+    const syms = (chunk.match(/\b[A-Z]{2,5}\b/g)||[]).filter(s=>!['ETF','ETFs','FMP','DCF','FCF','ROIC','SA','Q2'].includes(s));
+    return [...new Set(syms)].slice(0,6);
+  };
+  const sells = grab('ماذا تبيع');
+  const buys  = grab('ماذا تشتري');
 
-  let html = `<div style="white-space:normal;">`;
+  // No structured signal at all → keep the old safe fallback
+  if(!cards.length && !alloc.length && overallPct==null){
+    return `<details style="white-space:normal;"><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--text);padding:10px;background:var(--bg2);border-radius:8px;list-style:none;">صحة المحفظة — اضغط لعرض التفاصيل ▾</summary><div style="padding:12px 0;">${mdToHtml(text)}</div></details>`;
+  }
 
-  // Hero summary bar
-  html += `<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg2);border-radius:12px;margin-bottom:14px;border-top:2px solid ${totalColor};">
-    <div style="flex:0 0 58px;height:58px;border-radius:50%;border:3px solid ${totalColor};display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg3);">
-      <div style="font-size:16px;font-weight:800;color:${totalColor};font-family:'IBM Plex Mono',monospace;line-height:1;">${totalScore}</div>
-      <div style="font-size:9px;color:var(--text3);">/ ${totalMax}</div>
-    </div>
-    <div style="flex:1;direction:rtl;">
-      <div style="font-size:13px;font-weight:700;color:var(--text);">صحة المحفظة الشهرية</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:2px;">${totalPct}% — ${totalPct>=75?'صحة جيدة':totalPct>=50?'تحتاج مراجعة':'تحتاج تدخل'}</div>
-      <div style="margin-top:6px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
-        <div style="height:100%;width:${totalPct}%;background:${totalColor};border-radius:2px;"></div>
+  let html = `<div style="white-space:normal;direction:rtl;">`;
+
+  // ── ROW 1: ring + metric tiles ──
+  html += `<div style="display:grid;grid-template-columns:148px 1fr;gap:12px;margin-bottom:12px;">`;
+  html += `<div style="background:var(--bg2);border-radius:12px;padding:14px;text-align:center;display:flex;flex-direction:column;justify-content:center;border-top:2px solid ${totalColor};">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">درجة الصحة</div>
+      <div style="width:66px;height:66px;border-radius:50%;border:4px solid ${totalColor};margin:0 auto;display:flex;align-items:center;justify-content:center;background:var(--bg3);">
+        <span style="font-size:18px;font-weight:800;color:#fff;font-family:'IBM Plex Mono',monospace;">${overall10!=null?overall10:overallPct}</span>
       </div>
-    </div>
-  </div>`;
-
-  // Score cards in 2-col grid, each collapsible
-  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">`;
-  cards.forEach(c=>{
-    html += `<details style="background:var(--bg2);border-radius:10px;padding:10px 12px;border-right:3px solid ${c.color};">
-      <summary style="list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-        <div style="flex:1;direction:rtl;text-align:right;">
-          <div style="font-size:11px;font-weight:600;color:var(--text);line-height:1.3;">${c.label}</div>
-          ${c.warning?`<div style="font-size:9.5px;color:var(--red);margin-top:2px;">${c.warning.slice(0,45)}</div>`:''}
-        </div>
-        <div style="flex:0 0 38px;text-align:center;">
-          <span style="font-size:13px;font-weight:800;color:${c.color};font-family:'IBM Plex Mono',monospace;">${c.score}</span><span style="font-size:9px;color:var(--text3);">/${c.max}</span>
-        </div>
-      </summary>
-      <div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border);direction:rtl;">
-        ${c.bullets.map(b=>`<div style="font-size:10.5px;color:var(--text2);line-height:1.5;padding:1px 0;">· ${b}</div>`).join('')}
-      </div>
-    </details>`;
+      <div style="font-size:9px;color:var(--text3);margin-top:6px;">${overall10!=null?'من 10':'%'} — ${overallPct>=75?'جيدة':overallPct>=50?'تحتاج مراجعة':'تحتاج تدخل'}</div>
+    </div>`;
+  // criteria as small tiles (not the whole essay)
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:8px;align-content:start;">`;
+  cards.slice(0,6).forEach(c=>{
+    html += `<div style="background:var(--bg3);border-radius:8px;padding:9px;border-right:2px solid ${c.color};">
+        <div style="font-size:9px;color:var(--text3);line-height:1.3;height:24px;overflow:hidden;">${c.label}</div>
+        <div style="font-size:15px;font-weight:700;color:${c.color};font-family:'IBM Plex Mono',monospace;">${c.pct}%</div>
+      </div>`;
+  });
+  alloc.forEach(a=>{
+    html += `<div style="background:var(--bg3);border-radius:8px;padding:9px;">
+        <div style="font-size:9px;color:var(--text3);">${a.label}</div>
+        <div style="font-size:15px;font-weight:700;color:${a.col};font-family:'IBM Plex Mono',monospace;">${a.pct}%</div>
+        ${a.note?`<div style="font-size:8.5px;color:${a.col};">${a.note}</div>`:''}
+      </div>`;
   });
   html += `</div></div>`;
+
+  // ── ROW 2: rebalance plan as two compact columns ──
+  if(sells.length || buys.length){
+    html += `<div style="background:var(--bg2);border-radius:12px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:9px;">خطة إعادة التوازن — الشهر</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><div style="font-size:9px;color:var(--gold);margin-bottom:4px;">يبيع</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.7;">${sells.join(' · ')||'—'}</div></div>
+        <div style="border-right:0.5px solid var(--border);padding-right:10px;"><div style="font-size:9px;color:var(--green);margin-bottom:4px;">يشتري</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.7;">${buys.join(' · ')||'—'}</div></div>
+      </div></div>`;
+  }
+
+  // ── Full monthly detail preserved, collapsed by default ──
+  html += `<details style="white-space:normal;">
+      <summary style="cursor:pointer;list-style:none;font-size:10px;color:var(--text3);padding:8px 0;border-top:0.5px solid var(--border);">كيف نحسب هذا — التقرير الشهري الكامل ▾</summary>
+      <div style="padding:10px 0;font-size:11px;line-height:1.7;color:var(--text2);">${mdToHtml(text)}</div>
+    </details>`;
+
+  html += `<div style="font-size:9px;color:var(--text3);text-align:center;margin-top:8px;">كل رقم اتجاه بهامش خطأ واسع · القرار قرارك</div>`;
+  html += `</div>`;
   return html;
 }
 
