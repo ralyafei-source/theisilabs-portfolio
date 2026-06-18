@@ -642,24 +642,27 @@
     "dataQuality": "═══════════════════════"
   },
   {
-    "ts": "2026-06-18T09:49:24.626Z",
-    "type": "monthly",
+    "ts": "2026-06-18T09:53:01.684Z",
+    "type": "weekly",
     "nickname": "rashed",
-    "status": "ok",
+    "status": "degraded",
     "checks": {
       "writeOk": true,
-      "contentLength": 20580,
-      "scoresFound": 1,
+      "contentLength": 18194,
+      "scoresFound": 40,
       "sectionsFound": [
-        "COMPETITIVE EDGE",
-        "LONG VIEW",
-        "PORTFOLIO HEALTH"
+        "═══ RISK RADAR",
+        "═══ FAIR VALUE"
       ],
-      "sectionsMissing": [],
-      "totalSentinels": 0,
-      "sentinelHits": {}
+      "sectionsMissing": [
+        "═══ MOMENTUM"
+      ],
+      "totalSentinels": 26,
+      "sentinelHits": {
+        "غير متوفر": 26
+      }
     },
-    "note": "all healthy",
+    "note": "1 section(s) missing; 26 unavailable field(s)",
     "scenario": "255",
     "dataQuality": "═══════════════════════"
   }
