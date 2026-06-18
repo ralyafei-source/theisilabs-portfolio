@@ -6259,6 +6259,10 @@ function renderCashDeployment(content){
 function renderCollapsibleSections(text, title){
   if(!text||text.length<50) return `<div style="padding:20px;text-align:center;color:var(--text3);">لا توجد بيانات بعد</div>`;
 
+  // De-duplicate a repeated leading title line (data sometimes prints the
+  // weekly header twice in a row — caused a doubled header in the UI)
+  text = text.replace(/^\s*(.+?)\s*\n+\s*\1\s*\n/, '$1\n');
+
   // Split on major section markers: numbered headers, === dividers, <b>N. ...</b>
   const headerRe = /(?=\n(?:<b>)?\d+[\.\)]\s|(?:\n={3,}|\n─{3,}|\n━{3,}))/g;
   const rawSections = text.split(headerRe).filter(s=>s.trim().length>20);
@@ -6273,7 +6277,7 @@ function renderCollapsibleSections(text, title){
     </details>`;
   }
 
-  let html = `<div style="display:flex;flex-direction:column;gap:8px;white-space:normal;">`;
+  let html = `<div style="display:flex;flex-direction:column;gap:4px;white-space:normal;">`;
   rawSections.forEach((section, i)=>{
     const lines = section.trim().split('\n').filter(l=>l.trim());
     if(!lines.length) return;
@@ -6285,15 +6289,13 @@ function renderCollapsibleSections(text, title){
     // First section open, rest closed
     const isOpen = i===0;
 
-    html += `<details ${isOpen?'open':''} style="background:var(--bg2);border-radius:10px;overflow:hidden;">
-      <summary style="cursor:pointer;list-style:none;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;border-right:3px solid var(--border);">
-        <div style="direction:rtl;text-align:right;flex:1;">
-          <div style="font-size:12px;font-weight:700;color:var(--text);">${hdr}</div>
-          ${preview?`<div style="font-size:10.5px;color:var(--text3);margin-top:2px;">${preview}…</div>`:''}
-        </div>
-        <span style="color:var(--text3);font-size:12px;flex-shrink:0;">▾</span>
+    html += `<details ${isOpen?'open':''} style="background:var(--bg2);border-radius:8px;overflow:hidden;">
+      <summary style="cursor:pointer;list-style:none;padding:8px 12px;display:flex;flex-direction:row-reverse;justify-content:flex-start;align-items:baseline;gap:8px;border-right:3px solid var(--border);direction:rtl;">
+        <span style="color:var(--text3);font-size:11px;flex-shrink:0;">▾</span>
+        <span style="font-size:12px;font-weight:700;color:var(--text);">${hdr}</span>
+        ${preview?`<span style="font-size:10px;color:var(--text3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">— ${preview}</span>`:''}
       </summary>
-      <div style="padding:0 14px 14px;direction:rtl;">${mdToHtml(section)}</div>
+      <div style="padding:0 12px 12px;direction:rtl;">${mdToHtml(section)}</div>
     </details>`;
   });
   html += `</div>`;
