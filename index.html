@@ -3416,7 +3416,7 @@ function showTab(name,el){
   setTimeout(initSortableTables, 100);
   try{
     if(name==='trends') renderTrends();
-    if(name==='command') renderCommandCenter();
+    if(name==='command'){ renderCommandCenter(); if(typeof loadAnalysis==='function' && (typeof analysisData==='undefined' || !analysisData)) loadAnalysis(); }
     if(name==='weights') renderWeights();
     if(name==='alerts') renderAlerts();
     if(name==='prompt') renderPrompt();
@@ -3515,6 +3515,8 @@ function renderPortfolio(){
       </td>
     </tr>`;
   }).join('');
+  // keep the Command Center in sync once portfolio data is loaded/updated
+  try{ var _cc=document.getElementById('tab-command'); if(_cc && _cc.classList.contains('active') && typeof renderCommandCenter==='function') renderCommandCenter(); }catch(e){}
 }
 
 // ===== NEWS =====
@@ -5956,6 +5958,7 @@ async function loadAnalysis(){
     if(hasData){
       analysisData=normalized;
       renderAnalysis(normalized);
+      try{ var _cc=document.getElementById('tab-command'); if(_cc && _cc.classList.contains('active') && typeof renderCommandCenter==='function') renderCommandCenter(); }catch(e){}
       document.getElementById('advisorLoading').style.display='none';
       document.getElementById('advisorContent').style.display='block';
     } else {
