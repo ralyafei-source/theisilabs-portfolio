@@ -1,27 +1,5 @@
 [
   {
-    "ts": "2026-06-05T16:02:36.016Z",
-    "type": "weekly",
-    "nickname": "ahmed",
-    "status": "ok",
-    "checks": {
-      "writeOk": true,
-      "contentLength": 25723,
-      "scoresFound": 50,
-      "sectionsFound": [
-        "═══ RISK RADAR",
-        "═══ FAIR VALUE",
-        "═══ MOMENTUM"
-      ],
-      "sectionsMissing": [],
-      "totalSentinels": 1,
-      "sentinelHits": {
-        "N/A": 1
-      }
-    },
-    "note": "all healthy"
-  },
-  {
     "ts": "2026-06-05T16:11:59.314Z",
     "type": "weekly",
     "nickname": "rashed",
@@ -657,6 +635,28 @@
       }
     },
     "note": "1 section(s) missing; 121 unavailable field(s)",
+    "scenario": "255",
+    "dataQuality": "═══════════════════════"
+  },
+  {
+    "ts": "2026-06-18T08:48:35.372Z",
+    "type": "monthly",
+    "nickname": "rashed",
+    "status": "ok",
+    "checks": {
+      "writeOk": true,
+      "contentLength": 18752,
+      "scoresFound": 1,
+      "sectionsFound": [
+        "COMPETITIVE EDGE",
+        "LONG VIEW",
+        "PORTFOLIO HEALTH"
+      ],
+      "sectionsMissing": [],
+      "totalSentinels": 0,
+      "sentinelHits": {}
+    },
+    "note": "all healthy",
     "scenario": "255",
     "dataQuality": "═══════════════════════"
   }
