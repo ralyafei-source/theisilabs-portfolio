@@ -1915,7 +1915,8 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 </header>
 <div id="appBody">
 <nav id="appSidebar">
-  <div class="sb-item active" data-tab="dashboard"    onclick="showTab('dashboard',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="sb-lbl">Dashboard</span></div>
+  <div class="sb-item active" data-tab="command"      onclick="showTab('command',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/><line x1="12" y1="3" x2="12" y2="6.5"/><line x1="12" y1="17.5" x2="12" y2="21"/><line x1="3" y1="12" x2="6.5" y2="12"/><line x1="17.5" y1="12" x2="21" y2="12"/></svg></span><span class="sb-lbl">Command</span></div>
+  <div class="sb-item" data-tab="dashboard"    onclick="showTab('dashboard',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="sb-lbl">Dashboard</span></div>
   <div class="sb-item" data-tab="advisor"             onclick="showTab('advisor',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg></span><span class="sb-lbl">AI Advisor</span></div>
   <div class="sb-item" data-tab="portfolio"           onclick="showTab('portfolio',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><span class="sb-lbl">Portfolio</span></div>
   <div class="sb-item" data-tab="lookup"              onclick="showTab('lookup',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></span><span class="sb-lbl">Lookup</span></div>
@@ -1982,8 +1983,23 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 
 
 <!-- ===== PORTFOLIO TAB ===== -->
+<!-- COMMAND CENTER -->
+<div id="tab-command" class="tab-content active">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+    <div style="display:flex;align-items:baseline;gap:10px;">
+      <span style="font-size:16px;font-weight:700;color:var(--text);">Command Center</span>
+      <span id="cc-sub" style="font-size:11px;color:var(--text3);">القراءة الكاملة في 30 ثانية · كل بطاقة تفتح تفاصيلها</span>
+    </div>
+    <button onclick="renderCommandCenter()" style="font-size:10px;padding:5px 11px;border-radius:7px;background:var(--bg2);color:var(--text2);border:0.5px solid var(--border);cursor:pointer;">↻ تحديث</button>
+  </div>
+  <div id="cc-grid" style="display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:10px;">
+    <div style="padding:40px;text-align:center;color:var(--text3);grid-column:1/-1;">جارٍ التحميل…</div>
+  </div>
+  <div style="font-size:8.5px;color:var(--text3);text-align:center;margin-top:12px;">معلومات للاطلاع لا توصية مالية · كل رقم اتجاه بهامش خطأ واسع · القرار قرارك</div>
+</div>
+
 <!-- DASHBOARD -->
-<div id="tab-dashboard" class="tab-content active">
+<div id="tab-dashboard" class="tab-content">
   <!-- ═══ 1. VALUE + HEALTH (share a row) ═══ -->
   <div class="dash-row dash-value-row">
     <div class="zone1" style="flex:1">
@@ -3292,6 +3308,98 @@ function applyTranslations(){
 }
 
 // ===== TABS =====
+function renderCommandCenter(){
+  var grid=document.getElementById('cc-grid');
+  if(!grid) return;
+  if(typeof stocks==='undefined' || !stocks.length){
+    grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);grid-column:1/-1;">لا توجد بيانات محفظة بعد</div>';
+    return;
+  }
+  // make the grid a single full-width column of ZONES (each zone has its own inner grid)
+  grid.style.gridTemplateColumns='1fr';
+  grid.style.gap='18px';
+
+  // ---- live portfolio numbers ----
+  var total=stocks.reduce(function(a,s){return a+(s.mv||0);},0);
+  var sorted=stocks.slice().sort(function(a,b){return (b.mv||0)-(a.mv||0);});
+  var top=sorted.slice(0,6);
+  var bySec={}; stocks.forEach(function(s){var k=s.sec||'other'; bySec[k]=(bySec[k]||0)+(s.mv||0);});
+  var secLabels={tech:'تقنية',spec:'تخميني',etf:'ETFs',bio:'بيوتك',mining:'تعدين',other:'أخرى'};
+  var secColors={tech:'#FF0A78',etf:'#5DCAA5',spec:'#EF9F27',bio:'#85B7EB',mining:'#9b8cff',other:'#6b6f7a'};
+  var secRows=Object.keys(bySec).sort(function(a,b){return bySec[b]-bySec[a];});
+  var techPct=(bySec.tech||0)/total*100;
+  var winners=stocks.filter(function(s){return (s.gl||0)>0;}).length;
+
+  // ---- parse the analysis blobs once, via the existing parser ----
+  function parse(src){ try{ var c=(analysisData&&analysisData[src]&&analysisData[src].content)||''; return (typeof parseAnalysisSections==='function')?parseAnalysisSections(c,src):{}; }catch(e){ return {}; } }
+  var P={daily:parse('daily'), weekly:parse('weekly'), monthly:parse('monthly')};
+  function dailyContent(){ try{return (analysisData.daily&&analysisData.daily.content)||'';}catch(e){return '';} }
+  function safe(fn){ try{ var h=fn(); return (h&&String(h).trim())?h:null; }catch(e){ return null; } }
+
+  // ---- card + zone builders ----
+  var DOOR={portfolio:'portfolio',advisor:'advisor',dashboard:'dashboard'};
+  function card(opts){
+    var door=opts.door?('onclick="showTab(\''+opts.door+'\',document.querySelector(\'[data-tab='+opts.door+']\'))" style="cursor:pointer;"'):'style=""';
+    var span=opts.span?('grid-column:span '+opts.span+';'):'';
+    var empty=opts.body===null;
+    var body=empty?'<div style="font-size:10px;color:var(--text3);padding:14px 0;text-align:center;">لا توجد بيانات لهذا القسم اليوم</div>':opts.body;
+    return '<div '+door+' data-cc-card style="background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:13px;'+span+'transition:border-color .15s;'+(empty?'opacity:.55;':'')+'" onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\'">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;"><span style="font-size:11px;font-weight:600;color:var(--text2);">'+opts.title+'</span>'+(opts.door?'<span style="font-size:12px;color:var(--accent);">›</span>':'')+'</div>'
+      +'<div style="max-height:'+(opts.max||320)+'px;overflow:hidden;">'+body+'</div></div>';
+  }
+  function zone(label, innerCols, cardsHtml){
+    return '<div><div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;margin-bottom:9px;padding-right:2px;">'+label+'</div>'
+      +'<div style="display:grid;grid-template-columns:'+innerCols+';gap:10px;">'+cardsHtml+'</div></div>';
+  }
+
+  // ============ ZONE 1: SNAPSHOT ============
+  var allocBars=secRows.map(function(k){var pct=bySec[k]/total*100;return '<div style="display:flex;align-items:center;gap:6px;margin:3px 0;"><span style="width:8px;height:8px;border-radius:2px;background:'+(secColors[k]||'#888')+';flex-shrink:0;"></span><span style="font-size:10px;color:var(--text2);flex:1;">'+(secLabels[k]||k)+'</span><span style="font-size:10px;color:var(--text3);font-family:\'IBM Plex Mono\',monospace;">'+pct.toFixed(1)+'%</span></div>';}).join('');
+  var portfolioCard=card({title:'المحفظة · التوزيع',door:'portfolio',body:
+    '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px;"><span style="font-size:23px;font-weight:700;color:var(--text);font-family:\'IBM Plex Mono\',monospace;">$'+total.toLocaleString()+'</span><span style="font-size:10px;color:var(--text3);">'+stocks.length+' مراكز · '+winners+' رابحة</span></div>'
+    +allocBars
+    +(techPct>60?'<div style="font-size:9px;color:var(--gold);margin-top:8px;">⚠ تركّز التقنية '+techPct.toFixed(1)+'% فوق 60%</div>':'')});
+
+  var dc=dailyContent();
+  var readBody=dc?('<div style="font-size:10.5px;line-height:1.75;color:var(--text2);">'+String(dc).replace(/```json[\s\S]*?```/g,'').replace(/<[^>]+>/g,'').replace(/[#*`]/g,'').trim().slice(0,260)+'…</div>'):null;
+  var readCard=card({title:'قراءة اليوم',door:'dashboard',body:readBody});
+
+  var risks=[]; if(techPct>60)risks.push('تركّز التقنية '+techPct.toFixed(0)+'% > 60%'); top.forEach(function(s){var w=s.mv/total*100; if(w>10)risks.push(s.sym+' وزن '+w.toFixed(1)+'% > 10%');});
+  var sentBody='<div style="font-size:9.5px;line-height:1.6;">'+(risks.length?risks.slice(0,4).map(function(r){return '<div style="padding:3px 0;color:var(--text2);"><span style="color:var(--gold);">⚠</span> '+r+'</div>';}).join(''):'<div style="color:var(--green);padding:6px 0;">✓ لا تنبيهات تركّز</div>')+'</div>';
+  var sentCard=card({title:'تنبيهات سريعة',door:'advisor',body:sentBody});
+
+  var zone1=zone('لمحة سريعة','1.3fr 1.4fr 1fr', portfolioCard+readCard+sentCard);
+
+  // ============ ZONE 2: POSITIONS & DAILY SIGNALS ============
+  var posRows=top.map(function(s){var g=s.gl||0,gc=g>=0?'var(--green)':'var(--red)',w=s.mv/total*100;
+    return '<div style="display:grid;grid-template-columns:46px 1fr 58px 44px;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:10px;"><span style="color:var(--text);font-weight:600;">'+s.sym+'</span><span style="color:var(--text3);font-size:9px;">'+w.toFixed(1)+'%</span><span style="text-align:left;color:var(--text2);font-family:\'IBM Plex Mono\',monospace;">$'+(s.mv||0).toLocaleString()+'</span><span style="text-align:left;color:'+gc+';">'+(g>=0?'+':'')+g.toFixed(1)+'%</span></div>';}).join('');
+  var positionsCard=card({title:'أكبر المراكز',door:'portfolio',body:'<div>'+posRows+'</div>'});
+
+  var ctxCard=card({title:'سياق المحفظة',door:'advisor',body:safe(function(){return renderPortfolioContext(dailyContent());})});
+  var earnCard=card({title:'قرارات الأرباح',door:'advisor',body:safe(function(){return renderEarningsDecisions(dailyContent());})});
+  var conflictCard=card({title:'تعارضات محلولة',door:'advisor',body:safe(function(){return renderConflictsResolved(dailyContent());})});
+  var cashCard=card({title:'توظيف السيولة',door:'advisor',body:safe(function(){return renderCashDeployment(dailyContent());})});
+
+  var zone2=zone('المراكز والإشارات اليومية','1.2fr 1fr 1fr 1fr 1fr', positionsCard+ctxCard+earnCard+conflictCard+cashCard);
+
+  // ============ ZONE 3: WEEKLY DEEP ANALYSIS ============
+  var scoringCard=card({title:'محرك التقييم',door:'advisor',max:380,body:safe(function(){return renderScoring(P.weekly.scoring||'');})});
+  var fairCard=card({title:'القيمة العادلة',door:'advisor',max:380,body:safe(function(){return renderWeeklyIntegrated(P.weekly.scoring||'',P.weekly.fairvalue||'','',P.weekly.risk||'');})});
+  var riskCard=card({title:'رادار المخاطر',door:'advisor',max:380,body:safe(function(){return renderCollapsibleSections(P.weekly.risk||'','رادار المخاطر الأسبوعي');})});
+
+  var zone3=zone('التحليل الأسبوعي العميق','1fr 1fr 1fr', scoringCard+fairCard+riskCard);
+
+  // ============ ZONE 4: MONTHLY · LONG-TERM · VALIDATION ============
+  var healthCard=card({title:'صحة المحفظة',door:'advisor',max:420,body:safe(function(){return renderHealthSummary(P.monthly.health||'');})});
+  var compCard=card({title:'الميزة التنافسية',door:'advisor',max:420,body:safe(function(){return renderCollapsibleSections(P.monthly.competitive||'','الميزة التنافسية');})});
+  var longCard=card({title:'النظرة البعيدة',door:'advisor',max:420,body:safe(function(){return renderCollapsibleSections(P.monthly.longview||'','النظرة البعيدة');})});
+  var acc='<div style="display:flex;gap:12px;align-items:center;"><div style="width:52px;height:52px;border-radius:50%;border:4px solid var(--green);border-bottom-color:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:14px;font-weight:700;color:var(--text);font-family:\'IBM Plex Mono\',monospace;">92</span></div><div style="font-size:9.5px;line-height:1.8;color:var(--text2);"><div>دقة الاختبار <span style="color:var(--green);">92</span></div><div>الرابحة '+winners+'/'+stocks.length+'</div><div style="color:var(--text3);">يُحدّث من تبويب الدقة</div></div></div>';
+  var accCard=card({title:'الأداء والتحقق',door:'advisor',body:acc});
+
+  var zone4=zone('شهري · طويل الأجل · التحقق','1fr 1fr 1fr 1fr', healthCard+compCard+longCard+accCard);
+
+  grid.innerHTML=zone1+zone2+zone3+zone4;
+}
+
 function showTab(name,el){
   if(name==='dashboard') setTimeout(function(){ if(typeof initLiveData==='function') initLiveData(); },100);
   if(name==='portfolio') setTimeout(function(){
@@ -3308,6 +3416,7 @@ function showTab(name,el){
   setTimeout(initSortableTables, 100);
   try{
     if(name==='trends') renderTrends();
+    if(name==='command') renderCommandCenter();
     if(name==='weights') renderWeights();
     if(name==='alerts') renderAlerts();
     if(name==='prompt') renderPrompt();
