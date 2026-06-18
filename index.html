@@ -3318,23 +3318,17 @@ function renderCommandCenter(){
   grid.style.gridTemplateColumns='1fr';
   grid.style.gap='18px';
 
-  // mojibake repair + emoji strip (CC owns its output now)
   function clean(x){
     if(x==null) return '';
     var t=String(x);
     t=t.replace(/\u00e2\u20ac\u201d/g,'\u2014').replace(/\u00e2\u20ac\u201c/g,'\u2013').replace(/\u00e2\u20ac\u2122/g,'\u2019').replace(/\u00e2\u20ac\u0153/g,'\u201c').replace(/\u00e2\u20ac\u009d/g,'\u201d');
     t=t.replace(/\u00e2\u20ac[\u0080-\uffff]?/g,'\u2014');
     t=t.replace(/\u00e2[\u0080-\uffff]{1,2}/g,'\u2014');
-    t=t.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u2B00-\u2BFF\u2190-\u21FF\u2300-\u23FF\u24C2\u24D8\u25A0-\u25FF\uFE0F\u2122\u2139\u26A0\u2714\u2716\u2717\u2705\u274C\u2B50]/gu,'');
+    t=t.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u2B00-\u2BFF\u2190-\u21FF\u2300-\u23FF\u24C2\u24D8\uFE0F\u2122\u2139\u26A0\u2714\u2716\u2717\u2705\u274C\u2B50]/gu,'');
     return t;
   }
-  function strip(html){
-    if(html==null) return '';
-    var t=clean(String(html));
-    return t;
-  }
+  function safe(fn){ try{ var h=fn(); if(!h) return null; h=String(h); if(h.indexOf('\u0644\u0627 \u062a\u0648\u062c\u062f')>=0 && h.length<200) return null; return clean(h); }catch(e){ return null; } }
 
-  // live portfolio numbers
   var total=stocks.reduce(function(a,s){return a+(s.mv||0);},0);
   var sorted=stocks.slice().sort(function(a,b){return (b.mv||0)-(a.mv||0);});
   var top=sorted.slice(0,6);
@@ -3345,70 +3339,54 @@ function renderCommandCenter(){
   var techPct=(bySec.tech||0)/total*100;
   var winners=stocks.filter(function(s){return (s.gl||0)>0;}).length;
 
-  // parse blobs once (clean data)
   function parse(src){ try{ var c=(analysisData&&analysisData[src]&&analysisData[src].content)||''; return (typeof parseAnalysisSections==='function')?parseAnalysisSections(c,src):{}; }catch(e){ return {}; } }
   var P={daily:parse('daily'), weekly:parse('weekly'), monthly:parse('monthly')};
+  function dailyC(){ try{return (analysisData.daily&&analysisData.daily.content)||'';}catch(e){return '';} }
 
   var MONO="'IBM Plex Mono',monospace";
   function card(opts){
     var door=opts.door?('onclick="showTab(\''+opts.door+'\',document.querySelector(\'[data-tab='+opts.door+']\'))" style="cursor:pointer;"'):'';
-    var empty=opts.body===null || opts.body==='';
+    var empty=(opts.body===null || opts.body==='');
     var body=empty?'<div style="font-size:10px;color:var(--text3);padding:14px 0;text-align:center;">\u0644\u0627 \u062a\u0648\u062c\u062f \u0628\u064a\u0627\u0646\u0627\u062a \u0644\u0647\u0630\u0627 \u0627\u0644\u0642\u0633\u0645</div>':opts.body;
     return '<div data-cc-card '+door+' style="background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:13px;transition:border-color .15s;'+(empty?'opacity:.5;':'')+'" onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\'">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;"><span style="font-size:11px;font-weight:600;color:var(--text2);">'+opts.title+'</span>'+(opts.door?'<span style="font-size:12px;color:var(--accent);">\u203a</span>':'')+'</div>'
-      +'<div style="max-height:'+(opts.max||340)+'px;overflow:hidden;">'+body+'</div></div>';
+      +'<div style="max-height:'+(opts.max||360)+'px;overflow:auto;">'+body+'</div></div>';
   }
   function zone(label, cols, html){
-    return '<div><div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:9px;">'+label+'</div><div style="display:grid;grid-template-columns:'+cols+';gap:10px;">'+html+'</div></div>';
+    return '<div><div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:9px;">'+label+'</div><div style="display:grid;grid-template-columns:'+cols+';gap:10px;align-items:start;">'+html+'</div></div>';
   }
 
-  // ===== ZONE 1: SNAPSHOT =====
+  // ZONE 1: snapshot
   var allocBars=secRows.map(function(k){var pct=bySec[k]/total*100;return '<div style="display:flex;align-items:center;gap:6px;margin:3px 0;"><span style="width:8px;height:8px;border-radius:2px;background:'+(secColors[k]||'#888')+';flex-shrink:0;"></span><span style="font-size:10px;color:var(--text2);flex:1;">'+(secLabels[k]||k)+'</span><span style="font-size:10px;color:var(--text3);font-family:'+MONO+';">'+pct.toFixed(1)+'%</span></div>';}).join('');
   var portfolioCard=card({title:'\u0627\u0644\u0645\u062d\u0641\u0638\u0629 \u00b7 \u0627\u0644\u062a\u0648\u0632\u064a\u0639',door:'portfolio',body:
     '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px;"><span style="font-size:23px;font-weight:700;color:var(--text);font-family:'+MONO+';">$'+total.toLocaleString()+'</span><span style="font-size:10px;color:var(--text3);">'+stocks.length+' \u0645\u0631\u0627\u0643\u0632 \u00b7 '+winners+' \u0631\u0627\u0628\u062d\u0629</span></div>'+allocBars
     +(techPct>60?'<div style="font-size:9px;color:var(--gold);margin-top:8px;">\u062a\u0631\u0643\u0651\u0632 \u0627\u0644\u062a\u0642\u0646\u064a\u0629 '+techPct.toFixed(1)+'% \u0641\u0648\u0642 60%</div>':'')});
-
-  var dc=''; try{ dc=clean((analysisData.daily&&analysisData.daily.content)||''); }catch(e){}
-  dc=dc.replace(/```json[\s\S]*?```/g,'').replace(/<[^>]+>/g,'').replace(/[#*`]/g,'').trim();
+  var dc=clean(dailyC()).replace(/```json[\s\S]*?```/g,'').replace(/<[^>]+>/g,'').replace(/[#*`]/g,'').trim();
   var readCard=card({title:'\u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u064a\u0648\u0645',door:'advisor',body: dc? '<div style="font-size:10.5px;line-height:1.75;color:var(--text2);">'+dc.slice(0,260)+'\u2026</div>' : null});
-
   var risks=[]; if(techPct>60)risks.push('\u062a\u0631\u0643\u0651\u0632 \u0627\u0644\u062a\u0642\u0646\u064a\u0629 '+techPct.toFixed(0)+'% > 60%'); top.forEach(function(s){var w=s.mv/total*100; if(w>10)risks.push(s.sym+' \u0648\u0632\u0646 '+w.toFixed(1)+'% > 10%');});
   var alertCard=card({title:'\u062a\u0646\u0628\u064a\u0647\u0627\u062a \u0633\u0631\u064a\u0639\u0629',door:'advisor',body:'<div style="font-size:9.5px;line-height:1.6;">'+(risks.length?risks.slice(0,4).map(function(r){return '<div style="padding:3px 0;color:var(--text2);">\u2022 '+r+'</div>';}).join(''):'<div style="color:var(--green);padding:6px 0;">\u0644\u0627 \u062a\u0646\u0628\u064a\u0647\u0627\u062a \u062a\u0631\u0643\u0651\u0632</div>')+'</div>'});
-
   var zone1=zone('\u0644\u0645\u062d\u0629 \u0633\u0631\u064a\u0639\u0629','1.3fr 1.4fr 1fr', portfolioCard+readCard+alertCard);
 
-  // ===== ZONE 2: POSITIONS (single, deduped) =====
+  // ZONE 2: positions (single) + daily detail (earnings/conflicts/cash if present)
   var posRows=sorted.slice(0,10).map(function(s){var g=s.gl||0,gc=g>=0?'var(--green)':'var(--red)',w=s.mv/total*100;
     return '<div style="display:grid;grid-template-columns:50px 1fr 64px 50px;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:10px;"><span style="color:var(--text);font-weight:600;">'+s.sym+'</span><span style="color:var(--text3);font-size:9px;">'+w.toFixed(1)+'%</span><span style="text-align:left;color:var(--text2);font-family:'+MONO+';">$'+(s.mv||0).toLocaleString()+'</span><span style="text-align:left;color:'+gc+';">'+(g>=0?'+':'')+g.toFixed(1)+'%</span></div>';}).join('');
-  var positionsCard=card({title:'\u0627\u0644\u0645\u0631\u0627\u0643\u0632 (\u0623\u0643\u0628\u0631 10)',door:'portfolio',max:420,body:'<div>'+posRows+'</div>'});
+  var positionsCard=card({title:'\u0627\u0644\u0645\u0631\u0627\u0643\u0632 (\u0623\u0643\u0628\u0631 10)',door:'portfolio',max:440,body:'<div>'+posRows+'</div>'});
+  var earnCard=card({title:'\u0642\u0631\u0627\u0631\u0627\u062a \u0627\u0644\u0623\u0631\u0628\u0627\u062d',door:'advisor',max:440,body:safe(function(){return renderEarningsDecisions(dailyC());})});
+  var conflictCard=card({title:'\u062a\u0639\u0627\u0631\u0636\u0627\u062a \u0645\u062d\u0644\u0648\u0644\u0629',door:'advisor',max:440,body:safe(function(){return renderConflictsResolved(dailyC());})});
+  var cashCard=card({title:'\u062a\u0648\u0638\u064a\u0641 \u0627\u0644\u0633\u064a\u0648\u0644\u0629',door:'advisor',max:440,body:safe(function(){return renderCashDeployment(dailyC());})});
+  var zone2=zone('\u0627\u0644\u0645\u0631\u0627\u0643\u0632 \u0648\u0627\u0644\u0625\u0634\u0627\u0631\u0627\u062a \u0627\u0644\u064a\u0648\u0645\u064a\u0629','1.2fr 1fr 1fr 1fr', positionsCard+earnCard+conflictCard+cashCard);
 
-  var zone2=zone('\u0627\u0644\u0645\u0631\u0627\u0643\u0632','1fr', positionsCard);
+  // ZONE 3: weekly (reuse rich renderers, cleaned)
+  var scoringCard=card({title:'\u0645\u062d\u0631\u0643 \u0627\u0644\u062a\u0642\u064a\u064a\u0645',door:'advisor',max:420,body:safe(function(){return renderScoring(P.weekly.scoring||'');})});
+  var fairCard=card({title:'\u0627\u0644\u0642\u064a\u0645\u0629 \u0627\u0644\u0639\u0627\u062f\u0644\u0629',door:'advisor',max:420,body:safe(function(){return renderWeeklyIntegrated(P.weekly.scoring||'',P.weekly.fairvalue||'','',P.weekly.risk||'');})});
+  var riskCard=card({title:'\u0631\u0627\u062f\u0627\u0631 \u0627\u0644\u0645\u062e\u0627\u0637\u0631',door:'advisor',max:420,body:safe(function(){return renderCollapsibleSections(P.weekly.risk||'','\u0631\u0627\u062f\u0627\u0631 \u0627\u0644\u0645\u062e\u0627\u0637\u0631 \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a');})});
+  var zone3=zone('\u0627\u0644\u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a \u0627\u0644\u0639\u0645\u064a\u0642','1fr 1fr 1fr', scoringCard+fairCard+riskCard);
 
-  // ===== ZONE 3: WEEKLY DEEP ANALYSIS (clean structured) =====
-  var scoreCards=[]; try{ if(typeof _parseWeeklyScoreCards==='function') scoreCards=_parseWeeklyScoreCards(P.weekly.scoring||'')||[]; }catch(e){}
-  var scBody = scoreCards.length? '<div>'+scoreCards.slice(0,8).map(function(c){var sc=parseFloat(c.score)||0; var col=sc>=7.5?'var(--green)':sc>=6?'var(--gold)':'var(--text2)'; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:11px;"><span style="color:var(--text);font-weight:600;">'+clean(c.sym)+'</span><span style="color:'+col+';font-family:'+MONO+';font-weight:700;">'+clean(c.score)+'<span style="color:var(--text3);font-size:9px;font-weight:400;">/10</span></span></div>';}).join('')+'</div>' : null;
-  var scoringCard=card({title:'\u0645\u062d\u0631\u0643 \u0627\u0644\u062a\u0642\u064a\u064a\u0645',door:'advisor',max:400,body:scBody});
-
-  var fairBody = (P.weekly.fairvalue&&P.weekly.fairvalue.length>40)? '<div style="font-size:10px;line-height:1.7;color:var(--text2);">'+strip(P.weekly.fairvalue).replace(/[#*`]/g,'').trim().slice(0,300)+'\u2026</div>' : null;
-  var fairCard=card({title:'\u0627\u0644\u0642\u064a\u0645\u0629 \u0627\u0644\u0639\u0627\u062f\u0644\u0629',door:'advisor',max:400,body:fairBody});
-
-  var riskBody = (P.weekly.risk&&P.weekly.risk.length>40)? '<div style="font-size:10px;line-height:1.7;color:var(--text2);">'+strip(P.weekly.risk).replace(/[#*`|]/g,' ').replace(/\s+/g,' ').trim().slice(0,300)+'\u2026</div>' : null;
-  var riskCard=card({title:'\u0631\u0627\u062f\u0627\u0631 \u0627\u0644\u0645\u062e\u0627\u0637\u0631',door:'advisor',max:400,body:riskBody});
-
-  var zone3=zone('\u0627\u0644\u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a','1fr 1fr 1fr', scoringCard+fairCard+riskCard);
-
-  // ===== ZONE 4: MONTHLY / LONG-TERM / VALIDATION =====
-  var healthBody=null; try{ var hh=renderHealthSummary(P.monthly.health||''); if(hh&&hh.indexOf('\u0644\u0627 \u062a\u0648\u062c\u062f')<0) healthBody=strip(hh); }catch(e){}
-  var healthCard=card({title:'\u0635\u062d\u0629 \u0627\u0644\u0645\u062d\u0641\u0638\u0629',door:'advisor',max:440,body:healthBody});
-
-  var compBody = (P.monthly.competitive&&P.monthly.competitive.length>40)? '<div style="font-size:10px;line-height:1.7;color:var(--text2);">'+strip(P.monthly.competitive).replace(/[#*`|]/g,' ').replace(/\s+/g,' ').trim().slice(0,280)+'\u2026</div>' : null;
-  var compCard=card({title:'\u0627\u0644\u0645\u064a\u0632\u0629 \u0627\u0644\u062a\u0646\u0627\u0641\u0633\u064a\u0629',door:'advisor',max:440,body:compBody});
-
-  var longBody = (P.monthly.longview&&P.monthly.longview.length>40)? '<div style="font-size:10px;line-height:1.7;color:var(--text2);">'+strip(P.monthly.longview).replace(/[#*`|]/g,' ').replace(/\s+/g,' ').trim().slice(0,280)+'\u2026</div>' : null;
-  var longCard=card({title:'\u0627\u0644\u0646\u0638\u0631\u0629 \u0627\u0644\u0628\u0639\u064a\u062f\u0629',door:'advisor',max:440,body:longBody});
-
-  var accCard=card({title:'\u0627\u0644\u0623\u062f\u0627\u0621 \u0648\u0627\u0644\u062a\u062d\u0642\u0642',door:'advisor',body:'<div style="font-size:10px;line-height:1.9;color:var(--text2);"><div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">\u0627\u0644\u0631\u0627\u0628\u062d\u0629</span><span>'+winners+'/'+stocks.length+'</span></div><div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">\u062f\u0642\u0629 \u0627\u0644\u0627\u062e\u062a\u0628\u0627\u0631</span><span style="color:var(--text3);">\u064a\u064f\u062d\u062f\u0651\u062b \u0645\u0646 \u062a\u0628\u0648\u064a\u0628 \u0627\u0644\u062f\u0642\u0629</span></div></div>'});
-
+  // ZONE 4: monthly / long-term / validation (reuse rich renderers, cleaned)
+  var healthCard=card({title:'\u0635\u062d\u0629 \u0627\u0644\u0645\u062d\u0641\u0638\u0629',door:'advisor',max:460,body:safe(function(){return renderHealthSummary(P.monthly.health||'');})});
+  var compCard=card({title:'\u0627\u0644\u0645\u064a\u0632\u0629 \u0627\u0644\u062a\u0646\u0627\u0641\u0633\u064a\u0629',door:'advisor',max:460,body:safe(function(){return renderCollapsibleSections(P.monthly.competitive||'','\u0627\u0644\u0645\u064a\u0632\u0629 \u0627\u0644\u062a\u0646\u0627\u0641\u0633\u064a\u0629');})});
+  var longCard=card({title:'\u0627\u0644\u0646\u0638\u0631\u0629 \u0627\u0644\u0628\u0639\u064a\u062f\u0629',door:'advisor',max:460,body:safe(function(){return renderCollapsibleSections(P.monthly.longview||'','\u0627\u0644\u0646\u0638\u0631\u0629 \u0627\u0644\u0628\u0639\u064a\u062f\u0629');})});
+  var accCard=card({title:'\u0627\u0644\u0623\u062f\u0627\u0621 \u0648\u0627\u0644\u062a\u062d\u0642\u0642',door:'advisor',body:'<div style="font-size:10px;line-height:1.9;color:var(--text2);"><div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">\u0627\u0644\u0631\u0627\u0628\u062d\u0629</span><span>'+winners+'/'+stocks.length+'</span></div></div>'});
   var zone4=zone('\u0634\u0647\u0631\u064a \u00b7 \u0637\u0648\u064a\u0644 \u0627\u0644\u0623\u062c\u0644 \u00b7 \u0627\u0644\u062a\u062d\u0642\u0642','1fr 1fr 1fr 1fr', healthCard+compCard+longCard+accCard);
 
   grid.innerHTML=zone1+zone2+zone3+zone4;
