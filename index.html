@@ -16,7 +16,6 @@
 <meta name="apple-mobile-web-app-title" content="FI Dashboard">
 <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   /* Surfaces — near-black, layered (research: dark gray not pure black) */
@@ -2447,7 +2446,6 @@ WOLF remains at critical lows<br><br>
         <button class="firm-tab grp active" onclick="showGroup('positions',this)" data-en="My positions" data-ar="مراكزي">مراكزي</button>
         <button class="firm-tab grp" onclick="showGroup('riskhealth',this)" data-en="Risk & health" data-ar="المخاطر والصحة">المخاطر والصحة</button>
         <button class="firm-tab grp" onclick="showGroup('opportunities',this)" data-en="Opportunities" data-ar="فرص السوق">فرص السوق</button>
-        <button class="firm-tab grp" onclick="showGroup('forces',this)" data-en="Market forces" data-ar="قوى السوق">قوى السوق</button>
         <button class="firm-tab grp" onclick="showGroup('longgame',this)" data-en="The long game" data-ar="النظرة البعيدة">النظرة البعيدة</button>
         <button class="firm-tab grp" onclick="showGroup('backtest',this)" data-en="Accuracy test" data-ar="اختبار الدقة" style="color:var(--gold);">🔬 اختبار الدقة</button>
       </div>
@@ -2487,40 +2485,52 @@ WOLF remains at critical lows<br><br>
 </div>
 <div id="scoringSheetBackdrop" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9998;background:rgba(0,0,0,0.5);" onclick="closeScoringSheet()"></div>
 
-      <div class="firm-content active" id="firm-signals">
+      <div class="firm-content active" id="firm-portfolio-context">
         <div class="firm-header">
-          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--accent);font-size:11px;">DS</div>
+          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--accent);font-size:11px;">PC</div>
           <div>
-            <div class="firm-title">Daily Signals</div>
-            <div class="firm-subtitle">Buy/Sell ratings for all positions · Price targets · Stop-loss · Conviction trade</div>
+            <div class="firm-title">Portfolio Context</div>
+            <div class="firm-subtitle">Concentration · Sector exposure · Sharia check · UAE tax impact</div>
           </div>
         </div>
-        <div class="firm-body" id="signals-body"></div>
-        <div class="advisor-ts" id="signals-ts"></div>
+        <div class="firm-body" id="portfolio-context-body"></div>
+        <div class="advisor-ts" id="portfolio-context-ts"></div>
       </div>
 
-      <div class="firm-content" id="firm-earnings">
+      <div class="firm-content active" id="firm-earnings-decisions">
         <div class="firm-header">
-          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--accent);font-size:11px;">EE</div>
+          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--accent);font-size:11px;">ED</div>
           <div>
-            <div class="firm-title">Earnings &amp; Events</div>
-            <div class="firm-subtitle">Upcoming earnings · Beat/miss history · Pre-earnings strategy</div>
+            <div class="firm-title">Earnings Decisions</div>
+            <div class="firm-subtitle">Your position context for upcoming earnings · Specific action per holding</div>
           </div>
         </div>
-        <div class="firm-body" id="earnings-body"></div>
-        <div class="advisor-ts" id="earnings-ts"></div>
+        <div class="firm-body" id="earnings-decisions-body"></div>
+        <div class="advisor-ts" id="earnings-decisions-ts"></div>
       </div>
 
-      <div class="firm-content" id="firm-macro">
+      <div class="firm-content active" id="firm-conflicts">
         <div class="firm-header">
-          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--accent);font-size:11px;">MX</div>
+          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--gold);font-size:11px;">CF</div>
           <div>
-            <div class="firm-title">Macro Today</div>
-            <div class="firm-subtitle">Fed policy · Inflation · Geopolitical impact on your portfolio</div>
+            <div class="firm-title">Conflicts Resolved</div>
+            <div class="firm-subtitle">Quant vs Analyst disagreements · Resolved for YOUR position & UAE tax context</div>
           </div>
         </div>
-        <div class="firm-body" id="macro-body"></div>
-        <div class="advisor-ts" id="macro-ts"></div>
+        <div class="firm-body" id="conflicts-body"></div>
+        <div class="advisor-ts" id="conflicts-ts"></div>
+      </div>
+
+      <div class="firm-content active" id="firm-cash">
+        <div class="firm-header">
+          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--accent2);font-size:11px;">CD</div>
+          <div>
+            <div class="firm-title">Cash Deployment</div>
+            <div class="firm-subtitle">Where to deploy available cash · SA Quant-backed · Concentration impact</div>
+          </div>
+        </div>
+        <div class="firm-body" id="cash-body"></div>
+        <div class="advisor-ts" id="cash-ts"></div>
       </div>
 
       <div class="firm-content" id="firm-risk">
@@ -2548,18 +2558,6 @@ WOLF remains at critical lows<br><br>
       </div>
 
       
-
-      <div class="firm-content active" id="firm-momentum">
-        <div class="firm-header">
-          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--accent2);font-size:11px;">MO</div>
-          <div>
-            <div class="firm-title">Momentum</div>
-            <div class="firm-subtitle">Price momentum · RSI signals · Moving averages · Trend direction</div>
-          </div>
-        </div>
-        <div class="firm-body" id="momentum-body"></div>
-        <div class="advisor-ts" id="momentum-ts"></div>
-      </div>
 
       <div class="firm-content active" id="firm-scoring">
         <div class="firm-header">
@@ -2694,7 +2692,6 @@ WOLF remains at critical lows<br><br>
   <div class="sa-progress"><div class="sa-progress-fill" id="sa-progress-fill" style="width:0%"></div></div>
   <div class="sa-checklist" id="sa-checklist">
     <div class="sa-check-item"><div class="sa-check-dot" id="chk-excel"></div><span>ملف Excel (المحفظة)</span></div>
-    <div class="sa-check-item"><div class="sa-check-dot" id="chk-portfolio-ratings"></div><span>SA Portfolio Ratings</span></div>
     <div class="sa-check-item"><div class="sa-check-dot" id="chk-short"></div><span>Short Ideas</span></div>
     <div class="sa-check-item"><div class="sa-check-dot" id="chk-updown-mine"></div><span>Upgrades — أسهمك</span></div>
     <div class="sa-check-item"><div class="sa-check-dot" id="chk-updown-market"></div><span>Upgrades — السوق</span></div>
@@ -4436,7 +4433,7 @@ function loadTxFromStorage(){
 }
 
 // ===== AI ADVISOR =====
-const firms=['signals','earnings','macro','risk','fairvalue','momentum','scoring','competitive','longview','health'];
+const firms=['portfolio-context','earnings-decisions','conflicts','cash','risk','fairvalue','scoring','competitive','longview','health'];
 const firmNames={
   en:{gs:'Goldman Sachs',bw:'Bridgewater',br:'BlackRock',ms:'Morgan Stanley',jp:'JPMorgan',ba:'Bain',he:'Harvard',rt:'Renaissance',mk:'McKinsey'},
   ar:{gs:'غولدمان ساكس',bw:'برجووتر',br:'بلاك روك',ms:'مورغان ستانلي',jp:'جي بي مورغان',ba:'باين',he:'هارفارد',rt:'رينيسانس',mk:'ماكنزي'}
@@ -4482,9 +4479,9 @@ function getActiveRouteType(){
   const firmId = activeTab.getAttribute('onclick')?.match(/'([^']+)'/)?.[1] || 'signals';
   const typeMap = {
     signals:'daily', earnings:'daily', macro:'daily',
-    risk:'weekly', fairvalue:'weekly', momentum:'weekly',
+    risk:'weekly', fairvalue:'weekly', scoring:'weekly',
     competitive:'monthly', longview:'monthly', health:'monthly',
-    positions:'daily', opportunities:'daily', forces:'daily',
+    positions:'daily', opportunities:'daily',
     riskhealth:'weekly', longgame:'monthly'
   };
   return typeMap[firmId] || 'daily';
@@ -4877,10 +4874,9 @@ const scoredData = await scoredRes.json();
 
 // ── 5-GROUP CONSOLIDATION: map each group to its member panels (shown stacked) ──
 const FIRM_GROUPS={
-  positions:['signals','momentum','scoring'],
-  riskhealth:['risk','health'],
+  positions:['portfolio-context','earnings-decisions','conflicts','cash'],
+  riskhealth:['risk','fairvalue','health'],
   opportunities:['opportunities'],
-  forces:['macro','earnings'],
   longgame:['competitive','longview'],
   backtest:['backtest']
 };
@@ -4921,7 +4917,7 @@ function showGroup(group,btn){
   }
 
   if(advisorLang==='en' && analysisData){
-    const typeMap={signals:'daily',earnings:'daily',macro:'daily',risk:'weekly',fairvalue:'weekly',momentum:'weekly',competitive:'monthly',longview:'monthly',health:'monthly',opportunities:'daily'};
+    const typeMap={'portfolio-context':'daily','earnings-decisions':'daily',conflicts:'daily',cash:'daily',risk:'weekly',fairvalue:'weekly',scoring:'weekly',competitive:'monthly',longview:'monthly',health:'monthly',opportunities:'daily'};
     const types=[...new Set(members.map(m=>typeMap[m]||'daily'))];
     if(types.some(t=>!translationCache[t+'-'+advisorDate])){ setTimeout(()=>translateAnalysis(analysisData),50); }
   }
@@ -4932,7 +4928,7 @@ function showGroup(group,btn){
 function showFirm(id,btn){
   // If in EN mode, trigger translation for the new tab's route type
   if(advisorLang==='en' && analysisData){
-    const typeMap={signals:'daily',earnings:'daily',macro:'daily',risk:'weekly',fairvalue:'weekly',momentum:'weekly',competitive:'monthly',longview:'monthly',health:'monthly',opportunities:'daily'};
+    const typeMap={'portfolio-context':'daily','earnings-decisions':'daily',conflicts:'daily',cash:'daily',risk:'weekly',fairvalue:'weekly',scoring:'weekly',competitive:'monthly',longview:'monthly',health:'monthly',opportunities:'daily'};
     const type=typeMap[id]||'daily';
     const cacheKey=type+'-'+advisorDate;
     if(!translationCache[cacheKey]){
@@ -6043,16 +6039,16 @@ function renderAnalysis(data){
 
   // Map sections to their source file and timestamp
   const sourceMap = {
-    signals:     {src:'daily',   label:'DAILY SIGNALS'},
-    earnings:    {src:'daily',   label:'EARNINGS'},
-    macro:       {src:'daily',   label:'MACRO'},
-    risk:        {src:'weekly',  label:'RISK RADAR'},
-    fairvalue:   {src:'weekly',  label:'FAIR VALUE'},
-    momentum:    {src:'weekly',  label:'MOMENTUM'},
-    scoring:     {src:'weekly',  label:'SCORING ENGINE'},
-    competitive: {src:'monthly', label:'COMPETITIVE EDGE'},
-    longview:    {src:'monthly', label:'LONG VIEW'},
-    health:      {src:'monthly', label:'PORTFOLIO HEALTH'}
+    'portfolio-context':  {src:'daily',   label:'PORTFOLIO CONTEXT'},
+    'earnings-decisions': {src:'daily',   label:'EARNINGS DECISIONS'},
+    conflicts:            {src:'daily',   label:'CONFLICTS'},
+    cash:                 {src:'daily',   label:'CASH DEPLOYMENT'},
+    risk:                 {src:'weekly',  label:'RISK RADAR'},
+    fairvalue:            {src:'weekly',  label:'FAIR VALUE'},
+    scoring:              {src:'weekly',  label:'SCORING ENGINE'},
+    competitive:          {src:'monthly', label:'COMPETITIVE EDGE'},
+    longview:             {src:'monthly', label:'LONG VIEW'},
+    health:               {src:'monthly', label:'PORTFOLIO HEALTH'}
   };
 
   // Parse sections from each source
@@ -6085,17 +6081,18 @@ function renderAnalysis(data){
     // For weekly panels (fairvalue, momentum, scoring) — use integrated renderer
     // that shows scoring cards + merged table + risk + momentum all in one view
     let renderedHtml;
-    if(f==='signals'){
-      renderedHtml = renderSignals(text, parsed.weekly);
+    if(f==='portfolio-context'){
+      renderedHtml = renderPortfolioContext(data.daily ? data.daily.content : '');
+    } else if(f==='earnings-decisions'){
+      renderedHtml = renderEarningsDecisions(data.daily ? data.daily.content : '');
+    } else if(f==='conflicts'){
+      renderedHtml = renderConflictsResolved(data.daily ? data.daily.content : '');
+    } else if(f==='cash'){
+      renderedHtml = renderCashDeployment(data.daily ? data.daily.content : '');
     } else if(f==='fairvalue'){
       const wp = parsed.weekly;
       renderedHtml = renderWeeklyIntegrated(
-        wp.scoring||'', wp.fairvalue||'', wp.momentum||'', wp.risk||''
-      );
-    } else if(f==='momentum'){
-      const wp = parsed.weekly;
-      renderedHtml = renderWeeklyIntegrated(
-        wp.scoring||'', wp.fairvalue||'', wp.momentum||'', wp.risk||''
+        wp.scoring||'', wp.fairvalue||'', '', wp.risk||''
       );
     } else if(f==='scoring'){
       renderedHtml = renderScoring(text);
@@ -6193,6 +6190,70 @@ function sortPosTable(tblId, key, dir){
     th.textContent = thKey===key ? txt+(dir===1?' ▲':' ▼') : txt+' ↕';
   });
 }
+
+// ── Daily JSON parsers — new AI Advisor format ──────────────────────────
+function _parseDailyJSON(content){
+  if(!content) return null;
+  try {
+    const clean = content.replace(/```json|```/g,'').trim();
+    const start = clean.indexOf('{');
+    const end = clean.lastIndexOf('}');
+    if(start<0||end<0) return null;
+    return JSON.parse(clean.slice(start, end+1));
+  } catch(e){ return null; }
+}
+
+function renderPortfolioContext(content){
+  const d = _parseDailyJSON(content);
+  if(!d||!d.portfolio_context){
+    return '<div style="color:var(--text2);padding:20px;text-align:center;">لا توجد بيانات — سيتم التحديث في الموعد المجدول</div>';
+  }
+  const pc = d.portfolio_context;
+  let html = '';
+  html += `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">`;
+  html += `<div style="flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;"><div style="font-size:10px;color:var(--text3);margin-bottom:4px;">القيمة الإجمالية</div><div style="font-size:18px;font-weight:700;color:var(--accent);">$${Number(pc.total_value_usd||0).toLocaleString()}</div></div>`;
+  if(pc.sector_exposure){const se=pc.sector_exposure;const bw=se.bridgewater_warning;html+=`<div style="flex:1;min-width:160px;background:var(--bg3);border:1px solid ${bw?'var(--red)':'var(--border)'};border-radius:10px;padding:12px;"><div style="font-size:10px;color:var(--text3);margin-bottom:4px;">تقنية ${bw?'⚠️':''}</div><div style="font-size:18px;font-weight:700;color:${bw?'var(--red)':'var(--text)'};">${se.tech_total_pct}</div><div style="font-size:10px;color:var(--text3);">أشباه موصلات: ${se.semiconductors_pct}</div></div>`;}
+  html += `</div>`;
+  if(pc.top_concentration&&pc.top_concentration.length){html+=`<div style="margin-bottom:16px;"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;">أكبر المراكز</div><div style="display:flex;flex-direction:column;gap:6px;">`;pc.top_concentration.forEach(pos=>{const isBreach=pos.alert&&pos.alert.toLowerCase().includes('25');const isHigh=pos.alert&&pos.alert.toLowerCase().includes('high');const color=isBreach?'var(--red)':isHigh?'var(--gold)':'var(--accent2)';html+=`<div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;"><div style="font-weight:700;font-size:13px;min-width:50px;">${pos.sym}</div><div style="flex:1;background:var(--bg2);border-radius:4px;height:6px;"><div style="width:${Math.min(parseFloat(pos.pct_of_portfolio)||0,100)}%;background:${color};height:6px;border-radius:4px;"></div></div><div style="font-size:12px;color:${color};font-weight:700;min-width:40px;">${pos.pct_of_portfolio}</div><div style="font-size:11px;color:var(--text2);">${pos.dollar_value}</div><div style="font-size:10px;color:var(--text3);">${pos.sa_quant}</div></div>`;});html+=`</div></div>`;}
+  if(pc.sharia_check){const sc=pc.sharia_check;html+=`<div style="background:rgba(0,200,100,0.08);border:1px solid rgba(0,200,100,0.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">☪️</span><div><div style="font-size:12px;font-weight:700;color:var(--accent2);">SPUS ${sc.spus_weight}</div><div style="font-size:11px;color:var(--text2);">${sc.status}</div></div></div>`;}
+  if(pc.uae_tax_note){html+=`<div style="background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.15);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);">🇦🇪 ${pc.uae_tax_note}</div>`;}
+  return html;
+}
+
+function renderEarningsDecisions(content){
+  const d = _parseDailyJSON(content);
+  if(!d||!d.earnings_decisions||!d.earnings_decisions.length) return '<div style="color:var(--text2);padding:20px;text-align:center;">لا توجد أرباح قادمة في 30 يوماً</div>';
+  let html='';
+  d.earnings_decisions.forEach(item=>{
+    const pnl=item.your_position?item.your_position.pnl_pct:'';
+    const isPos=pnl&&pnl.startsWith('+');
+    const color=isPos?'var(--accent2)':'var(--red)';
+    html+=`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div style="font-size:16px;font-weight:700;">${item.sym}</div><div style="font-size:11px;background:rgba(255,160,0,0.15);color:var(--gold);border-radius:6px;padding:2px 8px;">${item.days_away} يوم</div><div style="font-size:11px;color:var(--text3);">${item.earnings_date}</div>${item.sa_verdict?`<div style="font-size:10px;color:var(--text2);margin-right:auto;">${item.sa_verdict.quant}</div>`:''}</div>${item.your_position?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;"><span style="font-size:12px;color:${color};font-weight:700;">${item.your_position.pnl_pct}</span><span style="font-size:11px;color:var(--text2);">${item.your_position.current_value}</span><span style="font-size:11px;color:var(--text3);">${item.your_position.portfolio_weight}</span></div>`:''}<div style="background:rgba(0,212,255,0.08);border-right:3px solid var(--accent);border-radius:6px;padding:8px 12px;margin-bottom:8px;font-size:13px;font-weight:700;direction:rtl;">${item.your_specific_decision||''}</div>${item.reasoning?`<div style="font-size:11px;color:var(--text2);line-height:1.5;">${item.reasoning}</div>`:''} ${item.dollar_at_risk?`<div style="font-size:10px;color:var(--red);margin-top:6px;">⚠️ الخسارة المقدرة عند انخفاض 10%: ${item.dollar_at_risk}</div>`:''} ${item.sa_verdict?`<div style="font-size:10px;color:var(--text3);margin-top:6px;">${item.sa_verdict.grades} | EPS est: ${item.sa_verdict.eps_estimate}</div>`:''}</div>`;
+  });
+  return html;
+}
+
+function renderConflictsResolved(content){
+  const d = _parseDailyJSON(content);
+  if(!d||!d.conflicts_resolved||!d.conflicts_resolved.length) return '<div style="color:var(--text2);padding:20px;text-align:center;">لا توجد تعارضات تستدعي قراراً</div>';
+  let html='';
+  d.conflicts_resolved.forEach(item=>{
+    html+=`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div style="font-size:16px;font-weight:700;">${item.sym}</div><div style="font-size:10px;background:rgba(255,100,100,0.12);color:var(--red);border-radius:6px;padding:2px 8px;">${item.quant_says}</div><div style="font-size:10px;color:var(--text3);">vs</div><div style="font-size:10px;background:rgba(0,200,100,0.12);color:var(--accent2);border-radius:6px;padding:2px 8px;">${item.other_signal_says}</div></div><div style="font-size:11px;color:var(--text3);margin-bottom:8px;">${item.conflict_type||''}</div>${item.your_context?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px;background:var(--bg2);border-radius:6px;padding:6px 10px;">${item.your_context}</div>`:''}<div style="font-size:12px;line-height:1.5;color:var(--text);margin-bottom:8px;">${item.resolution||''}</div><div style="background:rgba(0,212,255,0.08);border-right:3px solid var(--accent);border-radius:6px;padding:8px 12px;font-size:13px;font-weight:700;direction:rtl;">${item.action||''}</div></div>`;
+  });
+  return html;
+}
+
+function renderCashDeployment(content){
+  const d = _parseDailyJSON(content);
+  if(!d||!d.cash_deployment) return '<div style="color:var(--text2);padding:20px;text-align:center;">لا توجد سيولة متاحة</div>';
+  const cd=d.cash_deployment;
+  let html='';
+  if(cd.available_cash){html+=`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:16px;display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">💵</span><div><div style="font-size:10px;color:var(--text3);">السيولة المتاحة</div><div style="font-size:18px;font-weight:700;color:var(--accent2);">${cd.available_cash}</div></div></div>`;}
+  if(cd.top_3_additions&&cd.top_3_additions.length){html+=`<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;">الأفضل للإضافة الآن</div>`;cd.top_3_additions.forEach((item,i)=>{html+=`<div style="background:var(--bg3);border:1px solid rgba(0,200,100,0.2);border-radius:10px;padding:12px;margin-bottom:10px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="font-size:13px;font-weight:700;color:var(--accent2);">${i+1}. ${item.sym}</div><div style="font-size:10px;color:var(--text3);">${item.sa_quant||''}</div><div style="font-size:11px;color:var(--accent);margin-right:auto;">${item.suggested_amount}</div></div><div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:6px;">${item.reason||''}</div>${item.concentration_after?`<div style="font-size:10px;color:var(--text3);">الوزن بعد الإضافة: ${item.concentration_after}</div>`:''}</div>`;});}
+  if(cd.do_not_add&&cd.do_not_add.length){html+=`<div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:8px;margin-top:4px;">لا تضف حالياً</div>`;cd.do_not_add.forEach(item=>{html+=`<div style="background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.15);border-radius:8px;padding:8px 12px;margin-bottom:6px;display:flex;gap:10px;align-items:flex-start;"><div style="font-weight:700;font-size:12px;min-width:50px;color:var(--red);">${item.sym}</div><div style="font-size:11px;color:var(--text2);">${item.reason||''}</div></div>`;});}
+  return html;
+}
+
 
 // ── Collapsible section renderer — splits on numbered headers, collapses each ──
 function renderCollapsibleSections(text, title){
@@ -12142,65 +12203,14 @@ function saHandleExcel(input) {
   const dot = document.getElementById('chk-excel');
   if (st) { st.textContent = '⏳ جاري قراءة الملف...'; st.className = 'sa-status'; }
   const reader = new FileReader();
-  reader.onload = async function(e) {
-    try {
-      // Parse Excel using SheetJS
-      const data = new Uint8Array(e.target.result);
-      const wb = XLSX.read(data, { type: 'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-      if (!rows.length) { if (st) { st.textContent = '❌ الملف فارغ'; st.className = 'sa-status err'; } return; }
-      // Map columns (SA column names → our field names)
-      const COL = {
-        sym: ['Symbol'],
-        quant: ['Quant Rating'],
-        sa_analyst: ['SA Analyst Ratings'],
-        wall_st: ['Wall Street Ratings'],
-        days_at_rating: ['Days at Rating','Consecutive Days at Quant Rating'],
-        analysts_covering: ['# SA Analysts Covering'],
-        valuation: ['Valuation Grade'],
-        growth: ['Growth Grade'],
-        profitability: ['Profitability Grade'],
-        momentum: ['Momentum Grade'],
-        eps_revision: ['EPS Revision Grade'],
-        earnings_date: ['Upcoming Announce Date'],
-        eps_estimate: ['EPS Estimate'],
-        eps_actual: ['EPS Actual'],
-        eps_surprise: ['EPS Surprise'],
-      };
-      const keys = Object.keys(rows[0]);
-      const findCol = (candidates) => candidates.find(c => keys.includes(c)) || null;
-      const colMap = {};
-      for (const [field, cands] of Object.entries(COL)) { colMap[field] = findCol(cands); }
-      const parsed = rows.map(r => {
-        const o = {};
-        for (const [field, col] of Object.entries(colMap)) { o[field] = col ? r[col] : ''; }
-        return o;
-      }).filter(r => r.sym && String(r.sym).trim().length > 0);
-      if (!parsed.length) { if (st) { st.textContent = '❌ لم يُعثر على بيانات'; st.className = 'sa-status err'; } return; }
-      // Store locally so saRunAnalysis can access it
-      window.saData.excelText = 'FILE:' + file.name + ' SIZE:' + file.size;
-      window.saData.portfolioRows = parsed;
-      if (st) { st.textContent = '⏳ جاري الحفظ...'; st.className = 'sa-status'; }
-      // Save to GitHub via sa-analyze
-      const resp = await fetch('/api/sa-analyze', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ savePortfolio: true, rows: parsed })
-      });
-      const result = await resp.json();
-      if (result.saved) {
-        if (st) { st.textContent = `✓ ${parsed.length} سهم (${result.stocks} أسهم + ${result.etfs} صناديق)`; st.className = 'sa-status ok'; }
-        if (dot) dot.className = 'sa-check-dot filled';
-      } else {
-        if (st) { st.textContent = '⚠️ تم التحليل، لم يُحفظ: ' + (result.error || ''); st.className = 'sa-status'; }
-        if (dot) dot.className = 'sa-check-dot filled';
-      }
-      saUpdateProgress();
-    } catch(err) {
-      if (st) { st.textContent = '❌ خطأ في قراءة الملف: ' + err.message; st.className = 'sa-status err'; }
-    }
+  reader.onload = function(e) {
+    window.saData.excelText = 'FILE:' + file.name + ' SIZE:' + file.size;
+    window.saData.excelFile = e.target.result;
+    if (st) { st.textContent = '✓ ' + file.name; st.className = 'sa-status ok'; }
+    if (dot) dot.className = 'sa-check-dot filled';
+    saUpdateProgress();
   };
-  reader.readAsArrayBuffer(file);
+  reader.readAsDataURL(file);
 }
 
 function saShowRTab(id, btn) {
