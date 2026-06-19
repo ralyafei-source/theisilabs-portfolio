@@ -3325,23 +3325,30 @@ function applyTranslations(){
 /* ===================== SA GRADES STORE + ADMIN PANEL ===================== */
 // Store: localStorage stand-in for /api/sa-grades. Keyed by symbol. Upsert + delete.
 var SAG_KEY='theisi_sa_grades_v1';
-function sagLoad(){ try{ var r=localStorage.getItem(SAG_KEY); return r?JSON.parse(r):{updated:null,source:null,stocks:{}}; }catch(e){ return {updated:null,source:null,stocks:{}}; } }
-function sagSave(store){ store.updated=new Date().toISOString(); try{ localStorage.setItem(SAG_KEY, JSON.stringify(store)); }catch(e){ alert('تعذّر الحفظ: '+e.message); } return store; }
-// Upsert rows (array of {symbol,...}) — replace existing, add new, keep untouched.
-function sagUpsert(rows, source){
-  var store=sagLoad(); var added=0, updated=0;
-  rows.forEach(function(r){
-    if(!r.symbol) return; var sym=String(r.symbol).trim().toUpperCase(); if(!sym) return;
-    r._updated=new Date().toISOString();
-    if(store.stocks[sym]) updated++; else added++;
-    store.stocks[sym]=Object.assign({}, store.stocks[sym]||{}, r, {symbol:sym});
-  });
-  if(source) store.source=source;
-  sagSave(store);
-  return {added:added, updated:updated, total:Object.keys(store.stocks).length};
+var SAG_API='/api/sa-grades';
+function sagToken(){ try{ return localStorage.getItem('sessionToken')||localStorage.getItem('theisi_session')||''; }catch(e){ return ''; } }
+// cache helpers (fast local mirror of the server store)
+function sagCacheGet(){ try{ var r=localStorage.getItem(SAG_KEY); return r?JSON.parse(r):{updated:null,source:null,stocks:{}}; }catch(e){ return {updated:null,source:null,stocks:{}}; } }
+function sagCacheSet(store){ try{ localStorage.setItem(SAG_KEY, JSON.stringify(store)); }catch(e){} return store; }
+// load from server, fall back to cache
+async function sagFetch(){
+  try{
+    var r=await fetch(SAG_API,{headers:{'Accept':'application/json'}});
+    if(r.ok){ var store=await r.json(); if(!store.stocks)store.stocks={}; sagCacheSet(store); return store; }
+  }catch(e){}
+  return sagCacheGet();
 }
-function sagDelete(sym){ var store=sagLoad(); sym=String(sym).trim().toUpperCase(); if(store.stocks[sym]){ delete store.stocks[sym]; sagSave(store); return true; } return false; }
-function sagGet(sym){ var store=sagLoad(); return store.stocks[String(sym).trim().toUpperCase()]||null; }
+// write actions hit the API; on success refresh cache
+async function sagApiPost(body){
+  var tok=sagToken();
+  var r=await fetch(SAG_API,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify(body)});
+  var j=await r.json().catch(function(){return {};});
+  if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
+  return j;
+}
+// legacy sync accessors used by the panel render (read cache)
+function sagLoad(){ return sagCacheGet(); }
+function sagGet(sym){ var store=sagCacheGet(); return store.stocks[String(sym).trim().toUpperCase()]||null; }
 
 // ---- Parsers: produce array of row objects keyed by column header ----
 function sagParseRows(headers, dataRows){
@@ -3388,9 +3395,14 @@ function sagParseXLSX(arrayBuffer){
 
 // ---- Panel render ----
 var _sagPending=null; // parsed rows awaiting commit
-function renderSAGradesPanel(){
+async function renderSAGradesPanel(){
   var p=document.getElementById('sag-panel'); if(!p) return;
-  var store=sagLoad();
+  p.innerHTML='<div style="padding:30px;text-align:center;color:var(--text3);">جارٍ التحميل من الخادم…</div>';
+  var store=await sagFetch();
+  _sagRender(store);
+}
+function _sagRender(store){
+  var p=document.getElementById('sag-panel'); if(!p) return;
   var syms=Object.keys(store.stocks).sort();
   var cnt=document.getElementById('sag-count'); if(cnt) cnt.textContent=syms.length+' سهم · آخر تحديث '+(store.updated?new Date(store.updated).toLocaleString():'—');
   var cols='var(--bg2)', bd='0.5px solid var(--border)';
@@ -3415,14 +3427,14 @@ function renderSAGradesPanel(){
   // --- Stored table ---
   html+='<div style="background:'+cols+';border:'+bd+';border-radius:12px;padding:14px;">';
   html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><span style="font-size:12px;font-weight:600;color:var(--text2);">المخزن ('+syms.length+' سهم)</span>';
-  if(syms.length) html+='<button onclick="if(confirm(\'مسح كل الدرجات؟\')){localStorage.removeItem(SAG_KEY);renderSAGradesPanel();}" style="font-size:10px;padding:4px 10px;border-radius:6px;background:transparent;color:var(--red);border:0.5px solid var(--red);cursor:pointer;">مسح الكل</button>';
+  if(syms.length) html+='<button onclick="if(confirm(\'مسح كل الدرجات؟\')){sagWipeRemote();}" style="font-size:10px;padding:4px 10px;border-radius:6px;background:transparent;color:var(--red);border:0.5px solid var(--red);cursor:pointer;">مسح الكل</button>';
   html+='</div>';
   if(!syms.length){ html+='<div style="font-size:11px;color:var(--text3);padding:14px 0;text-align:center;">لا توجد درجات بعد — ارفع ملف SA أعلاه</div>'; }
   else {
     html+='<div style="overflow:auto;max-height:340px;"><table style="width:100%;border-collapse:collapse;font-size:11px;">';
     html+='<thead><tr style="position:sticky;top:0;background:var(--bg3);"><th style="text-align:right;padding:6px;color:var(--text3);">الرمز</th><th style="text-align:right;padding:6px;color:var(--text3);">Quant</th><th style="text-align:center;padding:6px;color:var(--text3);">Val</th><th style="text-align:center;padding:6px;color:var(--text3);">Grw</th><th style="text-align:center;padding:6px;color:var(--text3);">Prof</th><th style="text-align:center;padding:6px;color:var(--text3);">Mom</th><th style="text-align:center;padding:6px;color:var(--text3);">Rev</th><th style="padding:6px;"></th></tr></thead><tbody>';
     syms.forEach(function(s){ var r=store.stocks[s];
-      html+='<tr style="border-bottom:0.5px solid var(--border);"><td style="padding:5px 6px;color:var(--text);font-weight:600;">'+s+'</td><td style="padding:5px 6px;color:var(--text2);">'+(r['Quant Rating']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['Valuation Grade']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['Growth Grade']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['Profitability Grade']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['Momentum Grade']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['EPS Revision Grade']||'—')+'</td><td style="text-align:left;padding:5px 6px;"><button onclick="if(confirm(\'حذف '+s+'؟\')){sagDelete(\''+s+'\');renderSAGradesPanel();}" style="font-size:10px;color:var(--red);background:none;border:none;cursor:pointer;">حذف</button></td></tr>';
+      html+='<tr style="border-bottom:0.5px solid var(--border);"><td style="padding:5px 6px;color:var(--text);font-weight:600;">'+s+'</td><td style="padding:5px 6px;color:var(--text2);">'+(r['Quant Rating']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['Valuation Grade']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['Growth Grade']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['Profitability Grade']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['Momentum Grade']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['EPS Revision Grade']||'—')+'</td><td style="text-align:left;padding:5px 6px;"><button onclick="if(confirm(\'حذف '+s+'؟\')){sagDeleteRemote(\''+s+'\');}" style="font-size:10px;color:var(--red);background:none;border:none;cursor:pointer;">حذف</button></td></tr>';
     });
     html+='</tbody></table></div>';
   }
@@ -3454,20 +3466,30 @@ function sagShowPreview(rows, src){
     +'<div style="font-size:10px;color:var(--text3);margin-bottom:8px;">أمثلة: '+rows.slice(0,6).map(function(r){return r.symbol;}).join(' · ')+(rows.length>6?' …':'')+'</div>'
     +'<button onclick="sagCommit(\''+src.replace(/\x27/g,'')+'\')" style="font-size:11px;padding:7px 16px;border-radius:7px;background:var(--green);color:#fff;border:none;cursor:pointer;">تأكيد ودمج (Upsert)</button>';
 }
-function sagCommit(src){
+async function sagCommit(src){
   if(!_sagPending||!_sagPending.length){ return; }
-  var res=sagUpsert(_sagPending, src);
-  _sagPending=null;
-  var pasteEl=document.getElementById('sag-paste'); if(pasteEl) pasteEl.value='';
-  renderSAGradesPanel();
-  alert('تم: أُضيف '+res.added+' · حُدّث '+res.updated+' · الإجمالي '+res.total);
+  try{
+    var res=await sagApiPost({action:'upsert', rows:_sagPending, source:src});
+    _sagPending=null;
+    var pasteEl=document.getElementById('sag-paste'); if(pasteEl) pasteEl.value='';
+    await renderSAGradesPanel();
+    alert('تم: أُضيف '+res.result.added+' · حُدّث '+res.result.updated+' · الإجمالي '+res.result.total);
+  }catch(e){ alert('فشل الحفظ: '+e.message); }
 }
-function sagAddSingle(){
+async function sagAddSingle(){
   var get=function(k){ var el=document.getElementById('sagf-'+k.replace(/\s/g,'_')); return el?el.value.trim():''; };
   var sym=get('symbol'); if(!sym){ alert('أدخل الرمز'); return; }
   var row={symbol:sym, 'Quant Rating':get('Quant Rating'), 'Valuation Grade':get('Valuation Grade'), 'Growth Grade':get('Growth Grade'), 'Profitability Grade':get('Profitability Grade'), 'Momentum Grade':get('Momentum Grade'), 'EPS Revision Grade':get('EPS Revision Grade')};
-  var res=sagUpsert([row],'إدخال يدوي'); renderSAGradesPanel();
-  alert('تم حفظ '+sym.toUpperCase());
+  try{ await sagApiPost({action:'upsert', rows:[row], source:'إدخال يدوي'}); await renderSAGradesPanel(); alert('تم حفظ '+sym.toUpperCase()); }
+  catch(e){ alert('فشل: '+e.message); }
+}
+async function sagDeleteRemote(sym){
+  try{ await sagApiPost({action:'delete', sym:sym}); await renderSAGradesPanel(); }
+  catch(e){ alert('فشل الحذف: '+e.message); }
+}
+async function sagWipeRemote(){
+  try{ await sagApiPost({action:'replace', rows:[], source:'wipe'}); await renderSAGradesPanel(); }
+  catch(e){ alert('فشل المسح: '+e.message); }
 }
 /* =================== END SA GRADES =================== */
 
