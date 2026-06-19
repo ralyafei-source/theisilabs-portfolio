@@ -3326,7 +3326,7 @@ function applyTranslations(){
 // Store: localStorage stand-in for /api/sa-grades. Keyed by symbol. Upsert + delete.
 var SAG_KEY='theisi_sa_grades_v1';
 var SAG_API='/api/sa-grades';
-function sagToken(){ try{ return localStorage.getItem('sessionToken')||localStorage.getItem('theisi_session')||''; }catch(e){ return ''; } }
+function sagToken(){ try{ return localStorage.getItem('theisilabs_session')||localStorage.getItem('sessionToken')||localStorage.getItem('theisi_session')||''; }catch(e){ return ''; } }
 // cache helpers (fast local mirror of the server store)
 function sagCacheGet(){ try{ var r=localStorage.getItem(SAG_KEY); return r?JSON.parse(r):{updated:null,source:null,stocks:{}}; }catch(e){ return {updated:null,source:null,stocks:{}}; } }
 function sagCacheSet(store){ try{ localStorage.setItem(SAG_KEY, JSON.stringify(store)); }catch(e){} return store; }
