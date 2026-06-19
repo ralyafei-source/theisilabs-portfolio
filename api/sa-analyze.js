@@ -209,10 +209,9 @@ module.exports = async (req, res) => {
       const pick = (r, ...keys) => { for(const k of keys){ if(r[k]!==undefined&&r[k]!=='') return r[k]; } return null; };
       for (const r of raw) {
         const sym = r.symbol || r.sym; if(!sym) continue;
-        // keep EVERY column from the sheet verbatim
-        const full = {}; Object.keys(r).forEach(k=>{ full[k]=r[k]; });
+        const sheets = r.__sheets || {};
+        const full = {}; Object.keys(r).forEach(k=>{ if(k!=='__sheets') full[k]=r[k]; });
         full.sym = String(sym).toUpperCase();
-        // normalized convenience fields the prompt/dashboard rely on
         full.quant       = numOrNull(pick(r,'Quant Rating','quant'));
         full.grades = {
           V: pick(r,'Valuation Grade','valuation','V'),
@@ -227,6 +226,14 @@ module.exports = async (req, res) => {
         full.weight      = pick(r,'Weight','weight');
         full.days_at_rating = numOrNull(pick(r,'Days at Rating','days_at_rating'));
         full.analysts_covering = numOrNull(pick(r,'# SA Analysts Covering','# Analysts','analysts_covering'));
+        full.sheets = {
+          dashboard: sheets.dashboard || null,
+          holdings:  sheets.holdings  || null,
+          short:     sheets.short     || null,
+          dividends: sheets.dividends || null,
+          ratings:   sheets.ratings   || null,
+          summary:   sheets.summary   || null
+        };
         const hasGrades = full.grades.V!=null;
         (hasGrades?stocks:etfs).push(full);
       }

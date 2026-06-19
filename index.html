@@ -3345,24 +3345,59 @@ function sagParseCSV(text){
 function sagParseXLSX(arrayBuffer){
   if(typeof XLSX==='undefined') throw new Error('SheetJS غير محمّل');
   var wb=XLSX.read(arrayBuffer,{type:'array'});
-  // Dashboard sheet — grades + ratings + 41 cols
+
+  function readSheet(name){
+    if(!name || !wb.Sheets[name]) return [];
+    var aoa=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''});
+    return aoa.length ? sagParseRows(aoa[0], aoa.slice(1)) : [];
+  }
+
+  // existing behaviour: Dashboard base + Holdings flat-merge (UNCHANGED)
   var dashName=wb.SheetNames.find(function(n){return /dashboard/i.test(n);})||wb.SheetNames[0];
-  var dashAoa=XLSX.utils.sheet_to_json(wb.Sheets[dashName],{header:1,defval:''});
-  var rows = dashAoa.length ? sagParseRows(dashAoa[0], dashAoa.slice(1)) : [];
-  // Holdings sheet — positions (shares, cost, value, weight). Optional.
+  var rows = readSheet(dashName);
   var holdName=wb.SheetNames.find(function(n){return /holding|position/i.test(n);});
   if(holdName){
-    var hAoa=XLSX.utils.sheet_to_json(wb.Sheets[holdName],{header:1,defval:''});
-    if(hAoa.length){
-      var hRows=sagParseRows(hAoa[0], hAoa.slice(1)); // keyed by symbol, skips TOTAL
-      var hBySym={}; hRows.forEach(function(r){ hBySym[r.symbol]=r; });
-      rows.forEach(function(r){
-        var h=hBySym[r.symbol]; if(!h) return;
-        // copy position fields under clear names (keep whatever the sheet calls them)
-        Object.keys(h).forEach(function(k){ if(k!=='symbol' && r[k]===undefined) r[k]=h[k]; });
-      });
-    }
+    var hRows=readSheet(holdName);
+    var hBySym={}; hRows.forEach(function(r){ hBySym[r.symbol]=r; });
+    rows.forEach(function(r){
+      var h=hBySym[r.symbol]; if(!h) return;
+      Object.keys(h).forEach(function(k){ if(k!=='symbol' && r[k]===undefined) r[k]=h[k]; });
+    });
   }
+
+  // NEW: capture every sheet under __sheets, DEDUPED by precedence
+  var precedence = [
+    { key:'dashboard', rx:/dashboard/i },
+    { key:'holdings',  rx:/holding|position/i },
+    { key:'short',     rx:/^short$/i },
+    { key:'dividends', rx:/dividend/i },
+    { key:'ratings',   rx:/^ratings$/i },
+    { key:'summary',   rx:/summary/i }
+  ];
+  var bySheet = {};
+  precedence.forEach(function(s){
+    var nm = wb.SheetNames.find(function(n){ return s.rx.test(n); });
+    if(!nm) return;
+    var idx = {};
+    readSheet(nm).forEach(function(r){ idx[r.symbol]=r; });
+    bySheet[s.key]=idx;
+  });
+  rows.forEach(function(r){
+    var sheets={}; var claimed={};
+    precedence.forEach(function(s){
+      var idx=bySheet[s.key]; if(!idx) return;
+      var rec=idx[r.symbol]; if(!rec) return;
+      var copy={};
+      Object.keys(rec).forEach(function(k){
+        if(k==='symbol') return;
+        if(claimed[k]) return;
+        copy[k]=rec[k]; claimed[k]=true;
+      });
+      if(Object.keys(copy).length) sheets[s.key]=copy;
+    });
+    r.__sheets = sheets;
+  });
+
   return rows;
 }
 
