@@ -1916,7 +1916,9 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 </header>
 <div id="appBody">
 <nav id="appSidebar">
-  <div class="sb-item active" data-tab="dashboard"    onclick="showTab('dashboard',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="sb-lbl">Dashboard</span></div>
+  <div class="sb-item active" data-tab="command"      onclick="showTab('command',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/><line x1="12" y1="3" x2="12" y2="6.5"/><line x1="12" y1="17.5" x2="12" y2="21"/><line x1="3" y1="12" x2="6.5" y2="12"/><line x1="17.5" y1="12" x2="21" y2="12"/></svg></span><span class="sb-lbl">Command</span></div>
+  <div class="sb-item" data-tab="sagrades" onclick="showTab('sagrades',this);renderSAGradesPanel()"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/><circle cx="19" cy="19" r="2"/></svg></span><span class="sb-lbl">SA Grades</span></div>
+  <div class="sb-item" data-tab="dashboard"    onclick="showTab('dashboard',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="sb-lbl">Dashboard</span></div>
   <div class="sb-item" data-tab="advisor"             onclick="showTab('advisor',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg></span><span class="sb-lbl">AI Advisor</span></div>
   <div class="sb-item" data-tab="portfolio"           onclick="showTab('portfolio',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><span class="sb-lbl">Portfolio</span></div>
   <div class="sb-item" data-tab="lookup"              onclick="showTab('lookup',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></span><span class="sb-lbl">Lookup</span></div>
@@ -1983,8 +1985,35 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 
 
 <!-- ===== PORTFOLIO TAB ===== -->
+<!-- COMMAND CENTER -->
+<div id="tab-command" class="tab-content active">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+    <div style="display:flex;align-items:baseline;gap:10px;">
+      <span style="font-size:16px;font-weight:700;color:var(--text);">Command Center</span>
+      <span id="cc-sub" style="font-size:11px;color:var(--text3);">القراءة الكاملة في 30 ثانية · كل بطاقة تفتح تفاصيلها</span>
+    </div>
+    <button onclick="renderCommandCenter()" style="font-size:10px;padding:5px 11px;border-radius:7px;background:var(--bg2);color:var(--text2);border:0.5px solid var(--border);cursor:pointer;">↻ تحديث</button>
+  </div>
+  <div id="cc-grid" style="display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:10px;">
+    <div style="padding:40px;text-align:center;color:var(--text3);grid-column:1/-1;">جارٍ التحميل…</div>
+  </div>
+  <div style="font-size:8.5px;color:var(--text3);text-align:center;margin-top:12px;">معلومات للاطلاع لا توصية مالية · كل رقم اتجاه بهامش خطأ واسع · القرار قرارك</div>
+</div>
+
+<!-- SA GRADES ADMIN -->
+<div id="tab-sagrades" class="tab-content">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+    <div style="display:flex;align-items:baseline;gap:10px;">
+      <span style="font-size:16px;font-weight:700;color:var(--text);">SA Grades</span>
+      <span style="font-size:11px;color:var(--text3);">مخزن درجات Seeking Alpha — رفع · لصق · إضافة · حذف</span>
+    </div>
+    <span id="sag-count" style="font-size:11px;color:var(--text3);"></span>
+  </div>
+  <div id="sag-panel"><div style="padding:30px;text-align:center;color:var(--text3);">جارٍ التحميل…</div></div>
+</div>
+
 <!-- DASHBOARD -->
-<div id="tab-dashboard" class="tab-content active">
+<div id="tab-dashboard" class="tab-content">
   <!-- ═══ 1. VALUE + HEALTH (share a row) ═══ -->
   <div class="dash-row dash-value-row">
     <div class="zone1" style="flex:1">
@@ -2447,7 +2476,6 @@ WOLF remains at critical lows<br><br>
         <button class="firm-tab grp active" onclick="showGroup('positions',this)" data-en="My positions" data-ar="مراكزي">مراكزي</button>
         <button class="firm-tab grp" onclick="showGroup('riskhealth',this)" data-en="Risk & health" data-ar="المخاطر والصحة">المخاطر والصحة</button>
         <button class="firm-tab grp" onclick="showGroup('opportunities',this)" data-en="Opportunities" data-ar="فرص السوق">فرص السوق</button>
-        <button class="firm-tab grp" onclick="showGroup('forces',this)" data-en="Market forces" data-ar="قوى السوق">قوى السوق</button>
         <button class="firm-tab grp" onclick="showGroup('longgame',this)" data-en="The long game" data-ar="النظرة البعيدة">النظرة البعيدة</button>
         <button class="firm-tab grp" onclick="showGroup('backtest',this)" data-en="Accuracy test" data-ar="اختبار الدقة" style="color:var(--gold);">🔬 اختبار الدقة</button>
       </div>
@@ -2487,40 +2515,52 @@ WOLF remains at critical lows<br><br>
 </div>
 <div id="scoringSheetBackdrop" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9998;background:rgba(0,0,0,0.5);" onclick="closeScoringSheet()"></div>
 
-      <div class="firm-content active" id="firm-signals">
+      <div class="firm-content active" id="firm-portfolio-context">
         <div class="firm-header">
-          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--accent);font-size:11px;">DS</div>
+          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--accent);font-size:11px;">PC</div>
           <div>
-            <div class="firm-title">Daily Signals</div>
-            <div class="firm-subtitle">Buy/Sell ratings for all positions · Price targets · Stop-loss · Conviction trade</div>
+            <div class="firm-title">Portfolio Context</div>
+            <div class="firm-subtitle">Concentration · Sector exposure · Sharia check · UAE tax impact</div>
           </div>
         </div>
-        <div class="firm-body" id="signals-body"></div>
-        <div class="advisor-ts" id="signals-ts"></div>
+        <div class="firm-body" id="portfolio-context-body"></div>
+        <div class="advisor-ts" id="portfolio-context-ts"></div>
       </div>
 
-      <div class="firm-content" id="firm-earnings">
+      <div class="firm-content active" id="firm-earnings-decisions">
         <div class="firm-header">
-          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--accent);font-size:11px;">EE</div>
+          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--accent);font-size:11px;">ED</div>
           <div>
-            <div class="firm-title">Earnings &amp; Events</div>
-            <div class="firm-subtitle">Upcoming earnings · Beat/miss history · Pre-earnings strategy</div>
+            <div class="firm-title">Earnings Decisions</div>
+            <div class="firm-subtitle">Your position context for upcoming earnings · Specific action per holding</div>
           </div>
         </div>
-        <div class="firm-body" id="earnings-body"></div>
-        <div class="advisor-ts" id="earnings-ts"></div>
+        <div class="firm-body" id="earnings-decisions-body"></div>
+        <div class="advisor-ts" id="earnings-decisions-ts"></div>
       </div>
 
-      <div class="firm-content" id="firm-macro">
+      <div class="firm-content active" id="firm-conflicts">
         <div class="firm-header">
-          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--accent);font-size:11px;">MX</div>
+          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--gold);font-size:11px;">CF</div>
           <div>
-            <div class="firm-title">Macro Today</div>
-            <div class="firm-subtitle">Fed policy · Inflation · Geopolitical impact on your portfolio</div>
+            <div class="firm-title">Conflicts Resolved</div>
+            <div class="firm-subtitle">Quant vs Analyst disagreements · Resolved for YOUR position & UAE tax context</div>
           </div>
         </div>
-        <div class="firm-body" id="macro-body"></div>
-        <div class="advisor-ts" id="macro-ts"></div>
+        <div class="firm-body" id="conflicts-body"></div>
+        <div class="advisor-ts" id="conflicts-ts"></div>
+      </div>
+
+      <div class="firm-content active" id="firm-cash">
+        <div class="firm-header">
+          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--accent2);font-size:11px;">CD</div>
+          <div>
+            <div class="firm-title">Cash Deployment</div>
+            <div class="firm-subtitle">Where to deploy available cash · SA Quant-backed · Concentration impact</div>
+          </div>
+        </div>
+        <div class="firm-body" id="cash-body"></div>
+        <div class="advisor-ts" id="cash-ts"></div>
       </div>
 
       <div class="firm-content" id="firm-risk">
@@ -2548,18 +2588,6 @@ WOLF remains at critical lows<br><br>
       </div>
 
       
-
-      <div class="firm-content active" id="firm-momentum">
-        <div class="firm-header">
-          <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--accent2);font-size:11px;">MO</div>
-          <div>
-            <div class="firm-title">Momentum</div>
-            <div class="firm-subtitle">Price momentum · RSI signals · Moving averages · Trend direction</div>
-          </div>
-        </div>
-        <div class="firm-body" id="momentum-body"></div>
-        <div class="advisor-ts" id="momentum-ts"></div>
-      </div>
 
       <div class="firm-content active" id="firm-scoring">
         <div class="firm-header">
@@ -2694,7 +2722,6 @@ WOLF remains at critical lows<br><br>
   <div class="sa-progress"><div class="sa-progress-fill" id="sa-progress-fill" style="width:0%"></div></div>
   <div class="sa-checklist" id="sa-checklist">
     <div class="sa-check-item"><div class="sa-check-dot" id="chk-excel"></div><span>ملف Excel (المحفظة)</span></div>
-    <div class="sa-check-item"><div class="sa-check-dot" id="chk-portfolio-ratings"></div><span>SA Portfolio Ratings</span></div>
     <div class="sa-check-item"><div class="sa-check-dot" id="chk-short"></div><span>Short Ideas</span></div>
     <div class="sa-check-item"><div class="sa-check-dot" id="chk-updown-mine"></div><span>Upgrades — أسهمك</span></div>
     <div class="sa-check-item"><div class="sa-check-dot" id="chk-updown-market"></div><span>Upgrades — السوق</span></div>
@@ -3295,6 +3322,307 @@ function applyTranslations(){
 }
 
 // ===== TABS =====
+/* ===================== SA GRADES STORE + ADMIN PANEL ===================== */
+// Store: localStorage stand-in for /api/sa-grades. Keyed by symbol. Upsert + delete.
+var SAG_KEY='theisi_sa_grades_v1';
+var SAG_API='/api/sa-grades';
+function sagToken(){ try{ return localStorage.getItem('theisilabs_session')||localStorage.getItem('sessionToken')||localStorage.getItem('theisi_session')||''; }catch(e){ return ''; } }
+// cache helpers (fast local mirror of the server store)
+function sagCacheGet(){ try{ var r=localStorage.getItem(SAG_KEY); return r?JSON.parse(r):{updated:null,source:null,stocks:{}}; }catch(e){ return {updated:null,source:null,stocks:{}}; } }
+function sagCacheSet(store){ try{ localStorage.setItem(SAG_KEY, JSON.stringify(store)); }catch(e){} return store; }
+// load from server, fall back to cache
+async function sagFetch(){
+  try{
+    var r=await fetch(SAG_API,{headers:{'Accept':'application/json'}});
+    if(r.ok){ var store=await r.json(); if(!store.stocks)store.stocks={}; sagCacheSet(store); return store; }
+  }catch(e){}
+  return sagCacheGet();
+}
+// write actions hit the API; on success refresh cache
+async function sagApiPost(body){
+  var tok=sagToken();
+  var r=await fetch(SAG_API,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify(body)});
+  var j=await r.json().catch(function(){return {};});
+  if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
+  return j;
+}
+// legacy sync accessors used by the panel render (read cache)
+function sagLoad(){ return sagCacheGet(); }
+function sagGet(sym){ var store=sagCacheGet(); return store.stocks[String(sym).trim().toUpperCase()]||null; }
+
+// ---- Parsers: produce array of row objects keyed by column header ----
+function sagParseRows(headers, dataRows){
+  // map "Symbol" col to symbol; keep ALL columns verbatim
+  var symIdx=headers.findIndex(function(h){ return /^symbol$/i.test(String(h).trim()); });
+  if(symIdx<0) symIdx=0;
+  var out=[];
+  dataRows.forEach(function(row){
+    var sym=String(row[symIdx]||'').trim();
+    if(!sym || /^total$/i.test(sym)) return; // skip blanks + TOTAL row
+    var obj={symbol:sym.toUpperCase()};
+    headers.forEach(function(h,i){ var key=String(h).trim(); if(key && i!==symIdx){ obj[key]=(row[i]==null?'':row[i]); } });
+    out.push(obj);
+  });
+  return out;
+}
+function sagParseCSV(text){
+  var lines=text.split(/\r?\n/).filter(function(l){return l.trim();});
+  if(lines.length<2) return [];
+  function splitLine(l){ // simple CSV/TSV split, handles tab or comma
+    if(l.indexOf('\t')>=0) return l.split('\t');
+    var out=[],cur='',q=false;
+    for(var i=0;i<l.length;i++){var c=l[i];
+      if(c==='"'){ q=!q; }
+      else if(c===',' && !q){ out.push(cur); cur=''; }
+      else cur+=c;
+    } out.push(cur); return out.map(function(s){return s.trim();});
+  }
+  var headers=splitLine(lines[0]);
+  var rows=lines.slice(1).map(splitLine);
+  return sagParseRows(headers, rows);
+}
+function sagParseXLSX(arrayBuffer){
+  if(typeof XLSX==='undefined') throw new Error('SheetJS غير محمّل');
+  var wb=XLSX.read(arrayBuffer,{type:'array'});
+  // prefer a sheet named Dashboard, else first
+  var sheetName=wb.SheetNames.find(function(n){return /dashboard/i.test(n);})||wb.SheetNames[0];
+  var ws=wb.Sheets[sheetName];
+  var aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  if(!aoa.length) return [];
+  var headers=aoa[0];
+  return sagParseRows(headers, aoa.slice(1));
+}
+
+// ---- Panel render ----
+var _sagPending=null; // parsed rows awaiting commit
+async function renderSAGradesPanel(){
+  var p=document.getElementById('sag-panel'); if(!p) return;
+  p.innerHTML='<div style="padding:30px;text-align:center;color:var(--text3);">جارٍ التحميل من الخادم…</div>';
+  var store=await sagFetch();
+  _sagRender(store);
+}
+function _sagRender(store){
+  var p=document.getElementById('sag-panel'); if(!p) return;
+  var syms=Object.keys(store.stocks).sort();
+  var cnt=document.getElementById('sag-count'); if(cnt) cnt.textContent=syms.length+' سهم · آخر تحديث '+(store.updated?new Date(store.updated).toLocaleString():'—');
+  var cols='var(--bg2)', bd='0.5px solid var(--border)';
+  var html='';
+  // --- Upload / paste zone ---
+  html+='<div style="background:'+cols+';border:'+bd+';border-radius:12px;padding:14px;margin-bottom:12px;">';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;">رفع مجموعة (Upsert) — ملف أو لصق</div>';
+  html+='<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">';
+  html+='<input type="file" id="sag-file" accept=".xlsx,.xls,.csv,.tsv" style="font-size:11px;color:var(--text2);" onchange="sagHandleFile(event)">';
+  html+='<span style="font-size:10px;color:var(--text3);">أو الصق CSV/TSV أدناه</span></div>';
+  html+='<textarea id="sag-paste" placeholder="Symbol,Quant Rating,Valuation Grade,..." style="width:100%;min-height:70px;background:var(--bg3);border:'+bd+';border-radius:8px;color:var(--text);font-size:11px;padding:8px;font-family:monospace;" oninput="sagPreviewPaste()"></textarea>';
+  html+='<div id="sag-preview" style="margin-top:10px;"></div>';
+  html+='</div>';
+  // --- Single add ---
+  html+='<div style="background:'+cols+';border:'+bd+';border-radius:12px;padding:14px;margin-bottom:12px;">';
+  html+='<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;">إضافة/تعديل سهم واحد</div>';
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">';
+  var fields=[['symbol','Symbol'],['Quant Rating','Quant Rating'],['Valuation Grade','Valuation'],['Growth Grade','Growth'],['Profitability Grade','Profitability'],['Momentum Grade','Momentum'],['EPS Revision Grade','EPS Revisions']];
+  fields.forEach(function(f){ html+='<input id="sagf-'+f[0].replace(/\s/g,'_')+'" placeholder="'+f[1]+'" style="background:var(--bg3);border:'+bd+';border-radius:6px;color:var(--text);font-size:11px;padding:6px;">'; });
+  html+='</div><button onclick="sagAddSingle()" style="margin-top:10px;font-size:11px;padding:6px 14px;border-radius:7px;background:var(--accent);color:#fff;border:none;cursor:pointer;">حفظ السهم</button>';
+  html+='</div>';
+  // --- Stored table ---
+  html+='<div style="background:'+cols+';border:'+bd+';border-radius:12px;padding:14px;">';
+  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><span style="font-size:12px;font-weight:600;color:var(--text2);">المخزن ('+syms.length+' سهم)</span>';
+  if(syms.length) html+='<button onclick="if(confirm(\'مسح كل الدرجات؟\')){sagWipeRemote();}" style="font-size:10px;padding:4px 10px;border-radius:6px;background:transparent;color:var(--red);border:0.5px solid var(--red);cursor:pointer;">مسح الكل</button>';
+  html+='</div>';
+  if(!syms.length){ html+='<div style="font-size:11px;color:var(--text3);padding:14px 0;text-align:center;">لا توجد درجات بعد — ارفع ملف SA أعلاه</div>'; }
+  else {
+    html+='<div style="overflow:auto;max-height:340px;"><table style="width:100%;border-collapse:collapse;font-size:11px;">';
+    html+='<thead><tr style="position:sticky;top:0;background:var(--bg3);"><th style="text-align:right;padding:6px;color:var(--text3);">الرمز</th><th style="text-align:right;padding:6px;color:var(--text3);">Quant</th><th style="text-align:center;padding:6px;color:var(--text3);">Val</th><th style="text-align:center;padding:6px;color:var(--text3);">Grw</th><th style="text-align:center;padding:6px;color:var(--text3);">Prof</th><th style="text-align:center;padding:6px;color:var(--text3);">Mom</th><th style="text-align:center;padding:6px;color:var(--text3);">Rev</th><th style="padding:6px;"></th></tr></thead><tbody>';
+    syms.forEach(function(s){ var r=store.stocks[s];
+      html+='<tr style="border-bottom:0.5px solid var(--border);"><td style="padding:5px 6px;color:var(--text);font-weight:600;">'+s+'</td><td style="padding:5px 6px;color:var(--text2);">'+(r['Quant Rating']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['Valuation Grade']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['Growth Grade']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['Profitability Grade']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['Momentum Grade']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['EPS Revision Grade']||'—')+'</td><td style="text-align:left;padding:5px 6px;"><button onclick="if(confirm(\'حذف '+s+'؟\')){sagDeleteRemote(\''+s+'\');}" style="font-size:10px;color:var(--red);background:none;border:none;cursor:pointer;">حذف</button></td></tr>';
+    });
+    html+='</tbody></table></div>';
+  }
+  html+='</div>';
+  p.innerHTML=html;
+}
+function sagHandleFile(ev){
+  var f=ev.target.files&&ev.target.files[0]; if(!f) return;
+  var reader=new FileReader();
+  var isCSV=/\.(csv|tsv)$/i.test(f.name);
+  reader.onload=function(e){
+    try{
+      var rows = isCSV ? sagParseCSV(e.target.result) : sagParseXLSX(e.target.result);
+      _sagPending=rows; sagShowPreview(rows, f.name);
+    }catch(err){ document.getElementById('sag-preview').innerHTML='<span style="color:var(--red);font-size:11px;">خطأ في القراءة: '+err.message+'</span>'; }
+  };
+  if(isCSV) reader.readAsText(f); else reader.readAsArrayBuffer(f);
+}
+function sagPreviewPaste(){
+  var t=document.getElementById('sag-paste').value.trim();
+  if(t.length<10){ document.getElementById('sag-preview').innerHTML=''; _sagPending=null; return; }
+  try{ var rows=sagParseCSV(t); _sagPending=rows; sagShowPreview(rows,'لصق'); }catch(e){}
+}
+function sagShowPreview(rows, src){
+  var d=document.getElementById('sag-preview'); if(!d) return;
+  if(!rows||!rows.length){ d.innerHTML='<span style="color:var(--gold);font-size:11px;">لم يُعثر على صفوف صالحة</span>'; return; }
+  var colCount=Object.keys(rows[0]).length;
+  d.innerHTML='<div style="font-size:11px;color:var(--green);margin-bottom:8px;">جاهز: '+rows.length+' سهم · '+colCount+' عمود · المصدر: '+src+'</div>'
+    +'<div style="font-size:10px;color:var(--text3);margin-bottom:8px;">أمثلة: '+rows.slice(0,6).map(function(r){return r.symbol;}).join(' · ')+(rows.length>6?' …':'')+'</div>'
+    +'<button onclick="sagCommit(\''+src.replace(/\x27/g,'')+'\')" style="font-size:11px;padding:7px 16px;border-radius:7px;background:var(--green);color:#fff;border:none;cursor:pointer;">تأكيد ودمج (Upsert)</button>';
+}
+async function sagCommit(src){
+  if(!_sagPending||!_sagPending.length){ return; }
+  try{
+    var res=await sagApiPost({action:'upsert', rows:_sagPending, source:src});
+    _sagPending=null;
+    var pasteEl=document.getElementById('sag-paste'); if(pasteEl) pasteEl.value='';
+    await renderSAGradesPanel();
+    alert('تم: أُضيف '+res.result.added+' · حُدّث '+res.result.updated+' · الإجمالي '+res.result.total);
+  }catch(e){ alert('فشل الحفظ: '+e.message); }
+}
+async function sagAddSingle(){
+  var get=function(k){ var el=document.getElementById('sagf-'+k.replace(/\s/g,'_')); return el?el.value.trim():''; };
+  var sym=get('symbol'); if(!sym){ alert('أدخل الرمز'); return; }
+  var row={symbol:sym, 'Quant Rating':get('Quant Rating'), 'Valuation Grade':get('Valuation Grade'), 'Growth Grade':get('Growth Grade'), 'Profitability Grade':get('Profitability Grade'), 'Momentum Grade':get('Momentum Grade'), 'EPS Revision Grade':get('EPS Revision Grade')};
+  try{ await sagApiPost({action:'upsert', rows:[row], source:'إدخال يدوي'}); await renderSAGradesPanel(); alert('تم حفظ '+sym.toUpperCase()); }
+  catch(e){ alert('فشل: '+e.message); }
+}
+async function sagDeleteRemote(sym){
+  try{ await sagApiPost({action:'delete', sym:sym}); await renderSAGradesPanel(); }
+  catch(e){ alert('فشل الحذف: '+e.message); }
+}
+async function sagWipeRemote(){
+  try{ await sagApiPost({action:'replace', rows:[], source:'wipe'}); await renderSAGradesPanel(); }
+  catch(e){ alert('فشل المسح: '+e.message); }
+}
+/* =================== END SA GRADES =================== */
+
+function renderCommandCenter(){
+  var grid=document.getElementById('cc-grid');
+  if(!grid) return;
+  if(typeof stocks==='undefined' || !stocks.length){
+    grid.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);grid-column:1/-1;">\u0644\u0627 \u062a\u0648\u062c\u062f \u0628\u064a\u0627\u0646\u0627\u062a \u0645\u062d\u0641\u0638\u0629 \u0628\u0639\u062f</div>';
+    return;
+  }
+  grid.style.gridTemplateColumns='1fr';
+  grid.style.gap='18px';
+
+  function clean(x){
+    if(x==null) return '';
+    var t=String(x);
+    t=t.replace(/\u00e2\u20ac\u201d/g,'\u2014').replace(/\u00e2\u20ac\u201c/g,'\u2013').replace(/\u00e2\u20ac\u2122/g,'\u2019').replace(/\u00e2\u20ac\u0153/g,'\u201c').replace(/\u00e2\u20ac\u009d/g,'\u201d');
+    t=t.replace(/\u00e2\u20ac[\u0080-\uffff]?/g,'\u2014');
+    t=t.replace(/\u00e2[\u0080-\uffff]{1,2}/g,'\u2014');
+    t=t.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u2B00-\u2BFF\u2190-\u21FF\u2300-\u23FF\u24C2\u24D8\uFE0F\u2122\u2139\u26A0\u2714\u2716\u2717\u2705\u274C\u2B50]/gu,'');
+    return t;
+  }
+  function safe(fn){ try{ var h=fn(); if(!h) return null; h=String(h); if(h.indexOf('\u0644\u0627 \u062a\u0648\u062c\u062f')>=0 && h.length<200) return null; return clean(h); }catch(e){ return null; } }
+  function tidy(fn){
+    var h=safe(fn); if(!h) return null;
+    // collapse a duplicated adjacent header line (e.g. "رادار المخاطر الأسبوعي" twice)
+    h=h.replace(/(>[^<>]{8,60}<)(\s*<[^>]+>\s*)\1/g,'$1');
+    // strip raw markdown table pipe-rows and separator rows that leaked as text
+    h=h.replace(/\|\s*-{2,}[\s\-|]*\|/g,'');
+    h=h.replace(/(^|\n)\s*\|([^\n|]*\|){2,}\s*(?=\n|$)/g,' ');
+    h=h.replace(/\s*\|\s*/g,' \u00b7 ');
+    return h;
+  }
+
+  var total=stocks.reduce(function(a,s){return a+(s.mv||0);},0);
+  var sorted=stocks.slice().sort(function(a,b){return (b.mv||0)-(a.mv||0);});
+  var top=sorted.slice(0,6);
+  var bySec={}; stocks.forEach(function(s){var k=s.sec||'other'; bySec[k]=(bySec[k]||0)+(s.mv||0);});
+  var secLabels={tech:'\u062a\u0642\u0646\u064a\u0629',spec:'\u062a\u062e\u0645\u064a\u0646\u064a',etf:'ETFs',bio:'\u0628\u064a\u0648\u062a\u0643',mining:'\u062a\u0639\u062f\u064a\u0646',other:'\u0623\u062e\u0631\u0649'};
+  var secColors={tech:'#FF0A78',etf:'#5DCAA5',spec:'#EF9F27',bio:'#85B7EB',mining:'#9b8cff',other:'#6b6f7a'};
+  var secRows=Object.keys(bySec).sort(function(a,b){return bySec[b]-bySec[a];});
+  var techPct=(bySec.tech||0)/total*100;
+  var winners=stocks.filter(function(s){return (s.gl||0)>0;}).length;
+
+  function parse(src){ try{ var c=(analysisData&&analysisData[src]&&analysisData[src].content)||''; return (typeof parseAnalysisSections==='function')?parseAnalysisSections(c,src):{}; }catch(e){ return {}; } }
+  var P={daily:parse('daily'), weekly:parse('weekly'), monthly:parse('monthly')};
+  function dailyC(){ try{return (analysisData.daily&&analysisData.daily.content)||'';}catch(e){return '';} }
+
+  var MONO="'IBM Plex Mono',monospace";
+  function card(opts){
+    var door=opts.door?('onclick="showTab(\''+opts.door+'\',document.querySelector(\'[data-tab='+opts.door+']\'))" style="cursor:pointer;"'):'';
+    var empty=(opts.body===null || opts.body==='');
+    var body=empty?'<div style="font-size:10px;color:var(--text3);padding:14px 0;text-align:center;">\u0644\u0627 \u062a\u0648\u062c\u062f \u0628\u064a\u0627\u0646\u0627\u062a \u0644\u0647\u0630\u0627 \u0627\u0644\u0642\u0633\u0645</div>':opts.body;
+    return '<div data-cc-card '+door+' style="background:var(--bg2);border:0.5px solid var(--border);border-radius:12px;padding:13px;transition:border-color .15s;'+(empty?'opacity:.5;':'')+'" onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\'">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;"><span style="font-size:11px;font-weight:600;color:var(--text2);">'+opts.title+'</span>'+(opts.door?'<span style="font-size:12px;color:var(--accent);">\u203a</span>':'')+'</div>'
+      +'<div style="max-height:'+(opts.max||360)+'px;overflow:auto;">'+body+'</div></div>';
+  }
+  function zone(label, cols, html){
+    return '<div><div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:9px;">'+label+'</div><div style="display:grid;grid-template-columns:'+cols+';gap:10px;align-items:start;">'+html+'</div></div>';
+  }
+
+  // ZONE 1: snapshot
+  var allocBars=secRows.map(function(k){var pct=bySec[k]/total*100;return '<div style="display:flex;align-items:center;gap:6px;margin:3px 0;"><span style="width:8px;height:8px;border-radius:2px;background:'+(secColors[k]||'#888')+';flex-shrink:0;"></span><span style="font-size:10px;color:var(--text2);flex:1;">'+(secLabels[k]||k)+'</span><span style="font-size:10px;color:var(--text3);font-family:'+MONO+';">'+pct.toFixed(1)+'%</span></div>';}).join('');
+  var portfolioCard=card({title:'\u0627\u0644\u0645\u062d\u0641\u0638\u0629 \u00b7 \u0627\u0644\u062a\u0648\u0632\u064a\u0639',door:'portfolio',body:
+    '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px;"><span style="font-size:23px;font-weight:700;color:var(--text);font-family:'+MONO+';">$'+total.toLocaleString()+'</span><span style="font-size:10px;color:var(--text3);">'+stocks.length+' \u0645\u0631\u0627\u0643\u0632 \u00b7 '+winners+' \u0631\u0627\u0628\u062d\u0629</span></div>'+allocBars
+    +(techPct>60?'<div style="font-size:9px;color:var(--gold);margin-top:8px;">\u062a\u0631\u0643\u0651\u0632 \u0627\u0644\u062a\u0642\u0646\u064a\u0629 '+techPct.toFixed(1)+'% \u0641\u0648\u0642 60%</div>':'')});
+  var dc=clean(dailyC()).replace(/```json[\s\S]*?```/g,'').replace(/<[^>]+>/g,'').replace(/[#*`]/g,'').trim();
+  var readCard=card({title:'\u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u064a\u0648\u0645',door:'advisor',body: dc? '<div style="font-size:10.5px;line-height:1.75;color:var(--text2);">'+dc.slice(0,260)+'\u2026</div>' : null});
+  var risks=[]; if(techPct>60)risks.push('\u062a\u0631\u0643\u0651\u0632 \u0627\u0644\u062a\u0642\u0646\u064a\u0629 '+techPct.toFixed(0)+'% > 60%'); top.forEach(function(s){var w=s.mv/total*100; if(w>10)risks.push(s.sym+' \u0648\u0632\u0646 '+w.toFixed(1)+'% > 10%');});
+  var alertCard=card({title:'\u062a\u0646\u0628\u064a\u0647\u0627\u062a \u0633\u0631\u064a\u0639\u0629',door:'advisor',body:'<div style="font-size:9.5px;line-height:1.6;">'+(risks.length?risks.slice(0,4).map(function(r){return '<div style="padding:3px 0;color:var(--text2);">\u2022 '+r+'</div>';}).join(''):'<div style="color:var(--green);padding:6px 0;">\u0644\u0627 \u062a\u0646\u0628\u064a\u0647\u0627\u062a \u062a\u0631\u0643\u0651\u0632</div>')+'</div>'});
+  var zone1=zone('\u0644\u0645\u062d\u0629 \u0633\u0631\u064a\u0639\u0629','1.3fr 1.4fr 1fr', portfolioCard+readCard+alertCard);
+
+  // ZONE 2: positions (single) + daily detail (earnings/conflicts/cash if present)
+  var posRows=sorted.slice(0,10).map(function(s){var g=s.gl||0,gc=g>=0?'var(--green)':'var(--red)',w=s.mv/total*100;
+    return '<div style="display:grid;grid-template-columns:50px 1fr 64px 50px;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:10px;"><span style="color:var(--text);font-weight:600;">'+s.sym+'</span><span style="color:var(--text3);font-size:9px;">'+w.toFixed(1)+'%</span><span style="text-align:left;color:var(--text2);font-family:'+MONO+';">$'+(s.mv||0).toLocaleString()+'</span><span style="text-align:left;color:'+gc+';">'+(g>=0?'+':'')+g.toFixed(1)+'%</span></div>';}).join('');
+  var positionsCard=card({title:'\u0627\u0644\u0645\u0631\u0627\u0643\u0632 (\u0623\u0643\u0628\u0631 10)',door:'portfolio',max:440,body:'<div>'+posRows+'</div>'});
+  var earnCard=card({title:'\u0642\u0631\u0627\u0631\u0627\u062a \u0627\u0644\u0623\u0631\u0628\u0627\u062d',door:'advisor',max:440,body:safe(function(){return renderEarningsDecisions(dailyC());})});
+  var conflictCard=card({title:'\u062a\u0639\u0627\u0631\u0636\u0627\u062a \u0645\u062d\u0644\u0648\u0644\u0629',door:'advisor',max:440,body:safe(function(){return renderConflictsResolved(dailyC());})});
+  var cashCard=card({title:'\u062a\u0648\u0638\u064a\u0641 \u0627\u0644\u0633\u064a\u0648\u0644\u0629',door:'advisor',max:440,body:safe(function(){return renderCashDeployment(dailyC());})});
+  var zone2=zone('\u0627\u0644\u0645\u0631\u0627\u0643\u0632 \u0648\u0627\u0644\u0625\u0634\u0627\u0631\u0627\u062a \u0627\u0644\u064a\u0648\u0645\u064a\u0629','1.2fr 1fr 1fr 1fr', positionsCard+earnCard+conflictCard+cashCard);
+
+  // ZONE 3: weekly (reuse rich renderers, cleaned)
+  var scoringCard=card({title:'\u0645\u062d\u0631\u0643 \u0627\u0644\u062a\u0642\u064a\u064a\u0645',door:'advisor',max:420,body:(function(){
+    try{
+      var sc=(typeof _parseWeeklyScoreCards==='function')?_parseWeeklyScoreCards(P.weekly.scoring||''):[];
+      if(!sc||!sc.length) return null;
+      return '<div>'+sc.slice(0,10).map(function(c){var n=parseFloat(c.score)||0; var col=n>=7.5?'var(--green)':n>=6?'var(--gold)':'var(--text2)'; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:11px;"><span style="color:var(--text);font-weight:600;">'+clean(c.sym)+'</span><span style="color:'+col+';font-family:'+MONO+';font-weight:700;">'+clean(c.score)+'<span style="color:var(--text3);font-size:9px;font-weight:400;">/10</span></span></div>';}).join('')+'</div>';
+    }catch(e){ return null; }
+  })()});
+  var fairCard=card({title:'\u0627\u0644\u0642\u064a\u0645\u0629 \u0627\u0644\u0639\u0627\u062f\u0644\u0629',door:'advisor',max:420,body:(function(){
+    try{
+      var rows=(typeof _parseWeeklyFairValueRows==='function')?_parseWeeklyFairValueRows(P.weekly.fairvalue||''):[];
+      if(!rows||!rows.length) return null;
+      var html='<div style="font-size:10px;">';
+      html+='<div style="display:grid;grid-template-columns:50px 1fr 60px;gap:0;color:var(--text3);font-size:9px;padding-bottom:4px;border-bottom:0.5px solid var(--border);"><span>\u0627\u0644\u0631\u0645\u0632</span><span>\u0627\u0644\u062a\u0648\u0635\u064a\u0629</span><span style="text-align:left;">\u0641\u0631\u0635 DCF</span></div>';
+      rows.slice(0,12).forEach(function(r){
+        var dcf=(r.dcfPct!=null)?(r.dcfPct+'%'):'\u2014';
+        html+='<div style="display:grid;grid-template-columns:50px 1fr 60px;gap:0;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border);"><span style="color:var(--text);font-weight:600;">'+clean(r.sym)+'</span><span style="color:var(--text2);">'+clean(r.rec||'')+'</span><span style="text-align:left;color:'+(r.targetColor||'var(--text3)')+';font-family:'+MONO+';">'+dcf+'</span></div>';
+      });
+      html+='</div><div style="font-size:8.5px;color:var(--text3);margin-top:6px;">\u0633\u062a\u064f\u0633\u062a\u0628\u062f\u0644 \u0628\u0645\u0636\u0627\u0639\u0641\u0627\u062a SA (PEG/PE)</div>';
+      return html;
+    }catch(e){ return null; }
+  })()});
+  var riskCard=card({title:'\u0631\u0627\u062f\u0627\u0631 \u0627\u0644\u0645\u062e\u0627\u0637\u0631',door:'advisor',max:420,body:tidy(function(){return renderCollapsibleSections(P.weekly.risk||'','\u0631\u0627\u062f\u0627\u0631 \u0627\u0644\u0645\u062e\u0627\u0637\u0631 \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a');})});
+  var zone3=zone('\u0627\u0644\u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a \u0627\u0644\u0639\u0645\u064a\u0642','1fr 1fr 1fr', scoringCard+fairCard+riskCard);
+
+  // ZONE 4: monthly / long-term / validation (reuse rich renderers, cleaned)
+  var healthCard=card({title:'\u0635\u062d\u0629 \u0627\u0644\u0645\u062d\u0641\u0638\u0629',door:'advisor',max:460,body:safe(function(){return renderHealthSummary(P.monthly.health||'');})});
+  var compCard=card({title:'\u0627\u0644\u0645\u064a\u0632\u0629 \u0627\u0644\u062a\u0646\u0627\u0641\u0633\u064a\u0629',door:'advisor',max:460,body:tidy(function(){return renderCollapsibleSections(P.monthly.competitive||'','\u0627\u0644\u0645\u064a\u0632\u0629 \u0627\u0644\u062a\u0646\u0627\u0641\u0633\u064a\u0629');})});
+  var longCard=card({title:'\u0627\u0644\u0646\u0638\u0631\u0629 \u0627\u0644\u0628\u0639\u064a\u062f\u0629',door:'advisor',max:460,body:tidy(function(){return renderCollapsibleSections(P.monthly.longview||'','\u0627\u0644\u0646\u0638\u0631\u0629 \u0627\u0644\u0628\u0639\u064a\u062f\u0629');})});
+  var accCard=card({title:'\u0627\u0644\u0623\u062f\u0627\u0621 \u0648\u0627\u0644\u062a\u062d\u0642\u0642',door:'advisor',body:'<div style="font-size:10px;line-height:1.9;color:var(--text2);"><div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">\u0627\u0644\u0631\u0627\u0628\u062d\u0629</span><span>'+winners+'/'+stocks.length+'</span></div></div>'});
+  var zone4=zone('\u0634\u0647\u0631\u064a \u00b7 \u0637\u0648\u064a\u0644 \u0627\u0644\u0623\u062c\u0644 \u00b7 \u0627\u0644\u062a\u062d\u0642\u0642','1fr 1fr 1fr 1fr', healthCard+compCard+longCard+accCard);
+
+  grid.innerHTML=zone1+zone2+zone3+zone4;
+
+  // post-render cleanup: remove a body line that duplicates its own section summary header
+  try{
+    grid.querySelectorAll('[data-cc-card] details').forEach(function(d){
+      var sum=d.querySelector('summary');
+      if(!sum) return;
+      var stext=(sum.innerText||'').replace(/[\u25be\u203a\s]/g,'').trim();
+      if(stext.length<8) return;
+      var body=d.querySelector('summary + div, summary ~ div');
+      if(!body) return;
+      var firstBold=body.querySelector('b, strong, p');
+      if(firstBold){
+        var btext=(firstBold.innerText||'').replace(/[\u26A0\ufe0f\s]/g,'').trim();
+        if(btext && stext.indexOf(btext.slice(0,12))>=0){ firstBold.remove(); }
+      }
+    });
+  }catch(e){}
+}
+
 function showTab(name,el){
   if(name==='dashboard') setTimeout(function(){ if(typeof initLiveData==='function') initLiveData(); },100);
   if(name==='portfolio') setTimeout(function(){
@@ -3311,6 +3639,8 @@ function showTab(name,el){
   setTimeout(initSortableTables, 100);
   try{
     if(name==='trends') renderTrends();
+    if(name==='command'){ renderCommandCenter(); if(typeof loadAnalysis==='function' && (typeof analysisData==='undefined' || !analysisData)) loadAnalysis(); }
+    if(name==='sagrades' && typeof renderSAGradesPanel==='function') renderSAGradesPanel();
     if(name==='weights') renderWeights();
     if(name==='alerts') renderAlerts();
     if(name==='prompt') renderPrompt();
@@ -3409,6 +3739,8 @@ function renderPortfolio(){
       </td>
     </tr>`;
   }).join('');
+  // keep the Command Center in sync once portfolio data is loaded/updated
+  try{ var _cc=document.getElementById('tab-command'); if(_cc && _cc.classList.contains('active') && typeof renderCommandCenter==='function') renderCommandCenter(); }catch(e){}
 }
 
 // ===== NEWS =====
@@ -4436,7 +4768,7 @@ function loadTxFromStorage(){
 }
 
 // ===== AI ADVISOR =====
-const firms=['signals','earnings','macro','risk','fairvalue','momentum','scoring','competitive','longview','health'];
+const firms=['portfolio-context','earnings-decisions','conflicts','cash','risk','fairvalue','scoring','competitive','longview','health'];
 const firmNames={
   en:{gs:'Goldman Sachs',bw:'Bridgewater',br:'BlackRock',ms:'Morgan Stanley',jp:'JPMorgan',ba:'Bain',he:'Harvard',rt:'Renaissance',mk:'McKinsey'},
   ar:{gs:'غولدمان ساكس',bw:'برجووتر',br:'بلاك روك',ms:'مورغان ستانلي',jp:'جي بي مورغان',ba:'باين',he:'هارفارد',rt:'رينيسانس',mk:'ماكنزي'}
@@ -4482,9 +4814,9 @@ function getActiveRouteType(){
   const firmId = activeTab.getAttribute('onclick')?.match(/'([^']+)'/)?.[1] || 'signals';
   const typeMap = {
     signals:'daily', earnings:'daily', macro:'daily',
-    risk:'weekly', fairvalue:'weekly', momentum:'weekly',
+    risk:'weekly', fairvalue:'weekly', scoring:'weekly',
     competitive:'monthly', longview:'monthly', health:'monthly',
-    positions:'daily', opportunities:'daily', forces:'daily',
+    positions:'daily', opportunities:'daily',
     riskhealth:'weekly', longgame:'monthly'
   };
   return typeMap[firmId] || 'daily';
@@ -4877,10 +5209,9 @@ const scoredData = await scoredRes.json();
 
 // ── 5-GROUP CONSOLIDATION: map each group to its member panels (shown stacked) ──
 const FIRM_GROUPS={
-  positions:['signals','momentum','scoring'],
-  riskhealth:['risk','health'],
+  positions:['portfolio-context','earnings-decisions','conflicts','cash'],
+  riskhealth:['risk','fairvalue','health'],
   opportunities:['opportunities'],
-  forces:['macro','earnings'],
   longgame:['competitive','longview'],
   backtest:['backtest']
 };
@@ -4921,7 +5252,7 @@ function showGroup(group,btn){
   }
 
   if(advisorLang==='en' && analysisData){
-    const typeMap={signals:'daily',earnings:'daily',macro:'daily',risk:'weekly',fairvalue:'weekly',momentum:'weekly',competitive:'monthly',longview:'monthly',health:'monthly',opportunities:'daily'};
+    const typeMap={'portfolio-context':'daily','earnings-decisions':'daily',conflicts:'daily',cash:'daily',risk:'weekly',fairvalue:'weekly',scoring:'weekly',competitive:'monthly',longview:'monthly',health:'monthly',opportunities:'daily'};
     const types=[...new Set(members.map(m=>typeMap[m]||'daily'))];
     if(types.some(t=>!translationCache[t+'-'+advisorDate])){ setTimeout(()=>translateAnalysis(analysisData),50); }
   }
@@ -4932,7 +5263,7 @@ function showGroup(group,btn){
 function showFirm(id,btn){
   // If in EN mode, trigger translation for the new tab's route type
   if(advisorLang==='en' && analysisData){
-    const typeMap={signals:'daily',earnings:'daily',macro:'daily',risk:'weekly',fairvalue:'weekly',momentum:'weekly',competitive:'monthly',longview:'monthly',health:'monthly',opportunities:'daily'};
+    const typeMap={'portfolio-context':'daily','earnings-decisions':'daily',conflicts:'daily',cash:'daily',risk:'weekly',fairvalue:'weekly',scoring:'weekly',competitive:'monthly',longview:'monthly',health:'monthly',opportunities:'daily'};
     const type=typeMap[id]||'daily';
     const cacheKey=type+'-'+advisorDate;
     if(!translationCache[cacheKey]){
@@ -5851,6 +6182,7 @@ async function loadAnalysis(){
     if(hasData){
       analysisData=normalized;
       renderAnalysis(normalized);
+      try{ var _cc=document.getElementById('tab-command'); if(_cc && _cc.classList.contains('active') && typeof renderCommandCenter==='function') renderCommandCenter(); }catch(e){}
       document.getElementById('advisorLoading').style.display='none';
       document.getElementById('advisorContent').style.display='block';
     } else {
@@ -6043,16 +6375,16 @@ function renderAnalysis(data){
 
   // Map sections to their source file and timestamp
   const sourceMap = {
-    signals:     {src:'daily',   label:'DAILY SIGNALS'},
-    earnings:    {src:'daily',   label:'EARNINGS'},
-    macro:       {src:'daily',   label:'MACRO'},
-    risk:        {src:'weekly',  label:'RISK RADAR'},
-    fairvalue:   {src:'weekly',  label:'FAIR VALUE'},
-    momentum:    {src:'weekly',  label:'MOMENTUM'},
-    scoring:     {src:'weekly',  label:'SCORING ENGINE'},
-    competitive: {src:'monthly', label:'COMPETITIVE EDGE'},
-    longview:    {src:'monthly', label:'LONG VIEW'},
-    health:      {src:'monthly', label:'PORTFOLIO HEALTH'}
+    'portfolio-context':  {src:'daily',   label:'PORTFOLIO CONTEXT'},
+    'earnings-decisions': {src:'daily',   label:'EARNINGS DECISIONS'},
+    conflicts:            {src:'daily',   label:'CONFLICTS'},
+    cash:                 {src:'daily',   label:'CASH DEPLOYMENT'},
+    risk:                 {src:'weekly',  label:'RISK RADAR'},
+    fairvalue:            {src:'weekly',  label:'FAIR VALUE'},
+    scoring:              {src:'weekly',  label:'SCORING ENGINE'},
+    competitive:          {src:'monthly', label:'COMPETITIVE EDGE'},
+    longview:             {src:'monthly', label:'LONG VIEW'},
+    health:               {src:'monthly', label:'PORTFOLIO HEALTH'}
   };
 
   // Parse sections from each source
@@ -6085,17 +6417,18 @@ function renderAnalysis(data){
     // For weekly panels (fairvalue, momentum, scoring) — use integrated renderer
     // that shows scoring cards + merged table + risk + momentum all in one view
     let renderedHtml;
-    if(f==='signals'){
-      renderedHtml = renderSignals(text, parsed.weekly);
+    if(f==='portfolio-context'){
+      renderedHtml = renderPortfolioContext(data.daily ? data.daily.content : '');
+    } else if(f==='earnings-decisions'){
+      renderedHtml = renderEarningsDecisions(data.daily ? data.daily.content : '');
+    } else if(f==='conflicts'){
+      renderedHtml = renderConflictsResolved(data.daily ? data.daily.content : '');
+    } else if(f==='cash'){
+      renderedHtml = renderCashDeployment(data.daily ? data.daily.content : '');
     } else if(f==='fairvalue'){
       const wp = parsed.weekly;
       renderedHtml = renderWeeklyIntegrated(
-        wp.scoring||'', wp.fairvalue||'', wp.momentum||'', wp.risk||''
-      );
-    } else if(f==='momentum'){
-      const wp = parsed.weekly;
-      renderedHtml = renderWeeklyIntegrated(
-        wp.scoring||'', wp.fairvalue||'', wp.momentum||'', wp.risk||''
+        wp.scoring||'', wp.fairvalue||'', '', wp.risk||''
       );
     } else if(f==='scoring'){
       renderedHtml = renderScoring(text);
@@ -6194,9 +6527,77 @@ function sortPosTable(tblId, key, dir){
   });
 }
 
+// ── Daily JSON parsers — new AI Advisor format ──────────────────────────
+function _parseDailyJSON(content){
+  if(!content) return null;
+  try {
+    const clean = content.replace(/```json|```/g,'').trim();
+    const start = clean.indexOf('{');
+    const end = clean.lastIndexOf('}');
+    if(start<0||end<0) return null;
+    return JSON.parse(clean.slice(start, end+1));
+  } catch(e){ return null; }
+}
+
+function renderPortfolioContext(content){
+  const d = _parseDailyJSON(content);
+  if(!d||!d.portfolio_context){
+    return '<div style="color:var(--text2);padding:20px;text-align:center;">لا توجد بيانات — سيتم التحديث في الموعد المجدول</div>';
+  }
+  const pc = d.portfolio_context;
+  let html = '';
+  html += `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">`;
+  html += `<div style="flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;"><div style="font-size:10px;color:var(--text3);margin-bottom:4px;">القيمة الإجمالية</div><div style="font-size:18px;font-weight:700;color:var(--accent);">$${Number(pc.total_value_usd||0).toLocaleString()}</div></div>`;
+  if(pc.sector_exposure){const se=pc.sector_exposure;const bw=se.bridgewater_warning;html+=`<div style="flex:1;min-width:160px;background:var(--bg3);border:1px solid ${bw?'var(--red)':'var(--border)'};border-radius:10px;padding:12px;"><div style="font-size:10px;color:var(--text3);margin-bottom:4px;">تقنية ${bw?'⚠️':''}</div><div style="font-size:18px;font-weight:700;color:${bw?'var(--red)':'var(--text)'};">${se.tech_total_pct}</div><div style="font-size:10px;color:var(--text3);">أشباه موصلات: ${se.semiconductors_pct}</div></div>`;}
+  html += `</div>`;
+  if(pc.top_concentration&&pc.top_concentration.length){html+=`<div style="margin-bottom:16px;"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;">أكبر المراكز</div><div style="display:flex;flex-direction:column;gap:6px;">`;pc.top_concentration.forEach(pos=>{const isBreach=pos.alert&&pos.alert.toLowerCase().includes('25');const isHigh=pos.alert&&pos.alert.toLowerCase().includes('high');const color=isBreach?'var(--red)':isHigh?'var(--gold)':'var(--accent2)';html+=`<div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;"><div style="font-weight:700;font-size:13px;min-width:50px;">${pos.sym}</div><div style="flex:1;background:var(--bg2);border-radius:4px;height:6px;"><div style="width:${Math.min(parseFloat(pos.pct_of_portfolio)||0,100)}%;background:${color};height:6px;border-radius:4px;"></div></div><div style="font-size:12px;color:${color};font-weight:700;min-width:40px;">${pos.pct_of_portfolio}</div><div style="font-size:11px;color:var(--text2);">${pos.dollar_value}</div><div style="font-size:10px;color:var(--text3);">${pos.sa_quant}</div></div>`;});html+=`</div></div>`;}
+  if(pc.sharia_check){const sc=pc.sharia_check;html+=`<div style="background:rgba(0,200,100,0.08);border:1px solid rgba(0,200,100,0.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">☪️</span><div><div style="font-size:12px;font-weight:700;color:var(--accent2);">SPUS ${sc.spus_weight}</div><div style="font-size:11px;color:var(--text2);">${sc.status}</div></div></div>`;}
+  if(pc.uae_tax_note){html+=`<div style="background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.15);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);">🇦🇪 ${pc.uae_tax_note}</div>`;}
+  return html;
+}
+
+function renderEarningsDecisions(content){
+  const d = _parseDailyJSON(content);
+  if(!d||!d.earnings_decisions||!d.earnings_decisions.length) return '<div style="color:var(--text2);padding:20px;text-align:center;">لا توجد أرباح قادمة في 30 يوماً</div>';
+  let html='';
+  d.earnings_decisions.forEach(item=>{
+    const pnl=item.your_position?item.your_position.pnl_pct:'';
+    const isPos=pnl&&pnl.startsWith('+');
+    const color=isPos?'var(--accent2)':'var(--red)';
+    html+=`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div style="font-size:16px;font-weight:700;">${item.sym}</div><div style="font-size:11px;background:rgba(255,160,0,0.15);color:var(--gold);border-radius:6px;padding:2px 8px;">${item.days_away} يوم</div><div style="font-size:11px;color:var(--text3);">${item.earnings_date}</div>${item.sa_verdict?`<div style="font-size:10px;color:var(--text2);margin-right:auto;">${item.sa_verdict.quant}</div>`:''}</div>${item.your_position?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;"><span style="font-size:12px;color:${color};font-weight:700;">${item.your_position.pnl_pct}</span><span style="font-size:11px;color:var(--text2);">${item.your_position.current_value}</span><span style="font-size:11px;color:var(--text3);">${item.your_position.portfolio_weight}</span></div>`:''}<div style="background:rgba(0,212,255,0.08);border-right:3px solid var(--accent);border-radius:6px;padding:8px 12px;margin-bottom:8px;font-size:13px;font-weight:700;direction:rtl;">${item.your_specific_decision||''}</div>${item.reasoning?`<div style="font-size:11px;color:var(--text2);line-height:1.5;">${item.reasoning}</div>`:''} ${item.dollar_at_risk?`<div style="font-size:10px;color:var(--red);margin-top:6px;">⚠️ الخسارة المقدرة عند انخفاض 10%: ${item.dollar_at_risk}</div>`:''} ${item.sa_verdict?`<div style="font-size:10px;color:var(--text3);margin-top:6px;">${item.sa_verdict.grades} | EPS est: ${item.sa_verdict.eps_estimate}</div>`:''}</div>`;
+  });
+  return html;
+}
+
+function renderConflictsResolved(content){
+  const d = _parseDailyJSON(content);
+  if(!d||!d.conflicts_resolved||!d.conflicts_resolved.length) return '<div style="color:var(--text2);padding:20px;text-align:center;">لا توجد تعارضات تستدعي قراراً</div>';
+  let html='';
+  d.conflicts_resolved.forEach(item=>{
+    html+=`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div style="font-size:16px;font-weight:700;">${item.sym}</div><div style="font-size:10px;background:rgba(255,100,100,0.12);color:var(--red);border-radius:6px;padding:2px 8px;">${item.quant_says}</div><div style="font-size:10px;color:var(--text3);">vs</div><div style="font-size:10px;background:rgba(0,200,100,0.12);color:var(--accent2);border-radius:6px;padding:2px 8px;">${item.other_signal_says}</div></div><div style="font-size:11px;color:var(--text3);margin-bottom:8px;">${item.conflict_type||''}</div>${item.your_context?`<div style="font-size:11px;color:var(--text2);margin-bottom:8px;background:var(--bg2);border-radius:6px;padding:6px 10px;">${item.your_context}</div>`:''}<div style="font-size:12px;line-height:1.5;color:var(--text);margin-bottom:8px;">${item.resolution||''}</div><div style="background:rgba(0,212,255,0.08);border-right:3px solid var(--accent);border-radius:6px;padding:8px 12px;font-size:13px;font-weight:700;direction:rtl;">${item.action||''}</div></div>`;
+  });
+  return html;
+}
+
+function renderCashDeployment(content){
+  const d = _parseDailyJSON(content);
+  if(!d||!d.cash_deployment) return '<div style="color:var(--text2);padding:20px;text-align:center;">لا توجد سيولة متاحة</div>';
+  const cd=d.cash_deployment;
+  let html='';
+  if(cd.available_cash){html+=`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:16px;display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">💵</span><div><div style="font-size:10px;color:var(--text3);">السيولة المتاحة</div><div style="font-size:18px;font-weight:700;color:var(--accent2);">${cd.available_cash}</div></div></div>`;}
+  if(cd.top_3_additions&&cd.top_3_additions.length){html+=`<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;">الأفضل للإضافة الآن</div>`;cd.top_3_additions.forEach((item,i)=>{html+=`<div style="background:var(--bg3);border:1px solid rgba(0,200,100,0.2);border-radius:10px;padding:12px;margin-bottom:10px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="font-size:13px;font-weight:700;color:var(--accent2);">${i+1}. ${item.sym}</div><div style="font-size:10px;color:var(--text3);">${item.sa_quant||''}</div><div style="font-size:11px;color:var(--accent);margin-right:auto;">${item.suggested_amount}</div></div><div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:6px;">${item.reason||''}</div>${item.concentration_after?`<div style="font-size:10px;color:var(--text3);">الوزن بعد الإضافة: ${item.concentration_after}</div>`:''}</div>`;});}
+  if(cd.do_not_add&&cd.do_not_add.length){html+=`<div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:8px;margin-top:4px;">لا تضف حالياً</div>`;cd.do_not_add.forEach(item=>{html+=`<div style="background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.15);border-radius:8px;padding:8px 12px;margin-bottom:6px;display:flex;gap:10px;align-items:flex-start;"><div style="font-weight:700;font-size:12px;min-width:50px;color:var(--red);">${item.sym}</div><div style="font-size:11px;color:var(--text2);">${item.reason||''}</div></div>`;});}
+  return html;
+}
+
+
 // ── Collapsible section renderer — splits on numbered headers, collapses each ──
 function renderCollapsibleSections(text, title){
   if(!text||text.length<50) return `<div style="padding:20px;text-align:center;color:var(--text3);">لا توجد بيانات بعد</div>`;
+
+  // De-duplicate a repeated leading title line (data sometimes prints the
+  // weekly header twice in a row — caused a doubled header in the UI)
+  text = text.replace(/^\s*(.+?)\s*\n+\s*\1\s*\n/, '$1\n');
 
   // Split on major section markers: numbered headers, === dividers, <b>N. ...</b>
   const headerRe = /(?=\n(?:<b>)?\d+[\.\)]\s|(?:\n={3,}|\n─{3,}|\n━{3,}))/g;
@@ -6212,7 +6613,7 @@ function renderCollapsibleSections(text, title){
     </details>`;
   }
 
-  let html = `<div style="display:flex;flex-direction:column;gap:8px;white-space:normal;">`;
+  let html = `<div style="display:flex;flex-direction:column;gap:4px;white-space:normal;">`;
   rawSections.forEach((section, i)=>{
     const lines = section.trim().split('\n').filter(l=>l.trim());
     if(!lines.length) return;
@@ -6224,15 +6625,13 @@ function renderCollapsibleSections(text, title){
     // First section open, rest closed
     const isOpen = i===0;
 
-    html += `<details ${isOpen?'open':''} style="background:var(--bg2);border-radius:10px;overflow:hidden;">
-      <summary style="cursor:pointer;list-style:none;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;border-right:3px solid var(--border);">
-        <div style="direction:rtl;text-align:right;flex:1;">
-          <div style="font-size:12px;font-weight:700;color:var(--text);">${hdr}</div>
-          ${preview?`<div style="font-size:10.5px;color:var(--text3);margin-top:2px;">${preview}…</div>`:''}
-        </div>
-        <span style="color:var(--text3);font-size:12px;flex-shrink:0;">▾</span>
+    html += `<details ${isOpen?'open':''} style="background:var(--bg2);border-radius:8px;overflow:hidden;">
+      <summary style="cursor:pointer;list-style:none;padding:8px 12px;display:flex;flex-direction:row-reverse;justify-content:flex-start;align-items:baseline;gap:8px;border-right:3px solid var(--border);direction:rtl;">
+        <span style="color:var(--text3);font-size:11px;flex-shrink:0;">▾</span>
+        <span style="font-size:12px;font-weight:700;color:var(--text);">${hdr}</span>
+        ${preview?`<span style="font-size:10px;color:var(--text3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">— ${preview}</span>`:''}
       </summary>
-      <div style="padding:0 14px 14px;direction:rtl;">${mdToHtml(section)}</div>
+      <div style="padding:0 12px 12px;direction:rtl;">${mdToHtml(section)}</div>
     </details>`;
   });
   html += `</div>`;
@@ -6243,78 +6642,127 @@ function renderCollapsibleSections(text, title){
 function renderHealthSummary(text){
   if(!text||text.length<50) return `<div style="padding:20px;text-align:center;color:var(--text3);">لا توجد بيانات صحة المحفظة بعد — يتحدث أول أحد من كل شهر</div>`;
 
-  // Split on --- separators, find sections with score like "12/20"
-  const parts = text.split(/\n---\n/).filter(p=>p.trim());
+  // Strip any HTML the upstream may have added, work on plain markdown lines
+  const plain = text.replace(/<\/?b>/g,'').replace(/\*\*/g,'');
+
+  // ── 1. Criteria: tolerant — catches BOTH "N. label: X/Y" and
+  //        "المعيار N — ... من 20 = NN%" (the real monthly format) ──
   const cards = [];
-  parts.forEach(part=>{
-    // Match <b>N. label: X/Y</b>  format (actual data format)
-    const hm = part.match(/<b>\d+\.\s*([^:<]+):\s*(\d+)\/(\d+)<\/b>/);
-    if(!hm) return;
-    const label = hm[1].trim();
-    const score = parseInt(hm[2]);
-    const max   = parseInt(hm[3]);
-    const pct   = Math.round(score/max*100);
-    const color = pct>=75?'var(--green)':pct>=50?'var(--gold)':'var(--red)';
-    const bg    = pct>=75?'rgba(29,158,117,0.08)':pct>=50?'rgba(186,117,23,0.08)':'rgba(226,75,74,0.08)';
-    // Key bullet points
-    const bullets = part.split('\n')
-      .filter(l=>l.trim().startsWith('-')||l.trim().startsWith('•'))
-      .map(l=>l.replace(/^[-•]\s*/,'').replace(/<[^>]+>/g,'').replace(/\*\*/g,'').trim())
-      .filter(l=>l.length>5&&l.length<120)
-      .slice(0,2);
-    // Warnings
-    const warnM = part.match(/<b>⚠️([^<]{5,80})<\/b>/);
-    const warning = warnM ? warnM[1].trim() : '';
-    cards.push({label, score, max, pct, color, bg, bullets, warning});
+  // a) explicit X/Y fractions
+  const fracRe = /(?:<b>)?\s*\d+\s*[.\-—]\s*([^:<\n]{3,60}?):\s*(\d+)\/(\d+)/g;
+  let m;
+  while((m = fracRe.exec(plain))){
+    const sc = parseInt(m[2]), mx = parseInt(m[3]);
+    if(mx>0) cards.push({label:m[1].trim(), score:sc, max:mx, pct:Math.round(sc/mx*100)});
+  }
+  // b) "المعيار N — <label> ... من 20 = NN%"  /  "تقدير: ~14 من 20 = 70%"
+  if(!cards.length){
+    const lines = plain.split('\n');
+    let pending = null;
+    lines.forEach(l=>{
+      const lab = l.match(/المعيار\s*\d+\s*[—\-:]\s*([^:\n]{3,70})/);
+      if(lab) pending = lab[1].replace(/[:：]\s*$/,'').trim();
+      const pc = l.match(/(\d+)\s*من\s*(\d+)\s*=\s*(\d+)\s*%/) || l.match(/=\s*(\d+)\s*%/);
+      if(pc){
+        const pct = parseInt(pc[pc.length-1]);
+        cards.push({label: pending || `معيار ${cards.length+1}`, score:pct, max:100, pct});
+        pending = null;
+      }
+    });
+  }
+  cards.forEach(c=>{
+    c.color = c.pct>=75?'var(--green)':c.pct>=50?'var(--gold)':'var(--red)';
   });
 
-  if(!cards.length){
-    // Fallback: just collapse the raw text
-    return `<details open style="white-space:normal;"><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--text);padding:10px;background:var(--bg2);border-radius:8px;list-style:none;">صحة المحفظة — اضغط لعرض التفاصيل ▾</summary><div style="padding:12px 0;">${mdToHtml(text)}</div></details>`;
+  // ── 2. Overall score: read "→ 5.9/10" or "= 59.2%" if present, else average ──
+  let overall10=null, overallPct=null;
+  const o10 = plain.match(/→\s*([\d.]+)\s*\/\s*10/);
+  const oPc = plain.match(/الإجمالي[^=\n]*=\s*\(?[\d+\s]*\)?\s*[÷/][^=\n]*=\s*([\d.]+)\s*%/) || plain.match(/=\s*([\d.]+)\s*%\s*→/);
+  if(o10) overall10 = parseFloat(o10[1]);
+  if(oPc) overallPct = Math.round(parseFloat(oPc[1]));
+  if(overall10!=null && overallPct==null) overallPct = Math.round(overall10*10);
+  if(overallPct==null && cards.length) overallPct = Math.round(cards.reduce((a,c)=>a+c.pct,0)/cards.length);
+  if(overall10==null && overallPct!=null) overall10 = +(overallPct/10).toFixed(1);
+  const totalColor = overallPct>=75?'var(--green)':overallPct>=50?'var(--gold)':'var(--red)';
+
+  // ── 3. Allocation tiles: "<sector> NN.N% ... <action>" rows ──
+  const alloc = [];
+  const allocRe = /(تقنية|ETFs?|تخميني|بيوتك|تعدين)\s*[:\s]*([\d.]+)\s*%/g;
+  const seen = new Set();
+  while((m = allocRe.exec(plain))){
+    if(seen.has(m[1])) continue; seen.add(m[1]);
+    const pct = parseFloat(m[2]);
+    let note='', col='var(--text)';
+    if(/تقنية/.test(m[1]) && pct>60){ note='⚠ تجاوز 60%'; col='var(--red)'; }
+    else if(/تخميني/.test(m[1]) && pct>8){ note='↓ قلّل'; col='var(--red)'; }
+    else if(/ETF/.test(m[1]) && pct<20){ note='↑ أضِف'; col='var(--gold)'; }
+    alloc.push({label:m[1], pct, note, col});
   }
 
-  // Total score
-  const totalScore = cards.reduce((a,c)=>a+c.score,0);
-  const totalMax   = cards.reduce((a,c)=>a+c.max,0);
-  const totalPct   = Math.round(totalScore/totalMax*100);
-  const totalColor = totalPct>=75?'var(--green)':totalPct>=50?'var(--gold)':'var(--red)';
+  // ── 4. Rebalance: sell list / buy list (symbols only, compact) ──
+  const grab = (anchor)=>{
+    const i = plain.indexOf(anchor);
+    if(i<0) return [];
+    const chunk = plain.slice(i, i+600);
+    const syms = (chunk.match(/\b[A-Z]{2,5}\b/g)||[]).filter(s=>!['ETF','ETFs','FMP','DCF','FCF','ROIC','SA','Q2'].includes(s));
+    return [...new Set(syms)].slice(0,6);
+  };
+  const sells = grab('ماذا تبيع');
+  const buys  = grab('ماذا تشتري');
 
-  let html = `<div style="white-space:normal;">`;
+  // No structured signal at all → keep the old safe fallback
+  if(!cards.length && !alloc.length && overallPct==null){
+    return `<details style="white-space:normal;"><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--text);padding:10px;background:var(--bg2);border-radius:8px;list-style:none;">صحة المحفظة — اضغط لعرض التفاصيل ▾</summary><div style="padding:12px 0;">${mdToHtml(text)}</div></details>`;
+  }
 
-  // Hero summary bar
-  html += `<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg2);border-radius:12px;margin-bottom:14px;border-top:2px solid ${totalColor};">
-    <div style="flex:0 0 58px;height:58px;border-radius:50%;border:3px solid ${totalColor};display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg3);">
-      <div style="font-size:16px;font-weight:800;color:${totalColor};font-family:'IBM Plex Mono',monospace;line-height:1;">${totalScore}</div>
-      <div style="font-size:9px;color:var(--text3);">/ ${totalMax}</div>
-    </div>
-    <div style="flex:1;direction:rtl;">
-      <div style="font-size:13px;font-weight:700;color:var(--text);">صحة المحفظة الشهرية</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:2px;">${totalPct}% — ${totalPct>=75?'صحة جيدة':totalPct>=50?'تحتاج مراجعة':'تحتاج تدخل'}</div>
-      <div style="margin-top:6px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
-        <div style="height:100%;width:${totalPct}%;background:${totalColor};border-radius:2px;"></div>
+  let html = `<div style="white-space:normal;direction:rtl;">`;
+
+  // ── ROW 1: ring + metric tiles ──
+  html += `<div style="display:grid;grid-template-columns:148px 1fr;gap:12px;margin-bottom:12px;">`;
+  html += `<div style="background:var(--bg2);border-radius:12px;padding:14px;text-align:center;display:flex;flex-direction:column;justify-content:center;border-top:2px solid ${totalColor};">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">درجة الصحة</div>
+      <div style="width:66px;height:66px;border-radius:50%;border:4px solid ${totalColor};margin:0 auto;display:flex;align-items:center;justify-content:center;background:var(--bg3);">
+        <span style="font-size:18px;font-weight:800;color:#fff;font-family:'IBM Plex Mono',monospace;">${overall10!=null?overall10:overallPct}</span>
       </div>
-    </div>
-  </div>`;
-
-  // Score cards in 2-col grid, each collapsible
-  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">`;
-  cards.forEach(c=>{
-    html += `<details style="background:var(--bg2);border-radius:10px;padding:10px 12px;border-right:3px solid ${c.color};">
-      <summary style="list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-        <div style="flex:1;direction:rtl;text-align:right;">
-          <div style="font-size:11px;font-weight:600;color:var(--text);line-height:1.3;">${c.label}</div>
-          ${c.warning?`<div style="font-size:9.5px;color:var(--red);margin-top:2px;">${c.warning.slice(0,45)}</div>`:''}
-        </div>
-        <div style="flex:0 0 38px;text-align:center;">
-          <span style="font-size:13px;font-weight:800;color:${c.color};font-family:'IBM Plex Mono',monospace;">${c.score}</span><span style="font-size:9px;color:var(--text3);">/${c.max}</span>
-        </div>
-      </summary>
-      <div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border);direction:rtl;">
-        ${c.bullets.map(b=>`<div style="font-size:10.5px;color:var(--text2);line-height:1.5;padding:1px 0;">· ${b}</div>`).join('')}
-      </div>
-    </details>`;
+      <div style="font-size:9px;color:var(--text3);margin-top:6px;">${overall10!=null?'من 10':'%'} — ${overallPct>=75?'جيدة':overallPct>=50?'تحتاج مراجعة':'تحتاج تدخل'}</div>
+    </div>`;
+  // criteria as small tiles (not the whole essay)
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:8px;align-content:start;">`;
+  cards.slice(0,6).forEach(c=>{
+    html += `<div style="background:var(--bg3);border-radius:8px;padding:9px;border-right:2px solid ${c.color};">
+        <div style="font-size:9px;color:var(--text3);line-height:1.3;height:24px;overflow:hidden;">${c.label}</div>
+        <div style="font-size:15px;font-weight:700;color:${c.color};font-family:'IBM Plex Mono',monospace;">${c.pct}%</div>
+      </div>`;
+  });
+  alloc.forEach(a=>{
+    html += `<div style="background:var(--bg3);border-radius:8px;padding:9px;">
+        <div style="font-size:9px;color:var(--text3);">${a.label}</div>
+        <div style="font-size:15px;font-weight:700;color:${a.col};font-family:'IBM Plex Mono',monospace;">${a.pct}%</div>
+        ${a.note?`<div style="font-size:8.5px;color:${a.col};">${a.note}</div>`:''}
+      </div>`;
   });
   html += `</div></div>`;
+
+  // ── ROW 2: rebalance plan as two compact columns ──
+  if(sells.length || buys.length){
+    html += `<div style="background:var(--bg2);border-radius:12px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:9px;">خطة إعادة التوازن — الشهر</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><div style="font-size:9px;color:var(--gold);margin-bottom:4px;">يبيع</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.7;">${sells.join(' · ')||'—'}</div></div>
+        <div style="border-right:0.5px solid var(--border);padding-right:10px;"><div style="font-size:9px;color:var(--green);margin-bottom:4px;">يشتري</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.7;">${buys.join(' · ')||'—'}</div></div>
+      </div></div>`;
+  }
+
+  // ── Full monthly detail preserved, collapsed by default ──
+  html += `<details style="white-space:normal;">
+      <summary style="cursor:pointer;list-style:none;font-size:10px;color:var(--text3);padding:8px 0;border-top:0.5px solid var(--border);">كيف نحسب هذا — التقرير الشهري الكامل ▾</summary>
+      <div style="padding:10px 0;font-size:11px;line-height:1.7;color:var(--text2);">${mdToHtml(text)}</div>
+    </details>`;
+
+  html += `<div style="font-size:9px;color:var(--text3);text-align:center;margin-top:8px;">كل رقم اتجاه بهامش خطأ واسع · القرار قرارك</div>`;
+  html += `</div>`;
   return html;
 }
 
@@ -12142,65 +12590,14 @@ function saHandleExcel(input) {
   const dot = document.getElementById('chk-excel');
   if (st) { st.textContent = '⏳ جاري قراءة الملف...'; st.className = 'sa-status'; }
   const reader = new FileReader();
-  reader.onload = async function(e) {
-    try {
-      // Parse Excel using SheetJS
-      const data = new Uint8Array(e.target.result);
-      const wb = XLSX.read(data, { type: 'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-      if (!rows.length) { if (st) { st.textContent = '❌ الملف فارغ'; st.className = 'sa-status err'; } return; }
-      // Map columns (SA column names → our field names)
-      const COL = {
-        sym: ['Symbol'],
-        quant: ['Quant Rating'],
-        sa_analyst: ['SA Analyst Ratings'],
-        wall_st: ['Wall Street Ratings'],
-        days_at_rating: ['Days at Rating','Consecutive Days at Quant Rating'],
-        analysts_covering: ['# SA Analysts Covering'],
-        valuation: ['Valuation Grade'],
-        growth: ['Growth Grade'],
-        profitability: ['Profitability Grade'],
-        momentum: ['Momentum Grade'],
-        eps_revision: ['EPS Revision Grade'],
-        earnings_date: ['Upcoming Announce Date'],
-        eps_estimate: ['EPS Estimate'],
-        eps_actual: ['EPS Actual'],
-        eps_surprise: ['EPS Surprise'],
-      };
-      const keys = Object.keys(rows[0]);
-      const findCol = (candidates) => candidates.find(c => keys.includes(c)) || null;
-      const colMap = {};
-      for (const [field, cands] of Object.entries(COL)) { colMap[field] = findCol(cands); }
-      const parsed = rows.map(r => {
-        const o = {};
-        for (const [field, col] of Object.entries(colMap)) { o[field] = col ? r[col] : ''; }
-        return o;
-      }).filter(r => r.sym && String(r.sym).trim().length > 0);
-      if (!parsed.length) { if (st) { st.textContent = '❌ لم يُعثر على بيانات'; st.className = 'sa-status err'; } return; }
-      // Store locally so saRunAnalysis can access it
-      window.saData.excelText = 'FILE:' + file.name + ' SIZE:' + file.size;
-      window.saData.portfolioRows = parsed;
-      if (st) { st.textContent = '⏳ جاري الحفظ...'; st.className = 'sa-status'; }
-      // Save to GitHub via sa-analyze
-      const resp = await fetch('/api/sa-analyze', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ savePortfolio: true, rows: parsed })
-      });
-      const result = await resp.json();
-      if (result.saved) {
-        if (st) { st.textContent = `✓ ${parsed.length} سهم (${result.stocks} أسهم + ${result.etfs} صناديق)`; st.className = 'sa-status ok'; }
-        if (dot) dot.className = 'sa-check-dot filled';
-      } else {
-        if (st) { st.textContent = '⚠️ تم التحليل، لم يُحفظ: ' + (result.error || ''); st.className = 'sa-status'; }
-        if (dot) dot.className = 'sa-check-dot filled';
-      }
-      saUpdateProgress();
-    } catch(err) {
-      if (st) { st.textContent = '❌ خطأ في قراءة الملف: ' + err.message; st.className = 'sa-status err'; }
-    }
+  reader.onload = function(e) {
+    window.saData.excelText = 'FILE:' + file.name + ' SIZE:' + file.size;
+    window.saData.excelFile = e.target.result;
+    if (st) { st.textContent = '✓ ' + file.name; st.className = 'sa-status ok'; }
+    if (dot) dot.className = 'sa-check-dot filled';
+    saUpdateProgress();
   };
-  reader.readAsArrayBuffer(file);
+  reader.readAsDataURL(file);
 }
 
 function saShowRTab(id, btn) {
