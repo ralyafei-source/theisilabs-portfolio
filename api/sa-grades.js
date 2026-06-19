@@ -79,9 +79,23 @@ module.exports = async (req, res) => {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // Ensure body is parsed (Vercel raw functions may deliver it as string or stream)
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch (e) { body = {}; }
+  }
+  if (!body || typeof body !== 'object') {
+    try {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const raw = Buffer.concat(chunks).toString('utf8');
+      body = raw ? JSON.parse(raw) : {};
+    } catch (e) { body = {}; }
+  }
+
   // Auth (writes only): admin session token OR BRIEFING_API_KEY
   const bearer = (req.headers.authorization || '').replace('Bearer ', '').trim();
-  const apiKey = req.headers['x-api-key'] || (req.body && req.body.api_key);
+  const apiKey = req.headers['x-api-key'] || body.api_key;
   let authorized = false;
   if (apiKey && BRIEFING_API_KEY && apiKey === BRIEFING_API_KEY) authorized = true;
   if (!authorized && bearer) {
@@ -91,7 +105,7 @@ module.exports = async (req, res) => {
   if (!authorized) return res.status(401).json({ error: 'Unauthorized' });
 
   // action: 'upsert' (rows[]), 'delete' (sym), 'replace' (rows[] full wipe+load)
-  const { action, rows, sym, source } = req.body || {};
+  const { action, rows, sym, source } = body;
   if (!action) return res.status(400).json({ error: 'Missing action' });
 
   try {
