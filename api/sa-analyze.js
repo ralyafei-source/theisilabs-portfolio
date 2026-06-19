@@ -10,6 +10,22 @@ function buildPrompt(inputs) {
   const cashUSD = inputs.cashUSD || 0;
   const cashStr = cashUSD > 0 ? '$' + Number(cashUSD).toLocaleString() + ' / ' + Number(inputs.cash||0).toLocaleString() + ' ' + (inputs.currency||'AED') : 'غير محدد';
 
+  // REAL portfolio from the uploaded Excel (no hardcoding)
+  const rows = Array.isArray(inputs.excelRows) ? inputs.excelRows : [];
+  let totalVal = 0; rows.forEach(r=>{ const v=Number(r.Value||r.value||0); if(!isNaN(v)) totalVal+=v; });
+  const posLine = rows
+    .filter(r=> (r.Shares||r.shares))
+    .sort((a,b)=> Number(b.Value||b.value||0)-Number(a.Value||a.value||0))
+    .slice(0,12)
+    .map(r=>{
+      const sym=r.symbol||r.sym; const w=r.Weight||r.weight||'';
+      const g = (r['Total Change %']||r['Total Change']||r.gl||'');
+      return `${sym} ${w}${g?(' '+g):''}`;
+    }).join(' | ');
+  const portfolioBlock = rows.length
+    ? `محفظة فعلية من ملف SA: قيمة ~$${Math.round(totalVal).toLocaleString()} (${rows.length} سهم). كاش: ${cashStr}.\nأكبر المراكز: ${posLine}`
+    : `محفظة غير مرفوعة بعد. كاش: ${cashStr}.`;
+
   const parts = [
     inputs.updownMine   ? `[UPGRADES_MINE]\n${inputs.updownMine.slice(0,4000)}`  : '',
     inputs.updownMarket ? `[UPGRADES_MARKET]\n${inputs.updownMarket.slice(0,3000)}` : '',
@@ -20,8 +36,7 @@ function buildPrompt(inputs) {
     inputs.stockDetail  ? `[STOCK_DETAIL]\n${inputs.stockDetail.slice(0,3000)}`  : ''
   ].filter(Boolean).join('\n\n');
 
-  return `محلل استثماري — مستثمر إماراتي لا ضريبة. محفظة ~$551K (~49 سهم). كاش: ${cashStr}.
-أسهم رئيسية: NVDA 9.7%+161% | MU 7.9%+529% | AMZN 6.8%+19% | DUOL 4.4%-49% | OKTA 3.7%+28% | CRDO 2.6%+98% | CLS 1.4%+796% | PLTR 2.2%+475% | MSTR 1.8%-61% | ADBE 0.4%-61%
+  return `محلل استثماري — مستثمر إماراتي لا ضريبة. ${portfolioBlock}
 
 ${parts}
 
@@ -29,8 +44,10 @@ ${parts}
 
 قاعدة التقييم الكمي (Quant): لكل سهم تذكره، ابحث عنه في بيانات [PRO_QUANT_30] و[TOP_RATED_38] و[ALPHA_PICKS] وأي قائمة Stocks by Quant. إذا وُجد السهم، استخرج درجة Quant من النمط "Rating: <التصنيف><الرقم>" مثل "Strong Buy4.99" → الدرجة هي 4.99 (مقياس 1 إلى 5)، وضعها في grades.Quant. إذا لم يظهر السهم في أيٍّ من هذه القوائم، اترك Quant كـ "N/A" — لا تخمّن.
 
+قاعدة درجات SA: استخدم درجات V/G/P/M/R وQuant من بيانات المحفظة المرفوعة لكل سهم تملكه (موجودة في الملف). لا تكتب N/A لسهم تملكه وله درجات في الملف.
+
 أعد JSON صارم فقط — لا نص قبله ولا بعده أبداً:
-{"executive_summary":{"portfolio_value":"~$551K","weekly_performance":"نص","biggest_risk_symbol":"SYM","best_opportunity":"SYM","summary_text":"3 جمل: أهم خطر + أهم فرصة + الوضع العام","weekly_decision":"قرار واحد محدد وقابل للتنفيذ"},"warnings":[{"symbol":"SYM","rating":"Strong Sell","badges":["Short Ideas ×N"],"weight":"X%","gl":"+X%","grades":{"Quant":"X.XX","Growth":"X","Momentum":"X","EPS":"X"},"sources":"مصدر","reason":"سبب التحذير: من خفّض التصنيف، من أي تصنيف إلى أي تصنيف، والتاريخ","action":"إجراء محدد بالأرقام"}],"strong_positions":[{"symbol":"SYM","rating":"Strong Buy","badges":["PRO Quant"],"weight":"X%","gl":"+X%","grades":{"Quant":"X.XX"},"sources":"مصادر","reason":"لماذا قوي","action":"احتفظ أو زد"}],"cash_decisions":{"total_available":"${cashStr}","allocations":[{"symbol":"SYM","is_new":true,"amount_usd":"$XX,000","pct_of_cash":"XX%","reason":"سبب التأكيد"}]},"new_opportunities":[{"symbol":"SYM","rating":"Strong Buy","badges":["Top Rated #N"],"grades":{"Quant":"X.XX"},"sources":"N مصادر","reason":"لماذا مناسب","action":"اشترِ"}],"conflicts":[{"symbol":"SYM","sell_sources":"مصدر البيع","buy_sources":"مصدر الشراء","recommendation":"الترجيح"}]}`;
+{"executive_summary":{"portfolio_value":"","weekly_performance":"نص","biggest_risk_symbol":"SYM","best_opportunity":"SYM","summary_text":"3 جمل: أهم خطر + أهم فرصة + الوضع العام","weekly_decision":"قرار واحد محدد وقابل للتنفيذ"},"warnings":[{"symbol":"SYM","rating":"Strong Sell","badges":["Short Ideas ×N"],"weight":"X%","gl":"+X%","grades":{"Quant":"X.XX","Growth":"X","Momentum":"X","EPS":"X"},"sources":"مصدر","reason":"سبب التحذير: من خفّض التصنيف، من أي تصنيف إلى أي تصنيف، والتاريخ","action":"إجراء محدد بالأرقام"}],"strong_positions":[{"symbol":"SYM","rating":"Strong Buy","badges":["PRO Quant"],"weight":"X%","gl":"+X%","grades":{"Quant":"X.XX"},"sources":"مصادر","reason":"لماذا قوي","action":"احتفظ أو زد"}],"cash_decisions":{"total_available":"${cashStr}","allocations":[{"symbol":"SYM","is_new":true,"amount_usd":"$XX,000","pct_of_cash":"XX%","reason":"سبب التأكيد"}]},"new_opportunities":[{"symbol":"SYM","rating":"Strong Buy","badges":["Top Rated #N"],"grades":{"Quant":"X.XX"},"sources":"N مصادر","reason":"لماذا مناسب","action":"اشترِ"}],"conflicts":[{"symbol":"SYM","sell_sources":"مصدر البيع","buy_sources":"مصدر الشراء","recommendation":"الترجيح"}]}`;
 }
 
 module.exports = async (req, res) => {
@@ -176,27 +193,30 @@ module.exports = async (req, res) => {
       const GRADE_MAP = { 'A+':4.3,'A':4.0,'A-':3.7,'B+':3.3,'B':3.0,'B-':2.7,'C+':2.3,'C':2.0,'C-':1.7,'D+':1.3,'D':1.0,'D-':0.7,'F':0 };
       const labelOf = q => q >= 4.5 ? 'Strong Buy' : q >= 3.5 ? 'Buy' : q >= 2.5 ? 'Hold' : q >= 1.5 ? 'Sell' : 'Strong Sell';
       const stocks = [], etfs = [];
+      const numOrNull = v => (v===undefined||v===null||v==='') ? null : (isNaN(Number(v))?v:Number(v));
+      const pick = (r, ...keys) => { for(const k of keys){ if(r[k]!==undefined&&r[k]!=='') return r[k]; } return null; };
       for (const r of raw) {
-        if (!r.sym) continue;
-        const hasGrades = r.valuation !== undefined && r.valuation !== null && r.valuation !== '';
-        if (!hasGrades) {
-          etfs.push({ sym: r.sym, quant: Number(r.quant) || null, quant_label: r.quant ? labelOf(Number(r.quant)) : null, sa_analyst: r.sa_analyst ? Number(r.sa_analyst) : null, days_at_rating: r.days_at_rating ? Number(r.days_at_rating) : null });
-        } else {
-          stocks.push({
-            sym: r.sym,
-            quant: Number(r.quant) || null,
-            quant_label: r.quant ? labelOf(Number(r.quant)) : null,
-            sa_analyst: r.sa_analyst ? Number(r.sa_analyst) : null,
-            wall_st: r.wall_st ? Number(r.wall_st) : null,
-            days_at_rating: r.days_at_rating ? Number(r.days_at_rating) : null,
-            analysts_covering: r.analysts_covering ? Number(r.analysts_covering) : null,
-            grades: { V: r.valuation || null, G: r.growth || null, P: r.profitability || null, M: r.momentum || null, R: r.eps_revision || null },
-            earnings_date: r.earnings_date || null,
-            eps_estimate: r.eps_estimate !== undefined && r.eps_estimate !== '' ? Number(r.eps_estimate) : null,
-            eps_actual: r.eps_actual !== undefined && r.eps_actual !== '' ? Number(r.eps_actual) : null,
-            eps_surprise: r.eps_surprise !== undefined && r.eps_surprise !== '' ? Number(r.eps_surprise) : null,
-          });
-        }
+        const sym = r.symbol || r.sym; if(!sym) continue;
+        // keep EVERY column from the sheet verbatim
+        const full = {}; Object.keys(r).forEach(k=>{ full[k]=r[k]; });
+        full.sym = String(sym).toUpperCase();
+        // normalized convenience fields the prompt/dashboard rely on
+        full.quant       = numOrNull(pick(r,'Quant Rating','quant'));
+        full.grades = {
+          V: pick(r,'Valuation Grade','valuation','V'),
+          G: pick(r,'Growth Grade','growth','G'),
+          P: pick(r,'Profitability Grade','profitability','P'),
+          M: pick(r,'Momentum Grade','momentum','M'),
+          R: pick(r,'EPS Revision Grade','EPS Revisions Grade','eps_revision','R')
+        };
+        full.shares      = numOrNull(pick(r,'Shares','shares'));
+        full.cost        = numOrNull(pick(r,'Cost','Avg Cost','cost'));
+        full.value       = numOrNull(pick(r,'Value','Market Value','value'));
+        full.weight      = pick(r,'Weight','weight');
+        full.days_at_rating = numOrNull(pick(r,'Days at Rating','days_at_rating'));
+        full.analysts_covering = numOrNull(pick(r,'# SA Analysts Covering','# Analysts','analysts_covering'));
+        const hasGrades = full.grades.V!=null;
+        (hasGrades?stocks:etfs).push(full);
       }
       const payload = JSON.stringify({ date, stocks, etfs, saved_at: new Date().toISOString(), count: { stocks: stocks.length, etfs: etfs.length } }, null, 2);
       let sha = null;

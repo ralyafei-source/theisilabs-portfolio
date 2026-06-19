@@ -1917,7 +1917,6 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 <div id="appBody">
 <nav id="appSidebar">
   <div class="sb-item active" data-tab="command"      onclick="showTab('command',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/><line x1="12" y1="3" x2="12" y2="6.5"/><line x1="12" y1="17.5" x2="12" y2="21"/><line x1="3" y1="12" x2="6.5" y2="12"/><line x1="17.5" y1="12" x2="21" y2="12"/></svg></span><span class="sb-lbl">Command</span></div>
-  <div class="sb-item" data-tab="sagrades" onclick="showTab('sagrades',this);renderSAGradesPanel()"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/><circle cx="19" cy="19" r="2"/></svg></span><span class="sb-lbl">SA Grades</span></div>
   <div class="sb-item" data-tab="dashboard"    onclick="showTab('dashboard',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="sb-lbl">Dashboard</span></div>
   <div class="sb-item" data-tab="advisor"             onclick="showTab('advisor',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg></span><span class="sb-lbl">AI Advisor</span></div>
   <div class="sb-item" data-tab="portfolio"           onclick="showTab('portfolio',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><span class="sb-lbl">Portfolio</span></div>
@@ -2001,17 +2000,6 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 </div>
 
 <!-- SA GRADES ADMIN -->
-<div id="tab-sagrades" class="tab-content">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
-    <div style="display:flex;align-items:baseline;gap:10px;">
-      <span style="font-size:16px;font-weight:700;color:var(--text);">SA Grades</span>
-      <span style="font-size:11px;color:var(--text3);">مخزن درجات Seeking Alpha — رفع · لصق · إضافة · حذف</span>
-    </div>
-    <span id="sag-count" style="font-size:11px;color:var(--text3);"></span>
-  </div>
-  <div id="sag-panel"><div style="padding:30px;text-align:center;color:var(--text3);">جارٍ التحميل…</div></div>
-</div>
-
 <!-- DASHBOARD -->
 <div id="tab-dashboard" class="tab-content">
   <!-- ═══ 1. VALUE + HEALTH (share a row) ═══ -->
@@ -3322,34 +3310,7 @@ function applyTranslations(){
 }
 
 // ===== TABS =====
-/* ===================== SA GRADES STORE + ADMIN PANEL ===================== */
-// Store: localStorage stand-in for /api/sa-grades. Keyed by symbol. Upsert + delete.
-var SAG_KEY='theisi_sa_grades_v1';
-var SAG_API='/api/sa-grades';
-function sagToken(){ try{ return localStorage.getItem('theisilabs_session')||localStorage.getItem('sessionToken')||localStorage.getItem('theisi_session')||''; }catch(e){ return ''; } }
-// cache helpers (fast local mirror of the server store)
-function sagCacheGet(){ try{ var r=localStorage.getItem(SAG_KEY); return r?JSON.parse(r):{updated:null,source:null,stocks:{}}; }catch(e){ return {updated:null,source:null,stocks:{}}; } }
-function sagCacheSet(store){ try{ localStorage.setItem(SAG_KEY, JSON.stringify(store)); }catch(e){} return store; }
-// load from server, fall back to cache
-async function sagFetch(){
-  try{
-    var r=await fetch(SAG_API,{headers:{'Accept':'application/json'}});
-    if(r.ok){ var store=await r.json(); if(!store.stocks)store.stocks={}; sagCacheSet(store); return store; }
-  }catch(e){}
-  return sagCacheGet();
-}
-// write actions hit the API; on success refresh cache
-async function sagApiPost(body){
-  var tok=sagToken();
-  var r=await fetch(SAG_API,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify(body)});
-  var j=await r.json().catch(function(){return {};});
-  if(!r.ok) throw new Error(j.error||('HTTP '+r.status));
-  return j;
-}
-// legacy sync accessors used by the panel render (read cache)
-function sagLoad(){ return sagCacheGet(); }
-function sagGet(sym){ var store=sagCacheGet(); return store.stocks[String(sym).trim().toUpperCase()]||null; }
-
+/* ============ SA EXCEL PARSERS (used by SA Intel input #1) ============ */
 // ---- Parsers: produce array of row objects keyed by column header ----
 function sagParseRows(headers, dataRows){
   // map "Symbol" col to symbol; keep ALL columns verbatim
@@ -3384,114 +3345,28 @@ function sagParseCSV(text){
 function sagParseXLSX(arrayBuffer){
   if(typeof XLSX==='undefined') throw new Error('SheetJS غير محمّل');
   var wb=XLSX.read(arrayBuffer,{type:'array'});
-  // prefer a sheet named Dashboard, else first
-  var sheetName=wb.SheetNames.find(function(n){return /dashboard/i.test(n);})||wb.SheetNames[0];
-  var ws=wb.Sheets[sheetName];
-  var aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-  if(!aoa.length) return [];
-  var headers=aoa[0];
-  return sagParseRows(headers, aoa.slice(1));
+  // Dashboard sheet — grades + ratings + 41 cols
+  var dashName=wb.SheetNames.find(function(n){return /dashboard/i.test(n);})||wb.SheetNames[0];
+  var dashAoa=XLSX.utils.sheet_to_json(wb.Sheets[dashName],{header:1,defval:''});
+  var rows = dashAoa.length ? sagParseRows(dashAoa[0], dashAoa.slice(1)) : [];
+  // Holdings sheet — positions (shares, cost, value, weight). Optional.
+  var holdName=wb.SheetNames.find(function(n){return /holding|position/i.test(n);});
+  if(holdName){
+    var hAoa=XLSX.utils.sheet_to_json(wb.Sheets[holdName],{header:1,defval:''});
+    if(hAoa.length){
+      var hRows=sagParseRows(hAoa[0], hAoa.slice(1)); // keyed by symbol, skips TOTAL
+      var hBySym={}; hRows.forEach(function(r){ hBySym[r.symbol]=r; });
+      rows.forEach(function(r){
+        var h=hBySym[r.symbol]; if(!h) return;
+        // copy position fields under clear names (keep whatever the sheet calls them)
+        Object.keys(h).forEach(function(k){ if(k!=='symbol' && r[k]===undefined) r[k]=h[k]; });
+      });
+    }
+  }
+  return rows;
 }
 
-// ---- Panel render ----
-var _sagPending=null; // parsed rows awaiting commit
-async function renderSAGradesPanel(){
-  var p=document.getElementById('sag-panel'); if(!p) return;
-  p.innerHTML='<div style="padding:30px;text-align:center;color:var(--text3);">جارٍ التحميل من الخادم…</div>';
-  var store=await sagFetch();
-  _sagRender(store);
-}
-function _sagRender(store){
-  var p=document.getElementById('sag-panel'); if(!p) return;
-  var syms=Object.keys(store.stocks).sort();
-  var cnt=document.getElementById('sag-count'); if(cnt) cnt.textContent=syms.length+' سهم · آخر تحديث '+(store.updated?new Date(store.updated).toLocaleString():'—');
-  var cols='var(--bg2)', bd='0.5px solid var(--border)';
-  var html='';
-  // --- Upload / paste zone ---
-  html+='<div style="background:'+cols+';border:'+bd+';border-radius:12px;padding:14px;margin-bottom:12px;">';
-  html+='<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;">رفع مجموعة (Upsert) — ملف أو لصق</div>';
-  html+='<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">';
-  html+='<input type="file" id="sag-file" accept=".xlsx,.xls,.csv,.tsv" style="font-size:11px;color:var(--text2);" onchange="sagHandleFile(event)">';
-  html+='<span style="font-size:10px;color:var(--text3);">أو الصق CSV/TSV أدناه</span></div>';
-  html+='<textarea id="sag-paste" placeholder="Symbol,Quant Rating,Valuation Grade,..." style="width:100%;min-height:70px;background:var(--bg3);border:'+bd+';border-radius:8px;color:var(--text);font-size:11px;padding:8px;font-family:monospace;" oninput="sagPreviewPaste()"></textarea>';
-  html+='<div id="sag-preview" style="margin-top:10px;"></div>';
-  html+='</div>';
-  // --- Single add ---
-  html+='<div style="background:'+cols+';border:'+bd+';border-radius:12px;padding:14px;margin-bottom:12px;">';
-  html+='<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;">إضافة/تعديل سهم واحد</div>';
-  html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">';
-  var fields=[['symbol','Symbol'],['Quant Rating','Quant Rating'],['Valuation Grade','Valuation'],['Growth Grade','Growth'],['Profitability Grade','Profitability'],['Momentum Grade','Momentum'],['EPS Revision Grade','EPS Revisions']];
-  fields.forEach(function(f){ html+='<input id="sagf-'+f[0].replace(/\s/g,'_')+'" placeholder="'+f[1]+'" style="background:var(--bg3);border:'+bd+';border-radius:6px;color:var(--text);font-size:11px;padding:6px;">'; });
-  html+='</div><button onclick="sagAddSingle()" style="margin-top:10px;font-size:11px;padding:6px 14px;border-radius:7px;background:var(--accent);color:#fff;border:none;cursor:pointer;">حفظ السهم</button>';
-  html+='</div>';
-  // --- Stored table ---
-  html+='<div style="background:'+cols+';border:'+bd+';border-radius:12px;padding:14px;">';
-  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><span style="font-size:12px;font-weight:600;color:var(--text2);">المخزن ('+syms.length+' سهم)</span>';
-  if(syms.length) html+='<button onclick="if(confirm(\'مسح كل الدرجات؟\')){sagWipeRemote();}" style="font-size:10px;padding:4px 10px;border-radius:6px;background:transparent;color:var(--red);border:0.5px solid var(--red);cursor:pointer;">مسح الكل</button>';
-  html+='</div>';
-  if(!syms.length){ html+='<div style="font-size:11px;color:var(--text3);padding:14px 0;text-align:center;">لا توجد درجات بعد — ارفع ملف SA أعلاه</div>'; }
-  else {
-    html+='<div style="overflow:auto;max-height:340px;"><table style="width:100%;border-collapse:collapse;font-size:11px;">';
-    html+='<thead><tr style="position:sticky;top:0;background:var(--bg3);"><th style="text-align:right;padding:6px;color:var(--text3);">الرمز</th><th style="text-align:right;padding:6px;color:var(--text3);">Quant</th><th style="text-align:center;padding:6px;color:var(--text3);">Val</th><th style="text-align:center;padding:6px;color:var(--text3);">Grw</th><th style="text-align:center;padding:6px;color:var(--text3);">Prof</th><th style="text-align:center;padding:6px;color:var(--text3);">Mom</th><th style="text-align:center;padding:6px;color:var(--text3);">Rev</th><th style="padding:6px;"></th></tr></thead><tbody>';
-    syms.forEach(function(s){ var r=store.stocks[s];
-      html+='<tr style="border-bottom:0.5px solid var(--border);"><td style="padding:5px 6px;color:var(--text);font-weight:600;">'+s+'</td><td style="padding:5px 6px;color:var(--text2);">'+(r['Quant Rating']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['Valuation Grade']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['Growth Grade']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['Profitability Grade']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['Momentum Grade']||'—')+'</td><td style="text-align:center;padding:5px 6px;color:var(--text2);">'+(r['EPS Revision Grade']||'—')+'</td><td style="text-align:left;padding:5px 6px;"><button onclick="if(confirm(\'حذف '+s+'؟\')){sagDeleteRemote(\''+s+'\');}" style="font-size:10px;color:var(--red);background:none;border:none;cursor:pointer;">حذف</button></td></tr>';
-    });
-    html+='</tbody></table></div>';
-  }
-  html+='</div>';
-  p.innerHTML=html;
-}
-function sagHandleFile(ev){
-  var f=ev.target.files&&ev.target.files[0]; if(!f) return;
-  var reader=new FileReader();
-  var isCSV=/\.(csv|tsv)$/i.test(f.name);
-  reader.onload=function(e){
-    try{
-      var rows = isCSV ? sagParseCSV(e.target.result) : sagParseXLSX(e.target.result);
-      _sagPending=rows; sagShowPreview(rows, f.name);
-    }catch(err){ document.getElementById('sag-preview').innerHTML='<span style="color:var(--red);font-size:11px;">خطأ في القراءة: '+err.message+'</span>'; }
-  };
-  if(isCSV) reader.readAsText(f); else reader.readAsArrayBuffer(f);
-}
-function sagPreviewPaste(){
-  var t=document.getElementById('sag-paste').value.trim();
-  if(t.length<10){ document.getElementById('sag-preview').innerHTML=''; _sagPending=null; return; }
-  try{ var rows=sagParseCSV(t); _sagPending=rows; sagShowPreview(rows,'لصق'); }catch(e){}
-}
-function sagShowPreview(rows, src){
-  var d=document.getElementById('sag-preview'); if(!d) return;
-  if(!rows||!rows.length){ d.innerHTML='<span style="color:var(--gold);font-size:11px;">لم يُعثر على صفوف صالحة</span>'; return; }
-  var colCount=Object.keys(rows[0]).length;
-  d.innerHTML='<div style="font-size:11px;color:var(--green);margin-bottom:8px;">جاهز: '+rows.length+' سهم · '+colCount+' عمود · المصدر: '+src+'</div>'
-    +'<div style="font-size:10px;color:var(--text3);margin-bottom:8px;">أمثلة: '+rows.slice(0,6).map(function(r){return r.symbol;}).join(' · ')+(rows.length>6?' …':'')+'</div>'
-    +'<button onclick="sagCommit(\''+src.replace(/\x27/g,'')+'\')" style="font-size:11px;padding:7px 16px;border-radius:7px;background:var(--green);color:#fff;border:none;cursor:pointer;">تأكيد ودمج (Upsert)</button>';
-}
-async function sagCommit(src){
-  if(!_sagPending||!_sagPending.length){ return; }
-  try{
-    var res=await sagApiPost({action:'upsert', rows:_sagPending, source:src});
-    _sagPending=null;
-    var pasteEl=document.getElementById('sag-paste'); if(pasteEl) pasteEl.value='';
-    await renderSAGradesPanel();
-    alert('تم: أُضيف '+res.result.added+' · حُدّث '+res.result.updated+' · الإجمالي '+res.result.total);
-  }catch(e){ alert('فشل الحفظ: '+e.message); }
-}
-async function sagAddSingle(){
-  var get=function(k){ var el=document.getElementById('sagf-'+k.replace(/\s/g,'_')); return el?el.value.trim():''; };
-  var sym=get('symbol'); if(!sym){ alert('أدخل الرمز'); return; }
-  var row={symbol:sym, 'Quant Rating':get('Quant Rating'), 'Valuation Grade':get('Valuation Grade'), 'Growth Grade':get('Growth Grade'), 'Profitability Grade':get('Profitability Grade'), 'Momentum Grade':get('Momentum Grade'), 'EPS Revision Grade':get('EPS Revision Grade')};
-  try{ await sagApiPost({action:'upsert', rows:[row], source:'إدخال يدوي'}); await renderSAGradesPanel(); alert('تم حفظ '+sym.toUpperCase()); }
-  catch(e){ alert('فشل: '+e.message); }
-}
-async function sagDeleteRemote(sym){
-  try{ await sagApiPost({action:'delete', sym:sym}); await renderSAGradesPanel(); }
-  catch(e){ alert('فشل الحذف: '+e.message); }
-}
-async function sagWipeRemote(){
-  try{ await sagApiPost({action:'replace', rows:[], source:'wipe'}); await renderSAGradesPanel(); }
-  catch(e){ alert('فشل المسح: '+e.message); }
-}
-/* =================== END SA GRADES =================== */
+/* =================== END SA EXCEL PARSERS =================== */
 
 function renderCommandCenter(){
   var grid=document.getElementById('cc-grid');
@@ -3640,7 +3515,6 @@ function showTab(name,el){
   try{
     if(name==='trends') renderTrends();
     if(name==='command'){ renderCommandCenter(); if(typeof loadAnalysis==='function' && (typeof analysisData==='undefined' || !analysisData)) loadAnalysis(); }
-    if(name==='sagrades' && typeof renderSAGradesPanel==='function') renderSAGradesPanel();
     if(name==='weights') renderWeights();
     if(name==='alerts') renderAlerts();
     if(name==='prompt') renderPrompt();
@@ -12583,21 +12457,30 @@ function saUpdateCash() {
   saUpdateProgress();
 }
 
-function saHandleExcel(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const st = document.getElementById('sa-excel-status');
-  const dot = document.getElementById('chk-excel');
-  if (st) { st.textContent = '⏳ جاري قراءة الملف...'; st.className = 'sa-status'; }
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    window.saData.excelText = 'FILE:' + file.name + ' SIZE:' + file.size;
-    window.saData.excelFile = e.target.result;
-    if (st) { st.textContent = '✓ ' + file.name; st.className = 'sa-status ok'; }
-    if (dot) dot.className = 'sa-check-dot filled';
-    saUpdateProgress();
+function saHandleExcel(input){
+  const file=input.files[0]; if(!file) return;
+  const st=document.getElementById('sa-excel-status');
+  const dot=document.getElementById('chk-excel');
+  if(st){ st.textContent='⏳ جاري قراءة الملف...'; st.className='sa-status'; }
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      const rows=sagParseXLSX(e.target.result);   // both sheets, 41 cols + shares/cost
+      window.saData.excelRows=rows;                // structured data for analysis
+      window.saData.excelText='ROWS:'+rows.length+' ('+file.name+')';
+      // Persist to the store via sa-analyze savePortfolio (keeps everything)
+      try{
+        const tok=localStorage.getItem('theisilabs_session')||'';
+        await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({savePortfolio:true, rows:rows})});
+      }catch(_){}
+      if(st){ st.textContent='✓ '+rows.length+' سهم — '+file.name; st.className='sa-status ok'; }
+      if(dot) dot.className='sa-check-dot filled';
+      saUpdateProgress();
+    }catch(err){
+      if(st){ st.textContent='✗ '+err.message; st.className='sa-status'; }
+    }
   };
-  reader.readAsDataURL(file);
+  reader.readAsArrayBuffer(file);   // was readAsDataURL — must be ArrayBuffer for XLSX
 }
 
 function saShowRTab(id, btn) {
@@ -12857,6 +12740,7 @@ function saCollectInputs() {
   const g = id => document.getElementById(id)?.value?.trim() || '';
   return {
     excel: window.saData.excelText || 'غير مُدخل',
+    excelRows: window.saData.excelRows || [],     // ADD THIS LINE — structured portfolio
     shortIdeas: g('sa-short-ideas'),
     updownMine: g('sa-updown-mine'),
     updownMarket: g('sa-updown-market'),
