@@ -10,21 +10,25 @@ function buildPrompt(inputs) {
   const cashUSD = inputs.cashUSD || 0;
   const cashStr = cashUSD > 0 ? '$' + Number(cashUSD).toLocaleString() + ' / ' + Number(inputs.cash||0).toLocaleString() + ' ' + (inputs.currency||'AED') : 'غير محدد';
 
-  // REAL portfolio from the uploaded Excel (no hardcoding)
+  // REAL portfolio from the store (no hardcoding). Value total computed in code.
   const rows = Array.isArray(inputs.excelRows) ? inputs.excelRows : [];
-  let totalVal = 0; rows.forEach(r=>{ const v=Number(r.Value||r.value||0); if(!isNaN(v)) totalVal+=v; });
-  const posLine = rows
-    .filter(r=> (r.Shares||r.shares))
-    .sort((a,b)=> Number(b.Value||b.value||0)-Number(a.Value||a.value||0))
-    .slice(0,12)
-    .map(r=>{
-      const sym=r.symbol||r.sym; const w=r.Weight||r.weight||'';
-      const g = (r['Total Change %']||r['Total Change']||r.gl||'');
-      return `${sym} ${w}${g?(' '+g):''}`;
-    }).join(' | ');
-  const portfolioBlock = rows.length
-    ? `محفظة فعلية من ملف SA: قيمة ~$${Math.round(totalVal).toLocaleString()} (${rows.length} سهم). كاش: ${cashStr}.\nأكبر المراكز: ${posLine}`
-    : `محفظة غير مرفوعة بعد. كاش: ${cashStr}.`;
+  let totalVal = 0;
+  rows.forEach(r => { const v = Number(r.Value || r.value || 0); if(!isNaN(v)) totalVal += v; });
+  const totalStr = totalVal > 0 ? '$' + Math.round(totalVal).toLocaleString() : 'غير متوفر';
+
+  // per-stock grade lines so the AI never writes N/A for a stock we own
+  const gradeLines = rows.filter(r => r.symbol || r.sym).map(r => {
+    const g = r.grades || {};
+    const sym = (r.symbol || r.sym);
+    return `${sym}: Quant ${r.quant ?? r['Quant Rating'] ?? '—'} | V:${g.V ?? r['Valuation Grade'] ?? '—'} G:${g.G ?? r['Growth Grade'] ?? '—'} P:${g.P ?? r['Profitability Grade'] ?? '—'} M:${g.M ?? r['Momentum Grade'] ?? '—'} R:${g.R ?? r['EPS Revision Grade'] ?? '—'} | shares ${r.shares ?? '—'} cost ${r.cost ?? '—'} value ${r.Value ?? r.value ?? '—'}`;
+  }).join('\n');
+
+  const portfolioBlock =
+`القيمة الإجمالية للمحفظة (محسوبة من الملف — استخدمها كما هي، لا تعِد حسابها ولا تخمّن غيرها): ${totalStr}
+عدد الأسهم: ${rows.length}. الكاش: ${cashStr}.
+
+درجات كل سهم تملكه (استخدم هذه الدرجات حرفياً في warnings وstrong_positions — لا تكتب N/A لسهم موجود هنا):
+${gradeLines}`;
 
   const parts = [
     inputs.updownMine   ? `[UPGRADES_MINE]\n${inputs.updownMine.slice(0,4000)}`  : '',
@@ -46,8 +50,14 @@ ${parts}
 
 قاعدة درجات SA: استخدم درجات V/G/P/M/R وQuant من بيانات المحفظة المرفوعة لكل سهم تملكه (موجودة في الملف). لا تكتب N/A لسهم تملكه وله درجات في الملف.
 
+قواعد صارمة للأرقام:
+- portfolio_value = القيمة المعطاة أعلاه حرفياً (${totalStr}). ممنوع اختراع أو تعديل هذا الرقم.
+- ممنوع منعاً باتاً ذكر أي نسبة أداء أسبوعي (مثل "+4.75%") أو عبارة "هذا الأسبوع" — لا تتوفر بيانات أسبوعية. اترك weekly_performance يصف الوضع نوعياً دون أي رقم اختُرع.
+- ممنوع ذكر "بقيادة سهم X" إلا إذا كان مبنياً على وزن المركز الفعلي من البيانات.
+- لكل سهم في warnings/strong_positions، انسخ درجات Quant/V/G/P/M/R من قائمة الدرجات أعلاه. ممنوع N/A لأي سهم موجود في القائمة.
+
 أعد JSON صارم فقط — لا نص قبله ولا بعده أبداً:
-{"executive_summary":{"portfolio_value":"","weekly_performance":"نص","biggest_risk_symbol":"SYM","best_opportunity":"SYM","summary_text":"3 جمل: أهم خطر + أهم فرصة + الوضع العام","weekly_decision":"قرار واحد محدد وقابل للتنفيذ"},"warnings":[{"symbol":"SYM","rating":"Strong Sell","badges":["Short Ideas ×N"],"weight":"X%","gl":"+X%","grades":{"Quant":"X.XX","Growth":"X","Momentum":"X","EPS":"X"},"sources":"مصدر","reason":"سبب التحذير: من خفّض التصنيف، من أي تصنيف إلى أي تصنيف، والتاريخ","action":"إجراء محدد بالأرقام"}],"strong_positions":[{"symbol":"SYM","rating":"Strong Buy","badges":["PRO Quant"],"weight":"X%","gl":"+X%","grades":{"Quant":"X.XX"},"sources":"مصادر","reason":"لماذا قوي","action":"احتفظ أو زد"}],"cash_decisions":{"total_available":"${cashStr}","allocations":[{"symbol":"SYM","is_new":true,"amount_usd":"$XX,000","pct_of_cash":"XX%","reason":"سبب التأكيد"}]},"new_opportunities":[{"symbol":"SYM","rating":"Strong Buy","badges":["Top Rated #N"],"grades":{"Quant":"X.XX"},"sources":"N مصادر","reason":"لماذا مناسب","action":"اشترِ"}],"conflicts":[{"symbol":"SYM","sell_sources":"مصدر البيع","buy_sources":"مصدر الشراء","recommendation":"الترجيح"}]}`;
+{"executive_summary":{"portfolio_value":"${totalStr}","weekly_performance":"جملة وصفية نوعية بدون أي نسبة مئوية","biggest_risk_symbol":"SYM","best_opportunity":"SYM","summary_text":"3 جمل: أهم خطر + أهم فرصة + الوضع العام","weekly_decision":"قرار واحد محدد وقابل للتنفيذ"},"warnings":[{"symbol":"SYM","rating":"Strong Sell","badges":["Short Ideas ×N"],"weight":"X%","gl":"+X%","grades":{"Quant":"X.XX","Growth":"X","Momentum":"X","EPS":"X"},"sources":"مصدر","reason":"سبب التحذير: من خفّض التصنيف، من أي تصنيف إلى أي تصنيف، والتاريخ","action":"إجراء محدد بالأرقام"}],"strong_positions":[{"symbol":"SYM","rating":"Strong Buy","badges":["PRO Quant"],"weight":"X%","gl":"+X%","grades":{"Quant":"X.XX"},"sources":"مصادر","reason":"لماذا قوي","action":"احتفظ أو زد"}],"cash_decisions":{"total_available":"${cashStr}","allocations":[{"symbol":"SYM","is_new":true,"amount_usd":"$XX,000","pct_of_cash":"XX%","reason":"سبب التأكيد"}]},"new_opportunities":[{"symbol":"SYM","rating":"Strong Buy","badges":["Top Rated #N"],"grades":{"Quant":"X.XX"},"sources":"N مصادر","reason":"لماذا مناسب","action":"اشترِ"}],"conflicts":[{"symbol":"SYM","sell_sources":"مصدر البيع","buy_sources":"مصدر الشراء","recommendation":"الترجيح"}]}`;
 }
 
 module.exports = async (req, res) => {
@@ -278,6 +288,22 @@ module.exports = async (req, res) => {
   }
 
   // ── Analysis: build prompt + call Claude (NO GitHub save here) ────────────
+  // Always hydrate the real portfolio from the store (don't trust the client to send it)
+  if (inputs && GITHUB_TOKEN) {
+    try {
+      const today = new Date().toISOString().slice(0,10);
+      const fp = `data/sa-portfolio-${today}.json`;
+      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
+        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
+      });
+      if (ex.ok) {
+        const f = await ex.json();
+        const store = JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
+        const all = [].concat(store.stocks||[], store.etfs||[]);
+        if (all.length) inputs.excelRows = all;   // override whatever client sent
+      }
+    } catch (_) {}
+  }
   const finalPrompt = inputs ? buildPrompt(inputs) : prompt;
   if (!finalPrompt) return res.status(400).json({ error: 'inputs or prompt required' });
 
