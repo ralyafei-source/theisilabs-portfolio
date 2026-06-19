@@ -37,6 +37,33 @@ function todayUAE() {
   return new Date(Date.now() + 4 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
+// ─── SA GRADES STORE (the score-of-record) ───────────────────────────────────
+async function fetchSAGrades() {
+  try {
+    const r = await fetch(
+      `https://raw.githubusercontent.com/${REPO}/main/data/sa-grades.json?t=${Date.now()}`,
+      { headers: { 'Cache-Control': 'no-cache' } }
+    );
+    if (!r.ok) return {};
+    const store = await r.json();
+    return store.stocks || {};
+  } catch (e) { return {}; }
+}
+
+function saGradeLine(sym, g) {
+  if (!g) return `${sym}: SA grades غير متوفرة`;
+  const pick = (...keys) => { for (const k of keys) if (g[k] != null && g[k] !== '') return g[k]; return '—'; };
+  const quant = pick('Quant Rating', 'quantRating');
+  const val   = pick('Valuation Grade', 'gradeValuation');
+  const grw   = pick('Growth Grade', 'gradeGrowth');
+  const prof  = pick('Profitability Grade', 'gradeProfitability');
+  const mom   = pick('Momentum Grade', 'gradeMomentum');
+  const rev   = pick('EPS Revision Grade', 'EPS Revisions Grade', 'gradeRevisions');
+  const days  = pick('Days at Rating', 'daysAtRating');
+  const analysts = pick('# SA Analysts Covering', '# Analysts', 'analystsCovering');
+  return `${sym}: Quant ${quant} | Valuation ${val} | Growth ${grw} | Profitability ${prof} | Momentum ${mom} | EPS-Revisions ${rev} | (ثقة: ${days} يوم على التصنيف، ${analysts} محلل)`;
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // DATA QUALITY GATE (Session 29) — deterministic validation BEFORE any
 // scoring, ranking, or LLM analysis. Rules never delete a stock; they null
@@ -1918,6 +1945,19 @@ if (key) {
         movers:    earningsSorted.filter(e => !e.inPortfolio).slice(0, 10)
       }, null, 2) + '\n\n';
 
+      // ── SA GRADES — THE SCORE OF RECORD (read FIRST) ──────────────────────
+      const saGrades = await fetchSAGrades();
+      text += `\n═══════════════════════════════════════════════════════\n`;
+      text += `SEEKING ALPHA GRADES — THE SCORE OF RECORD (use these as the rating)\n`;
+      text += `═══════════════════════════════════════════════════════\n`;
+      text += `كيفية القراءة: كل درجة نسبية للقطاع (A+..F)، والتقييم الإجمالي تجميعي وليس متوسطاً.\n`;
+      text += `قاعدة الاستبعاد: درجة D+ أو أسوأ في النمو/الزخم/مراجعات الأرباح، أو D- أو أسوأ في\n`;
+      text += `التقييم/الربحية، تُسقِف السهم عند "احتفاظ" مهما كانت بقية الدرجات قوية.\n`;
+      text += `التقييم يأتي حصراً من درجة SA (Valuation) لا من DCF.\n\n`;
+      symbols.forEach(sym => { text += saGradeLine(sym, saGrades[sym]) + '\n'; });
+      text += `\n`;
+      text += `أهداف أسعار المحللين أدناه معلومات سياقية فقط ومنخفضة الموثوقية. لا تُستخدم في\n`;
+      text += `تحديد التقييم أو التصنيف أو القرار، ولا تُعارض درجة SA. اذكرها كملاحظة جانبية فقط.\n\n`;
       text += `ANALYST PRICE TARGETS:\n`;
       text += JSON.stringify(targets, null, 2) + '\n\n';
 
