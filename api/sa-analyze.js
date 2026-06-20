@@ -6,6 +6,13 @@ const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 const GITHUB_TOKEN  = process.env.GITHUB_TOKEN;
 const REPO          = 'ralyafei-source/theisilabs-portfolio';
 
+// Bucket scorer lives in api/_lib/ — the leading underscore means Vercel does NOT
+// turn it into a Serverless Function (utility-file rule), so it does not count
+// toward the 12-function limit. It is imported here, not routed.
+const { computeBuckets } = require('./_lib/bucket-scorer.js');
+// Deep-read prompt builder (non-routed _lib — see scorer note above).
+const { buildDeepReadPrompt } = require('./_lib/deep-read.js');
+
 function buildPrompt(inputs) {
   const cashUSD = inputs.cashUSD || 0;
   const cashStr = cashUSD > 0 ? '$' + Number(cashUSD).toLocaleString() + ' / ' + Number(inputs.cash||0).toLocaleString() + ' ' + (inputs.currency||'AED') : 'غير محدد';
@@ -276,6 +283,170 @@ module.exports = async (req, res) => {
       if (prior) return res.status(200).json({ ...prior, isCarryForward: true });
       return res.status(200).json({ stocks: [], etfs: [] });
     } catch(e) { return res.status(200).json({ stocks: [], etfs: [], error: e.message }); }
+  }
+
+  // ── bucketScore: read the SA portfolio store, run the horizon scorer, save buckets ──
+  // Reads today's sa-portfolio-{date}.json (carry-forward to most recent prior if today
+  // is missing, same as loadPortfolio), feeds stocks+etfs into computeBuckets (the
+  // scorer's own _isETF test does exclusion — not the store's grade-presence split),
+  // and writes data/sa-buckets-{date}.json. CODE computes; no Claude here.
+  if (req.body && req.body.bucketScore && GITHUB_TOKEN) {
+    try {
+      const today = new Date().toISOString().slice(0,10);
+      const readDay = async (date) => {
+        const fp = `data/sa-portfolio-${date}.json`;
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+        if (!ex.ok) return null;
+        const f = await ex.json();
+        return { store: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), date };
+      };
+      // resolve which portfolio store to score (today, else most recent prior)
+      let picked = await readDay(today);
+      let sourceDate = today, isCarryForward = false;
+      if (!picked) {
+        const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+        if (!dir.ok) return res.status(200).json({ saved: false, error: 'no portfolio store found' });
+        const files = await dir.json();
+        const dates = (Array.isArray(files) ? files : [])
+          .map(f => (f.name||'').match(/^sa-portfolio-(\d{4}-\d{2}-\d{2})\.json$/))
+          .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
+        if (!dates.length) return res.status(200).json({ saved: false, error: 'no portfolio store found' });
+        picked = await readDay(dates[0]); sourceDate = dates[0]; isCarryForward = true;
+        if (!picked) return res.status(200).json({ saved: false, error: 'portfolio store unreadable' });
+      }
+
+      // feed BOTH stocks + etfs; let the scorer's _isETF test decide exclusion
+      const all = [].concat(picked.store.stocks||[], picked.store.etfs||[]);
+      const { scored, excluded_etfs } = computeBuckets(all);
+
+      // save buckets for TODAY (the run date), noting which store fed it
+      const fp = `data/sa-buckets-${today}.json`;
+      const payload = JSON.stringify({
+        date: today,
+        source_portfolio_date: sourceDate,
+        isCarryForward,
+        scored,
+        excluded_etfs,
+        count: { scored: Object.keys(scored).length, excluded: excluded_etfs.length },
+        generated_at: new Date().toISOString()
+      }, null, 2);
+      let sha = null;
+      try {
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+        if (ex.ok) sha = (await ex.json()).sha;
+      } catch {}
+      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
+        body: JSON.stringify({ message: `SA buckets ${today}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) })
+      });
+      return res.status(200).json({
+        saved: sr.ok ? fp : false,
+        scored: Object.keys(scored).length,
+        excluded: excluded_etfs.length,
+        source_portfolio_date: sourceDate,
+        isCarryForward
+      });
+    } catch(e) { return res.status(200).json({ saved: false, error: e.message }); }
+  }
+
+  // ── loadBuckets: return today's buckets, or carry forward most recent prior ──
+  if (req.body && req.body.loadBuckets && GITHUB_TOKEN) {
+    try {
+      const today = new Date().toISOString().slice(0,10);
+      const reqDate = (req.body.date && /^\d{4}-\d{2}-\d{2}$/.test(req.body.date)) ? req.body.date : null;
+      const readDay = async (date) => {
+        const fp = `data/sa-buckets-${date}.json`;
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+        if (!ex.ok) return null;
+        const f = await ex.json();
+        return JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
+      };
+      // a specific date, else today
+      let result = await readDay(reqDate || today);
+      if (result) return res.status(200).json({ ...result, isCarryForward: result.isCarryForward || false });
+      if (reqDate) return res.status(200).json({ scored: {}, excluded_etfs: [] }); // asked for a specific day, none there
+      // fall back: most recent prior buckets file
+      const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+      if (!dir.ok) return res.status(200).json({ scored: {}, excluded_etfs: [] });
+      const files = await dir.json();
+      const dates = (Array.isArray(files) ? files : [])
+        .map(f => (f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/))
+        .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
+      if (!dates.length) return res.status(200).json({ scored: {}, excluded_etfs: [] });
+      const prior = await readDay(dates[0]);
+      if (prior) return res.status(200).json({ ...prior, isCarryForward: true });
+      return res.status(200).json({ scored: {}, excluded_etfs: [] });
+    } catch(e) { return res.status(200).json({ scored: {}, excluded_etfs: [], error: e.message }); }
+  }
+
+  // ── deepRead: build the AI deep-read for ONE stock and return it to the caller.
+  // CONSOLE-ONLY by design (Task 4): nothing is saved, nothing is shown in-app.
+  // The on-tap UI stays disabled behind a default-off flag until Rashed reviews a
+  // real sample. Reads today's buckets (carry-forward) for the stock's resolved
+  // facts + the portfolio store for personal context, builds the prompt, calls
+  // Claude, returns { symbol, prompt_used, result }. On any failure the tab falls
+  // back to the templated card summary (graceful degradation).
+  if (req.body && req.body.deepRead && req.body.symbol && GITHUB_TOKEN) {
+    try {
+      const sym = String(req.body.symbol).toUpperCase();
+      const today = new Date().toISOString().slice(0,10);
+      const readJson = async (fp) => {
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+        if (!ex.ok) return null;
+        const f = await ex.json();
+        return JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
+      };
+      // resolve buckets (today, else most-recent prior)
+      let buckets = await readJson(`data/sa-buckets-${today}.json`);
+      if (!buckets) {
+        const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+        if (dir.ok) {
+          const files = await dir.json();
+          const dates = (Array.isArray(files)?files:[])
+            .map(f => (f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/))
+            .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
+          if (dates.length) buckets = await readJson(`data/sa-buckets-${dates[0]}.json`);
+        }
+      }
+      if (!buckets || !buckets.scored || !buckets.scored[sym]) {
+        return res.status(200).json({ symbol: sym, result: null, error: 'no buckets entry for symbol' });
+      }
+      // load the portfolio store for personal context (today, else most-recent prior)
+      let store = await readJson(`data/sa-portfolio-${today}.json`);
+      if (!store) {
+        const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+        if (dir.ok) {
+          const files = await dir.json();
+          const dates = (Array.isArray(files)?files:[])
+            .map(f => (f.name||'').match(/^sa-portfolio-(\d{4}-\d{2}-\d{2})\.json$/))
+            .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
+          if (dates.length) store = await readJson(`data/sa-portfolio-${dates[0]}.json`);
+        }
+      }
+      const allRecs = store ? [].concat(store.stocks||[], store.etfs||[]) : [];
+
+      const prompt = buildDeepReadPrompt(sym, buckets.scored[sym], allRecs);
+
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] })
+      });
+      const d = await r.json();
+      const text = d.content && d.content[0] && d.content[0].text ? d.content[0].text.trim() : null;
+      return res.status(200).json({
+        symbol: sym,
+        result: text,
+        prompt_used: prompt,                 // returned so Rashed can audit the exact prompt
+        source_buckets_date: buckets.date || null,
+        usage: text ? {
+          input_tokens: d.usage?.input_tokens || 0,
+          output_tokens: d.usage?.output_tokens || 0
+        } : undefined,
+        raw: text ? undefined : JSON.stringify(d).slice(0,300)
+      });
+    } catch(e) { return res.status(200).json({ symbol: req.body.symbol, result: null, error: e.message }); }
   }
 
   // ── listAnalyses: return dates that have a saved analysis ────────
