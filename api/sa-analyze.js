@@ -380,25 +380,30 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(200).json({ scored: {}, excluded_etfs: [], error: e.message }); }
   }
 
-  // ── deepRead: build the AI deep-read for ONE stock and return it to the caller.
-  // CONSOLE-ONLY by design (Task 4): nothing is saved, nothing is shown in-app.
-  // The on-tap UI stays disabled behind a default-off flag until Rashed reviews a
-  // real sample. Reads today's buckets (carry-forward) for the stock's resolved
-  // facts + the portfolio store for personal context, builds the prompt, calls
-  // Claude, returns { symbol, prompt_used, result }. On any failure the tab falls
-  // back to the templated card summary (graceful degradation).
+  // ── deepRead: cached AI deep-read for ONE stock.
+  // Caching model (Task 4 v2): the read is saved to data/deep-reads-{SYM}.json with a
+  // fact fingerprint (grades + archetype + scores + conviction). On open we return the
+  // cached read instantly (no AI call). A fresh AI call happens only when:
+  //   (a) no cached read exists, OR
+  //   (b) forceRefresh AND (24h passed since cached read  OR  facts changed  OR  adminTest), OR
+  //   (c) facts changed (auto-allows a refresh).
+  // The 24h / facts / admin gate is enforced HERE (server-side) so the client can't spam.
   if (req.body && req.body.deepRead && req.body.symbol && GITHUB_TOKEN) {
     try {
       const sym = String(req.body.symbol).toUpperCase();
+      const forceRefresh = !!req.body.forceRefresh;
+      const adminTest = !!req.body.adminTest;
       const today = new Date().toISOString().slice(0,10);
       const readJson = async (fp) => {
         const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
         if (!ex.ok) return null;
         const f = await ex.json();
-        return JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
+        return { data: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), sha: f.sha };
       };
+
       // resolve buckets (today, else most-recent prior)
-      let buckets = await readJson(`data/sa-buckets-${today}.json`);
+      let bucketsWrap = await readJson(`data/sa-buckets-${today}.json`);
+      let buckets = bucketsWrap ? bucketsWrap.data : null;
       if (!buckets) {
         const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
         if (dir.ok) {
@@ -406,14 +411,77 @@ module.exports = async (req, res) => {
           const dates = (Array.isArray(files)?files:[])
             .map(f => (f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/))
             .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
-          if (dates.length) buckets = await readJson(`data/sa-buckets-${dates[0]}.json`);
+          if (dates.length){ const w = await readJson(`data/sa-buckets-${dates[0]}.json`); buckets = w?w.data:null; }
         }
       }
       if (!buckets || !buckets.scored || !buckets.scored[sym]) {
         return res.status(200).json({ symbol: sym, result: null, error: 'no buckets entry for symbol' });
       }
-      // load the portfolio store for personal context (today, else most-recent prior)
-      let store = await readJson(`data/sa-portfolio-${today}.json`);
+      const o = buckets.scored[sym];
+
+      // fact fingerprint + a labeled snapshot for human-readable change detection
+      const snapshot = {
+        grades: o.grades || {},
+        archetype: (o.long && o.long.archetype) || null,
+        short: o.short ? o.short.score : null,
+        mid: o.mid ? o.mid.score : null,
+        long: o.long ? o.long.score : null,
+        conviction: (o.long && o.long.conviction) ? o.long.conviction.tier : null,
+        quant: o.quant != null ? o.quant : null
+      };
+      const fingerprint = JSON.stringify(snapshot);
+
+      // load any cached read
+      const cachePath = `data/deep-reads-${sym}.json`;
+      const cachedWrap = await readJson(cachePath);
+      const cached = cachedWrap ? cachedWrap.data : null;
+
+      // human-readable diff between cached snapshot and current
+      const GLABEL = { V:'التقييم', G:'النمو', P:'الربحية', M:'الزخم', R:'مراجعات الأرباح' };
+      const HLABEL = { short:'القصير', mid:'المتوسط', long:'الطويل' };
+      function computeChanges(oldSnap, newSnap){
+        if (!oldSnap) return [];
+        const ch = [];
+        for (const k of ['V','G','P','M','R']) {
+          const a = (oldSnap.grades||{})[k], b = (newSnap.grades||{})[k];
+          if (a !== b) ch.push({ field: GLABEL[k], from: a||'—', to: b||'—' });
+        }
+        for (const k of ['short','mid','long']) {
+          if (oldSnap[k] !== newSnap[k]) ch.push({ field: HLABEL[k], from: oldSnap[k]==null?'—':String(oldSnap[k]), to: newSnap[k]==null?'—':String(newSnap[k]) });
+        }
+        if (oldSnap.archetype !== newSnap.archetype) ch.push({ field: 'نوع الموقف', from: oldSnap.archetype||'—', to: newSnap.archetype||'—' });
+        if (oldSnap.conviction !== newSnap.conviction) ch.push({ field: 'الثقة', from: oldSnap.conviction||'—', to: newSnap.conviction||'—' });
+        if (oldSnap.quant !== newSnap.quant) ch.push({ field: 'الكوانت', from: oldSnap.quant==null?'—':String(oldSnap.quant), to: newSnap.quant==null?'—':String(newSnap.quant) });
+        return ch;
+      }
+      const factsChanged = cached ? (cached.fingerprint !== fingerprint) : false;
+      const changes = cached ? computeChanges(cached.snapshot, snapshot) : [];
+
+      // 24h check against the cached read's timestamp
+      let hoursSince = Infinity;
+      if (cached && cached.generated_at) hoursSince = (Date.now() - new Date(cached.generated_at).getTime()) / 3600000;
+      const cooldownPassed = hoursSince >= 24;
+      const refreshAllowed = adminTest || factsChanged || cooldownPassed;
+
+      // DECISION: serve cache, or generate?
+      const mustGenerate = !cached;                              // nothing cached yet
+      const wantGenerate = forceRefresh && refreshAllowed;       // user asked + allowed
+      if (!mustGenerate && !wantGenerate) {
+        // serve cached read; tell the client the refresh state + any changes
+        return res.status(200).json({
+          symbol: sym, result: cached.text, cached: true,
+          generated_at: cached.generated_at,
+          factsChanged, changes,
+          refreshAllowed, hoursSinceRead: Math.floor(hoursSince),
+          nextRefreshInHours: cooldownPassed ? 0 : Math.ceil(24 - hoursSince),
+          usage: cached.usage || undefined
+        });
+      }
+
+      // ---- generate a fresh read ----
+      // portfolio store for personal context (today, else most-recent prior)
+      let storeWrap = await readJson(`data/sa-portfolio-${today}.json`);
+      let store = storeWrap ? storeWrap.data : null;
       if (!store) {
         const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
         if (dir.ok) {
@@ -421,12 +489,11 @@ module.exports = async (req, res) => {
           const dates = (Array.isArray(files)?files:[])
             .map(f => (f.name||'').match(/^sa-portfolio-(\d{4}-\d{2}-\d{2})\.json$/))
             .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
-          if (dates.length) store = await readJson(`data/sa-portfolio-${dates[0]}.json`);
+          if (dates.length){ const w = await readJson(`data/sa-portfolio-${dates[0]}.json`); store = w?w.data:null; }
         }
       }
       const allRecs = store ? [].concat(store.stocks||[], store.etfs||[]) : [];
-
-      const prompt = buildDeepReadPrompt(sym, buckets.scored[sym], allRecs);
+      const prompt = buildDeepReadPrompt(sym, o, allRecs);
 
       const r = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -435,19 +502,38 @@ module.exports = async (req, res) => {
       });
       const d = await r.json();
       const text = d.content && d.content[0] && d.content[0].text ? d.content[0].text.trim() : null;
-      return res.status(200).json({
-        symbol: sym,
-        result: text,
-        prompt_used: prompt,                 // returned so Rashed can audit the exact prompt
+      if (!text) {
+        // generation failed — fall back to cache if we have one
+        if (cached) return res.status(200).json({ symbol: sym, result: cached.text, cached: true, generated_at: cached.generated_at, factsChanged, changes, refreshAllowed, error: 'generation failed, served cache' });
+        return res.status(200).json({ symbol: sym, result: null, error: 'generation failed', raw: JSON.stringify(d).slice(0,300) });
+      }
+      const usage = { input_tokens: d.usage?.input_tokens || 0, output_tokens: d.usage?.output_tokens || 0 };
+      usage.est_cost_usd = +((usage.input_tokens/1e6*3) + (usage.output_tokens/1e6*15)).toFixed(4);
+
+      // save the read + fingerprint + snapshot to GitHub
+      const payload = JSON.stringify({
+        symbol: sym, text, fingerprint, snapshot,
+        generated_at: new Date().toISOString(),
         source_buckets_date: buckets.date || null,
-        usage: text ? {
-          input_tokens: d.usage?.input_tokens || 0,
-          output_tokens: d.usage?.output_tokens || 0
-        } : undefined,
-        raw: text ? undefined : JSON.stringify(d).slice(0,300)
+        usage
+      }, null, 2);
+      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
+        body: JSON.stringify({ message: `Deep read ${sym} ${today}`, content: Buffer.from(payload).toString('base64'), ...(cachedWrap?{sha:cachedWrap.sha}:{}) })
+      });
+
+      return res.status(200).json({
+        symbol: sym, result: text, cached: false,
+        generated_at: new Date().toISOString(),
+        saved: sr.ok,
+        factsChanged: false, changes: [],
+        refreshAllowed: false, hoursSinceRead: 0, nextRefreshInHours: 24,
+        usage, prompt_used: prompt
       });
     } catch(e) { return res.status(200).json({ symbol: req.body.symbol, result: null, error: e.message }); }
   }
+
 
   // ── listAnalyses: return dates that have a saved analysis ────────
   if (req.body && req.body.listAnalyses && GITHUB_TOKEN) {
