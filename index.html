@@ -2958,7 +2958,7 @@ WOLF remains at critical lows<br><br>
     --mag:#FF0A78; --blue:#00c8ff;
     --txt:#ffffff; --txt2:#b6bcc8; --txt3:#888888;
     --line:rgba(255,255,255,.07);
-    --pos:#19c37d; --neu:#c9a227; --cau:#e5484d;
+    --pos:#19c37d; --neu:#2bb3b8; --cau:#e5484d; --bal:#2bb3b8;
     --r:14px;
     /* grade tag colors: strong (A/B) calm, weak (D/F) warns, mid muted */
     --g-strong:#19c37d; --g-mid:#8a93a3; --g-weak:#e5484d;
@@ -2981,7 +2981,9 @@ WOLF remains at critical lows<br><br>
       <button data-f="opps">جديد</button>
     </div>
   </div>
-  <p class="sub">نفس السهم يُقرأ بثلاث آفاق. «جديد» = سهم لا تملكه، مرشّح لتنويع المحفظة — يُرتَّب مثل المملوك تماماً، بدون أفضلية. كل رقم قراءة اتجاهية بهامش خطأ واسع، وليس توصية. اضغط أي صف للشرح الكامل.</p>
+  <p class="sub">يحلل السهم في الثلاث آفاق.<br>
+«جديد» = سهم لا تملكه.<br>
+كل الارقام تحدد الاتجاه فقط بهامش خطأ واسع، وليس توصية. اضغط أي صف للشرح الكامل.</p>
   <div class="disc">
     كيف تُقرأ: القصير رقم توقيت محسوب (RSI والمتوسطات). المتوسط والطويل يقرآن درجات سيكنغ ألفا مباشرة — كل خلية تعرض الدرجة + نوع الموقف + الثقة + التنبيهات، لا رقم مجرّد.
     التنبيه: قراءة اتجاهية بهامش خطأ واسع، ليست نصيحة ولا أمر شراء أو بيع. القرار قرارك.
@@ -3020,7 +3022,7 @@ const TERMS = {
   archetype: {
     momentum_trap: {
       label:'فخ الزخم', en:'momentum_trap', hint:'قوي سعرياً، ضعيف جوهرياً',
-      full:'السهم صاعد بقوة بسبب الزخم، بس جودة الشركة ضعيفة — يعني حركة سعر، مو بالضرورة عمل قوي. أقرب لفرصة تداول من استثمار طويل.', tone:'cau'
+      full:'السهم صاعد بقوة بسبب الزخم، بس اداء الشركة ضعيف — يعني حركة السعر مو بالضرورة شركة قويه. تعتبر أقرب لفرصة تداول من ان تكون استثمار طويل الاجل.', tone:'cau'
     },
     momentum_trap_growth_bet: {
       label:'فخ الزخم · رهان نمو', en:'momentum_trap · growth bet', hint:'هامش ضعيف، نمو صاعد',
@@ -3039,12 +3041,12 @@ const TERMS = {
       full:'شركة قوية بكل الدرجات، بس ركضت بسرعة وارتفعت كثير — الدخول الحين غير مناسب. درجة القصير المنخفضة توقيت، مو ضعف. انتظر تصحيح.', tone:'pos'
     },
     hidden_quality_out_of_favor: {
-      label:'جودة مهملة', en:'hidden_quality · out of favor', hint:'قوي بس خارج الاهتمام',
-      full:'شركة قوية الجودة بس السوق مو مهتم فيها حالياً — يعني عمل جيد ومُهمَل، مو سهم ضعيف. الزخم بارد، لكن الأساس سليم.', tone:'pos'
+      label:'جودة مهملة', en:'hidden_quality · out of favor', hint:'أساسيات قوية وزخم هادئ',
+      full:'أساسيات قوية وزخم هادئ — شركة ادائها قوي بس السوق ما يطاردها حالياً. الشركة جيده ولكن الاهتمام ضعيف، مو سهم ضعيف.', tone:'pos'
     },
     hidden_quality: { // quality_intact / generic hidden_quality fallback
-      label:'جودة قوية', en:'hidden_quality', hint:'ربحية قوية، بلا ساق ضعيفة',
-      full:'شركة قوية الجودة بس السوق مو مهتم فيها حالياً — يعني عمل جيد ومُهمَل، مو سهم ضعيف. الزخم بارد، لكن الأساس سليم.', tone:'pos'
+      label:'جودة قوية', en:'hidden_quality', hint:'أساسيات قوية بلا نقطة ضعف',
+      full:'أساسيات قوية بلا نقطة ضعف — شركة ادائها قوي والزخم لا يزال جيداً. الجودة حقيقية؛ تقيم وقت الدخول راجع التقييم في قسم "قصير المدى".', tone:'pos'
     },
     unconfirmed: {
       label:'غير مؤكد', en:'unconfirmed', hint:'يبدو قوي بس غير موثّق',
@@ -3056,9 +3058,9 @@ const TERMS = {
     }
   },
   horizon: {
-    short:{ label:'قصير · توقيت الدخول', en:'Short', full:'هل الوقت مناسب للدخول الحين؟ يعتمد على RSI والمتوسطات — توقيت بحت، مو حكم على الشركة. هذا الرقم الوحيد المحسوب؛ سيكنغ ألفا ما عنده إشارة توقيت.' },
-    mid:{ label:'متوسط · إعادة التسعير', en:'Mid', full:'خلال أسابيع لشهرين — رخيص مع محفّز، أو رخيص ويتراجع؟ يقرأ التقييم والنمو والمراجعات.' },
-    long:{ label:'طويل · الاحتفاظ', en:'Long', full:'سنة فأكثر — شركة جودة تستحق الاحتفاظ؟ يقرأ الربحية والنمو والتقييم + الكوانت.' }
+    short:{ label:'قصير · توقيت الدخول', en:'Short', full:'هل الوقت مناسب للدخول الحين؟ رقم توقيت بحت (0–100) — مو حكم على الشركة. يُحسب من خمسة مؤشرات سعرية بأوزان: السعر مقابل متوسط 10 أيام (30%)، جودة RSI حسب الاتجاه (25%)، السعر مقابل متوسط 50 يوم (20%)، موقع السعر ضمن مدى 52 أسبوع (15%)، وحجم التداول (10%). RSI يُقاس حسب الاتجاه: في سهم صاعد القراءة المثالية أعلى، وفي سهم هابط أقل. هذا الرقم الوحيد المحسوب داخلياً؛ سيكنغ ألفا ما عنده إشارة توقيت.' },
+    mid:{ label:'متوسط · إعادة التسعير', en:'Mid', full:'الأفق المتوسط (أسابيع لشهرين): هل السهم مهيّأ لإعادة تسعير قريبة؟ يُقرأ من ثلاث درجات سيكنغ ألفا — التقييم (هل السعر معقول؟)، النمو (هل الإيرادات والأرباح تتسارع؟)، ومراجعات الأرباح (هل المحللون يرفعون تقديراتهم أو يخفضونها؟). الفكرة: سهم رخيص + نمو صاعد + مراجعات إيجابية = محفّز محتمل لإعادة التسعير؛ أما رخيص + نمو هابط + مراجعات سلبية = رخيص لسبب. هذا ليس رقماً محسوباً، بل قراءة مباشرة للدرجات.' },
+    long:{ label:'طويل · الاحتفاظ', en:'Long', full:'الأفق الطويل (سنة فأكثر): هل هذه شركة جودة تستحق الاحتفاظ؟ يُقرأ من الربحية (قوة الهوامش والعوائد)، النمو (استدامة التوسّع)، والتقييم (هل تدفع سعراً معقولاً للجودة؟)، مع الكوانت كمؤشر إجمالي. الأولوية هنا للربحية والاستمرارية لا للتوقيت. هذا ليس رقماً محسوباً، بل قراءة مباشرة للدرجات.' }
   },
   grade: {
     V:{ label:'التقييم', full:'رخيص أو غالي مقارنة بقطاعه — مو مقارنة بالسوق كله.' },
@@ -3108,13 +3110,13 @@ let DATA = null;
 const DEEP_READ_ENABLED = false;
 
 const BUCKETS = [
-  {key:'short', t:'قصير — تأرجح', en:'Short · Swing (days–2wk)', q:'هل الوقت دخول معقول الآن، وهل للحركة قناعة؟'},
+  {key:'short', t:'قصير — Swing', en:'Short · Swing (days–2wk)', q:'هل الوقت دخول معقول الآن، وهل للحركة قناعة؟'},
   {key:'mid',   t:'متوسط — مركز',  en:'Mid · Position (wks–2mo)', q:'قيمة جيدة مع محفّز لإعادة التسعير؟'},
   {key:'long',  t:'طويل — احتفاظ', en:'Long · Hold (1yr+)', q:'شركة جودة تستحق الاحتفاظ بها؟'},
 ];
-function arNum(n){ return String(n).replace(/[0-9]/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]); }
+function arNum(n){ return String(n); }
 function leanOf(s){ if(s>=65)return['مائل للإيجاب','var(--pos)']; if(s>=45)return['محايد','var(--neu)']; return['حذر','var(--cau)']; }
-function toneColor(t){ return t==='pos'?'var(--pos)':t==='cau'?'var(--cau)':t==='neu'?'var(--neu)':'var(--g-mid)'; }
+function toneColor(t){ return t==='pos'?'var(--pos)':t==='cau'?'var(--cau)':t==='neu'?'var(--neu)':t==='mid'?'var(--bal)':'var(--g-mid)'; }
 function convColor(t){ return t==='high'?'var(--pos)':t==='provisional'?'var(--cau)':'var(--neu)'; }
 function gradeColor(g){ if(!g) return 'var(--g-mid)'; const c=g[0]; if(c==='A'||c==='B')return 'var(--g-strong)'; if(c==='D'||c==='F')return 'var(--g-weak)'; return 'var(--g-mid)'; }
 
@@ -3124,7 +3126,7 @@ function passes(v){ return FILTER==='all' || (FILTER==='owned'&&v.owned) || (FIL
 function gradeTags(g){
   return ['V','G','P','M','R'].map(k=>{
     const val=g&&g[k]?g[k]:'—';
-    return `<span class="gtag" style="color:${gradeColor(g&&g[k])}" data-term="grade:${k}"><span class="k">${k}</span>${val}</span>`;
+    return `<span class="gtag" style="color:${gradeColor(g&&g[k])}" data-term="grade:${k}"><span class="k">${k}</span> (${val})</span>`;
   }).join('');
 }
 
@@ -3147,7 +3149,7 @@ function renderShortRow(sym, v){
   const badge=v.owned?'':'<span class="badge">جديد</span>';
   return `<div class="row short" data-sym="${sym}">
     <div class="row-top">
-      <span class="score" style="color:${col}">${arNum(s)}<span class="max">/١٠٠</span></span>
+      <span class="score" style="color:${col}">${arNum(s)}<span class="max">/100</span></span>
       <span class="sym">${sym}${badge}</span>
       <span class="lean">${lab}</span>
     </div>
@@ -3159,7 +3161,7 @@ function renderGradeRow(sym, v, key){
   const badge=v.owned?'':'<span class="badge">جديد</span>';
   const ak=archKey(b);
   const term=TERMS.archetype[ak];
-  const chipBg = term.tone==='pos'?'rgba(25,195,125,.13)':term.tone==='cau'?'rgba(229,72,77,.13)':term.tone==='neu'?'rgba(201,162,39,.14)':'var(--bg4)';
+  const chipBg = term.tone==='pos'?'rgba(25,195,125,.13)':term.tone==='cau'?'rgba(229,72,77,.13)':term.tone==='neu'?'rgba(43,179,184,.14)':term.tone==='mid'?'rgba(43,179,184,.12)':'var(--bg4)';
   const conv = b.conviction ? b.conviction.tier : 'medium';
   const quant = v.quant!=null ? `كوانت ${arNum(v.quant)}` : '';
   // expand panel
@@ -3172,7 +3174,7 @@ function renderGradeRow(sym, v, key){
   const convLine = `<div class="convline">الثقة: ${convT.label}${b.conviction&&b.conviction.days!=null?` · ${arNum(b.conviction.days)} يوم`:''}${b.conviction&&b.conviction.analysts!=null?` · ${arNum(b.conviction.analysts)} محلل`:''}</div>`;
   return `<div class="row" data-sym="${sym}">
     <div class="row-top">
-      <span class="score" style="color:${col}">${arNum(s)}<span class="max">/١٠٠</span></span>
+      <span class="score" style="color:${col}">${arNum(s)}<span class="max">/100</span></span>
       <span class="sym">${sym}${badge}</span>
       <span class="arch">
         <span class="conv" style="background:${convColor(conv)}" title="الثقة: ${convT.label}"></span>
