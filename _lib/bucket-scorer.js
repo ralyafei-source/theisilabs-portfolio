@@ -1,515 +1,395 @@
-// api/sa-analyze.js — THEISI SA PRO Intelligence Engine FINAL
-// Dashboard sends: saveOnly (inputs only) OR {inputs} for full analysis
-// GitHub save happens in saveOnly call. Main call is Claude-only = fast.
+// ============================================================================
+// EDIT_3_bucket_scorer.js  —  THEISI bucket scorer
+// v1.1 · 2026-06-20 · binding-constraint fix (null when no grade <= C+)
+// v1.0 · 2026-06-20 · grade-routing rebuild to SCORER_EXPLAINER_LOGIC_SPEC §7
+// ============================================================================
+// STATUS: FINAL — REVISED to THEISI_SCORER_EXPLAINER_LOGIC_SPEC_v1 §7 and
+//         VALIDATED on the real 81-stock store (Portfolio_1_2026-06-19), Session 33.
+//         Seven controls (MXL, SEZL, AAPL, AUPH, MU, NEM; BRBR not in portfolio)
+//         all resolve correctly; distortion fires on AUPH only; 18 names resolve
+//         to archetype=null by design (no sharp pattern — they still carry MID/LONG
+//         score + grades + Quant + conviction; the explainer narrates raw grades).
+//
+// WHAT CHANGED vs the pre-spec composite/blend version:
+//   • SHORT — UNCHANGED. Still the one computed 0–100 timing score (SA has no
+//     timing signal). Same inputs, same weights, same trend-conditional RSI.
+//   • MID/LONG — the opaque composite + Quant blend is REMOVED. Each is now a
+//     transparent grade-routed rank derived ONLY from routed SA grades, then
+//     adjusted by the honesty GATES so the RANK ORDER is honest:
+//         MID  routes  Valuation + Growth + EPS-Revisions
+//         LONG routes  Profitability + Growth + Valuation  (+ Quant as a tag)
+//   • Quant no longer BLENDS into any horizon (killed the MXL long 45->81
+//     inflation). Quant is a visible TAG only.
+//   • GATES added: conviction gate (Days-at-Rating + #analysts), trap cap
+//     (SA disqualification cap), distortion penalty (one-time-item sniff test).
+//   • ARCHETYPES added: value_trap > momentum_trap(decay) > quality_premium >
+//     hidden_quality. quality_premium is LABELED, never penalized.
+//   • `owned` is filter metadata ONLY — it never enters any rank.
+//
+// KEPT: ETF exclusion, <60%-coverage skip, the SHORT math, all helpers,
+//       per-symbol structure. node --check passes.
+//
+// Output per stock:
+//   { owned, quant, grades:{V,G,P,M,R},
+//     short:{score, coverage},
+//     mid:  {score, grades, archetype, conviction, flags},
+//     long: {score, grades, archetype, conviction, flags, bindingConstraint} }
+//   NOTE: mid/long `score` is an ABSOLUTE grade-composite (0..100) adjusted by the
+//   gates — NOT a cross-sectional percentile. Stable regardless of batch composition.
+//
+// Validated against spec §6: MXL, BRBR, SEZL, AAPL, AUPH.
+// ============================================================================
 
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-const GITHUB_TOKEN  = process.env.GITHUB_TOKEN;
-const REPO          = 'ralyafei-source/theisilabs-portfolio';
+// ---- helpers ----------------------------------------------------------------
+const _num = v => {
+  if (v === undefined || v === null) return null;
+  if (typeof v === 'number') return isFinite(v) ? v : null;
+  const s = String(v).trim();
+  if (s === '' || s === '-' || s === 'NM' || s === 'N/A') return null;
+  const n = Number(s);
+  return isFinite(n) ? n : null;
+};
+// letter grade -> 0..1 (A+ = 1.0 ... F = 0)
+const _GRADE = { 'A+':1.0,'A':0.93,'A-':0.87,'B+':0.80,'B':0.73,'B-':0.67,
+                 'C+':0.60,'C':0.53,'C-':0.47,'D+':0.40,'D':0.33,'D-':0.27,'F':0.0 };
+const _grade = v => {
+  if (v === undefined || v === null) return null;
+  const s = String(v).trim().toUpperCase();
+  return _GRADE[s] !== undefined ? _GRADE[s] : null;
+};
+// keep the original letter label (for tags) alongside the numeric value
+const _gradeLabel = v => {
+  if (v === undefined || v === null) return null;
+  const s = String(v).trim().toUpperCase();
+  return _GRADE[s] !== undefined ? s : null;
+};
+// rank a single letter grade on the same A+..F ladder used for cap tests.
+// returns an integer 0 (F) .. 12 (A+); null if not a grade.
+const _GRADE_RANK = { 'F':0,'D-':1,'D':2,'D+':3,'C-':4,'C':5,'C+':6,
+                      'B-':7,'B':8,'B+':9,'A-':10,'A':11,'A+':12 };
+const _gradeRank = v => {
+  const lab = _gradeLabel(v);
+  return lab === null ? null : _GRADE_RANK[lab];
+};
 
-// Bucket scorer lives in api/_lib/ — the leading underscore means Vercel does NOT
-// turn it into a Serverless Function (utility-file rule), so it does not count
-// toward the 12-function limit. It is imported here, not routed.
-const { computeBuckets } = require('./_lib/bucket-scorer.js');
-// Deep-read prompt builder (non-routed _lib — see scorer note above).
-const { buildDeepReadPrompt } = require('./_lib/deep-read.js');
-
-function buildPrompt(inputs) {
-  const cashUSD = inputs.cashUSD || 0;
-  const cashStr = cashUSD > 0 ? '$' + Number(cashUSD).toLocaleString() + ' / ' + Number(inputs.cash||0).toLocaleString() + ' ' + (inputs.currency||'AED') : 'غير محدد';
-
-  // REAL portfolio from the store (no hardcoding). Value total computed in code.
-  const rows = Array.isArray(inputs.excelRows) ? inputs.excelRows : [];
-  let totalVal = 0;
-  rows.forEach(r => { const v = Number(r.Value || r.value || 0); if(!isNaN(v)) totalVal += v; });
-  const totalStr = totalVal > 0 ? '$' + Math.round(totalVal).toLocaleString() : 'غير متوفر';
-
-  // per-stock grade lines so the AI never writes N/A for a stock we own
-  const gradeLines = rows.filter(r => r.symbol || r.sym).map(r => {
-    const g = r.grades || {};
-    const sym = (r.symbol || r.sym);
-    return `${sym}: Quant ${r.quant ?? r['Quant Rating'] ?? '—'} | V:${g.V ?? r['Valuation Grade'] ?? '—'} G:${g.G ?? r['Growth Grade'] ?? '—'} P:${g.P ?? r['Profitability Grade'] ?? '—'} M:${g.M ?? r['Momentum Grade'] ?? '—'} R:${g.R ?? r['EPS Revision Grade'] ?? '—'} | shares ${r.shares ?? '—'} cost ${r.cost ?? '—'} value ${r.Value ?? r.value ?? '—'}`;
-  }).join('\n');
-
-  const portfolioBlock =
-`القيمة الإجمالية للمحفظة (محسوبة من الملف — استخدمها كما هي، لا تعِد حسابها ولا تخمّن غيرها): ${totalStr}
-عدد الأسهم: ${rows.length}. الكاش: ${cashStr}.
-
-درجات كل سهم تملكه (استخدم هذه الدرجات حرفياً في warnings وstrong_positions — لا تكتب N/A لسهم موجود هنا):
-${gradeLines}`;
-
-  const parts = [
-    inputs.updownMine   ? `[UPGRADES_MINE]\n${inputs.updownMine.slice(0,4000)}`  : '',
-    inputs.updownMarket ? `[UPGRADES_MARKET]\n${inputs.updownMarket.slice(0,3000)}` : '',
-    inputs.pqp          ? `[PRO_QUANT_30]\n${inputs.pqp.slice(0,6000)}`         : '',
-    inputs.topRated     ? `[TOP_RATED_38]\n${inputs.topRated.slice(0,6000)}`    : '',
-    inputs.alphaPicks   ? `[ALPHA_PICKS]\n${inputs.alphaPicks.slice(0,3000)}`    : '',
-    inputs.exclusive    ? `[EXCLUSIVE]\n${inputs.exclusive.slice(0,3000)}`        : '',
-    inputs.stockDetail  ? `[STOCK_DETAIL]\n${inputs.stockDetail.slice(0,3000)}`  : ''
-  ].filter(Boolean).join('\n\n');
-
-  return `محلل استثماري — مستثمر إماراتي لا ضريبة. ${portfolioBlock}
-
-${parts}
-
-قاعدة التحذيرات: ضع في "warnings" فقط الأسهم التي تملكها والتي ظهرت في بيانات [UPGRADES_MINE] أو [UPGRADES_MARKET] بنوع تغيير "Downgrade". لكل تحذير، اذكر في "reason" سبب التحذير بدقة: الجهة التي خفّضت التصنيف (Wall St. أو SA Analysts أو Quant)، والتصنيف الجديد مقابل السابق، والتاريخ. إذا خُفّض السهم من أكثر من جهة، اذكرها جميعاً كدليل أقوى. لا تضع تحذيراً لأي سهم ليس له تخفيض تصنيف فعلي في هذه البيانات.
-
-قاعدة التقييم الكمي (Quant): لكل سهم تذكره، ابحث عنه في بيانات [PRO_QUANT_30] و[TOP_RATED_38] و[ALPHA_PICKS] وأي قائمة Stocks by Quant. إذا وُجد السهم، استخرج درجة Quant من النمط "Rating: <التصنيف><الرقم>" مثل "Strong Buy4.99" → الدرجة هي 4.99 (مقياس 1 إلى 5)، وضعها في grades.Quant. إذا لم يظهر السهم في أيٍّ من هذه القوائم، اترك Quant كـ "N/A" — لا تخمّن.
-
-قاعدة درجات SA: استخدم درجات V/G/P/M/R وQuant من بيانات المحفظة المرفوعة لكل سهم تملكه (موجودة في الملف). لا تكتب N/A لسهم تملكه وله درجات في الملف.
-
-قواعد صارمة للأرقام:
-- portfolio_value = القيمة المعطاة أعلاه حرفياً (${totalStr}). ممنوع اختراع أو تعديل هذا الرقم.
-- ممنوع منعاً باتاً ذكر أي نسبة أداء أسبوعي (مثل "+4.75%") أو عبارة "هذا الأسبوع" — لا تتوفر بيانات أسبوعية. اترك weekly_performance يصف الوضع نوعياً دون أي رقم اختُرع.
-- ممنوع ذكر "بقيادة سهم X" إلا إذا كان مبنياً على وزن المركز الفعلي من البيانات.
-- لكل سهم في warnings/strong_positions، انسخ درجات Quant/V/G/P/M/R من قائمة الدرجات أعلاه. ممنوع N/A لأي سهم موجود في القائمة.
-
-أعد JSON صارم فقط — لا نص قبله ولا بعده أبداً:
-{"executive_summary":{"portfolio_value":"${totalStr}","weekly_performance":"جملة وصفية نوعية بدون أي نسبة مئوية","biggest_risk_symbol":"SYM","best_opportunity":"SYM","summary_text":"3 جمل: أهم خطر + أهم فرصة + الوضع العام","weekly_decision":"قرار واحد محدد وقابل للتنفيذ"},"warnings":[{"symbol":"SYM","rating":"Strong Sell","badges":["Short Ideas ×N"],"weight":"X%","gl":"+X%","grades":{"Quant":"X.XX","Growth":"X","Momentum":"X","EPS":"X"},"sources":"مصدر","reason":"سبب التحذير: من خفّض التصنيف، من أي تصنيف إلى أي تصنيف، والتاريخ","action":"إجراء محدد بالأرقام"}],"strong_positions":[{"symbol":"SYM","rating":"Strong Buy","badges":["PRO Quant"],"weight":"X%","gl":"+X%","grades":{"Quant":"X.XX"},"sources":"مصادر","reason":"لماذا قوي","action":"احتفظ أو زد"}],"cash_decisions":{"total_available":"${cashStr}","allocations":[{"symbol":"SYM","is_new":true,"amount_usd":"$XX,000","pct_of_cash":"XX%","reason":"سبب التأكيد"}]},"new_opportunities":[{"symbol":"SYM","rating":"Strong Buy","badges":["Top Rated #N"],"grades":{"Quant":"X.XX"},"sources":"N مصادر","reason":"لماذا مناسب","action":"اشترِ"}],"conflicts":[{"symbol":"SYM","sell_sources":"مصدر البيع","buy_sources":"مصدر الشراء","recommendation":"الترجيح"}]}
-
-مهم: أعد JSON كاملاً وصالحاً فقط — بدون أي علامات \`\`\` وبدون نص قبله أو بعده. تأكد من إغلاق كل الأقواس.`;
+// ETF / fund detection: no letter grades AND sector is an index/fund label
+const _ETF_SECTORS = new Set(['U.S. Equity','Sector Equity','Alternative','Fixed Income','International Equity','Commodity']);
+function _isETF(s) {
+  const d = (s.sheets && s.sheets.dashboard) || s;
+  const noGrades = _grade(d['Valuation Grade']) === null && _grade(d['Growth Grade']) === null
+                && _grade(d['Profitability Grade']) === null;
+  const sec = String(d['Sector'] || '').trim();
+  return noGrades && (_ETF_SECTORS.has(sec) || /equity|fund|alternative/i.test(sec));
 }
 
-module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+// cross-sectional percentile rank of value within arr (ignoring nulls).
+// returns 0..1 (1 = highest raw). ties share average rank.
+function _percentile(arr, value) {
+  const xs = arr.filter(v => v !== null);
+  if (!xs.length || value === null) return null;
+  if (xs.length === 1) return 0.5;
+  let below = 0, equal = 0;
+  for (const x of xs) { if (x < value) below++; else if (x === value) equal++; }
+  return (below + 0.5 * equal) / xs.length;
+}
 
-  const { inputs, prompt, saveOnly } = req.body || {};
-  if (!ANTHROPIC_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set' });
+// sweet-spot quality: 1 at ideal, linear decay to 0 at `width` away.
+const _sweet = (v, ideal, width) => v === null ? null : Math.max(0, 1 - Math.abs(v - ideal) / width);
 
-  // ── saveOnly: just save inputs, return fast ────────────────────────────────
-  if (saveOnly && inputs && GITHUB_TOKEN) {
-    try {
-      const date = new Date().toISOString().slice(0,10);
-      const fp = `data/sa-inputs-${date}.json`;
-      const fc = JSON.stringify({ date, inputs, savedAt: new Date().toISOString() }, null, 2);
-      let sha = null;
-      try {
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-          headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
-        });
-        if (ex.ok) sha = (await ex.json()).sha;
-      } catch {}
-      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
-        body: JSON.stringify({ message: `SA inputs ${date}`, content: Buffer.from(fc).toString('base64'), ...(sha ? { sha } : {}) })
-      });
-      return res.status(200).json({ saved: sr.ok ? fp : false });
-    } catch(e) {
-      return res.status(200).json({ saved: false, error: e.message });
+// trend-conditional RSI quality (Scoring Standard §3.3)
+function _rsiQuality(rsi, vs50, vs200) {
+  if (rsi === null) return null;
+  const up = (vs50 !== null && vs50 > 0) && (vs200 !== null && vs200 > 0);
+  const ideal = up ? 55 : 38;
+  return Math.max(0, 1 - Math.abs(rsi - ideal) / 25);
+}
+
+// weighted mean over present (non-null) components, renormalizing weights
+function _wmean(pairs) { // pairs: [ [score, weight], ... ]
+  let sw = 0, s = 0, present = 0, total = 0;
+  for (const [sc, w] of pairs) { total += w; if (sc !== null) { s += sc * w; sw += w; present++; } }
+  if (sw === 0) return { score: null, coverage: 0 };
+  return { score: s / sw, coverage: total ? (sw / total) : 0, present };
+}
+
+// ============================================================================
+// GATE LOGIC (spec §1-§4) — these qualify the RANK; they never invent a number.
+// ============================================================================
+
+// --- §2 Conviction gate: Days-at-Rating + # analysts -> tier + rank multiplier.
+// Conviction does NOT move a rank up; it only discounts low-trust (provisional)
+// names so a fragile score never ranks silently beside a settled one.
+function _conviction(days, analysts) {
+  const d = _num(days), a = _num(analysts);
+  if (d !== null && d >= 180 && a !== null && a >= 10)
+    return { tier: 'high',   mult: 1.00, days: d, analysts: a };
+  if ((d !== null && d < 14) || (a !== null && a <= 3))
+    return { tier: 'provisional', mult: 0.80, days: d, analysts: a };
+  if (d !== null && d >= 30 && a !== null && a >= 5)
+    return { tier: 'medium', mult: 1.00, days: d, analysts: a };
+  // partial data -> treat as medium/normal but report what we have
+  return { tier: 'medium', mult: 1.00, days: d, analysts: a };
+}
+
+// --- §1.2 / §2.1 SA disqualification cap.
+// Capped if: D+ or worse on Growth, Momentum, OR EPS-Revisions
+//        OR  D- or worse on Valuation or Profitability.
+// Returns the list of grades that triggered the cap (empty = not capped).
+function _capTriggers(g) { // g: {V,G,P,M,R} letter labels
+  const t = [];
+  const leD = name => { const r = _gradeRank(g[name]); return r !== null && r <= _GRADE_RANK['D+']; };   // D+ or worse
+  const leDminus = name => { const r = _gradeRank(g[name]); return r !== null && r <= _GRADE_RANK['D-']; }; // D- or worse
+  if (leD('G')) t.push('Growth');
+  if (leD('M')) t.push('Momentum');
+  if (leD('R')) t.push('EPS Revisions');
+  if (leDminus('V')) t.push('Valuation');
+  if (leDminus('P')) t.push('Profitability');
+  return t;
+}
+
+// --- §3 distortion sniff-test: are the grades built on a one-time item?
+// Trigger: net margin implausibly POSITIVE (~100%, i.e. a one-time gain inflating
+//          profitability), OR EPS Growth FWD extreme (>150%), WHILE P/E FWD and
+//          PEG FWD are both blank.
+// NOTE: net-margin leg is NOT abs() — a huge NEGATIVE margin is a genuinely
+// unprofitable business already captured by the Profitability grade; discounting
+// it here would double-penalize (BTBT/PONY false-positive fix, Session 33).
+function _distorted(d) {
+  const nim = _num(d['Net Income Margin']);
+  const epsg = _num(d['EPS Growth (FWD)']);
+  const peFwd = _num(d['P/E FWD']);
+  const pegFwd = _num(d['PEG FWD']);
+  const blanks = (peFwd === null && pegFwd === null);
+  // positive-only margin distortion (accepts percent 95+ or fraction ~1.0)
+  const nimWildPct  = nim !== null && nim >= 95;                          // 95%+ as percent
+  const nimWildFrac = nim !== null && nim >= 0.95 && nim <= 1.5;          // ~1.0 as fraction
+  // EPS growth distortion: only an implausibly LARGE positive forward swing on a
+  // blank multiple is suspect. NOT abs() — a normal % decline (e.g. -30) is not a
+  // distortion. The fractional band starts at 3x to avoid misreading percent-scale
+  // declines like -30 as "30x growth" (BTBT/PONY false-positive fix).
+  const epsWildPct  = epsg !== null && epsg >= 150;                       // 150%+ as percent
+  const epsWildFrac = epsg !== null && epsg >= 3 && epsg <= 50;           // 3x+ as fraction
+  return blanks && (nimWildPct || nimWildFrac || epsWildPct || epsWildFrac);
+}
+
+// --- §1 archetype detection from the 5 grade labels.
+// Precedence: value_trap > momentum_trap(decay) > quality_premium > hidden_quality.
+// `distorted` (§3) gates the strong-quality branch: a strong-but-distorted name is
+// labeled `unconfirmed`, NOT hidden_quality — we don't imply a one-off is "overlooked quality".
+// `shortScore` (the computed SHORT timing 0..100, or null) splits §1.4:
+//   strong Momentum + poor SHORT timing => extended_candidate ("loved, ran too far, wait")
+//   weak/cool Momentum                  => genuinely out of favor (the NEM hidden-quality case)
+function _archetype(g, distorted, shortScore) {
+  const r = name => _gradeRank(g[name]);
+  const ge = (name, lab) => { const x = r(name); return x !== null && x >= _GRADE_RANK[lab]; };
+  const le = (name, lab) => { const x = r(name); return x !== null && x <= _GRADE_RANK[lab]; };
+
+  const valStrong  = ge('V','B-');   // optically cheap for sector
+  const profElite  = ge('P','A-');    // A-range margins (AAPL/NEM)
+  const profStrong = ge('P','B');     // strong margins incl. B+ fortresses (MU)
+  const profWeak   = le('P','D+');
+  const growStrong = ge('G','A-');
+  const growSolid  = ge('G','B-');    // solid (not necessarily A-range) — NEM has Growth B
+  const growWeak   = le('G','C');     // modest/weak
+  const growFail   = le('G','D+');
+  const revStrong  = ge('R','A-');
+  const revFail    = le('R','D+');
+  const momStrong  = ge('M','B+');    // "hot/leading" = B+ or better (real-data boundary: B and below = cool/average)
+  const momFail    = le('M','D+');
+  const valWeak    = le('V','D');     // expensive for sector
+  const extended   = shortScore !== null && shortScore <= 40;  // poor entry timing right now
+
+  // 1.2 value trap — cheap but Growth and/or Revisions failing (often Mom F)
+  if (valStrong && (growFail || revFail)) {
+    return { name: 'value_trap',
+      note: 'Optically cheap for its sector, but growth and/or estimate revisions are failing — the discount is a warning, not a gift.' };
+  }
+  // 1.1 momentum trap — hot momentum/growth but Profitability weak
+  if (profWeak && (growStrong || revStrong)) {
+    if (growStrong && revStrong) {   // trough / pre-inflection -> growth-bet branch
+      return { name: 'momentum_trap', branch: 'growth_bet',
+        note: 'Weak margins alongside strong growth + rising estimates — reads as early-ramp / pre-inflection, not a bad business. A high-conviction growth bet; watch execution.' };
     }
+    return { name: 'momentum_trap', branch: 'decay',
+      note: 'The strength is price momentum, not business quality — a trade, not a hold.' };
   }
-
-  // ── loadInputs: today's inputs, or fall back to most recent prior day ──
-  if (req.body && req.body.loadInputs && GITHUB_TOKEN) {
-    try {
-      const today = new Date().toISOString().slice(0,10);
-      const readDay = async (date) => {
-        const fp = `data/sa-inputs-${date}.json`;
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-          headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
-        });
-        if (!ex.ok) return null;
-        const f = await ex.json();
-        const decoded = JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
-        return { inputs: decoded.inputs || null, savedAt: decoded.savedAt || null, date };
-      };
-      // try today first
-      let result = await readDay(today);
-      if (result && result.inputs) {
-        return res.status(200).json({ ...result, isCarryForward: false });
-      }
-      // fall back: list sa-inputs-*.json, pick most recent date < today
-      const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, {
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
-      });
-      if (!dir.ok) return res.status(200).json({ inputs: null });
-      const files = await dir.json();
-      const dates = (Array.isArray(files) ? files : [])
-        .map(f => (f.name||'').match(/^sa-inputs-(\d{4}-\d{2}-\d{2})\.json$/))
-        .filter(Boolean).map(m => m[1])
-        .filter(dt => dt < today)
-        .sort().reverse();
-      if (!dates.length) return res.status(200).json({ inputs: null });
-      const prior = await readDay(dates[0]);
-      if (prior && prior.inputs) {
-        return res.status(200).json({ ...prior, isCarryForward: true });
-      }
-      return res.status(200).json({ inputs: null });
-    } catch(e) {
-      return res.status(200).json({ inputs: null, error: e.message });
+  // 1.3 quality premium — ELITE business, fully/over-priced, slow. NOT a trap.
+  if (profElite && valWeak && growWeak) {
+    return { name: 'quality_premium',
+      note: 'Excellent business priced for perfection with slow growth — you pay for safety and buybacks, not upside. Best entry on multiple compression. Not a negative flag.' };
+  }
+  // 1.4 hidden quality — split by Momentum direction + SHORT timing (spec §1.4).
+  // A name qualifies as a quality situation if Profitability is strong (B+/A-range)
+  // AND there is no failing leg (Growth at least solid, nothing capping it).
+  // The split is EXHAUSTIVE — a qualifying name never returns null:
+  //   - distorted            -> unconfirmed (one-time item, not real quality)
+  //   - hot + extended       -> extended_candidate (loved, ran too far, low SHORT is timing)
+  //   - not hot (cool/avg)   -> out_of_favor (quality under-loved; the NEM case)
+  //   - hot + not extended   -> quality_intact (strong all round, entry is fine)
+  const noFailingLeg = !growFail && !revFail && !momFail && !valWeak;
+  if (profStrong && growSolid && noFailingLeg) {
+    if (distorted) return { name: 'unconfirmed',
+      note: 'Strong grades, but they rest on what appears to be a one-time item (see distortion caveat) — unconfirmed until recurring earnings show up.' };
+    // "hot" = strong medium-term price momentum (M >= B). Not hot => under-loved.
+    if (momStrong) {
+      if (extended) return { name: 'hidden_quality', branch: 'extended_candidate',
+        note: 'Great business that ran too far, too fast — the low SHORT score is TIMING, not quality. Wait for a pullback.' };
+      return { name: 'hidden_quality', branch: 'quality_intact',
+        note: 'Strong profitability with no failing leg and momentum still constructive — quality is real; judge entry on SHORT timing.' };
     }
+    // momentum is merely cool/average (C+ down to just-below-B) — a quality name the
+    // market isn't chasing. Under-loved / overlooked. (NEM: P A+, G B, M B-ish.)
+    return { name: 'hidden_quality', branch: 'out_of_favor',
+      note: 'Quality is strong but the stock is not being chased on price momentum — good business, overlooked. SA Quant tends to under-rate it.' };
   }
+  // strong growth + weak profitability already handled above (momentum_trap); a strong-Growth
+  // name that is also distorted but not Prof-strong falls through to unconfirmed:
+  if (growStrong && distorted) {
+    return { name: 'unconfirmed',
+      note: 'Growth grade is strong but rests on what appears to be a one-time item (see distortion caveat) — unconfirmed.' };
+  }
+  return { name: null, note: null };
+}
 
-  // ── saveResult: store analysis result, keep last 3 per day ───────
-  if (req.body && req.body.saveResult && req.body.result && GITHUB_TOKEN) {
-    try {
-      const date = new Date().toISOString().slice(0,10);
-      const fp = `data/sa-analysis-${date}.json`;
-      let runs = [], sha = null;
-      try {
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-          headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
-        });
-        if (ex.ok) {
-          const f = await ex.json(); sha = f.sha;
-          const prev = JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
-          runs = Array.isArray(prev.runs) ? prev.runs : [];
-        }
-      } catch {}
-      const version = (runs.length ? (runs[runs.length-1].version || runs.length) : 0) + 1;
-      runs.push({ version, savedAt: new Date().toISOString(), result: req.body.result });
-      if (runs.length > 3) runs = runs.slice(runs.length - 3);
-      const body = JSON.stringify({ date, runs }, null, 2);
-      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
-        body: JSON.stringify({ message: `SA analysis ${date} v${version}`, content: Buffer.from(body).toString('base64'), ...(sha?{sha}:{}) })
-      });
-      return res.status(200).json({ saved: sr.ok, version });
-    } catch(e) {
-      return res.status(200).json({ saved: false, error: e.message });
+// --- §4 binding constraint: the single weakest grade gating an otherwise strong name.
+// --- §4 binding constraint: the single weakest grade gating an otherwise strong name.
+// Only meaningful when the weakest grade is genuinely weak (<= C+). When every grade
+// is strong (no weak leg), return null — the tab/explainer renders "بلا نقطة ضعف".
+function _bindingConstraint(g) {
+  const names = { V:'Valuation', G:'Growth', P:'Profitability', M:'Momentum', R:'EPS Revisions' };
+  let worst = null, worstRank = Infinity;
+  for (const k of ['V','G','P','M','R']) {
+    const rk = _gradeRank(g[k]);
+    if (rk !== null && rk < worstRank) { worstRank = rk; worst = k; }
+  }
+  if (worst === null) return null;
+  if (worstRank > _GRADE_RANK['C+']) return null;   // no genuinely weak leg -> no binding constraint
+  return { grade: names[worst], label: _gradeLabel(g[worst]),
+    watch: `Held back by ${names[worst]} (${_gradeLabel(g[worst])}). The read improves if ${names[worst]} lifts.` };
+}
+
+// ---- the scorer -------------------------------------------------------------
+function computeBuckets(allStocks) {
+  // exclude ETFs entirely
+  const stocks = allStocks.filter(s => !_isETF(s));
+  const D = s => (s.sheets && s.sheets.dashboard) || s;
+  const SH = s => (s.sheets && s.sheets.short) || {};
+
+  // ---- precompute cross-sectional inputs for SHORT (UNCHANGED) ----
+  const shVs10  = stocks.map(s => _sweet(_num(SH(s)['Last Price Vs. 10D SMA']), 0.0, 0.10));
+  const shRSI   = stocks.map(s => _rsiQuality(_num(D(s)['RSI']), _num(D(s)['Last Price Vs. 50D SMA']), _num(D(s)['Last Price Vs. 200D SMA'])));
+  const shVs50  = stocks.map(s => _sweet(_num(D(s)['Last Price Vs. 50D SMA']), 0.02, 0.15));
+  const shVol   = stocks.map(s => _num(SH(s)['Week Vol / Shares']));
+  const sh52    = stocks.map(s => {
+    const p = _num(D(s)['Price']), hi = _num(D(s)['52W High']);
+    if (p === null || hi === null || hi === 0) return null;
+    return _sweet(p / hi, 0.85, 0.45);
+  });
+
+  // MID grade inputs (routed): Valuation + Growth + EPS-Revisions
+  const mV = stocks.map(s => _grade(D(s)['Valuation Grade']));
+  const mG = stocks.map(s => _grade(D(s)['Growth Grade']));
+  const mR = stocks.map(s => _grade(D(s)['EPS Revision Grade']));
+
+  // LONG grade inputs (routed): Profitability + Growth + Valuation (Quant is a tag)
+  const lP = stocks.map(s => _grade(D(s)['Profitability Grade']));
+  const lG = stocks.map(s => _grade(D(s)['Growth Grade']));
+  const lV = stocks.map(s => _grade(D(s)['Valuation Grade']));
+
+  // percentile rankers (SHORT only — MID/LONG use the absolute grade ladder so
+  // a capped/weak name doesn't get rank-inflated just by being in a weak field)
+  const up = arr => arr.map(v => _percentile(arr, v));
+  const SHv10=up(shVs10), SHrsi=up(shRSI), SHv50=up(shVs50), SHvol=up(shVol), SH52=up(sh52);
+
+  const MIN_COV = 0.60;
+  const out = {};
+
+  stocks.forEach((s, i) => {
+    const d = D(s);
+    const sym = d['symbol'] || s.symbol || s.sym;
+
+    // grade label tags (always shown — the breakdown is the truth)
+    const grades = {
+      V: _gradeLabel(d['Valuation Grade']),
+      G: _gradeLabel(d['Growth Grade']),
+      P: _gradeLabel(d['Profitability Grade']),
+      M: _gradeLabel(d['Momentum Grade']),
+      R: _gradeLabel(d['EPS Revision Grade']),
+    };
+
+    // ---- SHORT — computed timing score (UNCHANGED) ----
+    const short = _wmean([
+      [SHv10[i],0.30],[SHrsi[i],0.25],[SHv50[i],0.20],[SH52[i],0.15],[SHvol[i],0.10]
+    ]);
+    const short_p = (short.score===null || short.coverage < MIN_COV)
+      ? { score:null, coverage:Math.round(short.coverage*100) }
+      : { score:Math.round(short.score*100), coverage:Math.round(short.coverage*100) };
+
+    // ---- shared gate inputs ----
+    const conv = _conviction(d['Days at Rating'] ?? d['Days At Rating'], d['# SA Analysts Covering'] ?? d['Analysts']);
+    const caps = _capTriggers(grades);
+    const capped = caps.length > 0;
+    const distorted = _distorted(d);
+    const arch = _archetype(grades, distorted, short_p.score);
+    const quant = _num(d['Quant Rating']); // tag only — never blended
+
+    // ---- MID — grade-routed rank (Valuation + Growth + Revisions) ----
+    const midBase = _wmean([[mV[i],1],[mG[i],1],[mR[i],1]]);
+    let mid;
+    if (midBase.score === null || midBase.coverage < MIN_COV) {
+      mid = { score: null, coverage: Math.round(midBase.coverage*100), grades,
+              archetype: arch.name, conviction: conv, flags: [] };
+    } else {
+      let r = midBase.score;               // 0..1
+      const flags = [];
+      // quality_premium is NOT a trap (spec §1.3) — label only, never cap-suppress.
+      if (capped && arch.name !== 'quality_premium') { r = Math.min(r, 0.40); flags.push({ type:'capped', by: caps }); }  // suppress from MID top
+      if (conv.tier === 'provisional') { r *= conv.mult; flags.push({ type:'provisional' }); }
+      if (distorted) { r *= 0.85; flags.push({ type:'distortion' }); }
+      if (arch.name === 'value_trap') flags.push({ type:'value_trap' });
+      mid = { score: Math.round(r*100), coverage: Math.round(midBase.coverage*100),
+              grades, archetype: arch.name, conviction: conv, flags };
     }
-  }
 
-  // ── loadResult: return a result (optionally a specific date/version) ──
-  if (req.body && req.body.loadResult && GITHUB_TOKEN) {
-    try {
-      const date = (req.body.date && /^\d{4}-\d{2}-\d{2}$/.test(req.body.date))
-        ? req.body.date : new Date().toISOString().slice(0,10);
-      const fp = `data/sa-analysis-${date}.json`;
-      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
-      });
-      if (!ex.ok) return res.status(200).json({ result: null });
-      const f = await ex.json();
-      const data = JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
-      const runs = Array.isArray(data.runs) ? data.runs : [];
-      if (!runs.length) return res.status(200).json({ result: null });
-      let run = runs[runs.length-1];
-      if (req.body.version != null) {
-        const found = runs.find(r => r.version === req.body.version);
-        if (found) run = found;
-      }
-      return res.status(200).json({
-        result: run.result, savedAt: run.savedAt, version: run.version,
-        count: runs.length, versions: runs.map(r => ({ version: r.version, savedAt: r.savedAt })), date
-      });
-    } catch(e) {
-      return res.status(200).json({ result: null, error: e.message });
+    // ---- LONG — grade-routed rank (Profitability + Growth + Valuation) ----
+    const longBase = _wmean([[lP[i],1],[lG[i],1],[lV[i],1]]);
+    let long;
+    if (longBase.score === null || longBase.coverage < MIN_COV) {
+      long = { score: null, coverage: Math.round(longBase.coverage*100), grades,
+               archetype: arch.name, conviction: conv, flags: [],
+               bindingConstraint: _bindingConstraint(grades) };
+    } else {
+      let r = longBase.score;
+      const flags = [];
+      // quality_premium is NOT a trap (spec §1.3) — label only, never cap-suppress.
+      if (capped && arch.name !== 'quality_premium') { r = Math.min(r, 0.45); flags.push({ type:'capped', by: caps }); }  // not a real compounder
+      if (conv.tier === 'provisional') { r *= conv.mult; flags.push({ type:'provisional' }); } // the AUPH gate
+      if (distorted) { r *= 0.85; flags.push({ type:'distortion' }); }                     // don't trust A+ on a one-off
+      if (arch.name === 'quality_premium') flags.push({ type:'quality_premium' });          // LABEL ONLY (§1.3)
+      if (arch.name === 'unconfirmed')     flags.push({ type:'unconfirmed' });
+      if (arch.name === 'momentum_trap')   flags.push({ type:'momentum_trap', branch: arch.branch });
+      if (arch.name === 'hidden_quality')  flags.push({ type:'hidden_quality', branch: arch.branch });
+      long = { score: Math.round(r*100), coverage: Math.round(longBase.coverage*100),
+               grades, archetype: arch.name, conviction: conv, flags,
+               bindingConstraint: _bindingConstraint(grades) };
     }
-  }
 
-  // ── savePortfolio: parse + save SA portfolio Excel data ──────────
-  if (req.body && req.body.savePortfolio && req.body.rows && GITHUB_TOKEN) {
-    try {
-      const date = new Date().toISOString().slice(0,10);
-      const fp = `data/sa-portfolio-${date}.json`;
-      const raw = req.body.rows;
-      const GRADE_MAP = { 'A+':4.3,'A':4.0,'A-':3.7,'B+':3.3,'B':3.0,'B-':2.7,'C+':2.3,'C':2.0,'C-':1.7,'D+':1.3,'D':1.0,'D-':0.7,'F':0 };
-      const labelOf = q => q >= 4.5 ? 'Strong Buy' : q >= 3.5 ? 'Buy' : q >= 2.5 ? 'Hold' : q >= 1.5 ? 'Sell' : 'Strong Sell';
-      const stocks = [], etfs = [];
-      const numOrNull = v => (v===undefined||v===null||v==='') ? null : (isNaN(Number(v))?v:Number(v));
-      const pick = (r, ...keys) => { for(const k of keys){ if(r[k]!==undefined&&r[k]!=='') return r[k]; } return null; };
-      for (const r of raw) {
-        const sym = r.symbol || r.sym; if(!sym) continue;
-        const sheets = r.__sheets || {};
-        const full = {}; Object.keys(r).forEach(k=>{ if(k!=='__sheets') full[k]=r[k]; });
-        full.sym = String(sym).toUpperCase();
-        full.quant       = numOrNull(pick(r,'Quant Rating','quant'));
-        full.grades = {
-          V: pick(r,'Valuation Grade','valuation','V'),
-          G: pick(r,'Growth Grade','growth','G'),
-          P: pick(r,'Profitability Grade','profitability','P'),
-          M: pick(r,'Momentum Grade','momentum','M'),
-          R: pick(r,'EPS Revision Grade','EPS Revisions Grade','eps_revision','R')
-        };
-        full.shares      = numOrNull(pick(r,'Shares','shares'));
-        full.cost        = numOrNull(pick(r,'Cost','Avg Cost','cost'));
-        full.value       = numOrNull(pick(r,'Value','Market Value','value'));
-        full.weight      = pick(r,'Weight','weight');
-        full.days_at_rating = numOrNull(pick(r,'Days at Rating','days_at_rating'));
-        full.analysts_covering = numOrNull(pick(r,'# SA Analysts Covering','# Analysts','analysts_covering'));
-        full.sheets = {
-          dashboard: sheets.dashboard || null,
-          holdings:  sheets.holdings  || null,
-          short:     sheets.short     || null,
-          dividends: sheets.dividends || null,
-          ratings:   sheets.ratings   || null,
-          summary:   sheets.summary   || null
-        };
-        const hasGrades = full.grades.V!=null;
-        (hasGrades?stocks:etfs).push(full);
-      }
-      const payload = JSON.stringify({ date, stocks, etfs, saved_at: new Date().toISOString(), count: { stocks: stocks.length, etfs: etfs.length } }, null, 2);
-      let sha = null;
-      try {
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (ex.ok) sha = (await ex.json()).sha;
-      } catch {}
-      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
-        body: JSON.stringify({ message: `SA portfolio ${date}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) })
-      });
-      return res.status(200).json({ saved: sr.ok ? fp : false, stocks: stocks.length, etfs: etfs.length });
-    } catch(e) { return res.status(200).json({ saved: false, error: e.message }); }
-  }
+    const shares = _num((s.sheets && s.sheets.holdings && s.sheets.holdings['Shares']) ?? s.shares ?? s['Shares']);
 
-  // ── loadPortfolio: today's portfolio, or carry forward most recent ──
-  if (req.body && req.body.loadPortfolio && GITHUB_TOKEN) {
-    try {
-      const today = new Date().toISOString().slice(0,10);
-      const readDay = async (date) => {
-        const fp = `data/sa-portfolio-${date}.json`;
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (!ex.ok) return null;
-        const f = await ex.json();
-        return JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
-      };
-      let result = await readDay(today);
-      if (result) return res.status(200).json({ ...result, isCarryForward: false });
-      const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-      if (!dir.ok) return res.status(200).json({ stocks: [], etfs: [] });
-      const files = await dir.json();
-      const dates = (Array.isArray(files) ? files : [])
-        .map(f => (f.name||'').match(/^sa-portfolio-(\d{4}-\d{2}-\d{2})\.json$/))
-        .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
-      if (!dates.length) return res.status(200).json({ stocks: [], etfs: [] });
-      const prior = await readDay(dates[0]);
-      if (prior) return res.status(200).json({ ...prior, isCarryForward: true });
-      return res.status(200).json({ stocks: [], etfs: [] });
-    } catch(e) { return res.status(200).json({ stocks: [], etfs: [], error: e.message }); }
-  }
+    out[sym] = {
+      owned: (shares !== null && shares > 0),  // filter metadata ONLY — never affects rank
+      quant,                                   // visible tag
+      grades,
+      short: short_p,
+      mid,
+      long,
+    };
+  });
 
-  // ── bucketScore: read the SA portfolio store, run the horizon scorer, save buckets ──
-  // Reads today's sa-portfolio-{date}.json (carry-forward to most recent prior if today
-  // is missing, same as loadPortfolio), feeds stocks+etfs into computeBuckets (the
-  // scorer's own _isETF test does exclusion — not the store's grade-presence split),
-  // and writes data/sa-buckets-{date}.json. CODE computes; no Claude here.
-  if (req.body && req.body.bucketScore && GITHUB_TOKEN) {
-    try {
-      const today = new Date().toISOString().slice(0,10);
-      const readDay = async (date) => {
-        const fp = `data/sa-portfolio-${date}.json`;
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (!ex.ok) return null;
-        const f = await ex.json();
-        return { store: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), date };
-      };
-      // resolve which portfolio store to score (today, else most recent prior)
-      let picked = await readDay(today);
-      let sourceDate = today, isCarryForward = false;
-      if (!picked) {
-        const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (!dir.ok) return res.status(200).json({ saved: false, error: 'no portfolio store found' });
-        const files = await dir.json();
-        const dates = (Array.isArray(files) ? files : [])
-          .map(f => (f.name||'').match(/^sa-portfolio-(\d{4}-\d{2}-\d{2})\.json$/))
-          .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
-        if (!dates.length) return res.status(200).json({ saved: false, error: 'no portfolio store found' });
-        picked = await readDay(dates[0]); sourceDate = dates[0]; isCarryForward = true;
-        if (!picked) return res.status(200).json({ saved: false, error: 'portfolio store unreadable' });
-      }
+  return { scored: out, excluded_etfs: allStocks.filter(_isETF).map(s => s.symbol || s.sym) };
+}
 
-      // feed BOTH stocks + etfs; let the scorer's _isETF test decide exclusion
-      const all = [].concat(picked.store.stocks||[], picked.store.etfs||[]);
-      const { scored, excluded_etfs } = computeBuckets(all);
-
-      // save buckets for TODAY (the run date), noting which store fed it
-      const fp = `data/sa-buckets-${today}.json`;
-      const payload = JSON.stringify({
-        date: today,
-        source_portfolio_date: sourceDate,
-        isCarryForward,
-        scored,
-        excluded_etfs,
-        count: { scored: Object.keys(scored).length, excluded: excluded_etfs.length },
-        generated_at: new Date().toISOString()
-      }, null, 2);
-      let sha = null;
-      try {
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (ex.ok) sha = (await ex.json()).sha;
-      } catch {}
-      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
-        body: JSON.stringify({ message: `SA buckets ${today}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) })
-      });
-      return res.status(200).json({
-        saved: sr.ok ? fp : false,
-        scored: Object.keys(scored).length,
-        excluded: excluded_etfs.length,
-        source_portfolio_date: sourceDate,
-        isCarryForward
-      });
-    } catch(e) { return res.status(200).json({ saved: false, error: e.message }); }
-  }
-
-  // ── loadBuckets: return today's buckets, or carry forward most recent prior ──
-  if (req.body && req.body.loadBuckets && GITHUB_TOKEN) {
-    try {
-      const today = new Date().toISOString().slice(0,10);
-      const reqDate = (req.body.date && /^\d{4}-\d{2}-\d{2}$/.test(req.body.date)) ? req.body.date : null;
-      const readDay = async (date) => {
-        const fp = `data/sa-buckets-${date}.json`;
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (!ex.ok) return null;
-        const f = await ex.json();
-        return JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
-      };
-      // a specific date, else today
-      let result = await readDay(reqDate || today);
-      if (result) return res.status(200).json({ ...result, isCarryForward: result.isCarryForward || false });
-      if (reqDate) return res.status(200).json({ scored: {}, excluded_etfs: [] }); // asked for a specific day, none there
-      // fall back: most recent prior buckets file
-      const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-      if (!dir.ok) return res.status(200).json({ scored: {}, excluded_etfs: [] });
-      const files = await dir.json();
-      const dates = (Array.isArray(files) ? files : [])
-        .map(f => (f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/))
-        .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
-      if (!dates.length) return res.status(200).json({ scored: {}, excluded_etfs: [] });
-      const prior = await readDay(dates[0]);
-      if (prior) return res.status(200).json({ ...prior, isCarryForward: true });
-      return res.status(200).json({ scored: {}, excluded_etfs: [] });
-    } catch(e) { return res.status(200).json({ scored: {}, excluded_etfs: [], error: e.message }); }
-  }
-
-  // ── deepRead: build the AI deep-read for ONE stock and return it to the caller.
-  // CONSOLE-ONLY by design (Task 4): nothing is saved, nothing is shown in-app.
-  // The on-tap UI stays disabled behind a default-off flag until Rashed reviews a
-  // real sample. Reads today's buckets (carry-forward) for the stock's resolved
-  // facts + the portfolio store for personal context, builds the prompt, calls
-  // Claude, returns { symbol, prompt_used, result }. On any failure the tab falls
-  // back to the templated card summary (graceful degradation).
-  if (req.body && req.body.deepRead && req.body.symbol && GITHUB_TOKEN) {
-    try {
-      const sym = String(req.body.symbol).toUpperCase();
-      const today = new Date().toISOString().slice(0,10);
-      const readJson = async (fp) => {
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (!ex.ok) return null;
-        const f = await ex.json();
-        return JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
-      };
-      // resolve buckets (today, else most-recent prior)
-      let buckets = await readJson(`data/sa-buckets-${today}.json`);
-      if (!buckets) {
-        const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (dir.ok) {
-          const files = await dir.json();
-          const dates = (Array.isArray(files)?files:[])
-            .map(f => (f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/))
-            .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
-          if (dates.length) buckets = await readJson(`data/sa-buckets-${dates[0]}.json`);
-        }
-      }
-      if (!buckets || !buckets.scored || !buckets.scored[sym]) {
-        return res.status(200).json({ symbol: sym, result: null, error: 'no buckets entry for symbol' });
-      }
-      // load the portfolio store for personal context (today, else most-recent prior)
-      let store = await readJson(`data/sa-portfolio-${today}.json`);
-      if (!store) {
-        const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (dir.ok) {
-          const files = await dir.json();
-          const dates = (Array.isArray(files)?files:[])
-            .map(f => (f.name||'').match(/^sa-portfolio-(\d{4}-\d{2}-\d{2})\.json$/))
-            .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
-          if (dates.length) store = await readJson(`data/sa-portfolio-${dates[0]}.json`);
-        }
-      }
-      const allRecs = store ? [].concat(store.stocks||[], store.etfs||[]) : [];
-
-      const prompt = buildDeepReadPrompt(sym, buckets.scored[sym], allRecs);
-
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] })
-      });
-      const d = await r.json();
-      const text = d.content && d.content[0] && d.content[0].text ? d.content[0].text.trim() : null;
-      return res.status(200).json({
-        symbol: sym,
-        result: text,
-        prompt_used: prompt,                 // returned so Rashed can audit the exact prompt
-        source_buckets_date: buckets.date || null,
-        usage: text ? {
-          input_tokens: d.usage?.input_tokens || 0,
-          output_tokens: d.usage?.output_tokens || 0
-        } : undefined,
-        raw: text ? undefined : JSON.stringify(d).slice(0,300)
-      });
-    } catch(e) { return res.status(200).json({ symbol: req.body.symbol, result: null, error: e.message }); }
-  }
-
-  // ── listAnalyses: return dates that have a saved analysis ────────
-  if (req.body && req.body.listAnalyses && GITHUB_TOKEN) {
-    try {
-      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, {
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
-      });
-      if (!ex.ok) return res.status(200).json({ dates: [] });
-      const files = await ex.json();
-      const dates = (Array.isArray(files) ? files : [])
-        .map(f => (f.name || '').match(/^sa-analysis-(\d{4}-\d{2}-\d{2})\.json$/))
-        .filter(Boolean).map(m => m[1])
-        .sort().reverse();
-      return res.status(200).json({ dates });
-    } catch(e) {
-      return res.status(200).json({ dates: [], error: e.message });
-    }
-  }
-
-  // ── Analysis: build prompt + call Claude (NO GitHub save here) ────────────
-  // Always hydrate the real portfolio from the store (don't trust the client to send it)
-  if (inputs && GITHUB_TOKEN) {
-    try {
-      const today = new Date().toISOString().slice(0,10);
-      const fp = `data/sa-portfolio-${today}.json`;
-      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
-      });
-      if (ex.ok) {
-        const f = await ex.json();
-        const store = JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
-        const all = [].concat(store.stocks||[], store.etfs||[]);
-        if (all.length) inputs.excelRows = all;   // override whatever client sent
-      }
-    } catch (_) {}
-  }
-  const finalPrompt = inputs ? buildPrompt(inputs) : prompt;
-  if (!finalPrompt) return res.status(400).json({ error: 'inputs or prompt required' });
-
-  try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 12000, messages: [{ role: 'user', content: finalPrompt }] })
-    });
-    const d = await r.json();
-    if (!d.content?.[0]?.text) return res.status(500).json({ error: 'No response', raw: JSON.stringify(d).slice(0,200) });
-    let cleaned = d.content[0].text.trim();
-    // strip ```json … ``` or ``` … ``` fences if present
-    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/,'').trim();
-    return res.status(200).json({
-      result: cleaned,
-      usage: {
-        input_tokens:  d.usage?.input_tokens  || 0,
-        output_tokens: d.usage?.output_tokens || 0,
-        total_tokens:  (d.usage?.input_tokens||0) + (d.usage?.output_tokens||0),
-        input_cost:  ((d.usage?.input_tokens||0)  / 1000000 * 3).toFixed(4),
-        output_cost: ((d.usage?.output_tokens||0) / 1000000 * 15).toFixed(4),
-        total_cost:  (((d.usage?.input_tokens||0)/1000000*3)+((d.usage?.output_tokens||0)/1000000*15)).toFixed(4)
-      }
-    });
-  } catch(e) {
-    return res.status(500).json({ error: e.message });
-  }
+module.exports = {
+  computeBuckets, _isETF, _percentile,
+  _conviction, _capTriggers, _distorted, _archetype, _bindingConstraint
 };
