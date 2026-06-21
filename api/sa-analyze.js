@@ -371,11 +371,13 @@ module.exports = async (req, res) => {
         const sym = (r.symbol || r.sym || r.Symbol); if(!sym) continue;
         const S = String(sym).toUpperCase();
         symbols[S] = {
-          yield:       num(pick(r,'Yield','Yield FWD','yield')),
-          yieldFwd:    num(pick(r,'Yield FWD','yieldFwd')),
+          yield:       num(pick(r,'Yield FWD','Yield TTM','yieldFwd')),
+          yieldTtm:    num(pick(r,'Yield TTM','yieldTtm')),
+          yieldGrade:  str(pick(r,'Yield')),
           safety:      str(pick(r,'Safety','safety')),
           growth:      str(pick(r,'Growth','growth')),
           estIncome:   num(pick(r,'Est Annual Income','estIncome')),
+          divRateFwd:  num(pick(r,'Div Rate FWD','divRateFwd')),
           frequency:   str(pick(r,'Frequency','frequency')),
           payoutRatio: num(pick(r,'Payout Ratio','payoutRatio')),
           exDiv:       str(pick(r,'Ex-Div Date','exDiv')),
