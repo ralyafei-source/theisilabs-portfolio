@@ -9146,6 +9146,7 @@ async function fetchLivePrices(){
     });
 
     pricesLoaded=true;
+    try{ var _ccp=document.getElementById('tab-command'); if(_ccp && _ccp.classList.contains('active') && typeof renderCommandCenter==='function') renderCommandCenter(); }catch(e){}
     const ts=new Date(d.updated).toLocaleTimeString();
     if(indicator) indicator.innerHTML=`<span style="color:var(--green)">âœ… Live prices (Yahoo Finance) — ${updated} stocks — ${ts}</span>`;
 
@@ -11752,6 +11753,7 @@ async function fetchLivePricesForUser(token, symbols) {
     updateStatCards();
     renderPortfolio();
     calmPricesAt=Date.now(); renderCalmZones();
+    try{ var _ccp2=document.getElementById('tab-command'); if(_ccp2 && _ccp2.classList.contains('active') && typeof renderCommandCenter==='function') renderCommandCenter(); }catch(e){}
   } catch(e) {
     if (indicator) indicator.innerHTML = `<span style="color:var(--red)">âš ï¸ ${e.message}</span>`;
   }
