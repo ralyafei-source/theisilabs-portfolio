@@ -3839,7 +3839,27 @@ function sagParseXLSX(arrayBuffer){
   return rows;
 }
 
-/* =================== END SA EXCEL PARSERS =================== */
+// Extract a named sheet (by regex) as array of {Header: value} row objects.
+// Used for the Risks and Dividends sheets which feed saveRisk / saveDividends.
+function sagExtractSheet(arrayBuffer, rx){
+  try{
+    if(typeof XLSX==='undefined') return [];
+    var wb=XLSX.read(arrayBuffer,{type:'array'});
+    var nm=wb.SheetNames.find(function(n){ return rx.test(n); });
+    if(!nm || !wb.Sheets[nm]) return [];
+    var aoa=XLSX.utils.sheet_to_json(wb.Sheets[nm],{header:1,defval:''});
+    if(aoa.length<2) return [];
+    var head=aoa[0].map(function(h){ return String(h).trim(); });
+    var out=[];
+    aoa.slice(1).forEach(function(row){
+      var sym=row[0]; if(sym===undefined||sym===null||String(sym).trim()==='') return;
+      var obj={ symbol:String(sym).trim().toUpperCase() };
+      head.forEach(function(h,i){ if(h && h.toLowerCase()!=='symbol') obj[h]=row[i]; });
+      out.push(obj);
+    });
+    return out;
+  }catch(e){ return []; }
+}
 
 async function ccRenderTopHorizons(){
   var zoneEl=document.getElementById('cc-horizon-zone');
@@ -13348,6 +13368,11 @@ function saHandleExcel(input){
       try{
         const tok=localStorage.getItem('theisilabs_session')||'';
         await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({savePortfolio:true, rows:rows})});
+        // NEW: also save the Risks and Dividends sheets (for the CC risk/dividend cards)
+        var riskRows=sagExtractSheet(e.target.result, /risk/i);
+        if(riskRows.length){ try{ await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({saveRisk:true, rows:riskRows})}); }catch(_){} }
+        var divRows=sagExtractSheet(e.target.result, /dividend/i);
+        if(divRows.length){ try{ await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({saveDividends:true, rows:divRows})}); }catch(_){} }
       }catch(_){}
       if(st){ st.textContent='✓ '+rows.length+' سهم — '+file.name; st.className='sa-status ok'; }
       if(dot) dot.className='sa-check-dot filled';
