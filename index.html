@@ -13373,6 +13373,11 @@ function saHandleExcel(input){
         if(riskRows.length){ try{ await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({saveRisk:true, rows:riskRows})}); }catch(_){} }
         var divRows=sagExtractSheet(e.target.result, /dividend/i);
         if(divRows.length){ try{ await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({saveDividends:true, rows:divRows})}); }catch(_){} }
+        // force CC to re-pull the freshly saved data
+        try{ window._riskData=null; window._riskTried=false; window._divData=null; window._divTried=false; window._hzData=null;
+          if(typeof loadRiskData==='function') loadRiskData();
+          if(typeof loadDivData==='function') loadDivData();
+        }catch(_){}
       }catch(_){}
       if(st){ st.textContent='✓ '+rows.length+' سهم — '+file.name; st.className='sa-status ok'; }
       if(dot) dot.className='sa-check-dot filled';
