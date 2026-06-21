@@ -3391,6 +3391,7 @@ async function boot(){
 
   if(!window._hzData){ boot().then(function(){ if(DATA) window._hzData=DATA; }); }
   else { DATA=window._hzData; try{ render(); renderExcl(); }catch(e){} }
+  window.loadDeepRead = loadDeepRead;
 };
 
 </script>
@@ -3851,6 +3852,56 @@ function sagParseXLSX(arrayBuffer){
 
 /* =================== END SA EXCEL PARSERS =================== */
 
+async function ccRenderTopHorizons(){
+  var zoneEl=document.getElementById('cc-horizon-zone');
+  if(!zoneEl) return;
+  var data=null;
+  try{
+    if(window._hzData && window._hzData.scored){ data=window._hzData; }
+    else{
+      var r=await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadBuckets:true})});
+      if(r.ok){ var d=await r.json(); if(d&&d.scored&&Object.keys(d.scored).length){ data=d; window._hzData=d; } }
+    }
+  }catch(e){}
+  if(!data||!data.scored) return;
+  var sc=data.scored;
+  var arNum=function(n){return String(n);};
+  function topOf(key){
+    var best=null;
+    Object.keys(sc).forEach(function(sym){
+      var o=sc[sym]; if(!o||!o[key]||o[key].score==null) return;
+      if(!best||o[key].score>best.o[key].score) best={sym:sym,o:o};
+    });
+    return best;
+  }
+  function lean(s){ if(s>=65)return['مائل للإيجاب','#19c37d']; if(s>=45)return['محايد','#2bb3b8']; return['حذر','#e5484d']; }
+  var T={short:{ar:'قصير',full:'الأفضل توقيتاً'},mid:{ar:'متوسط',full:'الأفضل للمدى المتوسط'},long:{ar:'طويل',full:'الأفضل للاحتفاظ'}};
+  function mini(key){
+    var t=topOf(key); if(!t) return '';
+    var o=t.o, sym=t.sym, s=o[key].score, lc=lean(s);
+    var arch=(o[key].archetype)||null;
+    var archLabel=arch?({momentum_trap:'فخ الزخم',value_trap:'فخ القيمة',quality_premium:'علاوة الجودة',hidden_quality:'جودة قوية',unconfirmed:'غير مؤكد'}[arch]||''):'';
+    var others=['short','mid','long'].filter(function(k){return k!==key;});
+    var tags=others.map(function(k){
+      var v=o[k]&&o[k].score!=null?o[k].score:null;
+      var c=v==null?'#888':lean(v)[1];
+      return '<span style="display:inline-flex;flex-direction:row-reverse;justify-content:space-between;width:74px;gap:6px;font-size:9.5px;background:var(--bg3);border:0.5px solid var(--border);border-radius:6px;padding:2px 7px;"><span style="color:var(--text3)">'+T[k].ar+'</span><span style="color:'+c+';font-variant-numeric:tabular-nums">'+(v==null?'—':v)+'</span></span>';
+    }).join('');
+    var quant=o.quant!=null?'<span style="display:inline-block;background:var(--accent,#FF0A78);color:#fff;font-size:9.5px;font-weight:700;border-radius:6px;padding:1px 7px;font-variant-numeric:tabular-nums;">'+o.quant+'</span>':'';
+    return '<div onclick="ccOpenDeep(\''+sym+'\')" style="cursor:pointer;background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;padding:11px;transition:border-color .15s;" onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\'">'
+      +'<div style="font-size:9px;font-weight:700;letter-spacing:.05em;color:var(--text3);margin-bottom:7px;">'+T[key].full+'</div>'
+      +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;"><span style="font-size:20px;font-weight:700;color:'+lc[1]+';font-variant-numeric:tabular-nums;">'+s+'</span><span style="font-size:13px;font-weight:600;color:var(--text);">'+sym+'</span>'+quant+'</div>'
+      +(archLabel?'<div style="display:inline-block;font-size:10px;color:'+lc[1]+';background:'+(lc[1]==='#19c37d'?'rgba(25,195,125,.13)':lc[1]==='#2bb3b8'?'rgba(43,179,184,.13)':'rgba(229,72,77,.13)')+';border-radius:7px;padding:2px 8px;margin-bottom:8px;">'+archLabel+'</div>':'')
+      +'<div style="display:flex;gap:5px;margin-top:6px;">'+tags+'</div></div>';
+  }
+  var cards=mini('long')+mini('mid')+mini('short');
+  zoneEl.innerHTML='<div style="font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:9px;">أفضل الآفاق</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:start;">'+cards+'</div>';
+}
+function ccOpenDeep(sym){
+  if(typeof window.loadDeepRead!=='function' && typeof _hzInit==='function'){ try{ _hzInit(); }catch(e){} }
+  if(typeof window.loadDeepRead==='function'){ window.loadDeepRead(sym,false); }
+}
+
 function renderCommandCenter(){
   var grid=document.getElementById('cc-grid');
   if(!grid) return;
@@ -3961,7 +4012,8 @@ function renderCommandCenter(){
   var accCard=card({title:'\u0627\u0644\u0623\u062f\u0627\u0621 \u0648\u0627\u0644\u062a\u062d\u0642\u0642',door:'advisor',body:'<div style="font-size:10px;line-height:1.9;color:var(--text2);"><div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">\u0627\u0644\u0631\u0627\u0628\u062d\u0629</span><span>'+winners+'/'+stocks.length+'</span></div></div>'});
   var zone4=zone('\u0634\u0647\u0631\u064a \u00b7 \u0637\u0648\u064a\u0644 \u0627\u0644\u0623\u062c\u0644 \u00b7 \u0627\u0644\u062a\u062d\u0642\u0642','1fr 1fr 1fr 1fr', healthCard+compCard+longCard+accCard);
 
-  grid.innerHTML=zone1+zone2+zone3+zone4;
+  grid.innerHTML='<div id="cc-horizon-zone"></div>'+zone1+zone2+zone3+zone4;
+  try{ ccRenderTopHorizons(); }catch(e){}
 
   // post-render cleanup: remove a body line that duplicates its own section summary header
   try{
