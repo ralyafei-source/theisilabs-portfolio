@@ -1992,9 +1992,12 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 <!-- COMMAND CENTER -->
 <div id="tab-command" class="tab-content active">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
-    <div style="display:flex;align-items:baseline;gap:10px;">
-      <span style="font-size:16px;font-weight:700;color:var(--text);">Command Center</span>
-      <span id="cc-sub" style="font-size:11px;color:var(--text3);">القراءة الكاملة في 30 ثانية · كل بطاقة تفتح تفاصيلها</span>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;align-items:baseline;gap:10px;">
+        <span style="font-size:16px;font-weight:700;color:var(--text);">Command Center</span>
+        <span id="cc-sub" style="font-size:11px;color:var(--text3);">القراءة الكاملة في 30 ثانية · كل بطاقة تفتح تفاصيلها</span>
+      </div>
+      <div id="cc-progress" style="display:flex;align-items:center;gap:6px;"></div>
     </div>
     <button onclick="renderCommandCenter()" style="font-size:10px;padding:5px 11px;border-radius:7px;background:var(--bg2);color:var(--text2);border:0.5px solid var(--border);cursor:pointer;">↻ تحديث</button>
   </div>
@@ -4078,6 +4081,28 @@ function renderCommandCenter(){
   var footer='<div style="text-align:center;font-size:11px;color:var(--text3);padding:14px 0 4px;border-top:1px solid var(--border);margin-top:4px;">\u062c\u0645\u064a\u0639 \u0627\u0644\u0623\u0631\u0642\u0627\u0645 \u062a\u0642\u062f\u064a\u0631\u064a\u0629 \u0648\u062a\u062a\u0636\u0645\u0646 \u0647\u0627\u0645\u0634 \u062e\u0637\u0623 \u0648\u0627\u0633\u0639\u0627\u064b\u060c \u0648\u0644\u0627 \u062a\u064f\u0639\u062f \u0646\u0635\u064a\u062d\u0629 \u0627\u0633\u062a\u062b\u0645\u0627\u0631\u064a\u0629.</div>';
 
   grid.innerHTML=healthChip+openingBrief+reviewSection+mapSection+analysisSection+footer;
+
+  // ---- progress dots: one per CC section, filled = has data, hollow = pending/empty ----
+  try{
+    var sections=[
+      {name:'\u0627\u0644\u0645\u062d\u0641\u0638\u0629', on:!!(stocks&&stocks.length)},
+      {name:'\u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u064a\u0648\u0645', on:!!dc},
+      {name:'\u0625\u0634\u0627\u0631\u0627\u062a \u0627\u0644\u0622\u0641\u0627\u0642', on:!!bk},
+      {name:'\u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629', on:reviewItems.length>0},
+      {name:'\u062e\u0631\u064a\u0637\u0629 \u0627\u0644\u0645\u062d\u0641\u0638\u0629', on:!!(stocks&&stocks.length)},
+      {name:'\u0631\u0627\u062f\u0627\u0631 \u0627\u0644\u0645\u062e\u0627\u0637\u0631', on:!!riskCard()},
+      {name:'\u0627\u0644\u0642\u064a\u0645\u0629 \u0627\u0644\u0645\u0642\u062f\u0631\u0629', on:!!fairCard()},
+      {name:'\u0627\u0644\u0631\u0624\u064a\u0629 \u0627\u0644\u0628\u0639\u064a\u062f\u0629', on:!!longCard()}
+    ];
+    var loaded=sections.filter(function(x){return x.on;}).length;
+    var dots=sections.map(function(x){
+      return '<span title="'+x.name+'" style="width:7px;height:7px;border-radius:50%;'
+        +(x.on?'background:'+AC+';':'background:transparent;border:1px solid var(--border3,#34344A);')
+        +'"></span>';
+    }).join('');
+    var pe=document.getElementById('cc-progress');
+    if(pe){ pe.innerHTML=dots+'<span style="font-size:10px;color:var(--text3);margin-inline-start:6px;font-family:'+MONO+';">'+loaded+'/'+sections.length+'</span>'; }
+  }catch(e){}
 }
 function showTab(name,el){
   if(name==='dashboard') setTimeout(function(){ if(typeof initLiveData==='function') initLiveData(); },100);
