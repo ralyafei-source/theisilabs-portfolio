@@ -271,6 +271,10 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .brief-move-why{font-size:11px;line-height:1.6;color:var(--text2);direction:rtl;text-align:right;}
 .brief-disclaimer{font-size:10px;color:var(--text3);text-align:center;margin-top:14px;border-top:.5px solid var(--border);padding-top:10px;}
 @media(max-width:760px){.brief-row,.brief-moves-grid{grid-template-columns:1fr;}}
+@media(max-width:760px){
+  #cc-grid .cc-brief,#cc-grid .cc-2col,#cc-grid .cc-analysis{grid-template-columns:1fr !important;}
+  #cc-grid .cc-hero-val{font-size:36px !important;}
+}
 
 /* EXPAND BUTTON ON CARD */
 .s-expand-btn{position:absolute;top:8px;right:8px;width:22px;height:22px;background:rgba(0,212,255,.15);border:1px solid rgba(0,212,255,.3);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;opacity:0;transition:opacity .15s;}
@@ -4038,7 +4042,7 @@ function renderCommandCenter(){
   var pulse=
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
       +secLabel('\u0646\u0628\u0636 \u0627\u0644\u0645\u062d\u0641\u0638\u0629')+'</div>'
-    +'<div style="font-size:46px;font-weight:800;color:var(--text);font-family:'+MONO+';line-height:1;letter-spacing:-1px;">'+((typeof privacyOn!=='undefined'&&privacyOn)?'$ \u2022\u2022\u2022\u2022':('\u2248 $'+Math.round(total/1000)+'K'))+'</div>'
+    +'<div class="cc-hero-val" style="font-size:46px;font-weight:800;color:var(--text);font-family:'+MONO+';line-height:1;letter-spacing:-1px;">'+((typeof privacyOn!=='undefined'&&privacyOn)?'$ \u2022\u2022\u2022\u2022':('\u2248 $'+Math.round(total/1000)+'K'))+'</div>'
     +'<div style="display:flex;gap:12px;margin-top:12px;font-size:12px;color:var(--text2);">'
       +'<span>'+stocks.length+' \u0645\u0631\u0643\u0632</span><span style="color:var(--text3);">\u00b7</span><span>'+winners+' \u0631\u0627\u0628\u062d\u0629</span></div>'
     +retLine
@@ -4081,7 +4085,7 @@ function renderCommandCenter(){
 
   var openingBrief=
     '<div>'+secLabel('\u0627\u0644\u0627\u0641\u062a\u062a\u0627\u062d\u064a\u0629')
-    +'<div style="display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:12px;align-items:stretch;">'
+    +'<div class="cc-brief" style="display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:12px;align-items:stretch;">'
       +panel(hzInner,{style:'display:flex;flex-direction:column;'})
       +panel(todayInner,{style:'display:flex;flex-direction:column;'})
       +panel(pulse,{style:'display:flex;flex-direction:column;background:linear-gradient(180deg,var(--bg2),var(--bg2));border-color:rgba(255,10,120,.25);'})
@@ -4150,7 +4154,7 @@ function renderCommandCenter(){
   var positionsInner=secLabel('\u0623\u0643\u0628\u0631 5 \u0645\u0631\u0627\u0643\u0632')+posHead+posRows+door('\u0639\u0631\u0636 \u062c\u0645\u064a\u0639 \u0627\u0644\u0645\u0631\u0627\u0643\u0632','portfolio');
 
   var mapSection='<div>'+secLabel('\u062e\u0631\u064a\u0637\u0629 \u0627\u0644\u0645\u062d\u0641\u0638\u0629')
-    +'<div style="display:grid;grid-template-columns:1fr 1.1fr;gap:12px;align-items:stretch;">'
+    +'<div class="cc-2col" style="display:grid;grid-template-columns:1fr 1.1fr;gap:12px;align-items:stretch;">'
       +panel(positionsInner)+panel(exposureInner)
     +'</div></div>';
 
@@ -4188,7 +4192,7 @@ function renderCommandCenter(){
     function chip(s,pos){ var c=glColor(s.gl); return '<span style="display:inline-flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:2px 8px;font-size:11px;"><span style="color:var(--text);font-weight:700;">'+s.sym+'</span><span style="color:'+c+';font-family:'+MONO+';">'+(s.gl>=0?'+':'')+s.gl.toFixed(0)+'%</span></span>'; }
     var worst=sortedGl.slice(0,2).map(function(s){return chip(s);}).join('');
     var best=sortedGl.slice(-2).reverse().map(function(s){return chip(s);}).join('');
-    var legend='<div style="display:flex;gap:14px;font-size:10px;color:var(--text3);margin-top:10px;justify-content:flex-start;">'
+    var legend='<div style="display:flex;gap:14px;font-size:10px;color:var(--text3);margin-top:10px;justify-content:flex-start;flex-wrap:wrap;">'
       +'<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#b81e2e;margin-inline-end:4px;"></span>\u062e\u0633\u0627\u0626\u0631 \u062d\u0631\u062c\u0629 '+nCrit+'</span>'
       +'<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5746b;margin-inline-end:4px;"></span>\u062e\u0633\u0627\u0626\u0631 '+nLoss+'</span>'
       +'<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#3a9e6f;margin-inline-end:4px;"></span>\u0631\u0627\u0628\u062d\u0629 '+nGain+'</span>'
@@ -4198,9 +4202,9 @@ function renderCommandCenter(){
       +'<div style="position:absolute;top:8px;bottom:8px;right:'+zx.toFixed(1)+'%;width:1px;background:var(--border3,#34344A);"></div>'
       +dots+'</div>';
     moversSection=panel(
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px;">'
         +secLabel('\u062d\u0631\u0643\u0629 \u0627\u0644\u0645\u0631\u0627\u0643\u0632')
-        +'<div style="display:flex;gap:6px;">'+worst+best+'</div></div>'
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'+worst+best+'</div></div>'
       +track+legend);
   })();
 
@@ -4338,7 +4342,7 @@ function renderCommandCenter(){
   if(analysisCards.length){
     var cols=Math.min(3,analysisCards.length);
     analysisSection='<div>'+secLabel('\u0623\u062d\u062f\u062b \u0627\u0644\u062a\u062d\u0644\u064a\u0644\u0627\u062a')
-      +'<div style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:12px;align-items:stretch;">'+analysisCards.join('')+'</div></div>';
+      +'<div class="cc-analysis" style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:12px;align-items:stretch;">'+analysisCards.join('')+'</div></div>';
   }
 
   // ============ FOOTER ============
