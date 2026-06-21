@@ -4198,10 +4198,55 @@ function renderCommandCenter(){
   function longCard(){ var h=safe(function(){return renderCollapsibleSections(P.monthly.longview||'','');}); if(!h) return null;
     h=h.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(); if(!h) return null;
     return panel(secLabel('\u0627\u0644\u0631\u0624\u064a\u0629 \u0637\u0648\u064a\u0644\u0629 \u0627\u0644\u0645\u062f\u0649')+'<div style="font-size:12px;line-height:1.8;color:var(--text2);">'+h.slice(0,200)+'\u2026</div><div style="font-size:10px;color:var(--text3);margin-top:8px;">\u062a\u062d\u0644\u064a\u0644 \u0634\u0647\u0631\u064a</div>'+door('\u0641\u062a\u062d \u0627\u0644\u062a\u062d\u0644\u064a\u0644','advisor')); }
-  var analysisCards=[riskCard(),fairCard(),longCard()].filter(Boolean);
+  // ---- NEW: Dividends card (real, from window._divData) ----
+  function divCard(){
+    var D=window._divData; if(!D) return null;
+    var payers=[]; var totalIncome=0; var weightedYield=0, yT=0;
+    stocks.forEach(function(s){ var d=D[s.sym]; if(d&&d.yield!=null&&d.yield>0){ var w=(s.mv||0)/total; payers.push({sym:s.sym, yld:d.yield, inc:d.estIncome, safety:d.safety}); if(d.estIncome) totalIncome+=d.estIncome*(s.shares||0)/( (s.shares&&d.estIncome)?1:1 ); weightedYield+=d.yield*w; yT+=w; } });
+    if(!payers.length) return null;
+    payers.sort(function(a,b){return (b.yld||0)-(a.yld||0);});
+    var pw=(yT>0?weightedYield:0);
+    var list=payers.slice(0,4).map(function(p){ return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11.5px;"><span style="color:var(--text);font-weight:600;">'+p.sym+'</span><span style="color:var(--text2);font-family:'+MONO+';">'+p.yld.toFixed(2)+'%</span></div>'; }).join('');
+    return panel(secLabel('\u0627\u0644\u062a\u0648\u0632\u064a\u0639\u0627\u062a')
+      +'<div style="display:flex;gap:14px;margin-bottom:10px;"><div><div style="font-size:9px;color:var(--text3);">\u0639\u0627\u0626\u062f \u0645\u0631\u062c\u0651\u062d</div><div style="font-size:17px;font-weight:800;font-family:'+MONO+';color:var(--text);">'+pw.toFixed(2)+'%</div></div>'
+      +'<div><div style="font-size:9px;color:var(--text3);">\u0639\u062f\u062f \u0627\u0644\u0645\u0648\u0632\u0651\u0639\u064a\u0646</div><div style="font-size:17px;font-weight:800;font-family:'+MONO+';color:var(--text);">'+payers.length+'</div></div></div>'
+      +list+'<div style="font-size:9.5px;color:var(--text3);margin-top:7px;">\u0623\u0639\u0644\u0649 \u0627\u0644\u0639\u0648\u0627\u0626\u062f</div>'+door('\u0639\u0631\u0636 \u0627\u0644\u062a\u0648\u0632\u064a\u0639\u0627\u062a','portfolio'));
+  }
+
+  // ---- NEW: Sharia compliance card (from daily JSON sharia_check) ----
+  function shariaCard(){
+    try{
+      var raw=(analysisData&&analysisData.daily&&analysisData.daily.content)||''; if(!raw) return null;
+      var j=null; try{ var c=String(raw).replace(/```json\s*/gi,'').replace(/```\s*/g,''); var a=c.indexOf('{'),b=c.lastIndexOf('}'); if(a!==-1&&b>a) j=JSON.parse(c.slice(a,b+1)); }catch(e){ return null; }
+      var sc=j&&j.portfolio_context&&j.portfolio_context.sharia_check; if(!sc) return null;
+      var status=sc.status||''; var spus=sc.spus_weight||'';
+      var ok=status.indexOf('\u0645\u062d\u0645\u064a')>=0 || status.indexOf('\u0645\u062a\u0648\u0627\u0641\u0642')>=0;
+      return panel(secLabel('\u0627\u0644\u062a\u0648\u0627\u0641\u0642 \u0627\u0644\u0634\u0631\u0639\u064a')
+        +'<div style="display:flex;align-items:center;gap:10px;margin:6px 0;"><span style="width:9px;height:9px;border-radius:50%;background:'+(ok?'#19c37d':'#e5aa00')+';"></span>'
+        +'<span style="font-size:13px;color:var(--text);font-weight:600;">'+(status||'\u063a\u064a\u0631 \u0645\u062d\u062f\u062f')+'</span></div>'
+        +(spus?'<div style="font-size:11px;color:var(--text3);">\u0648\u0632\u0646 SPUS: '+spus+'</div>':'')
+        +door('\u0641\u062a\u062d \u0627\u0644\u062a\u062d\u0644\u064a\u0644','advisor'));
+    }catch(e){ return null; }
+  }
+
+  // ---- NEW: 52-week range card (from window._riskData) ----
+  function rangeCard(){
+    var R=window._riskData; if(!R) return null;
+    var items=[]; stocks.forEach(function(s){ var r=R[s.sym]; if(r&&r.high52&&r.low52&&(r.price||s.price)){ var pr=r.price||s.price; var pos=(pr-r.low52)/(r.high52-r.low52); items.push({sym:s.sym, pos:Math.max(0,Math.min(1,pos)), w:(s.mv||0)/total}); } });
+    if(!items.length) return null;
+    items.sort(function(a,b){return b.w-a.w;});
+    var rows=items.slice(0,5).map(function(it){
+      var pct=(it.pos*100); var c=it.pos<0.25?'#e5484d':(it.pos>0.75?'#e5aa00':'#19c37d');
+      return '<div style="margin:7px 0;"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;"><span style="color:var(--text);font-weight:600;">'+it.sym+'</span><span style="color:var(--text3);font-family:'+MONO+';">'+pct.toFixed(0)+'%</span></div>'
+        +'<div style="position:relative;height:6px;background:var(--bg3);border-radius:4px;"><div style="position:absolute;top:-2px;width:3px;height:10px;border-radius:2px;background:'+c+';right:'+(100-pct).toFixed(0)+'%;"></div></div></div>';
+    }).join('');
+    return panel(secLabel('\u0627\u0644\u0645\u062f\u0649 (52 \u0623\u0633\u0628\u0648\u0639)')+rows+'<div style="font-size:9.5px;color:var(--text3);margin-top:6px;">\u0627\u0644\u0645\u0648\u0642\u0639 \u0628\u064a\u0646 \u0627\u0644\u0642\u0627\u0639 \u0648\u0627\u0644\u0642\u0645\u0629</div>'+door('\u0639\u0631\u0636 \u0627\u0644\u0645\u0631\u0627\u0643\u0632','portfolio'));
+  }
+
+  var analysisCards=[riskCard(),fairCard(),longCard(),divCard(),shariaCard(),rangeCard()].filter(Boolean);
   var analysisSection='';
   if(analysisCards.length){
-    var cols=analysisCards.length;
+    var cols=Math.min(3,analysisCards.length);
     analysisSection='<div>'+secLabel('\u0623\u062d\u062f\u062b \u0627\u0644\u062a\u062d\u0644\u064a\u0644\u0627\u062a')
       +'<div style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:12px;align-items:stretch;">'+analysisCards.join('')+'</div></div>';
   }
@@ -4221,7 +4266,10 @@ function renderCommandCenter(){
       {name:'\u062e\u0631\u064a\u0637\u0629 \u0627\u0644\u0645\u062d\u0641\u0638\u0629', on:!!(stocks&&stocks.length)},
       {name:'\u0631\u0627\u062f\u0627\u0631 \u0627\u0644\u0645\u062e\u0627\u0637\u0631', on:!!riskCard()},
       {name:'\u0627\u0644\u0642\u064a\u0645\u0629 \u0627\u0644\u0645\u0642\u062f\u0631\u0629', on:!!fairCard()},
-      {name:'\u0627\u0644\u0631\u0624\u064a\u0629 \u0627\u0644\u0628\u0639\u064a\u062f\u0629', on:!!longCard()}
+      {name:'\u0627\u0644\u0631\u0624\u064a\u0629 \u0627\u0644\u0628\u0639\u064a\u062f\u0629', on:!!longCard()},
+      {name:'\u0627\u0644\u062a\u0648\u0632\u064a\u0639\u0627\u062a', on:!!divCard()},
+      {name:'\u0627\u0644\u0634\u0631\u0639\u064a', on:!!shariaCard()},
+      {name:'\u0627\u0644\u0645\u062f\u0649', on:!!rangeCard()}
     ];
     var loaded=sections.filter(function(x){return x.on;}).length;
     var dots=sections.map(function(x){
@@ -4239,7 +4287,19 @@ function ccRefresh(){
     .then(function(r){return r.json();})
     .then(function(d){ if(d&&d.scored&&Object.keys(d.scored).length){ window._hzData=d; renderCommandCenter(); } }).catch(function(){});
   loadRiskData();
+  loadDivData();
   if(typeof loadAnalysis==='function') loadAnalysis();
+}
+
+function loadDivData(){
+  if(window._divData || window._divTried){ return; }
+  window._divTried=true;
+  try{
+    fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadDividends:true})})
+      .then(function(r){return r.json();})
+      .then(function(d){ if(d&&d.symbols&&Object.keys(d.symbols).length){ window._divData=d.symbols; renderCommandCenter(); } })
+      .catch(function(){});
+  }catch(e){}
 }
 
 function loadRiskData(){
@@ -4280,6 +4340,7 @@ function showTab(name,el){
       // fetch analysis (loadAnalysis re-renders CC when done)
       if(typeof loadAnalysis==='function' && (typeof analysisData==='undefined' || !analysisData)) loadAnalysis();
       if(typeof loadRiskData==='function') loadRiskData();
+      if(typeof loadDivData==='function') loadDivData();
     }
     if(name==='weights') renderWeights();
     if(name==='alerts') renderAlerts();
