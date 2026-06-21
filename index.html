@@ -12515,6 +12515,17 @@ document.addEventListener('DOMContentLoaded',function(){
   setTimeout(function(){renderZone3(false);},800);
   setTimeout(function(){loadNarrative();},600);
   setTimeout(function(){ if(typeof sweepGlossary==='function') sweepGlossary('tab-dashboard'); },1400);
+  // CC is the default active tab — load its data on first paint (buckets + analysis)
+  (function ccInitLoad(tries){
+    try{
+      var cc=document.getElementById('tab-command');
+      if(cc && cc.classList.contains('active') && typeof stocks!=='undefined' && stocks.length){
+        if(typeof ccRefresh==='function') ccRefresh();
+        return;
+      }
+    }catch(e){}
+    if(tries>0) setTimeout(function(){ ccInitLoad(tries-1); },500);
+  })(12);
 });
 // â•â•â• END CALM FIRST PAGE ENGINE â•â•â•
 
