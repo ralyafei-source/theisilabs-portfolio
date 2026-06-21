@@ -6642,13 +6642,50 @@ async function loadAnalysis(){
       document.getElementById('advisorLoading').style.display='none';
       document.getElementById('advisorContent').style.display='block';
     } else {
+      // today empty -> fall back to the most recent saved analysis (last run persists)
+      var fellBack=false;
+      try{ fellBack = await loadLatestAnalysisFallback(); }catch(e){}
+      if(!fellBack){
+        document.getElementById('advisorLoading').style.display='none';
+        document.getElementById('advisorEmpty').style.display='block';
+      }
+    }
+  }catch(e){
+    var fb=false; try{ fb = await loadLatestAnalysisFallback(); }catch(_){}
+    if(!fb){
       document.getElementById('advisorLoading').style.display='none';
       document.getElementById('advisorEmpty').style.display='block';
     }
-  }catch(e){
-    document.getElementById('advisorLoading').style.display='none';
-    document.getElementById('advisorEmpty').style.display='block';
   }
+}
+
+// Load the most recent saved analysis (any prior date) so CC/Advisor show the last run
+// until a fresh one is generated. Returns true if it loaded something.
+async function loadLatestAnalysisFallback(){
+  try{
+    var lr=await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listAnalyses:true})});
+    var ld=await lr.json();
+    var dates=(ld&&ld.dates)?ld.dates:[];
+    if(!dates.length) return false;
+    for(var i=0;i<dates.length;i++){
+      var rr=await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadResult:true,date:dates[i]})});
+      var rd=await rr.json();
+      var res=rd&&rd.result;
+      if(!res) continue;
+      if(typeof res==='string'){ try{ res=JSON.parse(res); }catch(e){ res={content:res}; } }
+      var norm=res;
+      if(res.content&&!res.daily&&!res.weekly&&!res.monthly){ var ty=res.type||'daily'; norm={}; norm[ty]={content:res.content,date:res.date,generated:res.generated}; }
+      if(norm.daily||norm.weekly||norm.monthly){
+        analysisData=norm;
+        try{ renderAnalysis(norm); }catch(e){}
+        try{ var _cc=document.getElementById('tab-command'); if(_cc && _cc.classList.contains('active') && typeof renderCommandCenter==='function') renderCommandCenter(); }catch(e){}
+        document.getElementById('advisorLoading').style.display='none';
+        document.getElementById('advisorContent').style.display='block';
+        return true;
+      }
+    }
+  }catch(e){}
+  return false;
 }
 
   const HEADER_TOOLTIPS = {
