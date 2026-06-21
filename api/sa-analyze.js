@@ -285,6 +285,78 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(200).json({ stocks: [], etfs: [], error: e.message }); }
   }
 
+  // ── saveRisk: parse the SA "Risks" sheet rows, save data/sa-risk-{date}.json ──
+  if (req.body && req.body.saveRisk && req.body.rows && GITHUB_TOKEN) {
+    try {
+      const date = new Date().toISOString().slice(0,10);
+      const fp = `data/sa-risk-${date}.json`;
+      const raw = req.body.rows;
+      // '-' / '' / null  => null (no data); numbers => Number
+      const num = v => {
+        if (v===undefined || v===null) return null;
+        const s = String(v).trim();
+        if (s==='' || s==='-' || s==='—' || s.toLowerCase()==='n/a') return null;
+        const n = Number(s.replace(/[$,%\s]/g,''));
+        return isNaN(n) ? null : n;
+      };
+      const pick = (r, ...keys) => { for(const k of keys){ if(r[k]!==undefined&&r[k]!==null&&r[k]!=='') return r[k]; } return null; };
+      const symbols = {};
+      for (const r of raw) {
+        const sym = (r.symbol || r.sym || r.Symbol); if(!sym) continue;
+        const S = String(sym).toUpperCase();
+        symbols[S] = {
+          beta24:    num(pick(r,'24M Beta','beta24','Beta','beta')),
+          beta60:    num(pick(r,'60M Beta','beta60')),
+          low52:     num(pick(r,'52W Low','low52')),
+          high52:    num(pick(r,'52W High','high52')),
+          altmanZ:   num(pick(r,'Altman Z Score','Altman Z','altmanZ')),
+          volume:    num(pick(r,'Volume','volume')),
+          marketCap: num(pick(r,'Market Cap','marketCap')),
+          price:     num(pick(r,'Price','price')),
+          changePct: num(pick(r,'Change %','changePct'))
+        };
+      }
+      const payload = JSON.stringify({ date, symbols, saved_at: new Date().toISOString(), count: Object.keys(symbols).length }, null, 2);
+      let sha = null;
+      try {
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+        if (ex.ok) sha = (await ex.json()).sha;
+      } catch {}
+      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
+        body: JSON.stringify({ message: `SA risk ${date}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) })
+      });
+      return res.status(200).json({ saved: sr.ok ? fp : false, count: Object.keys(symbols).length });
+    } catch(e) { return res.status(200).json({ saved: false, error: e.message }); }
+  }
+
+  // ── loadRisk: today's risk store, carry forward to most recent prior ──
+  if (req.body && req.body.loadRisk && GITHUB_TOKEN) {
+    try {
+      const today = new Date().toISOString().slice(0,10);
+      const readDay = async (date) => {
+        const fp = `data/sa-risk-${date}.json`;
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+        if (!ex.ok) return null;
+        const f = await ex.json();
+        return JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
+      };
+      let result = await readDay(today);
+      if (result) return res.status(200).json({ ...result, isCarryForward: false });
+      const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+      if (!dir.ok) return res.status(200).json({ symbols: {} });
+      const files = await dir.json();
+      const dates = (Array.isArray(files) ? files : [])
+        .map(f => (f.name||'').match(/^sa-risk-(\d{4}-\d{2}-\d{2})\.json$/))
+        .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
+      if (!dates.length) return res.status(200).json({ symbols: {} });
+      const prior = await readDay(dates[0]);
+      if (prior) return res.status(200).json({ ...prior, isCarryForward: true });
+      return res.status(200).json({ symbols: {} });
+    } catch(e) { return res.status(200).json({ symbols: {}, error: e.message }); }
+  }
+
   // ── bucketScore: read the SA portfolio store, run the horizon scorer, save buckets ──
   // Reads today's sa-portfolio-{date}.json (carry-forward to most recent prior if today
   // is missing, same as loadPortfolio), feeds stocks+etfs into computeBuckets (the
