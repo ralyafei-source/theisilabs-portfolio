@@ -1999,9 +1999,9 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
       </div>
       <div id="cc-progress" style="display:flex;align-items:center;gap:6px;"></div>
     </div>
-    <button onclick="renderCommandCenter()" style="font-size:10px;padding:5px 11px;border-radius:7px;background:var(--bg2);color:var(--text2);border:0.5px solid var(--border);cursor:pointer;">↻ تحديث</button>
+    <button onclick="ccRefresh()" style="font-size:10px;padding:5px 11px;border-radius:7px;background:var(--bg2);color:var(--text2);border:0.5px solid var(--border);cursor:pointer;">↻ تحديث</button>
   </div>
-  <div id="cc-grid" style="display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:10px;">
+  <div id="cc-grid" dir="rtl" style="display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:10px;text-align:right;">
     <div style="padding:40px;text-align:center;color:var(--text3);grid-column:1/-1;">جارٍ التحميل…</div>
   </div>
   <div style="font-size:8.5px;color:var(--text3);text-align:center;margin-top:12px;">معلومات للاطلاع لا توصية مالية · كل رقم اتجاه بهامش خطأ واسع · القرار قرارك</div>
@@ -4104,6 +4104,14 @@ function renderCommandCenter(){
     if(pe){ pe.innerHTML=dots+'<span style="font-size:10px;color:var(--text3);margin-inline-start:6px;font-family:'+MONO+';">'+loaded+'/'+sections.length+'</span>'; }
   }catch(e){}
 }
+function ccRefresh(){
+  renderCommandCenter();
+  fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadBuckets:true})})
+    .then(function(r){return r.json();})
+    .then(function(d){ if(d&&d.scored&&Object.keys(d.scored).length){ window._hzData=d; renderCommandCenter(); } }).catch(function(){});
+  if(typeof loadAnalysis==='function') loadAnalysis();
+}
+
 function showTab(name,el){
   if(name==='dashboard') setTimeout(function(){ if(typeof initLiveData==='function') initLiveData(); },100);
   if(name==='portfolio') setTimeout(function(){
@@ -4120,7 +4128,17 @@ function showTab(name,el){
   setTimeout(initSortableTables, 100);
   try{
     if(name==='trends') renderTrends();
-    if(name==='command'){ renderCommandCenter(); if(typeof loadAnalysis==='function' && (typeof analysisData==='undefined' || !analysisData)) loadAnalysis(); }
+    if(name==='command'){
+      renderCommandCenter();
+      // fetch horizon buckets if not loaded, then re-render
+      if(!(window._hzData && window._hzData.scored)){
+        fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadBuckets:true})})
+          .then(function(r){return r.json();})
+          .then(function(d){ if(d&&d.scored&&Object.keys(d.scored).length){ window._hzData=d; renderCommandCenter(); } }).catch(function(){});
+      }
+      // fetch analysis (loadAnalysis re-renders CC when done)
+      if(typeof loadAnalysis==='function' && (typeof analysisData==='undefined' || !analysisData)) loadAnalysis();
+    }
     if(name==='weights') renderWeights();
     if(name==='alerts') renderAlerts();
     if(name==='prompt') renderPrompt();
