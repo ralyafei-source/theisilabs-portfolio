@@ -3943,17 +3943,24 @@ function renderCommandCenter(){
     try{
       var raw=(analysisData.daily&&analysisData.daily.content)||'';
       if(!raw) return '';
-      // daily is strict JSON — pull executive_summary.summary_text
+      if(typeof raw!=='string'){ // already object
+        if(raw.executive_summary) return raw.executive_summary.summary_text||raw.executive_summary.weekly_decision||'';
+        raw=String(raw);
+      }
+      // try to isolate and parse a JSON object (advisor-style: first { to last })
       var txt='';
       try{
-        var j=(typeof raw==='string')?JSON.parse(raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'')):raw;
-        if(j&&j.executive_summary){
-          var es=j.executive_summary;
-          txt=es.summary_text||es.weekly_decision||'';
+        var c=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'');
+        var a=c.indexOf('{'), b=c.lastIndexOf('}');
+        if(a!==-1&&b!==-1&&b>a){
+          var j=JSON.parse(c.slice(a,b+1).trim());
+          if(j&&j.executive_summary){ txt=j.executive_summary.summary_text||j.executive_summary.weekly_decision||''; }
         }
       }catch(e){ txt=''; }
-      // fallback: if not JSON, use the raw prose
-      if(!txt && typeof raw==='string' && raw.indexOf('{')<0) txt=raw;
+      // fallback: marker-based prose — strip markers/symbols, take readable text
+      if(!txt){
+        txt=raw.replace(/```[\s\S]*?```/g,'').replace(/[═#*`|]+/g,' ').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+      }
       return txt;
     }catch(e){ return ''; }
   }
@@ -3984,7 +3991,7 @@ function renderCommandCenter(){
     +door('\u0641\u062a\u062d \u0627\u0644\u0645\u062d\u0641\u0638\u0629','portfolio');
 
   // B) Today's Read
-  var dc=clean(dailyC()).replace(/```json[\s\S]*?```/g,'').replace(/<[^>]+>/g,'').replace(/[#*`]/g,'').trim();
+  var dc=clean(dailyC()).trim();
   var todayInner=
     secLabel('\u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u064a\u0648\u0645')
     +(dc
