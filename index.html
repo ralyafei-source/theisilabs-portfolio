@@ -4221,8 +4221,9 @@ function renderCommandCenter(){
   // ---- NEW: Dividends card (real, from window._divData) ----
   function divCard(){
     var D=window._divData; if(!D) return null;
-    var payers=[]; var totalIncome=0; var weightedYield=0, yT=0;
-    stocks.forEach(function(s){ var d=D[s.sym]; if(d&&d.yield!=null&&d.yield>0){ var w=(s.mv||0)/total; payers.push({sym:s.sym, yld:d.yield, inc:d.estIncome, safety:d.safety}); if(d.estIncome) totalIncome+=d.estIncome*(s.shares||0)/( (s.shares&&d.estIncome)?1:1 ); weightedYield+=d.yield*w; yT+=w; } });
+    var payers=[]; var weightedYield=0, yT=0;
+    function ypct(y){ return y==null?null:(y<=1?y*100:y); } // decimal -> %
+    stocks.forEach(function(s){ var d=D[s.sym]; var y=d?ypct(d.yield):null; if(y!=null&&y>0){ var w=(s.mv||0)/total; payers.push({sym:s.sym, yld:y, safety:d.safety}); weightedYield+=y*w; yT+=w; } });
     if(!payers.length) return null;
     payers.sort(function(a,b){return (b.yld||0)-(a.yld||0);});
     var pw=(yT>0?weightedYield:0);
@@ -4302,6 +4303,8 @@ function renderCommandCenter(){
   }catch(e){}
 }
 function ccRefresh(){
+  // force a full re-fetch (clear caches + guards)
+  window._hzData=null; window._riskData=null; window._riskTried=false; window._divData=null; window._divTried=false;
   renderCommandCenter();
   fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadBuckets:true})})
     .then(function(r){return r.json();})
@@ -13360,24 +13363,29 @@ function saHandleExcel(input){
   if(st){ st.textContent='⏳ جاري قراءة الملف...'; st.className='sa-status'; }
   const reader=new FileReader();
   reader.onload=async function(e){
+    const tok=localStorage.getItem('theisilabs_session')||'';
+    // ---- INDEPENDENT: save Risks + Dividends sheets first, so a portfolio-parse
+    //      error can never prevent them (each fully isolated) ----
+    try{
+      var riskRows=sagExtractSheet(e.target.result, /risk/i);
+      if(riskRows.length){ await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({saveRisk:true, rows:riskRows})}); }
+    }catch(_){}
+    try{
+      var divRows=sagExtractSheet(e.target.result, /dividend/i);
+      if(divRows.length){ await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({saveDividends:true, rows:divRows})}); }
+    }catch(_){}
+    // refresh CC caches so the new risk/div data loads
+    try{ window._riskData=null; window._riskTried=false; window._divData=null; window._divTried=false; window._hzData=null;
+      if(typeof loadRiskData==='function') loadRiskData();
+      if(typeof loadDivData==='function') loadDivData();
+    }catch(_){}
     try{
       const rows=sagParseXLSX(e.target.result);   // both sheets, 41 cols + shares/cost
       window.saData.excelRows=rows;                // structured data for analysis
       window.saData.excelText='ROWS:'+rows.length+' ('+file.name+')';
       // Persist to the store via sa-analyze savePortfolio (keeps everything)
       try{
-        const tok=localStorage.getItem('theisilabs_session')||'';
         await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({savePortfolio:true, rows:rows})});
-        // NEW: also save the Risks and Dividends sheets (for the CC risk/dividend cards)
-        var riskRows=sagExtractSheet(e.target.result, /risk/i);
-        if(riskRows.length){ try{ await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({saveRisk:true, rows:riskRows})}); }catch(_){} }
-        var divRows=sagExtractSheet(e.target.result, /dividend/i);
-        if(divRows.length){ try{ await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({saveDividends:true, rows:divRows})}); }catch(_){} }
-        // force CC to re-pull the freshly saved data
-        try{ window._riskData=null; window._riskTried=false; window._divData=null; window._divTried=false; window._hzData=null;
-          if(typeof loadRiskData==='function') loadRiskData();
-          if(typeof loadDivData==='function') loadDivData();
-        }catch(_){}
       }catch(_){}
       if(st){ st.textContent='✓ '+rows.length+' سهم — '+file.name; st.className='sa-status ok'; }
       if(dot) dot.className='sa-check-dot filled';
