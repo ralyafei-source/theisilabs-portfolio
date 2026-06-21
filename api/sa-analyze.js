@@ -422,6 +422,52 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(200).json({ symbols: {}, error: e.message }); }
   }
 
+  // ── snapshotValue: append/overwrite today's portfolio total in a history file ──
+  //    Body: { snapshotValue:true, value:<number>, dayChange:<number|null> }
+  //    Idempotent per day (re-running same day overwrites that day's entry).
+  if (req.body && req.body.snapshotValue && req.body.value != null && GITHUB_TOKEN) {
+    try {
+      const date = new Date().toISOString().slice(0,10);
+      const fp = `data/portfolio-history.json`;
+      const val = Number(req.body.value);
+      if (!isFinite(val) || val <= 0) return res.status(200).json({ saved:false, error:'invalid value' });
+      const dayChange = (req.body.dayChange!=null && isFinite(Number(req.body.dayChange))) ? Number(req.body.dayChange) : null;
+      // read existing history
+      let history = [], sha = null;
+      try {
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+        if (ex.ok) { const f = await ex.json(); sha = f.sha; const parsed = JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); if (Array.isArray(parsed)) history = parsed; else if (parsed && Array.isArray(parsed.points)) history = parsed.points; }
+      } catch {}
+      // upsert today
+      const idx = history.findIndex(p => p && p.date === date);
+      const entry = { date, value: Math.round(val), dayChange: dayChange!=null?Math.round(dayChange):null };
+      if (idx >= 0) history[idx] = entry; else history.push(entry);
+      history.sort((a,b) => (a.date < b.date ? -1 : 1));
+      // cap to last 400 days
+      if (history.length > 400) history = history.slice(-400);
+      const payload = JSON.stringify({ points: history, updated_at: new Date().toISOString() }, null, 2);
+      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
+        body: JSON.stringify({ message: `portfolio snapshot ${date}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) })
+      });
+      return res.status(200).json({ saved: sr.ok ? fp : false, date, value: entry.value, points: history.length });
+    } catch(e) { return res.status(200).json({ saved:false, error: e.message }); }
+  }
+
+  // ── loadHistory: return the portfolio value history array ──
+  if (req.body && req.body.loadHistory && GITHUB_TOKEN) {
+    try {
+      const fp = `data/portfolio-history.json`;
+      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+      if (!ex.ok) return res.status(200).json({ points: [] });
+      const f = await ex.json();
+      const parsed = JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
+      const points = Array.isArray(parsed) ? parsed : (parsed && parsed.points ? parsed.points : []);
+      return res.status(200).json({ points });
+    } catch(e) { return res.status(200).json({ points: [], error: e.message }); }
+  }
+
   // ── bucketScore: read the SA portfolio store, run the horizon scorer, save buckets ──
   // Reads today's sa-portfolio-{date}.json (carry-forward to most recent prior if today
   // is missing, same as loadPortfolio), feeds stocks+etfs into computeBuckets (the
