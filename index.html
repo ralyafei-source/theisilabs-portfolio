@@ -4243,10 +4243,14 @@ function ccRefresh(){
 }
 
 function loadRiskData(){
-  if(window._riskData) { return; }
-  fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadRisk:true})})
-    .then(function(r){return r.json();})
-    .then(function(d){ if(d&&d.symbols){ window._riskData=d.symbols; renderCommandCenter(); } }).catch(function(){});
+  if(window._riskData || window._riskTried) { return; }
+  window._riskTried=true;
+  try{
+    fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadRisk:true})})
+      .then(function(r){return r.json();})
+      .then(function(d){ if(d&&d.symbols&&Object.keys(d.symbols).length){ window._riskData=d.symbols; renderCommandCenter(); } })
+      .catch(function(){});
+  }catch(e){}
 }
 
 function showTab(name,el){
