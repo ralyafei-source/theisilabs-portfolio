@@ -3939,7 +3939,24 @@ function renderCommandCenter(){
   // AI prose
   function parse(src){ try{ var c=(analysisData&&analysisData[src]&&analysisData[src].content)||''; return (typeof parseAnalysisSections==='function')?parseAnalysisSections(c,src):{}; }catch(e){ return {}; } }
   var P={daily:parse('daily'), weekly:parse('weekly'), monthly:parse('monthly')};
-  function dailyC(){ try{return (analysisData.daily&&analysisData.daily.content)||'';}catch(e){return '';} }
+  function dailyC(){
+    try{
+      var raw=(analysisData.daily&&analysisData.daily.content)||'';
+      if(!raw) return '';
+      // daily is strict JSON — pull executive_summary.summary_text
+      var txt='';
+      try{
+        var j=(typeof raw==='string')?JSON.parse(raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'')):raw;
+        if(j&&j.executive_summary){
+          var es=j.executive_summary;
+          txt=es.summary_text||es.weekly_decision||'';
+        }
+      }catch(e){ txt=''; }
+      // fallback: if not JSON, use the raw prose
+      if(!txt && typeof raw==='string' && raw.indexOf('{')<0) txt=raw;
+      return txt;
+    }catch(e){ return ''; }
+  }
   var srcCount=0; ['daily','weekly','monthly'].forEach(function(k){ try{ if(analysisData&&analysisData[k]&&analysisData[k].content) srcCount++; }catch(e){} });
 
   // buckets (horizon)
