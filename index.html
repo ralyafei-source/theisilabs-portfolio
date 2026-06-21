@@ -3900,7 +3900,7 @@ function renderCommandCenter(){
     return;
   }
   grid.style.gridTemplateColumns='1fr';
-  grid.style.gap='20px';
+  grid.style.gap='14px';
 
   function clean(x){
     if(x==null) return '';
@@ -3917,8 +3917,8 @@ function renderCommandCenter(){
   var MONO="'IBM Plex Mono',monospace";
   var AC='var(--accent,#FF0A78)';
   function door(label, tab){ return '<div onclick="showTab(\''+tab+'\',document.querySelector(\'[data-tab='+tab+']\'))" style="cursor:pointer;display:flex;align-items:center;gap:5px;color:'+AC+';font-size:11px;font-weight:600;margin-top:12px;">'+label+' \u2190</div>'; }
-  function panel(inner, opts){ opts=opts||{}; return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:'+(opts.pad||'22px')+';'+(opts.style||'')+'">'+inner+'</div>'; }
-  function secLabel(t, icon){ return '<div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:7px;justify-content:flex-start;">'+(icon||'')+'<span>'+t+'</span></div>'; }
+  function panel(inner, opts){ opts=opts||{}; return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:'+(opts.pad||'18px')+';'+(opts.style||'')+'">'+inner+'</div>'; }
+  function secLabel(t, icon){ return '<div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:9px;display:flex;align-items:center;gap:7px;justify-content:flex-start;">'+(icon||'')+'<span>'+t+'</span></div>'; }
 
   // ---- data ----
   var total=stocks.reduce(function(a,s){return a+(s.mv||0);},0);
@@ -3988,14 +3988,21 @@ function renderCommandCenter(){
 
   // ============ OPENING BRIEF ============
   // A) Portfolio Pulse (hero, rightmost/strongest)
-  var retLine = totalRet!=null
-    ? '<div style="font-size:12px;color:var(--text3);margin-top:10px;">\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u0639\u0627\u0626\u062f <span style="color:'+(totalRet>=0?'#19c37d':'#e5484d')+';font-family:'+MONO+';font-weight:700;">'+(totalRet>=0?'+':'')+totalRet.toFixed(1)+'%</span></div>'
-    : '';
+  // today's portfolio change (real, from live day data)
+  var dayDollar=0, haveDay=false;
+  stocks.forEach(function(s){ if(s.dayCh!=null && s.shares!=null){ dayDollar+=Number(s.dayCh)*s.shares; haveDay=true; } });
+  var dayPct=(haveDay&&total>0)?(dayDollar/(total-dayDollar)*100):null;
+  function metricChip(label,val,pos){ var c=val==null?'var(--text3)':(pos?'#19c37d':'#e5484d'); return '<div style="text-align:center;"><div style="font-size:9px;color:var(--text3);margin-bottom:2px;">'+label+'</div><div style="font-size:13px;font-weight:700;font-family:'+MONO+';color:'+c+';">'+(val==null?'\u2014':((pos?'+':'')+val.toFixed(2)+'%'))+'</div></div>'; }
+  var metricsRow='<div style="display:flex;gap:14px;justify-content:flex-start;margin-top:10px;">'
+    +(dayPct!=null?metricChip('\u0627\u0644\u064a\u0648\u0645',dayPct,dayPct>=0):'')
+    +(totalRet!=null?metricChip('\u0645\u0646\u0630 \u0627\u0644\u062a\u0643\u0644\u0641\u0629',totalRet,totalRet>=0):'')
+    +'</div>';
+  var retLine = metricsRow;
   var pulse=
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
       +secLabel('\u0646\u0628\u0636 \u0627\u0644\u0645\u062d\u0641\u0638\u0629')+'</div>'
     +'<div style="font-size:46px;font-weight:800;color:var(--text);font-family:'+MONO+';line-height:1;letter-spacing:-1px;">\u2248 $'+Math.round(total/1000)+'K</div>'
-    +'<div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text2);">'
+    +'<div style="display:flex;gap:12px;margin-top:12px;font-size:12px;color:var(--text2);">'
       +'<span>'+stocks.length+' \u0645\u0631\u0643\u0632</span><span style="color:var(--text3);">\u00b7</span><span>'+winners+' \u0631\u0627\u0628\u062d\u0629</span></div>'
     +retLine
     +door('\u0641\u062a\u062d \u0627\u0644\u0645\u062d\u0641\u0638\u0629','portfolio');
@@ -4036,7 +4043,7 @@ function renderCommandCenter(){
 
   var openingBrief=
     '<div>'+secLabel('\u0627\u0644\u0627\u0641\u062a\u062a\u0627\u062d\u064a\u0629')
-    +'<div style="display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:16px;align-items:stretch;">'
+    +'<div style="display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:12px;align-items:stretch;">'
       +panel(hzInner,{style:'display:flex;flex-direction:column;'})
       +panel(todayInner,{style:'display:flex;flex-direction:column;'})
       +panel(pulse,{style:'display:flex;flex-direction:column;background:linear-gradient(180deg,var(--bg2),var(--bg2));border-color:rgba(255,10,120,.25);'})
@@ -4048,9 +4055,20 @@ function renderCommandCenter(){
   sorted.slice(0,5).forEach(function(s){ var w=s.mv/total*100; if(w>10) reviewItems.push({cat:'\u062a\u0631\u0643\u0651\u0632 \u0645\u0631\u0643\u0632', txt:s.sym+' \u064a\u0634\u0643\u0644 '+w.toFixed(1)+'% \u0645\u0646 \u0627\u0644\u0645\u062d\u0641\u0638\u0629 (\u0648\u0632\u0646 \u0645\u0631\u062a\u0641\u0639).', tab:'portfolio'}); });
   // horizon disagreement (real): short vs long strongly diverge
   if(bk){ var dis=[]; Object.keys(bk).forEach(function(sym){ var o=bk[sym]; if(o&&o.owned&&o.short&&o.long&&o.short.score!=null&&o.long.score!=null){ var d=Math.abs(o.long.score-o.short.score); if(d>=45) dis.push({sym:sym,d:d,s:o.short.score,l:o.long.score}); } }); dis.sort(function(a,b){return b.d-a.d;}); if(dis.length){ var x=dis[0]; reviewItems.push({cat:'\u062a\u0639\u0627\u0631\u0636 \u0622\u0641\u0627\u0642', txt:x.sym+': \u0627\u0644\u0637\u0648\u064a\u0644 '+x.l+' \u0645\u0642\u0627\u0628\u0644 \u0627\u0644\u0642\u0635\u064a\u0631 '+x.s+' \u2014 \u0625\u0634\u0627\u0631\u0627\u062a \u0645\u062a\u0628\u0627\u064a\u0646\u0629 \u062a\u0633\u062a\u062d\u0642 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629.', tab:'horizon'}); } }
+  // risk-driven rows (real, from window._riskData)
+  if(window._riskData){
+    var RD=window._riskData;
+    // Altman distress among owned
+    var dz=[]; stocks.forEach(function(s){ var r=RD[s.sym]; if(r&&r.altmanZ!=null&&r.altmanZ<1.81) dz.push({sym:s.sym,z:r.altmanZ}); });
+    dz.sort(function(a,b){return a.z-b.z;});
+    if(dz.length){ var z0=dz[0]; reviewItems.push({cat:'\u0645\u0644\u0627\u0621\u0629 \u0645\u0627\u0644\u064a\u0629', txt:z0.sym+': \u0623\u0644\u062a\u0645\u0627\u0646 Z = '+z0.z.toFixed(2)+' \u2014 \u0636\u0645\u0646 \u0645\u0646\u0637\u0642\u0629 \u0627\u0644\u062e\u0637\u0631\u060c \u064a\u0633\u062a\u062d\u0642 \u0645\u0631\u0627\u062c\u0639\u0629 \u0627\u0644\u0648\u0636\u0639 \u0627\u0644\u0645\u0627\u0644\u064a.'+(dz.length>1?(' (+'+(dz.length-1)+' \u0623\u062e\u0631\u0649)'):''), tab:'advisor'}); }
+    // highest beta owned
+    var hb=null; stocks.forEach(function(s){ var r=RD[s.sym]; if(r&&r.beta24!=null&&(!hb||r.beta24>hb.b)) hb={sym:s.sym,b:r.beta24}; });
+    if(hb&&hb.b>1.5) reviewItems.push({cat:'\u062d\u0633\u0627\u0633\u064a\u0629 \u0627\u0644\u0633\u0648\u0642', txt:hb.sym+': \u0628\u064a\u062a\u0627 '+hb.b.toFixed(2)+' \u2014 \u0623\u0639\u0644\u0649 \u062a\u0642\u0644\u0628\u0627\u064b \u0645\u0646 \u0627\u0644\u0633\u0648\u0642\u060c \u062d\u0633\u0627\u0633 \u0644\u0644\u062a\u0642\u0644\u0628\u0627\u062a.', tab:'advisor'});
+  }
   var reviewSection='';
   if(reviewItems.length){
-    var rows=reviewItems.slice(0,4).map(function(it,i){
+    var rows=reviewItems.slice(0,5).map(function(it,i){
       var n=('0'+(i+1)).slice(-2);
       return '<div onclick="showTab(\''+it.tab+'\',document.querySelector(\'[data-tab='+it.tab+']\'))" style="cursor:pointer;display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--border);">'
         +'<span style="font-size:13px;font-weight:700;color:'+AC+';font-family:'+MONO+';width:24px;flex:none;">'+n+'</span>'
@@ -4063,15 +4081,20 @@ function renderCommandCenter(){
   }
 
   // ============ PORTFOLIO MAP ============
-  var bars=secRows.map(function(k){
-    var pct=bySec[k]/total*100;
-    var fill=(k==='tech')?AC:'var(--border3,#34344A)';
-    return '<div style="display:flex;align-items:center;gap:10px;margin:7px 0;">'
-      +'<span style="font-size:11px;color:var(--text2);width:78px;flex:none;text-align:right;">'+(secLabels[k]||k)+'</span>'
-      +'<div style="flex:1;height:7px;background:var(--bg3);border-radius:4px;overflow:hidden;"><div style="width:'+pct.toFixed(0)+'%;height:100%;background:'+fill+';border-radius:4px;"></div></div>'
-      +'<span style="font-size:11px;color:var(--text3);font-family:'+MONO+';width:36px;text-align:left;">'+pct.toFixed(0)+'%</span></div>';
-  }).join('');
-  var exposureInner=secLabel('\u0627\u0644\u062a\u0639\u0631\u0636 \u0648\u0627\u0644\u062a\u0631\u0643\u064a\u0632')+bars
+  // ---- donut sector chart (replaces bars) ----
+  var donutColors=['#FF0A78','#5b8def','#2bb3b8','#a06bd6','#46506b','#34344A'];
+  var segs=secRows.map(function(k,idx){ return {label:secLabels[k]||k, pct:bySec[k]/total*100, color:idx===0?donutColors[0]:donutColors[Math.min(idx,donutColors.length-1)]}; });
+  // collapse small tail into "other" if many sectors
+  var donutSegs=segs.slice(0,5);
+  if(segs.length>5){ var rest=segs.slice(5).reduce(function(a,b){return a+b.pct;},0); donutSegs.push({label:'\u0623\u062e\u0631\u0649', pct:rest, color:donutColors[5]}); }
+  var circ=2*Math.PI*42, off=0;
+  var ring=donutSegs.map(function(sg){ var len=circ*(sg.pct/100); var dash='<circle cx="60" cy="60" r="42" fill="none" stroke="'+sg.color+'" stroke-width="15" stroke-dasharray="'+len.toFixed(2)+' '+(circ-len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 60 60)"/>'; off+=len; return dash; }).join('');
+  var donutSvg='<svg viewBox="0 0 120 120" style="width:118px;height:118px;flex:none;">'+ring
+    +'<text x="60" y="56" text-anchor="middle" fill="var(--text)" font-size="15" font-weight="800" font-family="'+MONO+'">'+donutSegs[0].pct.toFixed(0)+'%</text>'
+    +'<text x="60" y="71" text-anchor="middle" fill="var(--text3)" font-size="8">'+donutSegs[0].label+'</text></svg>';
+  var legend=donutSegs.map(function(sg){ return '<div style="display:flex;align-items:center;gap:7px;margin:4px 0;font-size:11px;"><span style="width:8px;height:8px;border-radius:2px;background:'+sg.color+';flex:none;"></span><span style="color:var(--text2);flex:1;">'+sg.label+'</span><span style="color:var(--text3);font-family:'+MONO+';">'+sg.pct.toFixed(1)+'%</span></div>'; }).join('');
+  var donutBlock='<div style="display:flex;align-items:center;gap:14px;">'+donutSvg+'<div style="flex:1;">'+legend+'</div></div>';
+  var exposureInner=secLabel('\u0627\u0644\u062a\u0639\u0631\u0636 \u0648\u0627\u0644\u062a\u0631\u0643\u064a\u0632')+donutBlock
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">'
       +'<div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:9px;color:var(--text3);">\u0623\u0643\u0628\u0631 \u0645\u0631\u0643\u0632</div><div style="font-size:13px;font-weight:700;color:var(--text);margin-top:3px;">'+(biggest?biggest.sym:'\u2014')+' '+biggestPct.toFixed(1)+'%</div></div>'
       +'<div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:9px;color:var(--text3);">\u0639\u062f\u062f \u0627\u0644\u0645\u0631\u0627\u0643\u0632</div><div style="font-size:13px;font-weight:700;color:var(--text);margin-top:3px;">'+stocks.length+'</div></div>'
@@ -4089,7 +4112,7 @@ function renderCommandCenter(){
   var positionsInner=secLabel('\u0623\u0643\u0628\u0631 5 \u0645\u0631\u0627\u0643\u0632')+posHead+posRows+door('\u0639\u0631\u0636 \u062c\u0645\u064a\u0639 \u0627\u0644\u0645\u0631\u0627\u0643\u0632','portfolio');
 
   var mapSection='<div>'+secLabel('\u062e\u0631\u064a\u0637\u0629 \u0627\u0644\u0645\u062d\u0641\u0638\u0629')
-    +'<div style="display:grid;grid-template-columns:1fr 1.1fr;gap:16px;align-items:stretch;">'
+    +'<div style="display:grid;grid-template-columns:1fr 1.1fr;gap:12px;align-items:stretch;">'
       +panel(positionsInner)+panel(exposureInner)
     +'</div></div>';
 
@@ -4180,7 +4203,7 @@ function renderCommandCenter(){
   if(analysisCards.length){
     var cols=analysisCards.length;
     analysisSection='<div>'+secLabel('\u0623\u062d\u062f\u062b \u0627\u0644\u062a\u062d\u0644\u064a\u0644\u0627\u062a')
-      +'<div style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:16px;align-items:stretch;">'+analysisCards.join('')+'</div></div>';
+      +'<div style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:12px;align-items:stretch;">'+analysisCards.join('')+'</div></div>';
   }
 
   // ============ FOOTER ============
