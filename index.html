@@ -3935,6 +3935,8 @@ function renderCommandCenter(){
 
   // ---- shared tokens ----
   var MONO="'IBM Plex Mono',monospace";
+  var _PRIV=(typeof privacyOn!=='undefined'&&privacyOn);
+  function money(v){ return _PRIV?'$ \u2022\u2022\u2022':('$'+Math.round(v/1000)+'K'); }
   var AC='var(--accent,#FF0A78)';
   function door(label, tab){ return '<div onclick="showTab(\''+tab+'\',document.querySelector(\'[data-tab='+tab+']\'))" style="cursor:pointer;display:flex;align-items:center;gap:5px;color:'+AC+';font-size:11px;font-weight:600;margin-top:12px;">'+label+' \u2190</div>'; }
   function panel(inner, opts){ opts=opts||{}; return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:'+(opts.pad||'18px')+';'+(opts.style||'')+'">'+inner+'</div>'; }
@@ -4036,7 +4038,7 @@ function renderCommandCenter(){
   var pulse=
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
       +secLabel('\u0646\u0628\u0636 \u0627\u0644\u0645\u062d\u0641\u0638\u0629')+'</div>'
-    +'<div style="font-size:46px;font-weight:800;color:var(--text);font-family:'+MONO+';line-height:1;letter-spacing:-1px;">\u2248 $'+Math.round(total/1000)+'K</div>'
+    +'<div style="font-size:46px;font-weight:800;color:var(--text);font-family:'+MONO+';line-height:1;letter-spacing:-1px;">'+((typeof privacyOn!=='undefined'&&privacyOn)?'$ \u2022\u2022\u2022\u2022':('\u2248 $'+Math.round(total/1000)+'K'))+'</div>'
     +'<div style="display:flex;gap:12px;margin-top:12px;font-size:12px;color:var(--text2);">'
       +'<span>'+stocks.length+' \u0645\u0631\u0643\u0632</span><span style="color:var(--text3);">\u00b7</span><span>'+winners+' \u0631\u0627\u0628\u062d\u0629</span></div>'
     +retLine
@@ -4142,7 +4144,7 @@ function renderCommandCenter(){
     return '<div style="display:grid;grid-template-columns:1fr 60px 70px 64px;gap:0;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:11.5px;">'
       +'<span style="color:var(--text);font-weight:700;">'+s.sym+'</span>'
       +'<span style="text-align:left;color:var(--text3);font-family:'+MONO+';">'+w.toFixed(1)+'%</span>'
-      +'<span style="text-align:left;color:var(--text2);font-family:'+MONO+';">$'+Math.round((s.mv||0)/1000)+'K</span>'
+      +'<span style="text-align:left;color:var(--text2);font-family:'+MONO+';">'+money(s.mv||0)+'</span>'
       +'<span style="text-align:left;color:'+(g>=0?'#19c37d':'#e5484d')+';font-family:'+MONO+';">'+(g>=0?'+':'')+g.toFixed(1)+'%</span></div>';
   }).join('');
   var positionsInner=secLabel('\u0623\u0643\u0628\u0631 5 \u0645\u0631\u0627\u0643\u0632')+posHead+posRows+door('\u0639\u0631\u0636 \u062c\u0645\u064a\u0639 \u0627\u0644\u0645\u0631\u0627\u0643\u0632','portfolio');
@@ -9100,6 +9102,7 @@ function togglePrivacy(){
       if(el.dataset.orig){ el.innerHTML=el.dataset.orig; el.dataset.orig=''; }
     }
   });
+  try{ var _ccpv=document.getElementById('tab-command'); if(_ccpv && _ccpv.classList.contains('active') && typeof renderCommandCenter==='function') renderCommandCenter(); }catch(e){}
 }
 
 
