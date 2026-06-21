@@ -20,7 +20,7 @@
 <style>
 :root {
   /* Surfaces — near-black, layered (research: dark gray not pure black) */
-  --bg:#0B0B0D; --bg2:#121217; --bg3:#1A1A21; --bg4:#22222C;
+  --bg:#0B0B0D; --bg2:#121217; --bg3:#1A1A21; --bg4:#22222C; --dot:rgba(255,255,255,0.04);
   --border:#1F1F29; --border2:#2A2A38; --border3:#34344A;
   /* Brand — Magenta is the ONLY identity color */
   --rose:#FF0A78; --rose-soft:#FF4D92; --rose-dim:rgba(255,10,120,0.10); --rose-line:rgba(255,10,120,0.22);
@@ -46,7 +46,7 @@
 [data-mode="light"]{
   /* Light — cool neutral grays, NOT warm beige. Clean & premium */
   /* Canvas is a clear step darker than cards so white cards lift off it */
-  --bg:#EDEEF2; --bg2:#FFFFFF; --bg3:#F4F5F8; --bg4:#E4E6EC;
+  --bg:#EDEEF2; --bg2:#FFFFFF; --bg3:#F4F5F8; --bg4:#E4E6EC; --dot:rgba(0,0,0,0.045);
   --border:#E2E4EA; --border2:#D3D6DF; --border3:#BFC3CF;
   --rose-dim:rgba(255,10,120,0.07); --rose-line:rgba(255,10,120,0.18);
   --up:#059669; --green:#059669; --green-dim:rgba(5,150,105,0.08);
@@ -732,7 +732,7 @@ body{font-family:'Almarai',sans-serif;background:var(--bg);color:var(--text);}
 #appSidebar:hover .sb-lbl{opacity:1;}
 .sb-sep{height:1px;background:var(--border);margin:8px 16px;flex-shrink:0;}
 
-#appMain{flex:1;overflow-y:auto;overflow-x:hidden;background:var(--bg);min-width:0;}
+#appMain{flex:1;overflow-y:auto;overflow-x:hidden;background:var(--bg);min-width:0;background-image:radial-gradient(circle, var(--dot,rgba(255,255,255,0.035)) 1px, transparent 1px);background-size:22px 22px;background-attachment:fixed;}
 .page-inner{max-width:1380px;margin:0 auto;padding:24px 28px 56px;}
 @media(max-width:700px){.page-inner{padding:16px 14px 40px;}}
 
