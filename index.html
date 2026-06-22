@@ -4435,7 +4435,23 @@ function loadBriefData(){
         try{ var r=await fetch('https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/market/brief-'+nick+'-'+dstr(o)+'.json?t='+Date.now()); if(r.ok){ d=await r.json(); break; } }catch(e){}
       }
       if(!d){ try{ var r2=await fetch('/api/briefing?nickname='+nick); if(r2.ok){ d=await r2.json(); } }catch(e){} }
-      if(d && typeof _unwrapBrief==='function'){ d=_unwrapBrief(d); }
+      // inline unwrap (the portfolio-tab _unwrapBrief is nested/out of scope here)
+      function _unwrap(x){
+        for(var i=0;i<4;i++){
+          if(x && typeof x==='object' && (x.mood||x.moves||x.dates||x.news)) return x;
+          var s=null;
+          if(typeof x==='string') s=x;
+          else if(x && typeof x==='object' && typeof x.content==='string') s=x.content;
+          else if(x && typeof x==='object' && Array.isArray(x.content)) s=x.content.filter(function(c){return c&&c.type==='text';}).map(function(c){return c.text||'';}).join('\n');
+          if(s==null) return (x&&typeof x==='object')?x:null;
+          var c=s.replace(/```json\s*/gi,'').replace(/```\s*/g,'');
+          var a=c.indexOf('{'), b=c.lastIndexOf('}');
+          if(a===-1||b<=a) return null;
+          try{ x=JSON.parse(c.slice(a,b+1)); }catch(e){ return null; }
+        }
+        return (x&&typeof x==='object')?x:null;
+      }
+      if(d){ d=_unwrap(d); }
       if(d){ window._briefData=d; renderCommandCenter(); }
     })();
   }catch(e){}
