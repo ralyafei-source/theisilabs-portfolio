@@ -4319,7 +4319,57 @@ function renderCommandCenter(){
     return panel(secLabel('\u0627\u0644\u0645\u062f\u0649 (52 \u0623\u0633\u0628\u0648\u0639)')+rows+'<div style="font-size:9.5px;color:var(--text3);margin-top:6px;">\u0627\u0644\u0645\u0648\u0642\u0639 \u0628\u064a\u0646 \u0627\u0644\u0642\u0627\u0639 \u0648\u0627\u0644\u0642\u0645\u0629</div>'+door('\u0639\u0631\u0636 \u0627\u0644\u0645\u0631\u0627\u0643\u0632','portfolio'));
   }
 
-  var analysisCards=[riskCard(),fairCard(),longCard(),divCard(),rangeCard()].filter(Boolean);
+  // ---- NEW: Upcoming earnings card (from briefing d.dates, matched to holdings) ----
+  function earningsCard(){
+    var B=window._briefData; if(!B||!B.dates||!B.dates.length) return null;
+    var arMonths={'يناير':0,'فبراير':1,'مارس':2,'أبريل':3,'إبريل':3,'مايو':4,'يونيو':5,'يوليو':6,'أغسطس':7,'أغسطس ':7,'سبتمبر':8,'أكتوبر':9,'نوفمبر':10,'ديسمبر':11};
+    var heldSet={}; stocks.forEach(function(s){ heldSet[s.sym]=true; });
+    function parseTime(t){
+      if(!t) return null; t=String(t).trim();
+      // Arabic "6 أغسطس 2026"
+      var m=t.match(/(\d{1,2})\s+([\u0600-\u06FF]+)\s+(\d{4})/);
+      if(m){ var mo=arMonths[m[2]]; if(mo!=null) return new Date(Date.UTC(+m[3],mo,+m[1])); }
+      // ISO or numeric fallback
+      var d2=new Date(t); return isNaN(d2.getTime())?null:d2;
+    }
+    var today=new Date(); today.setHours(0,0,0,0);
+    var rows=[];
+    B.dates.forEach(function(dt){
+      var ev=dt.event||''; var sym=(ev.match(/^([A-Z]{1,6})\b/)||[])[1]||'';
+      var when=parseTime(dt.time);
+      if(!sym) return;
+      var days = when?Math.round((when-today)/86400000):null;
+      rows.push({sym:sym, held:!!heldSet[sym], days:days, when:when, time:dt.time||'', ev:ev});
+    });
+    // only held + upcoming (days>=0 or unknown), sorted soonest first
+    var held=rows.filter(function(r){ return r.held && (r.days==null || r.days>=0); });
+    held.sort(function(a,b){ if(a.days==null) return 1; if(b.days==null) return -1; return a.days-b.days; });
+    if(!held.length) return null;
+    var list=held.slice(0,5).map(function(r){
+      var badge = r.days==null?'':(r.days===0?'اليوم':r.days===1?'غداً':('بعد '+r.days+' يوم'));
+      var soon = (r.days!=null && r.days<=7);
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:11.5px;">'
+        +'<span style="'+(soon?'color:'+AC+';font-weight:700;':'color:var(--text3);')+'font-family:'+MONO+';">'+badge+'</span>'
+        +'<span style="color:var(--text);font-weight:600;">'+r.sym+'</span></div>';
+    }).join('');
+    return panel(secLabel('\u0627\u0644\u0623\u0631\u0628\u0627\u062d \u0627\u0644\u0642\u0627\u062f\u0645\u0629')+list+'<div style="font-size:9.5px;color:var(--text3);margin-top:6px;">\u0645\u0648\u0627\u0639\u064a\u062f \u0625\u0639\u0644\u0627\u0646 \u0623\u0631\u0628\u0627\u062d \u0623\u0633\u0647\u0645\u0643</div>'+door('\u0641\u062a\u062d \u0627\u0644\u062a\u062d\u0644\u064a\u0644','portfolio'));
+  }
+
+  // ---- NEW: News affecting portfolio card (from briefing d.news) ----
+  function newsCard(){
+    var B=window._briefData; if(!B||!B.news||!B.news.length) return null;
+    var sc=function(s){ return s==='positive'?'#19c37d':s==='negative'?'#e5484d':'var(--text3)'; };
+    var list=B.news.slice(0,4).map(function(n){
+      var syms=Array.isArray(n.syms)?n.syms.slice(0,5).join(' \u00b7 '):String(n.syms||'');
+      return '<div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">'
+        +'<span style="width:7px;height:7px;border-radius:50%;background:'+sc(n.sentiment)+';flex:none;margin-top:5px;"></span>'
+        +'<div><div style="font-size:11.5px;color:var(--text);line-height:1.6;">'+(n.title||'')+'</div>'
+        +(syms?'<div style="font-size:10px;color:var(--text3);font-family:'+MONO+';margin-top:2px;">'+syms+'</div>':'')+'</div></div>';
+    }).join('');
+    return panel(secLabel('\u0623\u062e\u0628\u0627\u0631 \u062a\u0645\u0633 \u0645\u062d\u0641\u0638\u062a\u0643')+list+door('\u0641\u062a\u062d \u0627\u0644\u062a\u062d\u0644\u064a\u0644','portfolio'));
+  }
+
+  var analysisCards=[riskCard(),fairCard(),longCard(),divCard(),rangeCard(),earningsCard(),newsCard()].filter(Boolean);
   var analysisSection='';
   if(analysisCards.length){
     var cols=Math.min(3,analysisCards.length);
@@ -4344,7 +4394,9 @@ function renderCommandCenter(){
       {name:'\u0627\u0644\u0642\u064a\u0645\u0629 \u0627\u0644\u0645\u0642\u062f\u0631\u0629', on:!!fairCard()},
       {name:'\u0627\u0644\u0631\u0624\u064a\u0629 \u0627\u0644\u0628\u0639\u064a\u062f\u0629', on:!!longCard()},
       {name:'\u0627\u0644\u062a\u0648\u0632\u064a\u0639\u0627\u062a', on:!!divCard()},
-      {name:'\u0627\u0644\u0645\u062f\u0649', on:!!rangeCard()}
+      {name:'\u0627\u0644\u0645\u062f\u0649', on:!!rangeCard()},
+      {name:'\u0627\u0644\u0623\u0631\u0628\u0627\u062d', on:!!earningsCard()},
+      {name:'\u0627\u0644\u0623\u062e\u0628\u0627\u0631', on:!!newsCard()}
     ];
     var loaded=sections.filter(function(x){return x.on;}).length;
     var dots=sections.map(function(x){
@@ -4358,7 +4410,7 @@ function renderCommandCenter(){
 }
 function ccRefresh(){
   // force a full re-fetch (clear caches + guards)
-  window._hzData=null; window._riskData=null; window._riskTried=false; window._divData=null; window._divTried=false; window._histData=null; window._histTried=false;
+  window._hzData=null; window._riskData=null; window._riskTried=false; window._divData=null; window._divTried=false; window._histData=null; window._histTried=false; window._briefData=null; window._briefTried=false;
   renderCommandCenter();
   fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadBuckets:true})})
     .then(function(r){return r.json();})
@@ -4366,8 +4418,27 @@ function ccRefresh(){
   loadRiskData();
   loadDivData();
   loadHistoryData();
+  loadBriefData();
   snapshotToday();
   if(typeof loadAnalysis==='function') loadAnalysis();
+}
+
+function loadBriefData(){
+  if(window._briefData || window._briefTried){ return; }
+  window._briefTried=true;
+  try{
+    var nick='rashed'; try{ nick=(localStorage.getItem('theisilabs_nick')||'rashed').toLowerCase(); }catch(e){}
+    var dstr=function(o){ return new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10); };
+    (async function(){
+      var d=null;
+      for(var o=0;o<3;o++){
+        try{ var r=await fetch('https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/market/brief-'+nick+'-'+dstr(o)+'.json?t='+Date.now()); if(r.ok){ d=await r.json(); break; } }catch(e){}
+      }
+      if(!d){ try{ var r2=await fetch('/api/briefing?nickname='+nick); if(r2.ok){ d=await r2.json(); } }catch(e){} }
+      if(d && typeof _unwrapBrief==='function'){ d=_unwrapBrief(d); }
+      if(d){ window._briefData=d; renderCommandCenter(); }
+    })();
+  }catch(e){}
 }
 
 function loadHistoryData(){
@@ -4449,6 +4520,7 @@ function showTab(name,el){
       if(typeof loadRiskData==='function') loadRiskData();
       if(typeof loadDivData==='function') loadDivData();
       if(typeof loadHistoryData==='function') loadHistoryData();
+      if(typeof loadBriefData==='function') loadBriefData();
       if(typeof snapshotToday==='function') snapshotToday();
     }
     if(name==='weights') renderWeights();
