@@ -4674,6 +4674,24 @@ async function loadBriefing(){
       if(r.ok){ d=await r.json(); break; }
     }catch(e){}
   }
+  // Normalize: the brief may be double-encoded (a JSON string), fence-wrapped, or
+  // wrapped in {content:"..."}. Unwrap until we have an object with mood/moves.
+  function _unwrapBrief(x){
+    for(let i=0;i<4;i++){
+      if(x && typeof x==='object' && (x.mood||x.moves)) return x;
+      let s=null;
+      if(typeof x==='string') s=x;
+      else if(x && typeof x==='object' && typeof x.content==='string') s=x.content;
+      else if(x && typeof x==='object' && Array.isArray(x.content)) s=x.content.filter(c=>c&&c.type==='text').map(c=>c.text||'').join('\n');
+      if(s==null) return (x&&typeof x==='object')?x:null;
+      const c=s.replace(/```json\s*/gi,'').replace(/```\s*/g,'');
+      const a=c.indexOf('{'), b=c.lastIndexOf('}');
+      if(a===-1||b<=a) return null;
+      try{ x=JSON.parse(c.slice(a,b+1)); }catch(e){ return null; }
+    }
+    return (x&&typeof x==='object')?x:null;
+  }
+  d=_unwrapBrief(d);
 
   // Fallback: try the old /api/briefing endpoint
   if(!d){
