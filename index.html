@@ -4699,17 +4699,23 @@ async function loadBriefing(){
       const r=await fetch('/api/briefing?nickname='+nick);
       if(r.ok){
         const legacy=await r.json();
-        let text='';
-        if(typeof legacy.content==='string') text=legacy.content;
-        else if(Array.isArray(legacy.content)) text=legacy.content.filter(c=>c.type==='text').map(c=>c.text||'').join('\n');
-        if(text.trim()){
-          box.innerHTML=`<div class="brief-body firm-body${ar?'':' en'}" style="font-size:13px;line-height:1.8;">${text.replace(/\n/g,'<br>')}</div>`;
-          return;
+        const du=_unwrapBrief(legacy);
+        if(du && (du.mood||du.moves)){ d=du; }
+        else{
+          let text='';
+          if(typeof legacy.content==='string') text=legacy.content;
+          else if(Array.isArray(legacy.content)) text=legacy.content.filter(c=>c.type==='text').map(c=>c.text||'').join('\n');
+          if(text.trim()){
+            box.innerHTML=`<div class="brief-body firm-body${ar?'':' en'}" style="font-size:13px;line-height:1.8;">${text.replace(/\n/g,'<br>')}</div>`;
+            return;
+          }
         }
       }
     }catch(e){}
-    box.innerHTML=`<div style="font-size:12px;color:var(--text2);padding:12px 0;">${ar?'التحليل غير متاح بعد. يتم التحديث يومياً في الصباح.':'Analysis not available yet. Updates daily in the morning.'}</div>`;
-    return;
+    if(!d){
+      box.innerHTML=`<div style="font-size:12px;color:var(--text2);padding:12px 0;">${ar?'التحليل غير متاح بعد. يتم التحديث يومياً في الصباح.':'Analysis not available yet. Updates daily in the morning.'}</div>`;
+      return;
+    }
   }
 
   // Set date label
