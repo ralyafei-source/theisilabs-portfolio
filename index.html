@@ -4700,7 +4700,7 @@ async function loadBriefing(){
       if(r.ok){
         const legacy=await r.json();
         const du=_unwrapBrief(legacy);
-        if(du && (du.mood||du.moves)){ d=du; }
+        if(du && (du.mood||du.moves)){ d=du; if(!d.date){ d.date=legacy.date||legacy.generated_at||legacy.created_at||legacy.updated_at||(legacy.meta&&legacy.meta.date)||null; } }
         else{
           let text='';
           if(typeof legacy.content==='string') text=legacy.content;
@@ -4718,8 +4718,26 @@ async function loadBriefing(){
     }
   }
 
-  // Set date label
-  if(dateEl && d.date) dateEl.textContent=d.date;
+  // Set date label — show WHEN the analysis ran + staleness, so stale data is obvious
+  if(dateEl){
+    var rawDate=d.date||d.generated_at||d.updated_at||null;
+    if(rawDate){
+      var runDate=new Date(rawDate);
+      if(!isNaN(runDate.getTime())){
+        var todayMid=new Date(); todayMid.setHours(0,0,0,0);
+        var runMid=new Date(runDate); runMid.setHours(0,0,0,0);
+        var days=Math.round((todayMid-runMid)/86400000);
+        var dstr2=runDate.toISOString().slice(0,10);
+        var ageAr = days<=0?'اليوم':days===1?'أمس':('قبل '+days+' أيام');
+        var ageEn = days<=0?'today':days===1?'yesterday':(days+' days ago');
+        var stale = days>=2;
+        dateEl.innerHTML = (ar?'آخر تحليل: ':'Last run: ')+dstr2+' · '
+          +'<span style="'+(stale?'color:var(--rose);font-weight:700;':'')+'">'+(ar?ageAr:ageEn)+'</span>';
+      } else { dateEl.textContent=String(rawDate); }
+    } else {
+      dateEl.textContent = ar?'تاريخ التشغيل غير معروف':'Run date unknown';
+    }
+  }
 
   // Render the approved layout
   const sent=s=>s==='positive'?(ar?'إيجابي':'Positive'):s==='negative'?(ar?'سلبي':'Negative'):(ar?'محايد':'Neutral');
