@@ -2520,7 +2520,7 @@ WOLF remains at critical lows<br><br>
           <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--accent);font-size:11px;">PC</div>
           <div>
             <div class="firm-title">Portfolio Context</div>
-            <div class="firm-subtitle">Concentration · Sector exposure · Sharia check · UAE tax impact</div>
+            <div class="firm-subtitle">Concentration · Sector exposure · Risk factors</div>
           </div>
         </div>
         <div class="firm-body" id="portfolio-context-body"></div>
@@ -2544,7 +2544,7 @@ WOLF remains at critical lows<br><br>
           <div class="firm-logo" style="background:var(--bg3);border:1px solid var(--border);color:var(--gold);font-size:11px;">CF</div>
           <div>
             <div class="firm-title">Conflicts Resolved</div>
-            <div class="firm-subtitle">Quant vs Analyst disagreements · Resolved for YOUR position & UAE tax context</div>
+            <div class="firm-subtitle">Quant vs Analyst disagreements · Resolved for YOUR position</div>
           </div>
         </div>
         <div class="firm-body" id="conflicts-body"></div>
@@ -3989,8 +3989,6 @@ function renderCommandCenter(){
           var t=pc.top_concentration[0];
           parts.push('\u0623\u0639\u0644\u0649 \u062a\u0631\u0643\u0651\u0632: '+t.sym+' ('+t.pct_of_portfolio+').');
         }
-        // tax note (readable sentence)
-        if(pc.uae_tax_note) parts.push(pc.uae_tax_note);
         if(parts.length) return parts.join(' ');
         // any conflict as fallback
         if(j.conflicts_resolved&&j.conflicts_resolved.length){ var cf=j.conflicts_resolved[0]; if(cf.conflict_type) return cf.sym+': '+cf.conflict_type; }
@@ -4307,22 +4305,6 @@ function renderCommandCenter(){
       +list+'<div style="font-size:9.5px;color:var(--text3);margin-top:7px;">\u0623\u0639\u0644\u0649 \u0627\u0644\u0639\u0648\u0627\u0626\u062f</div>'+door('\u0639\u0631\u0636 \u0627\u0644\u062a\u0648\u0632\u064a\u0639\u0627\u062a','portfolio'));
   }
 
-  // ---- NEW: Sharia compliance card (from daily JSON sharia_check) ----
-  function shariaCard(){
-    try{
-      var raw=(analysisData&&analysisData.daily&&analysisData.daily.content)||''; if(!raw) return null;
-      var j=null; try{ var c=String(raw).replace(/```json\s*/gi,'').replace(/```\s*/g,''); var a=c.indexOf('{'),b=c.lastIndexOf('}'); if(a!==-1&&b>a) j=JSON.parse(c.slice(a,b+1)); }catch(e){ return null; }
-      var sc=j&&j.portfolio_context&&j.portfolio_context.sharia_check; if(!sc) return null;
-      var status=sc.status||''; var spus=sc.spus_weight||'';
-      var ok=status.indexOf('\u0645\u062d\u0645\u064a')>=0 || status.indexOf('\u0645\u062a\u0648\u0627\u0641\u0642')>=0;
-      return panel(secLabel('\u0627\u0644\u062a\u0648\u0627\u0641\u0642 \u0627\u0644\u0634\u0631\u0639\u064a')
-        +'<div style="display:flex;align-items:center;gap:10px;margin:6px 0;"><span style="width:9px;height:9px;border-radius:50%;background:'+(ok?'#19c37d':'#e5aa00')+';"></span>'
-        +'<span style="font-size:13px;color:var(--text);font-weight:600;">'+(status||'\u063a\u064a\u0631 \u0645\u062d\u062f\u062f')+'</span></div>'
-        +(spus?'<div style="font-size:11px;color:var(--text3);">\u0648\u0632\u0646 SPUS: '+spus+'</div>':'')
-        +door('\u0641\u062a\u062d \u0627\u0644\u062a\u062d\u0644\u064a\u0644','advisor'));
-    }catch(e){ return null; }
-  }
-
   // ---- NEW: 52-week range card (from window._riskData) ----
   function rangeCard(){
     var R=window._riskData; if(!R) return null;
@@ -4337,7 +4319,7 @@ function renderCommandCenter(){
     return panel(secLabel('\u0627\u0644\u0645\u062f\u0649 (52 \u0623\u0633\u0628\u0648\u0639)')+rows+'<div style="font-size:9.5px;color:var(--text3);margin-top:6px;">\u0627\u0644\u0645\u0648\u0642\u0639 \u0628\u064a\u0646 \u0627\u0644\u0642\u0627\u0639 \u0648\u0627\u0644\u0642\u0645\u0629</div>'+door('\u0639\u0631\u0636 \u0627\u0644\u0645\u0631\u0627\u0643\u0632','portfolio'));
   }
 
-  var analysisCards=[riskCard(),fairCard(),longCard(),divCard(),shariaCard(),rangeCard()].filter(Boolean);
+  var analysisCards=[riskCard(),fairCard(),longCard(),divCard(),rangeCard()].filter(Boolean);
   var analysisSection='';
   if(analysisCards.length){
     var cols=Math.min(3,analysisCards.length);
@@ -4362,7 +4344,6 @@ function renderCommandCenter(){
       {name:'\u0627\u0644\u0642\u064a\u0645\u0629 \u0627\u0644\u0645\u0642\u062f\u0631\u0629', on:!!fairCard()},
       {name:'\u0627\u0644\u0631\u0624\u064a\u0629 \u0627\u0644\u0628\u0639\u064a\u062f\u0629', on:!!longCard()},
       {name:'\u0627\u0644\u062a\u0648\u0632\u064a\u0639\u0627\u062a', on:!!divCard()},
-      {name:'\u0627\u0644\u0634\u0631\u0639\u064a', on:!!shariaCard()},
       {name:'\u0627\u0644\u0645\u062f\u0649', on:!!rangeCard()}
     ];
     var loaded=sections.filter(function(x){return x.on;}).length;
@@ -7418,8 +7399,7 @@ function renderPortfolioContext(content){
   if(pc.sector_exposure){const se=pc.sector_exposure;const bw=se.bridgewater_warning;html+=`<div style="flex:1;min-width:160px;background:var(--bg3);border:1px solid ${bw?'var(--red)':'var(--border)'};border-radius:10px;padding:12px;"><div style="font-size:10px;color:var(--text3);margin-bottom:4px;">تقنية ${bw?'⚠️':''}</div><div style="font-size:18px;font-weight:700;color:${bw?'var(--red)':'var(--text)'};">${se.tech_total_pct}</div><div style="font-size:10px;color:var(--text3);">أشباه موصلات: ${se.semiconductors_pct}</div></div>`;}
   html += `</div>`;
   if(pc.top_concentration&&pc.top_concentration.length){html+=`<div style="margin-bottom:16px;"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;">أكبر المراكز</div><div style="display:flex;flex-direction:column;gap:6px;">`;pc.top_concentration.forEach(pos=>{const isBreach=pos.alert&&pos.alert.toLowerCase().includes('25');const isHigh=pos.alert&&pos.alert.toLowerCase().includes('high');const color=isBreach?'var(--red)':isHigh?'var(--gold)':'var(--accent2)';html+=`<div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;"><div style="font-weight:700;font-size:13px;min-width:50px;">${pos.sym}</div><div style="flex:1;background:var(--bg2);border-radius:4px;height:6px;"><div style="width:${Math.min(parseFloat(pos.pct_of_portfolio)||0,100)}%;background:${color};height:6px;border-radius:4px;"></div></div><div style="font-size:12px;color:${color};font-weight:700;min-width:40px;">${pos.pct_of_portfolio}</div><div style="font-size:11px;color:var(--text2);">${pos.dollar_value}</div><div style="font-size:10px;color:var(--text3);">${pos.sa_quant}</div></div>`;});html+=`</div></div>`;}
-  if(pc.sharia_check){const sc=pc.sharia_check;html+=`<div style="background:rgba(0,200,100,0.08);border:1px solid rgba(0,200,100,0.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;"><span style="font-size:16px;">☪️</span><div><div style="font-size:12px;font-weight:700;color:var(--accent2);">SPUS ${sc.spus_weight}</div><div style="font-size:11px;color:var(--text2);">${sc.status}</div></div></div>`;}
-  if(pc.uae_tax_note){html+=`<div style="background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.15);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);">🇦🇪 ${pc.uae_tax_note}</div>`;}
+
   return html;
 }
 
@@ -12641,7 +12621,7 @@ function evaluateZone2(){
     const rec={sym:s.sym,kind:'price',tier,pct,impact:sh*(Number(s.dayCh)||0),wk};
     if(tier>=2)items.push(rec); else fyi.push(rec);
   });
-  // Event alerts from 922 attention file (downgrade / earnings miss / sharia removal)
+  // Event alerts from 922 attention file (downgrade / earnings miss)
   (Array.isArray(CALM.attention)?CALM.attention:[]).forEach(ev=>{
     const sym=String(ev.symbol||ev.sym||'').toUpperCase(); if(!sym)return;
     const held=stocks.find(s=>s.sym===sym&&(Number(s.shares!=null?s.shares:s._shares)||0)>0); if(!held)return;
@@ -14058,7 +14038,7 @@ async function saRunAnalysis() {
   ].filter(Boolean).join('\n\n');
 
   const cashStr = cashUSD > 0 ? '$'+cashUSD.toLocaleString()+' / '+inputs.cash.toLocaleString()+' '+inputs.currency : 'غير محدد';
-    const prompt = `محلل استثماري — مستثمر إماراتي، لا ضريبة.
+    const prompt = `محلل استثماري — مستثمر إماراتي.
 محفظة: ~49 سهم، ~$551K. كاش متاح: ${cashUSD > 0 ? '$'+cashUSD.toLocaleString() : 'غير محدد'}.
 
 أسهم رئيسية (وزن/ربح):
