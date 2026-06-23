@@ -251,11 +251,6 @@ function buildCatalysts(pastEarnings, grades, ownedSet, opts = {}) {
   return out;
 }
 
-  // newest first within each symbol
-  Object.values(out).forEach(list => list.sort((x, y) => (y.date < x.date ? -1 : 1)));
-  return out;
-}
-
 // ─── Extract latest value from FMP indicator response ────────────────────────
 function latest(arr, field) {
   if (!Array.isArray(arr) || arr.length === 0) return null;
