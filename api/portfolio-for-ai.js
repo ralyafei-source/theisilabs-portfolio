@@ -164,6 +164,85 @@ function daysAheadUAE(n) {
   return new Date(Date.now() + 4 * 3600 * 1000 + n * 86400000).toISOString().slice(0, 10);
 }
 
+function daysAgoUAE(n) {
+  return new Date(Date.now() + 4 * 3600 * 1000 - n * 86400000).toISOString().slice(0, 10);
+}
+
+// ─── CATALYST BUILDER (Session 35) ───────────────────────────────────────────
+// Turns recent earnings (actual vs estimate) + recent grade actions into a clean,
+// dated catalyst list. 14-day window. Tags: earnings_beat / earnings_miss /
+// upgrade / downgrade. Explains, never predicts. (THEISI Core Principle.)
+function buildCatalysts(pastEarnings, grades, ownedSet) {
+  const WINDOW_DAYS   = 14;
+  const EPS_PCT_MIN   = 5;      // surprise must be > 5%
+  const EPS_ABS_MIN   = 0.02;   // AND the absolute EPS gap must be >= $0.02
+                                // (guards against penny-EPS % blowups, e.g. 0.01→0.02 = "+100%")
+  const cutoff = daysAgoUAE(WINDOW_DAYS);
+  const today  = todayUAE();
+  const out = {};   // { SYM: [ {type, label_ar, date, age_days, color, detail} ] }
+
+  const ageDays = (dateStr) => {
+    if (!dateStr) return null;
+    const d = String(dateStr).slice(0, 10);
+    const ms = new Date(today) - new Date(d);
+    return ms >= 0 ? Math.round(ms / 86400000) : null;
+  };
+  const push = (sym, item) => { if (!out[sym]) out[sym] = []; out[sym].push(item); };
+
+  // ── Earnings surprises (from the backward earnings-calendar query) ──────────
+  (pastEarnings || []).forEach(e => {
+    const sym = e.symbol;
+    const date = String(e.date || '').slice(0, 10);
+    if (!sym || !date || date < cutoff || date > today) return;
+
+    // FMP earnings-calendar field names vary by tier; try the common ones.
+    const actual   = e.epsActual    ?? e.eps          ?? e.actualEarningResult ?? null;
+    const estimate = e.epsEstimated  ?? e.epsEstimate  ?? e.estimatedEarning    ?? null;
+    if (actual == null || estimate == null) return;                 // not yet reported
+    const a = Number(actual), est = Number(estimate);
+    if (!isFinite(a) || !isFinite(est) || est === 0) return;
+
+    const gap    = a - est;
+    const pct    = Math.abs(gap / Math.abs(est)) * 100;
+    if (pct <= EPS_PCT_MIN || Math.abs(gap) < EPS_ABS_MIN) return;   // too small to matter
+
+    const beat = gap > 0;
+    push(sym, {
+      type:     beat ? 'earnings_beat' : 'earnings_miss',
+      label_ar: beat ? 'تجاوز الأرباح' : 'تقصير في الأرباح',
+      date,
+      age_days: ageDays(date),
+      color:    beat ? 'green' : 'red',
+      detail:   `${beat ? '+' : '-'}${pct.toFixed(0)}%`,
+      owned:    ownedSet.has(sym),
+    });
+  });
+
+  // ── Grade actions (from the existing /grades fetch) ─────────────────────────
+  (grades || []).forEach(g => {
+    const sym = g.symbol;
+    const date = String(g.date || g.gradingDate || '').slice(0, 10);
+    if (!sym || !date || date < cutoff || date > today) return;
+    const action = String(g.action || '').toLowerCase();
+    if (action !== 'upgrade' && action !== 'downgrade') return;       // ignore "maintain"/"initiate"
+
+    const up = action === 'upgrade';
+    push(sym, {
+      type:     up ? 'upgrade' : 'downgrade',
+      label_ar: up ? 'رفع التصنيف' : 'خفض التصنيف',
+      date,
+      age_days: ageDays(date),
+      color:    up ? 'green' : 'red',
+      detail:   `${g.gradingCompany || ''}: ${g.previousGrade || ''} → ${g.newGrade || ''}`.trim(),
+      owned:    ownedSet.has(sym),
+    });
+  });
+
+  // newest first within each symbol
+  Object.values(out).forEach(list => list.sort((x, y) => (y.date < x.date ? -1 : 1)));
+  return out;
+}
+
 // ─── Extract latest value from FMP indicator response ────────────────────────
 function latest(arr, field) {
   if (!Array.isArray(arr) || arr.length === 0) return null;
@@ -230,7 +309,7 @@ async function fetchIntelligence(symbols, limit = 10) {
   const techMap = {};
   symbols.forEach(sym => { techMap[sym] = {}; });
 
-  rsiResults.forEach(   ({ sym, rsi })                     => { if (techMap[sym]) techMap[sym].rsi = rsi !== null ? +rsi.toFixed(2) : null; });
+  .forEach(   ({ sym, rsi })                     => { if (techMap[sym]) techMap[sym].rsi = rsi !== null ? +rsi.toFixed(2) : null; });
   macdResults.forEach(  ({ sym, macd, signal, histogram }) => {
     if (techMap[sym]) {
       techMap[sym].macd      = macd      !== null ? +macd.toFixed(4)      : null;
@@ -1783,114 +1862,39 @@ if (key) {
       const top10    = symbols.slice(0, 10);
 
       const [
-        earningsRaw,
+        earningsRaw,        // upcoming earnings (next 60d) — unchanged
+        pastEarningsRaw,    // NEW: past earnings (last 14d) → surprises
         targetResults,
         gradeResults,
         metricResults,
-        rsiResults,
-        macdResults,
-        sma50Results,
-        sma200Results,
-        ema20Results,
-        bbResults
+        sma200Results       // KEPT: the one trend line. RSI/MACD/SMA50/EMA/BB removed.
       ] = await Promise.all([
 
         // Analyst & fundamental data
         fmpGet(`/earnings-calendar?from=${todayUAE()}&to=${daysAheadUAE(60)}&symbol=${allSyms.join(',')}`),
+        fmpGet(`/earnings-calendar?from=${daysAgoUAE(14)}&to=${todayUAE()}&symbol=${allSyms.join(',')}`),
         Promise.all(top10.map(sym => fmpGet(`/price-target-consensus?symbol=${sym}`))),
         Promise.all(top10.map(sym => fmpGet(`/grades?symbol=${sym}&limit=3`))),
         Promise.all(top10.map(sym => fmpGet(`/key-metrics-ttm?symbol=${sym}`))),
 
-        // Technical indicators — ALL portfolio stocks
-        Promise.all(symbols.map(sym =>
-          fmpGet(`/technical-indicators/rsi?symbol=${sym}&periodLength=14&timeframe=1day&limit=1`)
-            .then(d => ({ sym, rsi: latest(d, 'rsi') }))
-        )),
-        Promise.all(symbols.map(sym =>
-          fmpGet(`/technical-indicators/macd?symbol=${sym}&fastPeriod=12&slowPeriod=26&signalPeriod=9&timeframe=1day&limit=1`)
-            .then(d => ({ sym, macd: latest(d, 'macd'), signal: latest(d, 'signal'), histogram: latest(d, 'histogram') }))
-        )),
-        Promise.all(symbols.map(sym =>
-          fmpGet(`/technical-indicators/sma?symbol=${sym}&periodLength=50&timeframe=1day&limit=1`)
-            .then(d => ({ sym, sma50: latest(d, 'sma') }))
-        )),
+        // ── Long-term trend only: price vs 200-day SMA (directional, not day-trade) ──
         Promise.all(symbols.map(sym =>
           fmpGet(`/technical-indicators/sma?symbol=${sym}&periodLength=200&timeframe=1day&limit=1`)
             .then(d => ({ sym, sma200: latest(d, 'sma') }))
-        )),
-        Promise.all(symbols.map(sym =>
-          fmpGet(`/technical-indicators/ema?symbol=${sym}&periodLength=20&timeframe=1day&limit=1`)
-            .then(d => ({ sym, ema20: latest(d, 'ema') }))
-        )),
-        Promise.all(symbols.map(sym =>
-          fmpGet(`/technical-indicators/standardDeviation?symbol=${sym}&periodLength=20&timeframe=1day&limit=1`)
-            .then(d => ({ sym, stddev: latest(d, 'standardDeviation') }))
         ))
 
       ]);
 
-      // ── Build technical signals summary per stock ─────────────────────────
-      const techMap = {};
-      symbols.forEach(sym => { techMap[sym] = {}; });
-
-      rsiResults.forEach(   ({ sym, rsi })                     => { if (techMap[sym]) techMap[sym].rsi = rsi !== null ? +rsi.toFixed(2) : null; });
-      macdResults.forEach(  ({ sym, macd, signal, histogram }) => {
-        if (techMap[sym]) {
-          techMap[sym].macd      = macd      !== null ? +macd.toFixed(4)      : null;
-          techMap[sym].signal    = signal    !== null ? +signal.toFixed(4)    : null;
-          techMap[sym].histogram = histogram !== null ? +histogram.toFixed(4) : null;
-        }
-      });
-      sma50Results.forEach( ({ sym, sma50 })  => { if (techMap[sym]) techMap[sym].sma50  = sma50  !== null ? +sma50.toFixed(2)  : null; });
-      sma200Results.forEach(({ sym, sma200 }) => { if (techMap[sym]) techMap[sym].sma200 = sma200 !== null ? +sma200.toFixed(2) : null; });
-      ema20Results.forEach( ({ sym, ema20 })  => { if (techMap[sym]) techMap[sym].ema20  = ema20  !== null ? +ema20.toFixed(2)  : null; });
-      bbResults.forEach(    ({ sym, stddev }) => {
-        if (techMap[sym] && stddev !== null && priceMap[sym]) {
-          const mid = techMap[sym].sma20 || priceMap[sym];
-          techMap[sym].bb_upper = +(priceMap[sym] + 2 * stddev).toFixed(2);
-          techMap[sym].bb_lower = +(priceMap[sym] - 2 * stddev).toFixed(2);
-          techMap[sym].bb_stddev = +stddev.toFixed(4);
-        }
-      });
-
-      // ── Add plain-language signal interpretation ──────────────────────────
-      Object.entries(techMap).forEach(([sym, t]) => {
+      // ── Build the single trend signal per stock ───────────────────────────
+      const trendMap = {};
+      symbols.forEach(sym => { trendMap[sym] = { sma200: null, trend: null }; });
+      sma200Results.forEach(({ sym, sma200 }) => {
+        if (!trendMap[sym]) return;
+        trendMap[sym].sma200 = sma200 !== null ? +sma200.toFixed(2) : null;
         const price = priceMap[sym];
-        const signals = [];
-
-        if (t.rsi !== null) {
-          if (t.rsi > 70)      signals.push(`RSI ${t.rsi} — OVERBOUGHT`);
-          else if (t.rsi < 30) signals.push(`RSI ${t.rsi} — OVERSOLD`);
-          else                 signals.push(`RSI ${t.rsi} — neutral`);
+        if (price && sma200) {
+          trendMap[sym].trend = price > sma200 ? 'above' : 'below';
         }
-
-        if (t.macd !== null && t.signal !== null) {
-          if (t.macd > t.signal && t.histogram > 0) signals.push('MACD bullish crossover ↑');
-          else if (t.macd < t.signal && t.histogram < 0) signals.push('MACD bearish crossover ↓');
-          else signals.push('MACD neutral');
-        }
-
-        if (t.sma50 !== null && t.sma200 !== null) {
-          if (t.sma50 > t.sma200) signals.push('Golden Cross ✅ (SMA50 > SMA200)');
-          else signals.push('Death Cross ⚠️ (SMA50 < SMA200)');
-        }
-
-        if (price && t.ema20 !== null) {
-          if (price > t.ema20) signals.push(`Price above EMA20 (${t.ema20}) — short-term bullish`);
-          else signals.push(`Price below EMA20 (${t.ema20}) — short-term bearish`);
-        }
-
-        if (t.bb_upper && t.bb_lower && price) {
-          const bbWidth = t.bb_upper - t.bb_lower;
-          if (price >= t.bb_upper)      signals.push(`At BB upper band (${t.bb_upper}) — extended`);
-          else if (price <= t.bb_lower) signals.push(`At BB lower band (${t.bb_lower}) — compressed`);
-          else {
-            const bbPct = ((price - t.bb_lower) / bbWidth * 100).toFixed(0);
-            signals.push(`BB position: ${bbPct}% (lower=${t.bb_lower}, upper=${t.bb_upper})`);
-          }
-        }
-
-        t.signals = signals;
       });
 
       // ── Flatten analyst results ───────────────────────────────────────────
@@ -1906,38 +1910,45 @@ if (key) {
           return new Date(a.date) - new Date(b.date);
         });
 
+      // ── Build catalysts (Session 35) ──────────────────────────────────────
+      const catalysts = buildCatalysts(pastEarningsRaw, grades, ownedSet);
+
       // ── Append intelligence block ─────────────────────────────────────────
       text += `\n═══════════════════════════════════════════════════════\n`;
       text += `MARKET INTELLIGENCE — ${todayUAE()}\n`;
       text += `Portfolio symbols: ${symbols.join(', ')}\n`;
-      text += `Market movers tracked: ${moverSyms.join(', ') || 'none yet'}\n`;
       text += `═══════════════════════════════════════════════════════\n\n`;
 
-      // Technical indicators — formatted as a readable table for Claude
-      text += `TECHNICAL INDICATORS (all ${symbols.length} portfolio stocks):\n`;
-      text += `${'SYM'.padEnd(7)} ${'RSI'.padEnd(8)} ${'MACD'.padEnd(10)} ${'SMA50'.padEnd(9)} ${'SMA200'.padEnd(9)} ${'EMA20'.padEnd(9)} BB_UPPER / BB_LOWER\n`;
-      text += `─────────────────────────────────────────────────────────────────────────────\n`;
+      // ── Long-term trend (replaces the old technicals table) ───────────────
+      text += `LONG-TERM TREND (price vs 200-day):\n`;
       symbols.forEach(sym => {
-        const t = techMap[sym];
-        text += `${sym.padEnd(7)} `;
-        text += `${(t.rsi    !== null ? String(t.rsi)    : 'N/A').padEnd(8)} `;
-        text += `${(t.macd   !== null ? String(t.macd)   : 'N/A').padEnd(10)} `;
-        text += `${(t.sma50  !== null ? String(t.sma50)  : 'N/A').padEnd(9)} `;
-        text += `${(t.sma200 !== null ? String(t.sma200) : 'N/A').padEnd(9)} `;
-        text += `${(t.ema20  !== null ? String(t.ema20)  : 'N/A').padEnd(9)} `;
-        text += `${t.bb_upper || 'N/A'} / ${t.bb_lower || 'N/A'}\n`;
+        const t = trendMap[sym];
+        if (!t || t.trend === null) { text += `${sym.padEnd(7)} N/A\n`; return; }
+        const word = t.trend === 'above' ? 'above 200-day (long-term uptrend)'
+                                         : 'below 200-day (long-term downtrend)';
+        text += `${sym.padEnd(7)} ${word} (SMA200 ${t.sma200})\n`;
       });
       text += `\n`;
 
-      // Signal interpretation — plain English for Claude
-      text += `SIGNAL INTERPRETATION:\n`;
-      symbols.forEach(sym => {
-        const t = techMap[sym];
-        if (t.signals && t.signals.length > 0) {
-          text += `${sym}: ${t.signals.join(' | ')}\n`;
-        }
-      });
+      // ── RECENT CATALYSTS (Session 35) ─────────────────────────────────────
+      text += `RECENT CATALYSTS (last 14 days — events, NOT predictions):\n`;
+      text += `قاعدة العرض: حدث خلال ١٤ يوم فقط. 🟢 إيجابي / 🔴 سلبي. هذه محفّزات حديثة، ليست توقعاً بالاتجاه.\n`;
+      const catSyms = Object.keys(catalysts);
+      if (catSyms.length === 0) {
+        text += `  (no qualifying catalysts in the window)\n`;
+      } else {
+        catSyms.forEach(sym => {
+          catalysts[sym].forEach(c => {
+            const dot = c.color === 'green' ? '🟢' : '🔴';
+            const age = c.age_days != null ? ` (${c.age_days}d)` : '';
+            const own = c.owned ? ' [held]' : '';
+            text += `  ${dot} ${sym}${own} — ${c.label_ar} ${c.detail} — ${c.date}${age}\n`;
+          });
+        });
+      }
       text += `\n`;
+      // Machine-readable copy for the readout step (Make parses this JSON)
+      text += `CATALYSTS_JSON:\n${JSON.stringify(catalysts)}\n\n`;
 
       text += `EARNINGS CALENDAR (next 60 days — portfolio stocks first):\n`;
       text += JSON.stringify({
