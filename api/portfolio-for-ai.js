@@ -172,14 +172,18 @@ function daysAgoUAE(n) {
 // Turns recent earnings (actual vs estimate) + recent grade actions into a clean,
 // dated catalyst list. 14-day window. Tags: earnings_beat / earnings_miss /
 // upgrade / downgrade. Explains, never predicts. (THEISI Core Principle.)
-function buildCatalysts(pastEarnings, grades, ownedSet) {
-  const WINDOW_DAYS   = 14;
-  const EPS_PCT_MIN   = 5;      // surprise must be > 5%
-  const EPS_ABS_MIN   = 0.02;   // AND the absolute EPS gap must be >= $0.02
-                                // (guards against penny-EPS % blowups, e.g. 0.01→0.02 = "+100%")
+// OWNED-ONLY by default: the earnings-calendar returns the whole market for a
+// date range, so we MUST filter to the portfolio (widen to watchlist later, once
+// the discovery decision is made).
+function buildCatalysts(pastEarnings, grades, ownedSet, opts = {}) {
+  const WINDOW_DAYS = 14;
+  const EPS_PCT_MIN = 5;      // surprise must be > 5%
+  const EPS_ABS_MIN = 0.02;   // AND the absolute EPS gap must be >= $0.02
+  const EPS_PCT_MAX = 300;    // AND <= 300% — above this is always a near-zero-base artifact
+  const ownedOnly   = opts.ownedOnly !== false;   // default TRUE
   const cutoff = daysAgoUAE(WINDOW_DAYS);
   const today  = todayUAE();
-  const out = {};   // { SYM: [ {type, label_ar, date, age_days, color, detail} ] }
+  const out = {};
 
   const ageDays = (dateStr) => {
     if (!dateStr) return null;
@@ -192,19 +196,22 @@ function buildCatalysts(pastEarnings, grades, ownedSet) {
   // ── Earnings surprises (from the backward earnings-calendar query) ──────────
   (pastEarnings || []).forEach(e => {
     const sym = e.symbol;
+    if (!sym) return;
+    if (ownedOnly && !ownedSet.has(sym)) return;   // portfolio only
+    if (sym.includes('.')) return;                 // drop foreign listings (.L, .V, etc.)
     const date = String(e.date || '').slice(0, 10);
-    if (!sym || !date || date < cutoff || date > today) return;
+    if (!date || date < cutoff || date > today) return;
 
-    // FMP earnings-calendar field names vary by tier; try the common ones.
     const actual   = e.epsActual    ?? e.eps          ?? e.actualEarningResult ?? null;
     const estimate = e.epsEstimated  ?? e.epsEstimate  ?? e.estimatedEarning    ?? null;
-    if (actual == null || estimate == null) return;                 // not yet reported
+    if (actual == null || estimate == null) return;
     const a = Number(actual), est = Number(estimate);
     if (!isFinite(a) || !isFinite(est) || est === 0) return;
 
-    const gap    = a - est;
-    const pct    = Math.abs(gap / Math.abs(est)) * 100;
-    if (pct <= EPS_PCT_MIN || Math.abs(gap) < EPS_ABS_MIN) return;   // too small to matter
+    const gap = a - est;
+    const pct = Math.abs(gap / Math.abs(est)) * 100;
+    if (pct <= EPS_PCT_MIN || Math.abs(gap) < EPS_ABS_MIN) return;   // too small
+    if (pct > EPS_PCT_MAX) return;                                    // junk blowup
 
     const beat = gap > 0;
     push(sym, {
@@ -221,10 +228,12 @@ function buildCatalysts(pastEarnings, grades, ownedSet) {
   // ── Grade actions (from the existing /grades fetch) ─────────────────────────
   (grades || []).forEach(g => {
     const sym = g.symbol;
+    if (!sym) return;
+    if (ownedOnly && !ownedSet.has(sym)) return;   // portfolio only
     const date = String(g.date || g.gradingDate || '').slice(0, 10);
-    if (!sym || !date || date < cutoff || date > today) return;
+    if (!date || date < cutoff || date > today) return;
     const action = String(g.action || '').toLowerCase();
-    if (action !== 'upgrade' && action !== 'downgrade') return;       // ignore "maintain"/"initiate"
+    if (action !== 'upgrade' && action !== 'downgrade') return;
 
     const up = action === 'upgrade';
     push(sym, {
@@ -237,6 +246,10 @@ function buildCatalysts(pastEarnings, grades, ownedSet) {
       owned:    ownedSet.has(sym),
     });
   });
+
+  Object.values(out).forEach(list => list.sort((x, y) => (y.date < x.date ? -1 : 1)));
+  return out;
+}
 
   // newest first within each symbol
   Object.values(out).forEach(list => list.sort((x, y) => (y.date < x.date ? -1 : 1)));
