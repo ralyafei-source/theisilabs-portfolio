@@ -4417,7 +4417,7 @@ function renderCommandCenter(){
     }
     return null;
   }
-  var analysisCards=[panel(positionsInner),longCard(),riskCard(),divCard(),rangeCard()].filter(Boolean);
+  var analysisCards=[panel(positionsInner),earningsCard(),riskCard(),divCard(),rangeCard()].filter(Boolean);
   var analysisSection='';
   if(analysisCards.length){
     var cols=Math.min(5,analysisCards.length);
