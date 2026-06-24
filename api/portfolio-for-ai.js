@@ -99,30 +99,74 @@ module.exports = async (req, res) => {
       const today = todayUAE();
       const horizon = daysAheadUAE(120);
       // /earnings?symbol=X returns that company's upcoming + past dates (reliable per-symbol).
-      // The market-wide /earnings-calendar ignores symbol filtering, so we go per-holding.
-      const perSym = await Promise.all(
-        symbols.map(sym => fmpGet(`/earnings?symbol=${sym}&limit=8`))
-      );
-      const list = [];
+      // /grades?symbol=X&limit=30 → recent analyst actions → revision trend (up/down).
+      const [perSym, perGrades] = await Promise.all([
+        Promise.all(symbols.map(sym => fmpGet(`/earnings?symbol=${sym}&limit=12`))),
+        Promise.all(symbols.map(sym => fmpGet(`/grades?symbol=${sym}&limit=30`)))
+      ]);
+
+      // Revision trend per symbol from analyst grade actions (last ~90 days)
+      const cutoff = daysAheadUAE(-90);
+      function revTrend(grades){
+        if(!Array.isArray(grades)) return { dir:'flat', up:0, down:0 };
+        let up=0, down=0;
+        grades.forEach(g=>{
+          if(g.date && g.date < cutoff) return;
+          const a=(g.action||'').toLowerCase();
+          if (a.includes('up')) up++;        // upgrade
+          else if (a.includes('down')) down++;                        // downgrade
+        });
+        const dir = up>down ? 'up' : (down>up ? 'down' : 'flat');
+        return { dir, up, down };
+      }
+      const trendBySym = {};
+      symbols.forEach((s,i)=>{ trendBySym[s]=revTrend(perGrades[i]); });
+
+      // Build upcoming (soonest per symbol) + past quarters (B/M/I)
+      const upcomingBySym = {};
+      const historyBySym  = {};
       perSym.forEach((arr, i) => {
         const sym = symbols[i];
+        historyBySym[sym] = [];
         (arr || []).forEach(e => {
-          const date = e.date || e.epsDate || null;
-          if (!date || date < today || date > horizon) return;
-          list.push({
-            symbol: sym,
-            date,
-            days: Math.round((new Date(date + 'T00:00:00Z') - new Date(today + 'T00:00:00Z')) / 86400000),
-            epsEstimated:     e.epsEstimated ?? e.estimatedEps ?? null,
-            revenueEstimated: e.revenueEstimated ?? null,
-            inPortfolio: true
-          });
+          const date = e.date || null;
+          if (!date) return;
+          const est = e.epsEstimated ?? null;
+          const act = e.epsActual ?? null;
+          if (date >= today) {
+            // upcoming — keep soonest within horizon
+            if (date > horizon) return;
+            if (!upcomingBySym[sym] || date < upcomingBySym[sym].date) {
+              upcomingBySym[sym] = {
+                symbol: sym, date,
+                days: Math.round((new Date(date+'T00:00:00Z') - new Date(today+'T00:00:00Z'))/86400000),
+                epsEstimated: est,
+                revenueEstimated: e.revenueEstimated ?? null,
+                revisionTrend: trendBySym[sym].dir,        // 'up' | 'down' | 'flat'
+                revisionUp: trendBySym[sym].up,
+                revisionDown: trendBySym[sym].down,
+                inPortfolio: true
+              };
+            }
+          } else if (act != null) {
+            // past — classify Beat / Miss / In-line
+            let result = 'I';
+            if (est != null) {
+              const diff = act - est;
+              const tol = Math.max(0.01, Math.abs(est) * 0.01); // within 1% = in-line
+              result = diff > tol ? 'B' : (diff < -tol ? 'M' : 'I');
+            }
+            historyBySym[sym].push({ date, epsActual: act, epsEstimated: est, result });
+          }
         });
+        // newest-first, keep last 5 quarters
+        historyBySym[sym].sort((a,b)=>b.date.localeCompare(a.date));
+        historyBySym[sym] = historyBySym[sym].slice(0,5);
       });
-      // keep only the soonest upcoming date per symbol
-      const bySym = {};
-      list.forEach(e => { if (!bySym[e.symbol] || e.date < bySym[e.symbol].date) bySym[e.symbol] = e; });
-      const out = Object.values(bySym).sort((a, b) => a.date.localeCompare(b.date));
+
+      const out = Object.values(upcomingBySym)
+        .map(e => ({ ...e, history: historyBySym[e.symbol] || [] }))
+        .sort((a, b) => a.date.localeCompare(b.date));
 
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
       return res.status(200).json({
