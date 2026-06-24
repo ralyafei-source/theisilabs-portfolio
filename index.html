@@ -4391,6 +4391,35 @@ function renderCommandCenter(){
 
   // ---- NEW: News affecting portfolio card (from briefing d.news) ----
   function newsCard(){
+    var T=window._themedNews;
+    if(T&&T.themes&&T.themes.length){
+      var themeDate=T.date||'';
+      var list=T.themes.map(function(th,ti){
+        var syms=(th.tickers||[]).join(' \u00b7 ');
+        var arts=(th.articles||[]); var hasArts=arts.length>0;
+        var artHtml=hasArts? arts.map(function(a){
+          var link=a.url?'<a href="'+a.url+'" target="_blank" rel="noopener" style="color:#85b7eb;text-decoration:none;">'+(a.site||'\u0627\u0644\u0645\u0635\u062f\u0631')+' \u2197</a>':'';
+          return '<div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--border);">'
+            +'<div style="font-size:11px;color:var(--text2);line-height:1.6;">'+(a.title||'')+'</div>'
+            +(a.snippet?'<div style="font-size:10px;color:var(--text3);line-height:1.6;margin-top:2px;">'+a.snippet+'</div>':'')
+            +(link?'<div style="font-size:10px;margin-top:3px;">'+link+'</div>':'')+'</div>';
+        }).join(''):'';
+        return '<div style="padding:7px 0;border-bottom:1px solid var(--border);cursor:'+(hasArts?'pointer':'default')+';"'
+          +(hasArts?(' onclick="var e=document.getElementById(\'cctn-'+ti+'\');e.style.display=e.style.display===\'none\'?\'block\':\'none\';"'):'')+'>'
+          +'<div style="display:flex;gap:8px;">'
+            +'<span style="width:7px;height:7px;border-radius:50%;background:#FF0A78;flex:none;margin-top:5px;"></span>'
+            +'<div style="flex:1;"><div style="font-size:11.5px;color:var(--text);line-height:1.6;">'+(th.summary||'')+(hasArts?' <span style="font-size:9px;color:var(--text3);">\u25be</span>':'')+'</div>'
+            +(syms?'<div style="font-size:10px;color:var(--text3);font-family:'+MONO+';margin-top:2px;">'+syms+'</div>':'')
+            +(hasArts?'<div id="cctn-'+ti+'" style="display:none;">'+artHtml+'</div>':'')
+            +'</div></div></div>';
+      }).join('');
+      var titleRow='<div style="display:flex;justify-content:space-between;align-items:center;">'
+        +secLabel('\u0623\u062e\u0628\u0627\u0631 \u062a\u0645\u0633 \u0645\u062d\u0641\u0638\u062a\u0643')
+        +(themeDate?'<span style="font-size:9.5px;color:var(--text3);font-family:'+MONO+';">'+themeDate+'</span>':'')
+        +'</div>';
+      return panel(titleRow+list);
+    }
+    // fallback: old briefing news
     var B=window._briefData; if(!B||!B.news||!B.news.length) return null;
     var sc=function(s){ return s==='positive'?'#19c37d':s==='negative'?'#e5484d':'var(--text3)'; };
     var briefDate=B.date||'';
