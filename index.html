@@ -4430,7 +4430,7 @@ function renderCommandCenter(){
   var sideBySide=(newsCardHtml&&reviewSection)
     ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;margin-top:14px;">'+newsCardHtml+reviewSection+'</div>'
     : (newsCardHtml?'<div style="margin-top:14px;">'+newsCardHtml+'</div>':reviewSection);
-  grid.innerHTML=healthChip+openingBrief+sideBySide+mapSection+moversSection+analysisSection+footer;
+  grid.innerHTML=moversSection+healthChip+openingBrief+sideBySide+mapSection+analysisSection+footer;
 
   // ---- progress dots: one per CC section, filled = has data, hollow = pending/empty ----
   try{
