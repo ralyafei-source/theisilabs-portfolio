@@ -4472,6 +4472,9 @@ function ccRefresh(){
   fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dailyRead:true})})
     .then(function(r){return r.json();})
     .then(function(d){ window._dailyBrief=d; renderCommandCenter(); }).catch(function(){});
+  fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({themedNews:true})})
+    .then(function(r){return r.json();})
+    .then(function(d){ window._themedNews=d; renderCommandCenter(); }).catch(function(){});
   fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({newsFeed:true})})
     .then(function(r){return r.json();})
     .then(function(d){ window._newsFeed=d; renderCommandCenter(); }).catch(function(){});
@@ -4924,7 +4927,7 @@ async function loadBriefing(){
   }
 
   // 3. TWO COLUMNS: news (left) + dates (right)
-  const hasNews=d.news&&d.news.length>0;
+  const hasNews=(window._themedNews&&window._themedNews.themes&&window._themedNews.themes.length>0)||(d.news&&d.news.length>0);
   const hasDates=d.dates&&d.dates.length>0;
   if(hasNews||hasDates){
     html+=`<div class="brief-row">`;
@@ -4932,17 +4935,45 @@ async function loadBriefing(){
       html+=`<div class="brief-col">
         <div class="brief-section-lbl" style="color:#FF0A78">${ar?'أخبار تمس محفظتك':'News affecting your portfolio'}</div>
         <div class="brief-news-list">`;
-      d.news.forEach(n=>{
-        const syms=Array.isArray(n.syms)?n.syms.join(' · '):String(n.syms||'');
-        html+=`<div class="brief-news-item">
-          <span class="brief-sent-dot" style="background:${sentColor(n.sentiment)}"></span>
-          <div>
-            <div class="brief-news-title">${n.title||''}</div>
-            ${syms?`<div class="brief-news-syms">${syms}</div>`:''}
-            ${n.sentiment?`<div class="brief-news-sent" style="color:${sentColor(n.sentiment)}">${sent(n.sentiment)}</div>`:''}
-          </div>
-        </div>`;
-      });
+      var _tn=(window._themedNews&&window._themedNews.themes&&window._themedNews.themes.length)?window._themedNews.themes:null;
+      if(_tn){
+        _tn.forEach(function(th,ti){
+          var syms=(th.tickers||[]).join(' · ');
+          var arts=(th.articles||[]);
+          var hasArts=arts.length>0;
+          var artHtml=hasArts? arts.map(function(a){
+            var link=a.url?'<a href="'+a.url+'" target="_blank" rel="noopener" style="color:#85b7eb;text-decoration:none;">'+(a.site||'المصدر')+' ↗</a>':'';
+            return '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">'
+              +'<div style="font-size:12px;color:var(--text2);line-height:1.6;">'+(a.title||'')+'</div>'
+              +(a.snippet?'<div style="font-size:11px;color:var(--text3);line-height:1.6;margin-top:3px;">'+a.snippet+'</div>':'')
+              +(link?'<div style="font-size:10px;margin-top:4px;">'+link+'</div>':'')
+              +'</div>';
+          }).join(''):'';
+          html+='<div class="brief-news-item" style="display:block;cursor:'+(hasArts?'pointer':'default')+';"'
+            +(hasArts?(' onclick="var e=document.getElementById(\'tn-'+ti+'\');e.style.display=e.style.display===\'none\'?\'block\':\'none\';"'):'')+'>'
+            +'<div style="display:flex;gap:9px;align-items:flex-start;">'
+              +'<span class="brief-sent-dot" style="background:#FF0A78;margin-top:6px;"></span>'
+              +'<div style="flex:1;">'
+                +'<div class="brief-news-title">'+(th.summary||'')+(hasArts?' <span style="font-size:10px;color:var(--text3);">▾</span>':'')+'</div>'
+                +(syms?'<div class="brief-news-syms">'+syms+'</div>':'')
+                +(hasArts?'<div id="tn-'+ti+'" style="display:none;">'+artHtml+'</div>':'')
+              +'</div>'
+            +'</div>'
+          +'</div>';
+        });
+      } else {
+        d.news.forEach(n=>{
+          const syms=Array.isArray(n.syms)?n.syms.join(' · '):String(n.syms||'');
+          html+=`<div class="brief-news-item">
+            <span class="brief-sent-dot" style="background:${sentColor(n.sentiment)}"></span>
+            <div>
+              <div class="brief-news-title">${n.title||''}</div>
+              ${syms?`<div class="brief-news-syms">${syms}</div>`:''}
+              ${n.sentiment?`<div class="brief-news-sent" style="color:${sentColor(n.sentiment)}">${sent(n.sentiment)}</div>`:''}
+            </div>
+          </div>`;
+        });
+      }
       html+=`</div></div>`;
     }
     if(hasDates){
