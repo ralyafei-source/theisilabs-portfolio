@@ -4112,6 +4112,7 @@ function renderCommandCenter(){
 
   var openingBrief=
     '<div>'+secLabel('\u0627\u0644\u0627\u0641\u062a\u062a\u0627\u062d\u064a\u0629')
+    +(moversSection?'<div style="margin-bottom:12px;">'+moversSection+'</div>':'')
     +'<div class="cc-brief" style="display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:12px;align-items:stretch;">'
       +panel(hzInner,{style:'display:flex;flex-direction:column;'})
       +panel(todayInner,{style:'display:flex;flex-direction:column;'})
@@ -4430,7 +4431,7 @@ function renderCommandCenter(){
   var sideBySide=(newsCardHtml&&reviewSection)
     ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;margin-top:14px;">'+newsCardHtml+reviewSection+'</div>'
     : (newsCardHtml?'<div style="margin-top:14px;">'+newsCardHtml+'</div>':reviewSection);
-  grid.innerHTML=moversSection+healthChip+openingBrief+sideBySide+mapSection+analysisSection+footer;
+  grid.innerHTML=healthChip+openingBrief+sideBySide+mapSection+analysisSection+footer;
 
   // ---- progress dots: one per CC section, filled = has data, hollow = pending/empty ----
   try{
