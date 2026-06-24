@@ -96,29 +96,40 @@ module.exports = async (req, res) => {
     // ── Earnings calendar as clean JSON (?format=earnings) ───────────────────
     // Shared data bank: dashboard, briefs, and any client can consume this.
     if (req.query.format === 'earnings') {
-      const raw = await fmpGet(
-        `/earnings-calendar?from=${todayUAE()}&to=${daysAheadUAE(90)}&symbol=${symbols.join(',')}`
-      );
       const today = todayUAE();
-      const list = (raw || [])
-        .filter(e => e && e.symbol && e.date && e.date >= today)
-        .map(e => ({
-          symbol: e.symbol,
-          date:   e.date,
-          days:   Math.round((new Date(e.date + 'T00:00:00Z') - new Date(today + 'T00:00:00Z')) / 86400000),
-          epsEstimated:     e.epsEstimated ?? null,
-          revenueEstimated: e.revenueEstimated ?? null,
-          time:   e.time || null,
-          inPortfolio: ownedSet.has(e.symbol)
-        }))
-        .sort((a, b) => a.date.localeCompare(b.date));
+      const horizon = daysAheadUAE(120);
+      // /earnings?symbol=X returns that company's upcoming + past dates (reliable per-symbol).
+      // The market-wide /earnings-calendar ignores symbol filtering, so we go per-holding.
+      const perSym = await Promise.all(
+        symbols.map(sym => fmpGet(`/earnings?symbol=${sym}&limit=8`))
+      );
+      const list = [];
+      perSym.forEach((arr, i) => {
+        const sym = symbols[i];
+        (arr || []).forEach(e => {
+          const date = e.date || e.epsDate || null;
+          if (!date || date < today || date > horizon) return;
+          list.push({
+            symbol: sym,
+            date,
+            days: Math.round((new Date(date + 'T00:00:00Z') - new Date(today + 'T00:00:00Z')) / 86400000),
+            epsEstimated:     e.epsEstimated ?? e.estimatedEps ?? null,
+            revenueEstimated: e.revenueEstimated ?? null,
+            inPortfolio: true
+          });
+        });
+      });
+      // keep only the soonest upcoming date per symbol
+      const bySym = {};
+      list.forEach(e => { if (!bySym[e.symbol] || e.date < bySym[e.symbol].date) bySym[e.symbol] = e; });
+      const out = Object.values(bySym).sort((a, b) => a.date.localeCompare(b.date));
 
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
       return res.status(200).json({
         generated_at: today,
-        count: list.length,
-        portfolio: list.filter(e => e.inPortfolio),
-        earnings:  list
+        count: out.length,
+        portfolio: out,
+        earnings:  out
       });
     }
 
