@@ -2994,6 +2994,8 @@ WOLF remains at critical lows<br><br>
       <button data-f="owned">محفظتي</button>
       <button data-f="opps">جديد</button>
     </div>
+    <input id="hz-search" type="search" placeholder="🔍 ابحث عن سهم…" autocomplete="off"
+      style="margin-inline-start:8px;padding:6px 12px;border-radius:8px;border:1px solid var(--border,#2A2A38);background:var(--bg3,#1A1A21);color:var(--text,#F4F4F6);font-size:13px;min-width:140px;font-family:inherit"/>
     <div class="hz-admin" id="hz-admin" title="وضع المسؤول: تحديث غير محدود للقراءة المعمّقة"><span class="dot2"></span><span>وضع التجربة</span></div>
   </div>
   <p class="sub">تنبيه إخلاء المسؤولية: القراءة المؤشرة هي اتجاهية وتحتمل هامش خطأ واسع. القرار قرارك الاستثماري المستقل.</p>
@@ -3133,8 +3135,11 @@ function convColor(t){ return t==='high'?'var(--pos)':t==='provisional'?'var(--c
 function gradeColor(g){ if(!g) return 'var(--g-mid)'; const c=g[0]; if(c==='A'||c==='B')return 'var(--g-strong)'; if(c==='D'||c==='F')return 'var(--g-weak)'; return 'var(--g-mid)'; }
 
 let FILTER='all';
-function passes(v){ return FILTER==='all' || (FILTER==='owned'&&v.owned) || (FILTER==='opps'&&!v.owned); }
-
+let HZ_SEARCH='';
+function passes(v,sym){
+  if(HZ_SEARCH && !String(sym||'').toUpperCase().includes(HZ_SEARCH)) return false;
+  return FILTER==='all' || (FILTER==='owned'&&v.owned) || (FILTER==='opps'&&!v.owned);
+}
 function gradeTags(g){
   return ['V','G','P','M','R'].map(k=>{
     const val=g&&g[k]?g[k]:'—';
@@ -3238,7 +3243,7 @@ function render(){
   const scored = (DATA && DATA.scored) || {};
   const grid=document.getElementById('hz-grid'); grid.innerHTML='';
   BUCKETS.forEach(b=>{
-    const entries=Object.entries(scored).filter(([k,v])=>v[b.key] && passes(v));
+    const entries=Object.entries(scored).filter(([k,v])=>v[b.key] && passes(v,k));
     const ranked=entries.filter(([k,v])=>v[b.key].score!==null).sort((a,c)=>c[1][b.key].score-a[1][b.key].score);
     const skipped=entries.filter(([k,v])=>v[b.key].score===null).map(([k])=>k);
     const rows=ranked.map(([sym,v])=> b.key==='short'?renderShortRow(sym,v):renderGradeRow(sym,v,b.key)).join('');
@@ -3297,17 +3302,29 @@ async function loadDeepRead(sym, forceRefresh){
   const costEl = document.getElementById('hzdr-cost');
   const refreshBtn = document.getElementById('hzdr-refresh');
   changesEl.style.display='none'; costEl.textContent='';
-  body.innerHTML = `<div class="dr-loading">${forceRefresh?'✍️ يكتب قراءة جديدة…':'… يحمّل القراءة'}</div>`;
+  const loadMsg = forceRefresh ? 'يكتب قراءة جديدة' : 'يحمّل القراءة';
+  body.innerHTML = `<div class="dr-loading"><span class="dr-spin"></span> <span id="dr-progress">${loadMsg}…</span></div>`;
   refreshBtn.disabled = true;
+  // staged progress so the user never thinks it's stuck (deep-read takes ~5-15s)
+  const _stages = forceRefresh
+    ? ['يقرأ الدرجات والمحفّزات…','يحلّل نوع الموقف…','يكتب القراءة بالعربي…','يراجع النص…']
+    : ['يحمّل القراءة المحفوظة…'];
+  let _si = 0;
+  const _prog = setInterval(()=>{
+    _si++; if(_si<_stages.length){ const el=document.getElementById('dr-progress'); if(el) el.textContent=_stages[_si]+'…'; }
+  }, forceRefresh?3000:1500);
+  const _clearProg = ()=>clearInterval(_prog);
 
   try{
     const r = await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({deepRead:true, symbol:sym, forceRefresh:!!forceRefresh, adminTest:HZ_ADMIN})});
     const d = await r.json();
     if(!d || !d.result){
+      _clearProg();
       body.innerHTML = `<div class="dr-loading">قراءة تحليلية غير متاحة الحين — الملخّص في البطاقة هو المتاح.</div>`;
       return;
     }
+    _clearProg();
     body.textContent = d.result;                       // plain text (prompt forbids markdown)
     dateEl.textContent = d.generated_at ? `آخر قراءة: ${fmtDate(d.generated_at)}` : '';
 
@@ -3367,6 +3384,11 @@ document.getElementById('hz-filt').addEventListener('click',e=>{
   render();
 });
 
+document.getElementById('hz-search').addEventListener('input', e=>{
+  HZ_SEARCH = (e.target.value||'').trim().toUpperCase();
+  render();
+});
+  
 function renderExcl(){
   const etfs=(DATA && DATA.excluded_etfs)||[];
   document.getElementById('hz-excl').innerHTML=`<b>مستبعدة من القراءة:</b> صناديق المؤشرات لا تُقيَّم بهذه الآفاق (تتبع السوق، لا جودة شركة فردية). `+etfs.map(s=>`<span class="pill">${s}</span>`).join('');
@@ -10580,7 +10602,9 @@ fetchLivePrices();
 <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 
 <!-- styles consolidated into the main <style> block (P3) -->
-
+.dr-spin{display:inline-block;width:12px;height:12px;border:2px solid var(--rose,#FF0A78);border-top-color:transparent;border-radius:50%;animation:drspin .7s linear infinite;vertical-align:middle}
+@keyframes drspin{to{transform:rotate(360deg)}}
+  
 <!-- Floating Chat Button -->
 <button id="chatBtn" onclick="toggleChat()" title="المستشار الذكي" aria-label="Open AI Chat">
   <span id="chatBtnIcon">
