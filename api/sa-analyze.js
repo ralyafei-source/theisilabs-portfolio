@@ -12,6 +12,7 @@ const REPO          = 'ralyafei-source/theisilabs-portfolio';
 const { computeBuckets } = require('./_lib/bucket-scorer.js');
 // Deep-read prompt builder (non-routed _lib — see scorer note above).
 const { buildDeepReadPrompt } = require('./_lib/deep-read.js');
+const { fetchExtrasForSymbol } = require('./_lib/catalysts.js');
 
 function buildPrompt(inputs) {
   const cashUSD = inputs.cashUSD || 0;
@@ -676,7 +677,15 @@ module.exports = async (req, res) => {
         }
       }
       const allRecs = store ? [].concat(store.stocks||[], store.etfs||[]) : [];
-      const prompt = buildDeepReadPrompt(sym, o, allRecs);
+      // tracked = everything in the store; owned = positions with shares > 0
+      const trackedSet = new Set(allRecs.map(r => (r.symbol||r.sym)).filter(Boolean));
+      const ownedSet = new Set(allRecs.filter(r => {
+        const sh = r.shares ?? ((r.sheets&&r.sheets.holdings)||{})['Shares'];
+        return Number(sh) > 0;
+      }).map(r => (r.symbol||r.sym)));
+      let extras = null;
+      try { extras = await fetchExtrasForSymbol(sym, trackedSet, ownedSet); } catch { extras = null; }
+      const prompt = buildDeepReadPrompt(sym, o, allRecs, extras);
 
       const r = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
