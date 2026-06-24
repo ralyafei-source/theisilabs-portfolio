@@ -4437,7 +4437,7 @@ function renderCommandCenter(){
     return panel(titleRow+list+door('\u0641\u062a\u062d \u0627\u0644\u062a\u062d\u0644\u064a\u0644','portfolio'));
   }
 
-  var analysisCards=[riskCard(),fairCard(),longCard(),divCard(),rangeCard(),earningsCard(),newsCard()].filter(Boolean);
+  var analysisCards=[riskCard(),fairCard(),longCard(),divCard(),rangeCard(),earningsCard()].filter(Boolean);
   var analysisSection='';
   if(analysisCards.length){
     var cols=Math.min(3,analysisCards.length);
@@ -4463,7 +4463,8 @@ function renderCommandCenter(){
     secLabel('\u0622\u062e\u0631 \u0627\u0644\u0623\u062e\u0628\u0627\u0631')+newsRows+newsRefresh
   )+'</div>';
   
-  grid.innerHTML=healthChip+openingBrief+reviewSection+newsSection+mapSection+moversSection+analysisSection+footer;
+  var newsSection=(function(){ var c=newsCard(); return c?('<div style="margin-top:14px;">'+c+'</div>'):''; })();
+  grid.innerHTML=healthChip+openingBrief+newsSection+reviewSection+mapSection+moversSection+analysisSection+footer;
 
   // ---- progress dots: one per CC section, filled = has data, hollow = pending/empty ----
   try{
