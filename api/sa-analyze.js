@@ -943,7 +943,7 @@ ${JSON.stringify(payloadIdx)}`;
       });
       const d = await r.json();
       let txt = (d.content||[]).map(c=>c.type==='text'?c.text:'').join('').trim().replace(/```json|```/g,'').trim();
-      let parsed; try { parsed = JSON.parse(txt); } catch { parsed = { themes:[] }; }
+      let parsed; try { parsed = JSON.parse(txt); } catch { return res.status(200).json({date:today,themes:[],dbg_raw:txt.slice(0,400),dbg_d:JSON.stringify(d).slice(0,300)}); }
       let themes = Array.isArray(parsed.themes) ? parsed.themes.slice(0,6) : [];
       themes = themes.map(th => ({
         summary: th.summary || '',
