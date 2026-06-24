@@ -915,7 +915,7 @@ ${JSON.stringify(payload)}`;
       }
 
       // compact payload (with index) so the model can point each theme to its sources
-      const payloadIdx = news.slice(0, 40).map((n,i) => ({ i, t: n.title, sym: n.sym, d: n.date }));
+      const payloadIdx = news.slice(0, 40).map((n,i) => ({ i, t: n.title, s: (n.text||'').slice(0,300), sym: n.sym, d: n.date }));
 
       const prompt = `أنت محرّر أخبار THEISI. عندك عناوين أخبار حديثة تمسّ أسهم محفظة مستثمر إماراتي.
 مهمتك: اجمع العناوين في ٣-٥ مواضيع (themes) واضحة، واكتب كل موضوع بجملة واحدة بالعربية الخليجية الودّية (مو فصحى متكلّفة)، واذكر الأسهم المتأثرة، وأرقام العناوين المصدرية لكل موضوع.
@@ -926,6 +926,7 @@ ${JSON.stringify(payload)}`;
 - لا تكرّر نفس الموضوع. ادمج العناوين المتشابهة.
 - إذا خبر يخص عدة أسهم، اذكرها كلها في tickers.
 - في "source_idx" ضع أرقام (i) العناوين التي يتكوّن منها الموضوع.
+- لكل عنوان يوجد مقتطف "s" من الخبر — استخدمه لفهم المحتوى، ولخّص المضمون لا العنوان فقط.
 - نص عادي، بدون ماركداون.
 
 أعد JSON صارم فقط:
