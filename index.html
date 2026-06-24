@@ -4109,6 +4109,55 @@ function renderCommandCenter(){
     secLabel('\u0625\u0634\u0627\u0631\u0627\u062a \u0627\u0644\u0622\u0641\u0627\u0642')
     +(bk ? (hzRow('long')+hzRow('mid')+hzRow('short')) : '<div style="font-size:12px;color:var(--text3);padding:8px 0;">\u0644\u0627 \u062a\u0648\u062c\u062f \u0625\u0634\u0627\u0631\u0627\u062a \u0628\u0639\u062f</div>')
     +door('\u0639\u0631\u0636 \u0643\u0644 \u0627\u0644\u0625\u0634\u0627\u0631\u0627\u062a','horizon');
+// ============ MOVERS BAND — visual gain/loss distribution (no words) ============
+  var moversSection='';
+  (function(){
+    var withGl=stocks.filter(function(s){return s.gl!=null;});
+    if(!withGl.length) return;
+    var sortedGl=withGl.slice().sort(function(a,b){return a.gl-b.gl;});
+    // color by gain/loss band
+    function glColor(g){
+      if(g<=-50) return '#b81e2e';      // critical
+      if(g<0)    return '#e5746b';      // loss
+      if(g<50)   return '#3a9e6f';      // gain
+      return '#19c37d';                  // strong winner
+    }
+    // size dot by position weight
+    var maxW=Math.max.apply(null,withGl.map(function(s){return s.mv||0;}))||1;
+    // scale: clamp gl to [-80, +200] for x-position
+    var lo=-80, hi=200;
+    function xpos(g){ var c=Math.max(lo,Math.min(hi,g)); return ((c-lo)/(hi-lo))*100; }
+    var dots=sortedGl.map(function(s){
+      var x=xpos(s.gl); var sz=6+Math.round((s.mv||0)/maxW*8); var c=glColor(s.gl);
+      var notable=(s.gl<=-50||s.gl>=100); // label outliers only
+      return '<div title="'+s.sym+' '+(s.gl>=0?'+':'')+s.gl.toFixed(0)+'%" style="position:absolute;right:'+x.toFixed(1)+'%;top:50%;transform:translate(50%,-50%);width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+c+';border:1px solid var(--bg2);'+(notable?'box-shadow:0 0 0 2px '+c+'33;':'')+'"></div>';
+    }).join('');
+    // zero line position
+    var zx=xpos(0);
+    // counts
+    var nCrit=withGl.filter(function(s){return s.gl<=-50;}).length;
+    var nLoss=withGl.filter(function(s){return s.gl<0&&s.gl>-50;}).length;
+    var nGain=withGl.filter(function(s){return s.gl>=0&&s.gl<50;}).length;
+    var nWin=withGl.filter(function(s){return s.gl>=50;}).length;
+    // outlier chips (worst 2 + best 2)
+    function chip(s,pos){ var c=glColor(s.gl); return '<span style="display:inline-flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:2px 8px;font-size:11px;"><span style="color:var(--text);font-weight:700;">'+s.sym+'</span><span style="color:'+c+';font-family:'+MONO+';">'+(s.gl>=0?'+':'')+s.gl.toFixed(0)+'%</span></span>'; }
+    var worst=sortedGl.slice(0,2).map(function(s){return chip(s);}).join('');
+    var best=sortedGl.slice(-2).reverse().map(function(s){return chip(s);}).join('');
+    var legend='<div style="display:flex;gap:14px;font-size:10px;color:var(--text3);margin-top:10px;justify-content:flex-start;flex-wrap:wrap;">'
+      +'<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#b81e2e;margin-inline-end:4px;"></span>\u062e\u0633\u0627\u0626\u0631 \u062d\u0631\u062c\u0629 '+nCrit+'</span>'
+      +'<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5746b;margin-inline-end:4px;"></span>\u062e\u0633\u0627\u0626\u0631 '+nLoss+'</span>'
+      +'<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#3a9e6f;margin-inline-end:4px;"></span>\u0631\u0627\u0628\u062d\u0629 '+nGain+'</span>'
+      +'<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#19c37d;margin-inline-end:4px;"></span>\u0631\u0627\u0628\u062d\u0629 \u0628\u0642\u0648\u0629 '+nWin+'</span></div>';
+    var track='<div style="position:relative;height:40px;margin:6px 0 2px;">'
+      +'<div style="position:absolute;top:50%;right:0;left:0;height:2px;background:var(--bg3);transform:translateY(-50%);"></div>'
+      +'<div style="position:absolute;top:8px;bottom:8px;right:'+zx.toFixed(1)+'%;width:1px;background:var(--border3,#34344A);"></div>'
+      +dots+'</div>';
+    moversSection=panel(
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px;">'
+        +secLabel('\u062d\u0631\u0643\u0629 \u0627\u0644\u0645\u0631\u0627\u0643\u0632')
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'+worst+best+'</div></div>'
+      +track+legend);
+  })();
 
   var openingBrief=
     '<div>'+secLabel('\u0627\u0644\u0627\u0641\u062a\u062a\u0627\u062d\u064a\u0629')
@@ -4186,56 +4235,7 @@ function renderCommandCenter(){
       +panel(positionsInner)+panel(exposureInner)
     +'</div></div>';
 
-  // ============ MOVERS BAND — visual gain/loss distribution (no words) ============
-  var moversSection='';
-  (function(){
-    var withGl=stocks.filter(function(s){return s.gl!=null;});
-    if(!withGl.length) return;
-    var sortedGl=withGl.slice().sort(function(a,b){return a.gl-b.gl;});
-    // color by gain/loss band
-    function glColor(g){
-      if(g<=-50) return '#b81e2e';      // critical
-      if(g<0)    return '#e5746b';      // loss
-      if(g<50)   return '#3a9e6f';      // gain
-      return '#19c37d';                  // strong winner
-    }
-    // size dot by position weight
-    var maxW=Math.max.apply(null,withGl.map(function(s){return s.mv||0;}))||1;
-    // scale: clamp gl to [-80, +200] for x-position
-    var lo=-80, hi=200;
-    function xpos(g){ var c=Math.max(lo,Math.min(hi,g)); return ((c-lo)/(hi-lo))*100; }
-    var dots=sortedGl.map(function(s){
-      var x=xpos(s.gl); var sz=6+Math.round((s.mv||0)/maxW*8); var c=glColor(s.gl);
-      var notable=(s.gl<=-50||s.gl>=100); // label outliers only
-      return '<div title="'+s.sym+' '+(s.gl>=0?'+':'')+s.gl.toFixed(0)+'%" style="position:absolute;right:'+x.toFixed(1)+'%;top:50%;transform:translate(50%,-50%);width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+c+';border:1px solid var(--bg2);'+(notable?'box-shadow:0 0 0 2px '+c+'33;':'')+'"></div>';
-    }).join('');
-    // zero line position
-    var zx=xpos(0);
-    // counts
-    var nCrit=withGl.filter(function(s){return s.gl<=-50;}).length;
-    var nLoss=withGl.filter(function(s){return s.gl<0&&s.gl>-50;}).length;
-    var nGain=withGl.filter(function(s){return s.gl>=0&&s.gl<50;}).length;
-    var nWin=withGl.filter(function(s){return s.gl>=50;}).length;
-    // outlier chips (worst 2 + best 2)
-    function chip(s,pos){ var c=glColor(s.gl); return '<span style="display:inline-flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:2px 8px;font-size:11px;"><span style="color:var(--text);font-weight:700;">'+s.sym+'</span><span style="color:'+c+';font-family:'+MONO+';">'+(s.gl>=0?'+':'')+s.gl.toFixed(0)+'%</span></span>'; }
-    var worst=sortedGl.slice(0,2).map(function(s){return chip(s);}).join('');
-    var best=sortedGl.slice(-2).reverse().map(function(s){return chip(s);}).join('');
-    var legend='<div style="display:flex;gap:14px;font-size:10px;color:var(--text3);margin-top:10px;justify-content:flex-start;flex-wrap:wrap;">'
-      +'<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#b81e2e;margin-inline-end:4px;"></span>\u062e\u0633\u0627\u0626\u0631 \u062d\u0631\u062c\u0629 '+nCrit+'</span>'
-      +'<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5746b;margin-inline-end:4px;"></span>\u062e\u0633\u0627\u0626\u0631 '+nLoss+'</span>'
-      +'<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#3a9e6f;margin-inline-end:4px;"></span>\u0631\u0627\u0628\u062d\u0629 '+nGain+'</span>'
-      +'<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#19c37d;margin-inline-end:4px;"></span>\u0631\u0627\u0628\u062d\u0629 \u0628\u0642\u0648\u0629 '+nWin+'</span></div>';
-    var track='<div style="position:relative;height:40px;margin:6px 0 2px;">'
-      +'<div style="position:absolute;top:50%;right:0;left:0;height:2px;background:var(--bg3);transform:translateY(-50%);"></div>'
-      +'<div style="position:absolute;top:8px;bottom:8px;right:'+zx.toFixed(1)+'%;width:1px;background:var(--border3,#34344A);"></div>'
-      +dots+'</div>';
-    moversSection=panel(
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px;">'
-        +secLabel('\u062d\u0631\u0643\u0629 \u0627\u0644\u0645\u0631\u0627\u0643\u0632')
-        +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'+worst+best+'</div></div>'
-      +track+legend);
-  })();
-
+  
   // ============ LATEST ANALYSIS (only non-empty cards) ============
   // ===== REAL RISK PANEL (from window._riskData + holdings) =====
   function _ccRiskCompute(){
