@@ -175,7 +175,7 @@ function daysAgoUAE(n) {
 // OWNED-ONLY by default: the earnings-calendar returns the whole market for a
 // date range, so we MUST filter to the portfolio (widen to watchlist later, once
 // the discovery decision is made).
-function buildCatalysts(pastEarnings, grades, ownedSet, opts = {}) {
+function buildCatalysts(pastEarnings, grades, trackedSet, ownedSet, opts = {}) {
   const WINDOW_DAYS = 14;
   const EPS_PCT_MIN = 5;      // surprise must be > 5%
   const EPS_ABS_MIN = 0.02;   // AND the absolute EPS gap must be >= $0.02
@@ -197,7 +197,7 @@ function buildCatalysts(pastEarnings, grades, ownedSet, opts = {}) {
   (pastEarnings || []).forEach(e => {
     const sym = e.symbol;
     if (!sym) return;
-    if (ownedOnly && !ownedSet.has(sym)) return;   // portfolio only
+    if (trackedOnly && !trackedSet.has(sym)) return;   // tracked universe (holdings + watchlist)
     if (sym.includes('.')) return;                 // drop foreign listings (.L, .V, etc.)
     const date = String(e.date || '').slice(0, 10);
     if (!date || date < cutoff || date > today) return;
@@ -229,7 +229,7 @@ function buildCatalysts(pastEarnings, grades, ownedSet, opts = {}) {
   (grades || []).forEach(g => {
     const sym = g.symbol;
     if (!sym) return;
-    if (ownedOnly && !ownedSet.has(sym)) return;   // portfolio only
+    if (trackedOnly && !trackedSet.has(sym)) return;   // tracked universe (holdings + watchlist)
     const date = String(g.date || g.gradingDate || '').slice(0, 10);
     if (!date || date < cutoff || date > today) return;
     const action = String(g.action || '').toLowerCase();
@@ -1791,7 +1791,7 @@ if (key) {
         fmpGet(`/earnings-calendar?from=${todayUAE()}&to=${daysAheadUAE(60)}&symbol=${allSyms.join(',')}`),
         fmpGet(`/earnings-calendar?from=${daysAgoUAE(14)}&to=${todayUAE()}&symbol=${allSyms.join(',')}`),
         Promise.all(top10.map(sym => fmpGet(`/price-target-consensus?symbol=${sym}`))),
-        Promise.all(top10.map(sym => fmpGet(`/grades?symbol=${sym}&limit=3`))),
+        Promise.all(symbols.map(sym => fmpGet(`/grades?symbol=${sym}&limit=3`))),
         Promise.all(top10.map(sym => fmpGet(`/key-metrics-ttm?symbol=${sym}`))),
 
         // ── Long-term trend only: price vs 200-day SMA (directional, not day-trade) ──
@@ -1827,8 +1827,10 @@ if (key) {
           return new Date(a.date) - new Date(b.date);
         });
 
-      // ── Build catalysts (Session 35) ──────────────────────────────────────
-      const catalysts = buildCatalysts(pastEarningsRaw, grades, ownedSet);
+      // ── Build catalysts (Session 35) — tracked universe = SA store (holdings + watchlist) ──
+      const saGradesForCatalysts = await fetchSAGrades();
+      const trackedSet = new Set([...ownedSet, ...Object.keys(saGradesForCatalysts || {})]);
+      const catalysts = buildCatalysts(pastEarningsRaw, grades, trackedSet, ownedSet);
 
       // ── Append intelligence block ─────────────────────────────────────────
       text += `\n═══════════════════════════════════════════════════════\n`;
