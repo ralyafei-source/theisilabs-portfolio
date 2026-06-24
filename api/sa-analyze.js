@@ -12,7 +12,7 @@ const REPO          = 'ralyafei-source/theisilabs-portfolio';
 const { computeBuckets } = require('./_lib/bucket-scorer.js');
 // Deep-read prompt builder (non-routed _lib — see scorer note above).
 const { buildDeepReadPrompt } = require('./_lib/deep-read.js');
-const { fetchExtrasForSymbol, buildCatalysts, benzingaNews, daysAgoUAE, todayUAE } = require('./_lib/catalysts.js');
+const { fetchExtrasForSymbol, buildCatalysts, benzingaNews, fmpNews, daysAgoUAE, todayUAE } = require('./_lib/catalysts.js');
 
 function buildPrompt(inputs) {
   const cashUSD = inputs.cashUSD || 0;
@@ -871,6 +871,91 @@ ${JSON.stringify(payload)}`;
           method:'PUT',
           headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','User-Agent':'theisi' },
           body: JSON.stringify({ message:`daily brief ${out.generated_at}`, content:Buffer.from(JSON.stringify(out,null,2)).toString('base64'), ...(cachedWrap?{sha:cachedWrap.sha}:{}) })
+        });
+      } catch {}
+      return res.status(200).json({ ...out, cached:false });
+    } catch(e){ return res.status(500).json({ error:e.message }); }
+  }
+
+  // ── themedNews: Arabic themed news (themes + affected tickers + source articles) ──
+  // Body: { themedNews:true, forceRefresh?:bool } → { date, themes:[{summary,tickers,articles}] }
+  // Replaces the old /api/analysis "أخبار تمس محفظتك". Cached daily.
+  if (req.body && req.body.themedNews && GITHUB_TOKEN) {
+    try {
+      const today = new Date().toISOString().slice(0,10);
+      const cachePath = `data/themed-news.json`;
+      const readJson = async (fp) => {
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } });
+        if(!ex.ok) return null;
+        const f = await ex.json();
+        return { data: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), sha: f.sha };
+      };
+
+      // serve cache unless forced
+      const cachedWrap = await readJson(cachePath);
+      if (cachedWrap && cachedWrap.data && cachedWrap.data.date===today && !req.body.forceRefresh) {
+        return res.status(200).json({ ...cachedWrap.data, cached:true });
+      }
+
+      // resolve tracked symbols from buckets (holdings + watchlist)
+      const readBuckets = async (date) => { const w = await readJson(`data/sa-buckets-${date}.json`); return w?w.data:null; };
+      let buckets = await readBuckets(today);
+      if(!buckets){
+        const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } });
+        if(dir.ok){ const files=await dir.json(); const dates=(Array.isArray(files)?files:[]).map(f=>(f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m=>m[1]).filter(d=>d<today).sort().reverse(); if(dates.length) buckets=await readBuckets(dates[0]); }
+      }
+      const symbols = buckets && buckets.scored ? Object.keys(buckets.scored) : [];
+      if (!symbols.length) return res.status(200).json({ date:today, themes:[], note:'no symbols' });
+
+      // fetch FMP news for the tracked set
+      const news = await fmpNews(symbols, 60);
+      if (!news.length) {
+        const out = { date:today, themes:[], generated_at:new Date().toISOString() };
+        return res.status(200).json({ ...out, cached:false });
+      }
+
+      // compact payload (with index) so the model can point each theme to its sources
+      const payloadIdx = news.slice(0, 40).map((n,i) => ({ i, t: n.title, sym: n.sym, d: n.date }));
+
+      const prompt = `أنت محرّر أخبار THEISI. عندك عناوين أخبار حديثة تمسّ أسهم محفظة مستثمر إماراتي.
+مهمتك: اجمع العناوين في ٣-٥ مواضيع (themes) واضحة، واكتب كل موضوع بجملة واحدة بالعربية الخليجية الودّية (مو فصحى متكلّفة)، واذكر الأسهم المتأثرة، وأرقام العناوين المصدرية لكل موضوع.
+
+قواعد صارمة:
+- اشرح ما يحدث، لا توصِ. ممنوع «اشترِ/بِع». ممنوع تخترع أرقاماً أو أهدافاً.
+- رموز الأسهم بالإنجليزي كما هي.
+- لا تكرّر نفس الموضوع. ادمج العناوين المتشابهة.
+- إذا خبر يخص عدة أسهم، اذكرها كلها في tickers.
+- في "source_idx" ضع أرقام (i) العناوين التي يتكوّن منها الموضوع.
+- نص عادي، بدون ماركداون.
+
+أعد JSON صارم فقط:
+{"themes":[{"summary":"جملة الموضوع بالخليجي","tickers":["SYM1","SYM2"],"source_idx":[0,3]}]}
+
+العناوين:
+${JSON.stringify(payloadIdx)}`;
+
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01' },
+        body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:1500, messages:[{role:'user',content:prompt}] })
+      });
+      const d = await r.json();
+      let txt = (d.content||[]).map(c=>c.type==='text'?c.text:'').join('').trim().replace(/```json|```/g,'').trim();
+      let parsed; try { parsed = JSON.parse(txt); } catch { parsed = { themes:[] }; }
+      let themes = Array.isArray(parsed.themes) ? parsed.themes.slice(0,6) : [];
+      // attach the actual source articles (title, snippet, url) to each theme for the expand
+      themes = themes.map(th => ({
+        summary: th.summary || '',
+        tickers: th.tickers || [],
+        articles: (th.source_idx || []).map(i => news[i]).filter(Boolean).map(n => ({ title:n.title, snippet:n.text||'', url:n.url, site:n.site, date:n.date }))
+      }));
+
+      const out = { date:today, themes, generated_at:new Date().toISOString() };
+      try {
+        await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, {
+          method:'PUT',
+          headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','User-Agent':'theisi' },
+          body: JSON.stringify({ message:`themed news ${out.generated_at}`, content:Buffer.from(JSON.stringify(out,null,2)).toString('base64'), ...(cachedWrap?{sha:cachedWrap.sha}:{}) })
         });
       } catch {}
       return res.status(200).json({ ...out, cached:false });
