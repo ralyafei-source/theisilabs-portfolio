@@ -12,7 +12,7 @@ const REPO          = 'ralyafei-source/theisilabs-portfolio';
 const { computeBuckets } = require('./_lib/bucket-scorer.js');
 // Deep-read prompt builder (non-routed _lib — see scorer note above).
 const { buildDeepReadPrompt } = require('./_lib/deep-read.js');
-const { fetchExtrasForSymbol } = require('./_lib/catalysts.js');
+const { fetchExtrasForSymbol, buildCatalysts, benzingaNews, daysAgoUAE, todayUAE } = require('./_lib/catalysts.js');
 
 function buildPrompt(inputs) {
   const cashUSD = inputs.cashUSD || 0;
@@ -726,7 +726,157 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(200).json({ symbol: req.body.symbol, result: null, error: e.message }); }
   }
 
+// ── newsFeed: light, no-Claude headlines for holdings + watchlist ──────────
+  // Body: { newsFeed:true }  → { date, items:[{sym, title, date}] }
+  if (req.body && req.body.newsFeed && GITHUB_TOKEN) {
+    try {
+      const today = new Date().toISOString().slice(0,10);
+      const readDay = async (date) => {
+        const fp = `data/sa-buckets-${date}.json`;
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } });
+        if(!ex.ok) return null;
+        return JSON.parse(Buffer.from((await ex.json()).content,'base64').toString('utf8'));
+      };
+      let b = await readDay(today);
+      if(!b){
+        const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } });
+        if(dir.ok){ const files=await dir.json(); const dates=(Array.isArray(files)?files:[]).map(f=>(f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m=>m[1]).filter(d=>d<today).sort().reverse(); if(dates.length) b=await readDay(dates[0]); }
+      }
+      const scored = (b && b.scored) || {};
+      const syms = Object.keys(scored).slice(0, 30);    // cap to protect rate limits
+      const from = daysAgoUAE(7);
+      const results = await Promise.all(syms.map(async sym => {
+        const news = await benzingaNews(sym, from);
+        return news.map(n => ({ sym, title: n.title, date: n.date }));
+      }));
+      const items = results.flat().sort((a,b)=>(b.date<a.date?-1:1)).slice(0, 25);
+      return res.status(200).json({ date: today, items });
+    } catch(e){ return res.status(200).json({ date:new Date().toISOString().slice(0,10), items:[], error:e.message }); }
+  }
 
+  // ── dailyRead: the twice-daily Khaleeji portfolio brief ────────────────────
+  // Body: { dailyRead:true, forceRefresh?:bool }
+  // Cron hits with forceRefresh:true at 00:00 + 18:00 UAE. Dashboard reads cache.
+  if (req.body && req.body.dailyRead && GITHUB_TOKEN) {
+    try {
+      const today = new Date().toISOString().slice(0,10);
+      const cachePath = `data/daily-brief.json`;
+      const readJson = async (fp) => {
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } });
+        if(!ex.ok) return null;
+        const f = await ex.json();
+        return { data: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), sha: f.sha };
+      };
+
+      // serve cache unless forced (cron forces; dashboard does not)
+      const cachedWrap = await readJson(cachePath);
+      if (cachedWrap && cachedWrap.data && !req.body.forceRefresh) {
+        return res.status(200).json({ ...cachedWrap.data, cached:true });
+      }
+
+      // resolve buckets (today, else most recent prior)
+      const readBuckets = async (date) => {
+        const w = await readJson(`data/sa-buckets-${date}.json`);
+        return w ? w.data : null;
+      };
+      let buckets = await readBuckets(today);
+      if(!buckets){
+        const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } });
+        if(dir.ok){ const files=await dir.json(); const dates=(Array.isArray(files)?files:[]).map(f=>(f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m=>m[1]).filter(d=>d<today).sort().reverse(); if(dates.length) buckets=await readBuckets(dates[0]); }
+      }
+      const scored = (buckets && buckets.scored) || {};
+      if (!Object.keys(scored).length) {
+        return res.status(200).json({ date:today, brief:'لا توجد بيانات محفظة بعد.', detail:'', generated_at:new Date().toISOString() });
+      }
+
+      // owned + tracked sets
+      const ownedSet = new Set(Object.keys(scored).filter(s => scored[s].owned));
+      const trackedSet = new Set(Object.keys(scored));
+
+      // posture: strongest/weakest by long score (owned), deduped for small portfolios
+      const ownedByLong = Object.keys(scored)
+        .filter(s => scored[s].owned && scored[s].long && scored[s].long.score!=null)
+        .sort((a,b)=>scored[b].long.score-scored[a].long.score);
+      const strongest = ownedByLong.slice(0,2);
+      const weakest = ownedByLong.slice(-2).filter(s => !strongest.includes(s));
+
+      // catalysts (live) across tracked set
+      const symbols = Object.keys(scored);
+      const [pastEarnings, gradeArrays] = await Promise.all([
+        fetch(`https://financialmodelingprep.com/stable/earnings-calendar?from=${daysAgoUAE(14)}&to=${today}&symbol=${symbols.join(',')}&apikey=${process.env.FMP_API_KEY||process.env.FMP_KEY}`).then(r=>r.ok?r.json():[]).catch(()=>[]),
+        Promise.all(symbols.map(s => fetch(`https://financialmodelingprep.com/stable/grades?symbol=${s}&limit=3&apikey=${process.env.FMP_API_KEY||process.env.FMP_KEY}`).then(r=>r.ok?r.json():null).catch(()=>null)))
+      ]);
+      const grades = gradeArrays.flat().filter(Boolean);
+      const catMap = buildCatalysts(pastEarnings, grades, trackedSet, ownedSet);
+      const changes = [];
+      Object.entries(catMap).forEach(([sym,arr]) => arr.forEach(c => changes.push({ sym, type:c.type, detail:c.detail, age:c.age_days, held:c.owned })));
+      changes.sort((a,b)=>a.age-b.age);
+
+      // news for stocks that have a catalyst (the "why")
+      const catSyms = Object.keys(catMap);
+      const newsByStock = {};
+      await Promise.all(catSyms.slice(0,8).map(async sym => {
+        const n = await benzingaNews(sym, daysAgoUAE(14));
+        if(n.length) newsByStock[sym] = n.map(x=>x.title);
+      }));
+
+      const G = s => scored[s] ? scored[s].grades : {};
+      const payload = {
+        posture: {
+          strongest: strongest.map(s=>({sym:s, long:scored[s].long.score, grades:G(s)})),
+          weakest: weakest.map(s=>({sym:s, long:scored[s].long.score, grades:G(s)})),
+          owned_count: ownedSet.size
+        },
+        changes: changes.slice(0,8),
+        news: newsByStock
+      };
+
+      const prompt = `أنت تكتب «موجز المحفظة» اليومي لمستثمر إماراتي (لا ضريبة) بالخليجية الودّية — صديق ذكي، مو تقرير بنكي. ممنوع الفصحى المتكلّفة.
+
+قواعد صارمة:
+- اشرح، لا توصِ. ممنوع «اشترِ/بِع». ممنوع تخترع أرقاماً أو أهدافاً أو نسباً.
+- الدرجات والنقاط (٠–١٠٠) قراءات ترتيبية — مو نسب ولا عوائد. أعد ذكرها لا تعِد تفسيرها.
+- استخدم الأخبار فقط لتفسير «لماذا» حدث محفّز. لا تكرّر أي توقّع ورد في الخبر.
+- إذا تعارض محفّز مع الدرجات، وضّح التعارض بصراحة.
+- رموز الأسهم بالإنجليزي. الانتقالات بالعربي (من X إلى Y).
+- نص عادي فقط، بدون ماركداون.
+
+أعد JSON صارم فقط:
+{"brief":"٢-٣ جمل: وضع المحفظة العام (الأقوى/الأضعف) ثم أبرز ما تغيّر","detail":"٤-٦ جمل: تفصيل المحفّزات الحديثة بتواريخها و«لماذا» من الأخبار، والتعارضات إن وُجدت","posture_line":"جملة واحدة تلخّص الوضع"}
+
+البيانات:
+${JSON.stringify(payload)}`;
+
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01' },
+        body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:1200, messages:[{role:'user',content:prompt}] })
+      });
+      const d = await r.json();
+      let txt = (d.content||[]).map(c=>c.type==='text'?c.text:'').join('').trim().replace(/```json|```/g,'').trim();
+      let parsed;
+      try { parsed = JSON.parse(txt); } catch { parsed = { brief: txt.slice(0,400), detail:'', posture_line:'' }; }
+
+      const out = {
+        date: today,
+        brief: parsed.brief || '',
+        detail: parsed.detail || '',
+        posture_line: parsed.posture_line || '',
+        change_count: changes.length,
+        generated_at: new Date().toISOString()
+      };
+      // save cache
+      try {
+        await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, {
+          method:'PUT',
+          headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','User-Agent':'theisi' },
+          body: JSON.stringify({ message:`daily brief ${out.generated_at}`, content:Buffer.from(JSON.stringify(out,null,2)).toString('base64'), ...(cachedWrap?{sha:cachedWrap.sha}:{}) })
+        });
+      } catch {}
+      return res.status(200).json({ ...out, cached:false });
+    } catch(e){ return res.status(500).json({ error:e.message }); }
+  }
+  
   // ── listAnalyses: return dates that have a saved analysis ────────
   if (req.body && req.body.listAnalyses && GITHUB_TOKEN) {
     try {
