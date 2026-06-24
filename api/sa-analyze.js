@@ -917,22 +917,23 @@ ${JSON.stringify(payload)}`;
       // compact payload (with index) so the model can point each theme to its sources
       const payloadIdx = news.slice(0, 40).map((n,i) => ({ i, t: n.title, s: (n.text||'').slice(0,300), sym: n.sym, d: n.date }));
 
-      const prompt = `أنت محرّر أخبار THEISI. عندك عناوين أخبار حديثة تمسّ أسهم محفظة مستثمر إماراتي.
-مهمتك: اجمع العناوين في ٣-٥ مواضيع (themes) واضحة، واكتب كل موضوع بجملة واحدة بالعربية الخليجية الودّية (مو فصحى متكلّفة)، واذكر الأسهم المتأثرة، وأرقام العناوين المصدرية لكل موضوع.
+      const prompt = `أنت محرّر أخبار THEISI. عندك عناوين ومقتطفات أخبار حديثة تمسّ أسهم محفظة مستثمر إماراتي.
+مهمتك: اجمع الأخبار في ٣-٥ مواضيع (themes) واضحة. لكل موضوع اكتب ملخّصين بالعربية الخليجية الودّية (مو فصحى متكلّفة):
+- "summary": جملة واحدة قصيرة تلخّص الموضوع.
+- "detail": ٤-٧ جمل تشرح مضمون الأخبار في الموضوع (مو العناوين فقط — استخدم المقتطفات "s" لفهم المحتوى وتلخيصه).
 
 قواعد صارمة:
 - اشرح ما يحدث، لا توصِ. ممنوع «اشترِ/بِع». ممنوع تخترع أرقاماً أو أهدافاً.
 - رموز الأسهم بالإنجليزي كما هي.
-- لا تكرّر نفس الموضوع. ادمج العناوين المتشابهة.
+- لا تكرّر نفس الموضوع. ادمج الأخبار المتشابهة.
 - إذا خبر يخص عدة أسهم، اذكرها كلها في tickers.
-- في "source_idx" ضع أرقام (i) العناوين التي يتكوّن منها الموضوع.
-- لكل عنوان يوجد مقتطف "s" من الخبر — استخدمه لفهم المحتوى، ولخّص المضمون لا العنوان فقط.
+- لخّص المضمون من المقتطفات، لا تكتفِ بإعادة صياغة العناوين.
 - نص عادي، بدون ماركداون.
 
 أعد JSON صارم فقط:
-{"themes":[{"summary":"جملة الموضوع بالخليجي","tickers":["SYM1","SYM2"],"source_idx":[0,3]}]}
+{"themes":[{"summary":"جملة قصيرة","detail":"٤-٧ جمل عن المضمون","tickers":["SYM1","SYM2"]}]}
 
-العناوين:
+الأخبار:
 ${JSON.stringify(payloadIdx)}`;
 
       const r = await fetch('https://api.anthropic.com/v1/messages', {
@@ -944,11 +945,10 @@ ${JSON.stringify(payloadIdx)}`;
       let txt = (d.content||[]).map(c=>c.type==='text'?c.text:'').join('').trim().replace(/```json|```/g,'').trim();
       let parsed; try { parsed = JSON.parse(txt); } catch { parsed = { themes:[] }; }
       let themes = Array.isArray(parsed.themes) ? parsed.themes.slice(0,6) : [];
-      // attach the actual source articles (title, snippet, url) to each theme for the expand
       themes = themes.map(th => ({
         summary: th.summary || '',
-        tickers: th.tickers || [],
-        articles: (th.source_idx || []).map(i => news[i]).filter(Boolean).map(n => ({ title:n.title, snippet:n.text||'', url:n.url, site:n.site, date:n.date }))
+        detail: th.detail || '',
+        tickers: th.tickers || []
       }));
 
       const out = { date:today, themes, generated_at:new Date().toISOString() };
