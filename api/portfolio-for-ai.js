@@ -168,6 +168,39 @@ function daysAgoUAE(n) {
   return new Date(Date.now() + 4 * 3600 * 1000 - n * 86400000).toISOString().slice(0, 10);
 }
 
+// ─── BENZINGA NEWS (Session 35 — readout "why" layer) ────────────────────────
+const BENZINGA_KEY = process.env.BENZINGA_API_KEY || '';
+const CATALYST_CHANNELS = new Set(['Analyst Ratings','Downgrades','Upgrades','Earnings','Price Target','Guidance']);
+
+async function benzingaNews(sym, fromDate) {
+  if (!BENZINGA_KEY) return [];
+  try {
+    const url = `https://api.benzinga.com/api/v2/news?token=${BENZINGA_KEY}&tickers=${sym}`
+              + `&pageSize=15&displayOutput=abstract&dateFrom=${fromDate}&format=json`;
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 6000);
+    const r = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
+    clearTimeout(t);
+    if (!r.ok) return [];
+    const data = await r.json();
+    const items = Array.isArray(data) ? data : (data?.result || data?.item || []);
+    return filterNews(items, sym);
+  } catch { return []; }
+}
+
+// keep only catalyst-relevant, low-noise items for this exact ticker
+function filterNews(items, sym, maxStocks = 4) {
+  return (items || []).filter(n => {
+    const stocks = (n.stocks || []).map(s => s.name || s);
+    if (!stocks.includes(sym)) return false;        // must actually be about this stock
+    if (stocks.length > maxStocks) return false;    // drop multi-ticker listicles
+    const ch  = (n.channels || []).map(c => c.name || c);
+    const imp = Number(n.importance_rank || 0);
+    return ch.some(c => CATALYST_CHANNELS.has(c)) || imp >= 2;
+  }).slice(0, 3).map(n => ({ title: n.title, date: String(n.created || '').slice(0, 16) }));
+}
+
+
 // ─── CATALYST BUILDER (Session 35) ───────────────────────────────────────────
 // Turns recent earnings (actual vs estimate) + recent grade actions into a clean,
 // dated catalyst list. 14-day window. Tags: earnings_beat / earnings_miss /
@@ -1525,6 +1558,122 @@ ${JSON.stringify(facts)}`;
       return res.status(500).json({ error: err.message });
     }
   }
+ 
+  // ── MODE: readout — Khaleeji per-stock explanations for catalyst stocks ────
+  // GET ?mode=readout&key=...  → { date, readouts:{SYM:{full,compact}}, brief_summary }
+  if (req.query.mode === 'readout') {
+    try {
+      const AK = process.env.ANTHROPIC_API_KEY;
+      if (!AK) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set' });
+
+      // 1) Pull portfolio symbols + owned set
+      const pfRaw = await fetch(`https://raw.githubusercontent.com/${REPO}/main/data/portfolio.json?t=${Date.now()}`);
+      const pf = pfRaw.ok ? await pfRaw.json() : { holdings: [] };
+      const holdings = pf.holdings || [];
+      const symbols  = holdings.map(h => h.sym);
+      const ownedSet = new Set(symbols);
+
+      // 2) SA store = tracked universe
+      const saGrades   = await fetchSAGrades();
+      const trackedSet = new Set([...ownedSet, ...Object.keys(saGrades || {})]);
+
+      // 3) Earnings (past 14d) + grades for catalyst build
+      const [pastEarnings, gradeArrays] = await Promise.all([
+        fmpGet(`/earnings-calendar?from=${daysAgoUAE(14)}&to=${todayUAE()}&symbol=${symbols.join(',')}`),
+        Promise.all(symbols.map(sym => fmpGet(`/grades?symbol=${sym}&limit=3`)))
+      ]);
+      const grades    = gradeArrays.flat().filter(Boolean);
+      const catalysts = buildCatalysts(pastEarnings, grades, trackedSet, ownedSet);
+
+      const catSyms = Object.keys(catalysts);
+      if (catSyms.length === 0) {
+        return res.status(200).json({ date: todayUAE(), readouts: {}, brief_summary: 'لا محفّزات حديثة اليوم.' });
+      }
+
+      // 4) Wall Street consensus + news per catalyst stock (parallel, capped)
+      const fromNews = daysAgoUAE(14);
+      const enriched = await Promise.all(catSyms.map(async sym => {
+        const [consArr, news] = await Promise.all([
+          fmpGet(`/grades-consensus?symbol=${sym}`),
+          benzingaNews(sym, fromNews)
+        ]);
+        const cons = Array.isArray(consArr) ? consArr[0] : consArr;
+        const sa = saGrades[sym] || null;
+        return { sym, catalysts: catalysts[sym], consensus: cons, sa, news, owned: ownedSet.has(sym) };
+      }));
+
+      // 5) One Claude call, returns JSON {SYM:{full,compact}} + brief_summary
+      const payload = enriched.map(e => ({
+        symbol: e.sym,
+        held: e.owned,
+        sa_quant: e.sa?.['Quant Rating'] ?? e.sa?.quantRating ?? null,
+        sa_valuation: e.sa?.['Valuation Grade'] ?? null,
+        sa_growth: e.sa?.['Growth Grade'] ?? null,
+        sa_profitability: e.sa?.['Profitability Grade'] ?? null,
+        wall_street: e.consensus ? {
+          consensus: e.consensus.consensus,
+          strongBuy: e.consensus.strongBuy, buy: e.consensus.buy,
+          hold: e.consensus.hold, sell: e.consensus.sell, strongSell: e.consensus.strongSell
+        } : null,
+        catalysts: e.catalysts.map(c => ({ type: c.type, detail: c.detail, date: c.date, age_days: c.age_days })),
+        news: e.news.map(n => n.title)
+      }));
+
+      const prompt = `أنت محلل THEISI تكتب "قراءة سريعة" لكل سهم بالخليجي (إماراتي)، نبرة صديق ذكي — واثق، واضح، بدون مبالغة.
+
+لكل سهم تستلم: نقاط/درجات SA، إجماع وول ستريت، محفّزات حديثة (أرباح/تصنيف بتواريخها)، وعناوين أخبار حديثة.
+
+القواعد الصارمة:
+- اشرح الوضع، لا تتنبأ بالاتجاه أبداً. ممنوع "اشترِ/بِع" أو "راح يطلع/ينزل".
+- استخدم الأخبار فقط لتفسير "لماذا" حدث المحفّز. لا تكرّر تنبؤات وردت في الأخبار.
+- إذا تعارضت الإشارات (درجة قوية + خفض تصنيف مثلاً) وضّح التعارض بصراحة — هذا أهم شي.
+- رموز الأسهم وأسماء الشركات بالإنجليزي كما هي. الانتقالات بالعربي (من X إلى Y)، لا أسهم →.
+- اختم بوصف للوضع، مو نصيحة.
+
+لكل سهم اكتب:
+- "full": ٢-٤ جمل خليجية كاملة.
+- "compact": جملة واحدة قصيرة للملخص اليومي.
+
+ثم اكتب "brief_summary": جملة أو جملتين تلخّص أبرز ما تحرّك اليوم عبر كل الأسهم.
+
+أرجع JSON فقط بهذا الشكل بالضبط، دون أي نص خارج JSON:
+{"readouts":{"SYM":{"full":"...","compact":"..."}},"brief_summary":"..."}
+
+البيانات:
+${JSON.stringify(payload)}`;
+
+      const controller = new AbortController();
+      const tmo = setTimeout(() => controller.abort(), 55000);
+      const aRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': AK, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 3000,
+          messages: [{ role: 'user', content: prompt }]
+        }),
+        signal: controller.signal
+      });
+      clearTimeout(tmo);
+      if (!aRes.ok) {
+        const t = await aRes.text().catch(() => '');
+        return res.status(502).json({ error: `anthropic ${aRes.status}`, detail: t.slice(0, 300) });
+      }
+      const aData = await aRes.json();
+      let txt = (aData.content || []).map(c => c.type === 'text' ? c.text : '').join('').trim();
+      txt = txt.replace(/```json|```/g, '').trim();
+      let parsed;
+      try { parsed = JSON.parse(txt); }
+      catch { return res.status(200).json({ date: todayUAE(), raw: txt, parse_error: true }); }
+
+      return res.status(200).json({ date: todayUAE(), ...parsed });
+
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+  
+  
   // ─────────────────────────────────────────────────────────────────────────
 // ── MODE: ticker-lookup — company name + sector for the Record Trade modal ──
   if (req.query.mode === 'ticker-lookup') {
