@@ -155,25 +155,23 @@ module.exports = {
 // ── FMP NEWS (Session 35 — replaces Benzinga; Starter plan includes news) ────
 // Returns raw items scoped to the given symbols, newest first.
 async function fmpNews(symbols, limit = 50) {
-  if (!FMP_KEY || !symbols || !symbols.length) return [];
+  if (!FMP_KEY) return [{sym:'DBG',title:'NO_FMP_KEY',text:'',date:'',site:'',url:''}];
+  if (!symbols || !symbols.length) return [{sym:'DBG',title:'NO_SYMBOLS',text:'',date:'',site:'',url:''}];
   try {
     const syms = symbols.slice(0, 50).join(',');
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), 8000);
     const r = await fetch(`${FMP}/news/stock?symbols=${syms}&limit=${limit}&apikey=${FMP_KEY}`, { signal: controller.signal });
     clearTimeout(t);
-    if (!r.ok) return [];
+    if (!r.ok) return [{sym:'DBG',title:'FMP_HTTP_'+r.status,text:'',date:'',site:'',url:''}];
     const d = await r.json();
-    if (!Array.isArray(d)) return [];
+    if (!Array.isArray(d)) return [{sym:'DBG',title:'NOT_ARRAY_'+JSON.stringify(d).slice(0,100),text:'',date:'',site:'',url:''}];
     return d.map(n => ({
-      sym: n.symbol,
-      title: n.title,
-      text: n.text || '',
+      sym: n.symbol, title: n.title, text: n.text || '',
       date: String(n.publishedDate || '').slice(0, 16),
-      site: n.site || n.publisher || '',
-      url: n.url || ''
+      site: n.site || n.publisher || '', url: n.url || ''
     }));
-  } catch { return []; }
+  } catch { return [{sym:'DBG',title:'CATCH_ERROR',text:'',date:'',site:'',url:''}]; }
 }
 
 module.exports.fmpNews = fmpNews;
