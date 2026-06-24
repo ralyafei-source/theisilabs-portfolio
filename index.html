@@ -4159,6 +4159,26 @@ function renderCommandCenter(){
       +track+legend);
   })();
 
+  // ============ PORTFOLIO MAP ============
+  // ---- donut sector chart (replaces bars) ----
+  var donutColors=['#FF0A78','#5b8def','#2bb3b8','#a06bd6','#46506b','#34344A'];
+  var segs=secRows.map(function(k,idx){ return {label:secLabels[k]||k, pct:bySec[k]/total*100, color:idx===0?donutColors[0]:donutColors[Math.min(idx,donutColors.length-1)]}; });
+  // collapse small tail into "other" if many sectors
+  var donutSegs=segs.slice(0,5);
+  if(segs.length>5){ var rest=segs.slice(5).reduce(function(a,b){return a+b.pct;},0); donutSegs.push({label:'\u0623\u062e\u0631\u0649', pct:rest, color:donutColors[5]}); }
+  var circ=2*Math.PI*42, off=0;
+  var ring=donutSegs.map(function(sg){ var len=circ*(sg.pct/100); var dash='<circle cx="60" cy="60" r="42" fill="none" stroke="'+sg.color+'" stroke-width="15" stroke-dasharray="'+len.toFixed(2)+' '+(circ-len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 60 60)"/>'; off+=len; return dash; }).join('');
+  var donutSvg='<svg viewBox="0 0 120 120" style="width:118px;height:118px;flex:none;">'+ring
+    +'<text x="60" y="56" text-anchor="middle" fill="var(--text)" font-size="15" font-weight="800" font-family="'+MONO+'">'+donutSegs[0].pct.toFixed(0)+'%</text>'
+    +'<text x="60" y="71" text-anchor="middle" fill="var(--text3)" font-size="8">'+donutSegs[0].label+'</text></svg>';
+  var legend=donutSegs.map(function(sg){ return '<div style="display:flex;align-items:center;gap:7px;margin:4px 0;font-size:11px;"><span style="width:8px;height:8px;border-radius:2px;background:'+sg.color+';flex:none;"></span><span style="color:var(--text2);flex:1;">'+sg.label+'</span><span style="color:var(--text3);font-family:'+MONO+';">'+sg.pct.toFixed(1)+'%</span></div>'; }).join('');
+  var donutBlock='<div style="display:flex;align-items:center;gap:14px;">'+donutSvg+'<div style="flex:1;">'+legend+'</div></div>';
+  var exposureInner=secLabel('\u0627\u0644\u062a\u0639\u0631\u0636 \u0648\u0627\u0644\u062a\u0631\u0643\u064a\u0632')+donutBlock
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">'
+      +'<div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:9px;color:var(--text3);">\u0623\u0643\u0628\u0631 \u0645\u0631\u0643\u0632</div><div style="font-size:13px;font-weight:700;color:var(--text);margin-top:3px;">'+(biggest?biggest.sym:'\u2014')+' '+biggestPct.toFixed(1)+'%</div></div>'
+      +'<div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:9px;color:var(--text3);">\u0639\u062f\u062f \u0627\u0644\u0645\u0631\u0627\u0643\u0632</div><div style="font-size:13px;font-weight:700;color:var(--text);margin-top:3px;">'+stocks.length+'</div></div>'
+    +'</div>'+door('\u0639\u0631\u0636 \u062e\u0631\u064a\u0637\u0629 \u0627\u0644\u062a\u0639\u0631\u0636','portfolio');
+
   var openingBrief=
     '<div>'+secLabel('\u0627\u0644\u0627\u0641\u062a\u062a\u0627\u062d\u064a\u0629')
     +(moversSection?'<div style="margin-bottom:12px;">'+moversSection+'</div>':'')
@@ -4200,25 +4220,6 @@ function renderCommandCenter(){
     reviewSection=panel(secLabel('\u0645\u0627 \u064a\u0633\u062a\u062d\u0642 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629')+rows);
   }
 
-  // ============ PORTFOLIO MAP ============
-  // ---- donut sector chart (replaces bars) ----
-  var donutColors=['#FF0A78','#5b8def','#2bb3b8','#a06bd6','#46506b','#34344A'];
-  var segs=secRows.map(function(k,idx){ return {label:secLabels[k]||k, pct:bySec[k]/total*100, color:idx===0?donutColors[0]:donutColors[Math.min(idx,donutColors.length-1)]}; });
-  // collapse small tail into "other" if many sectors
-  var donutSegs=segs.slice(0,5);
-  if(segs.length>5){ var rest=segs.slice(5).reduce(function(a,b){return a+b.pct;},0); donutSegs.push({label:'\u0623\u062e\u0631\u0649', pct:rest, color:donutColors[5]}); }
-  var circ=2*Math.PI*42, off=0;
-  var ring=donutSegs.map(function(sg){ var len=circ*(sg.pct/100); var dash='<circle cx="60" cy="60" r="42" fill="none" stroke="'+sg.color+'" stroke-width="15" stroke-dasharray="'+len.toFixed(2)+' '+(circ-len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 60 60)"/>'; off+=len; return dash; }).join('');
-  var donutSvg='<svg viewBox="0 0 120 120" style="width:118px;height:118px;flex:none;">'+ring
-    +'<text x="60" y="56" text-anchor="middle" fill="var(--text)" font-size="15" font-weight="800" font-family="'+MONO+'">'+donutSegs[0].pct.toFixed(0)+'%</text>'
-    +'<text x="60" y="71" text-anchor="middle" fill="var(--text3)" font-size="8">'+donutSegs[0].label+'</text></svg>';
-  var legend=donutSegs.map(function(sg){ return '<div style="display:flex;align-items:center;gap:7px;margin:4px 0;font-size:11px;"><span style="width:8px;height:8px;border-radius:2px;background:'+sg.color+';flex:none;"></span><span style="color:var(--text2);flex:1;">'+sg.label+'</span><span style="color:var(--text3);font-family:'+MONO+';">'+sg.pct.toFixed(1)+'%</span></div>'; }).join('');
-  var donutBlock='<div style="display:flex;align-items:center;gap:14px;">'+donutSvg+'<div style="flex:1;">'+legend+'</div></div>';
-  var exposureInner=secLabel('\u0627\u0644\u062a\u0639\u0631\u0636 \u0648\u0627\u0644\u062a\u0631\u0643\u064a\u0632')+donutBlock
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">'
-      +'<div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:9px;color:var(--text3);">\u0623\u0643\u0628\u0631 \u0645\u0631\u0643\u0632</div><div style="font-size:13px;font-weight:700;color:var(--text);margin-top:3px;">'+(biggest?biggest.sym:'\u2014')+' '+biggestPct.toFixed(1)+'%</div></div>'
-      +'<div style="background:var(--bg3);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:9px;color:var(--text3);">\u0639\u062f\u062f \u0627\u0644\u0645\u0631\u0627\u0643\u0632</div><div style="font-size:13px;font-weight:700;color:var(--text);margin-top:3px;">'+stocks.length+'</div></div>'
-    +'</div>'+door('\u0639\u0631\u0636 \u062e\u0631\u064a\u0637\u0629 \u0627\u0644\u062a\u0639\u0631\u0636','portfolio');
 
   var posHead='<div style="display:grid;grid-template-columns:1fr 60px 70px 64px;gap:0;font-size:10px;color:var(--text3);padding-bottom:7px;border-bottom:1px solid var(--border);">'
     +'<span>\u0627\u0644\u0633\u0647\u0645</span><span style="text-align:left;">\u0627\u0644\u0648\u0632\u0646</span><span style="text-align:left;">\u0627\u0644\u0642\u064a\u0645\u0629</span><span style="text-align:left;">\u0627\u0644\u0623\u062f\u0627\u0621</span></div>';
