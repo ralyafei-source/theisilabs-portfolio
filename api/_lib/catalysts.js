@@ -151,3 +151,29 @@ module.exports = {
   todayUAE, daysAgoUAE, fmpGet,
   buildCatalysts, filterNews, benzingaNews, fetchExtrasForSymbol
 };
+
+// ── FMP NEWS (Session 35 — replaces Benzinga; Starter plan includes news) ────
+// Returns raw items scoped to the given symbols, newest first.
+async function fmpNews(symbols, limit = 50) {
+  if (!FMP_KEY || !symbols || !symbols.length) return [];
+  try {
+    const syms = symbols.slice(0, 50).join(',');
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 8000);
+    const r = await fetch(`${FMP}/news/stock?symbols=${syms}&limit=${limit}&apikey=${FMP_KEY}`, { signal: controller.signal });
+    clearTimeout(t);
+    if (!r.ok) return [];
+    const d = await r.json();
+    if (!Array.isArray(d)) return [];
+    return d.map(n => ({
+      sym: n.symbol,
+      title: n.title,
+      text: n.text || '',
+      date: String(n.publishedDate || '').slice(0, 16),
+      site: n.site || n.publisher || '',
+      url: n.url || ''
+    }));
+  } catch { return []; }
+}
+
+module.exports.fmpNews = fmpNews;
