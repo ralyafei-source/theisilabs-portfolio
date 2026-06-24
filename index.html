@@ -4162,9 +4162,10 @@ function renderCommandCenter(){
   var openingBrief=
     '<div>'+secLabel('\u0627\u0644\u0627\u0641\u062a\u062a\u0627\u062d\u064a\u0629')
     +(moversSection?'<div style="margin-bottom:12px;">'+moversSection+'</div>':'')
-    +'<div class="cc-brief" style="display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:12px;align-items:stretch;">'
+    +'<div class="cc-brief" style="display:grid;grid-template-columns:1fr 1.2fr 1fr 1fr;gap:12px;align-items:stretch;">'
       +panel(hzInner,{style:'display:flex;flex-direction:column;'})
       +panel(todayInner,{style:'display:flex;flex-direction:column;'})
+      +panel(exposureInner,{style:'display:flex;flex-direction:column;'})
       +panel(pulse,{style:'display:flex;flex-direction:column;background:linear-gradient(180deg,var(--bg2),var(--bg2));border-color:rgba(255,10,120,.25);'})
     +'</div></div>';
 
@@ -4231,8 +4232,8 @@ function renderCommandCenter(){
   var positionsInner=secLabel('\u0623\u0643\u0628\u0631 5 \u0645\u0631\u0627\u0643\u0632')+posHead+posRows+door('\u0639\u0631\u0636 \u062c\u0645\u064a\u0639 \u0627\u0644\u0645\u0631\u0627\u0643\u0632','portfolio');
 
   var mapSection='<div>'+secLabel('\u062e\u0631\u064a\u0637\u0629 \u0627\u0644\u0645\u062d\u0641\u0638\u0629')
-    +'<div class="cc-2col" style="display:grid;grid-template-columns:1fr 1.1fr;gap:12px;align-items:stretch;">'
-      +panel(positionsInner)+panel(exposureInner)
+    +'<div class="cc-2col" style="display:grid;grid-template-columns:1fr;gap:12px;align-items:stretch;">'
+      +panel(positionsInner)
     +'</div></div>';
 
   
