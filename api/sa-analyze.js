@@ -939,11 +939,11 @@ ${JSON.stringify(payloadIdx)}`;
       const r = await fetch('https://api.anthropic.com/v1/messages', {
         method:'POST',
         headers:{ 'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01' },
-        body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:1500, messages:[{role:'user',content:prompt}] })
+        body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:4500, messages:[{role:'user',content:prompt}] })
       });
       const d = await r.json();
       let txt = (d.content||[]).map(c=>c.type==='text'?c.text:'').join('').trim().replace(/```json|```/g,'').trim();
-      let parsed; try { parsed = JSON.parse(txt); } catch { return res.status(200).json({date:today,themes:[],dbg_raw:txt.slice(0,400),dbg_d:JSON.stringify(d).slice(0,300)}); }
+      let parsed; try { parsed = JSON.parse(txt); } catch { parsed = { themes:[] }; }
       let themes = Array.isArray(parsed.themes) ? parsed.themes.slice(0,6) : [];
       themes = themes.map(th => ({
         summary: th.summary || '',
