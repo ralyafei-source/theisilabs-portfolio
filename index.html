@@ -4355,17 +4355,47 @@ function renderCommandCenter(){
   function earningsCard(){
     var E=window._earnData; if(!E||!E.earnings) return null;
     var heldSet={}; stocks.forEach(function(s){ heldSet[s.sym]=true; });
-    // portfolio holdings only, upcoming, soonest first (API already sorts)
     var held=E.earnings.filter(function(e){ return heldSet[e.symbol] && e.days!=null && e.days>=0; });
     if(!held.length) return null;
+    // approach bar fill: today (0d)=100%, far (>=90d)=8% — grows as the date nears
+    function fillPct(days){ var d=Math.max(0,Math.min(90,days)); return Math.round(8 + (90-d)/90*92); }
+    // revision-trend color for the upcoming line
+    function trendColor(t){ return t==='up'?'#19c37d':(t==='down'?'#e5484d':'var(--text3)'); }
+    function trendLabel(t){ return t==='up'?'\u0645\u0631\u0627\u062c\u0639\u0627\u062a \u2191':(t==='down'?'\u0645\u0631\u0627\u062c\u0639\u0627\u062a \u2193':'\u062b\u0627\u0628\u062a'); }
+    // B/M/I chip for past quarters
+    function bmiChip(r){
+      var c=r==='B'?'#19c37d':(r==='M'?'#e5484d':'var(--text3)');
+      var bg=r==='B'?'rgba(25,195,125,.14)':(r==='M'?'rgba(229,72,77,.14)':'var(--bg3)');
+      return '<span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;font-size:9px;font-weight:700;color:'+c+';background:'+bg+';font-family:'+MONO+';">'+r+'</span>';
+    }
     var list=held.slice(0,6).map(function(r){
       var badge = r.days===0?'\u0627\u0644\u064a\u0648\u0645':r.days===1?'\u063a\u062f\u0627\u064b':('\u0628\u0639\u062f '+r.days+' \u064a\u0648\u0645');
-      var soon = (r.days<=7);
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:11.5px;">'
-        +'<span style="'+(soon?'color:'+AC+';font-weight:700;':'color:var(--text3);')+'font-family:'+MONO+';">'+badge+'</span>'
-        +'<span style="color:var(--text);font-weight:600;">'+r.symbol+'</span></div>';
+      var tc=trendColor(r.revisionTrend);
+      var fp=fillPct(r.days);
+      var eps=(r.epsEstimated!=null)?('$'+Number(r.epsEstimated).toFixed(2)):'\u2014';
+      // past quarters (newest first) → chips, oldest on the left
+      var hist=(r.history||[]).slice().reverse().map(function(h){return bmiChip(h.result);}).join('');
+      return '<div style="padding:9px 0;border-bottom:1px solid var(--border);">'
+        // top row: symbol + day badge
+        +'<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;margin-bottom:5px;">'
+          +'<span style="color:'+tc+';font-weight:700;font-family:'+MONO+';">'+badge+'</span>'
+          +'<span style="color:var(--text);font-weight:700;">'+r.symbol+'</span></div>'
+        // approach line (fills RTL from the right), colored by revision trend
+        +'<div style="position:relative;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:5px;">'
+          +'<div style="position:absolute;top:0;right:0;height:100%;width:'+fp+'%;background:'+tc+';border-radius:3px;"></div></div>'
+        // meta: expected EPS + revision label + past B/M/I
+        +'<div style="display:flex;justify-content:space-between;align-items:center;">'
+          +'<div style="display:flex;gap:3px;align-items:center;">'+(hist||'<span style="font-size:9px;color:var(--text3);">\u2014</span>')+'</div>'
+          +'<div style="font-size:9.5px;color:var(--text3);font-family:'+MONO+';">'+eps+' \u00b7 <span style="color:'+tc+';">'+trendLabel(r.revisionTrend)+'</span></div>'
+        +'</div></div>';
     }).join('');
-    return panel(secLabel('\u0627\u0644\u0623\u0631\u0628\u0627\u062d \u0627\u0644\u0642\u0627\u062f\u0645\u0629')+list+'<div style="font-size:9.5px;color:var(--text3);margin-top:6px;">\u0645\u0648\u0627\u0639\u064a\u062f \u0625\u0639\u0644\u0627\u0646 \u0623\u0631\u0628\u0627\u062d \u0623\u0633\u0647\u0645\u0643</div>'+door('\u0641\u062a\u062d \u0627\u0644\u062a\u062d\u0644\u064a\u0644','portfolio'));
+    var legend='<div style="font-size:9px;color:var(--text3);margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;">'
+      +'<span>'+bmiChip('B')+' \u062a\u062c\u0627\u0648\u0632</span>'
+      +'<span>'+bmiChip('M')+' \u062f\u0648\u0646</span>'
+      +'<span>'+bmiChip('I')+' \u0645\u0637\u0627\u0628\u0642</span>'
+      +'<span style="color:var(--text3);">| \u0627\u0644\u062e\u0637 = \u0627\u0642\u062a\u0631\u0627\u0628 \u0627\u0644\u0645\u0648\u0639\u062f \u00b7 \u0644\u0648\u0646\u0647 = \u0627\u062a\u062c\u0627\u0647 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0627\u062a</span>'
+      +'</div>';
+    return panel(secLabel('\u0627\u0644\u0623\u0631\u0628\u0627\u062d \u0627\u0644\u0642\u0627\u062f\u0645\u0629')+list+legend+door('\u0641\u062a\u062d \u0627\u0644\u062a\u062d\u0644\u064a\u0644','portfolio'));
   }
 
   // ---- NEW: News affecting portfolio card (from briefing d.news) ----
