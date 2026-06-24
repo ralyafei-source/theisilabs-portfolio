@@ -180,7 +180,7 @@ function buildCatalysts(pastEarnings, grades, trackedSet, ownedSet, opts = {}) {
   const EPS_PCT_MIN = 5;      // surprise must be > 5%
   const EPS_ABS_MIN = 0.02;   // AND the absolute EPS gap must be >= $0.02
   const EPS_PCT_MAX = 300;    // AND <= 300% — above this is always a near-zero-base artifact
-  const ownedOnly   = opts.ownedOnly !== false;   // default TRUE
+  const trackedOnly = opts.trackedOnly !== false;   // default TRUE
   const cutoff = daysAgoUAE(WINDOW_DAYS);
   const today  = todayUAE();
   const out = {};
