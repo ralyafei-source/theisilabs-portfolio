@@ -24,5 +24,9 @@
     "api/sa-analyze.js": {
       "maxDuration": 300
     }
-  }
+  },
+  "crons": [
+    { "path": "/api/cron-daily-brief", "schedule": "0 20 * * *" },
+    { "path": "/api/cron-daily-brief", "schedule": "0 14 * * *" }
+  ]
 }
