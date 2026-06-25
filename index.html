@@ -6577,8 +6577,7 @@ function _lkApplyAnalysis(txt, isAr){
 async function _lkFetchAnalysis(sym, isRetry){
   if(isRetry)_lkWritingState();
   try{
-    const token=localStorage.getItem(AUTH_SESSION_KEY)||'';
-    const r=await fetch(`/api/portfolio-for-ai?mode=lookup-analysis&sym=${encodeURIComponent(sym)}&v=6`,{headers:{'Authorization':'Bearer '+token}});
+    const r=await fetch(`/api/portfolio-for-ai?mode=lookup-analysis&sym=${encodeURIComponent(sym)}&v=6`);
     const res=await r.json().catch(()=>({}));
     if(window._lastLookupSym!==sym) return; // user moved on to another symbol
     if(res.analysis){ _lkApplyAnalysis(res.analysis, true); }
