@@ -176,7 +176,8 @@ module.exports = async (req, res) => {
         earnings:  out
       });
     }
-// ── Single-symbol fundamentals lookup (?mode=lookup&sym=XXX) ─────────────
+
+    // ── Single-symbol fundamentals lookup (?mode=lookup&sym=XXX) ─────────────
     // Returns { data:{...}, quality:{...} } for the dashboard lookup card.
     // Source-data sanity gate runs here; the dashboard adds a second display gate.
     if (req.query.mode === 'lookup') {
@@ -280,6 +281,95 @@ module.exports = async (req, res) => {
         generated_at: todayUAE()
       });
     }
+
+    // ── AI analysis phase-2 (?mode=lookup-analysis&sym=XXX) ──────────────────
+    // Returns { analysis: "<arabic markdown>" } for the lookup card's AI section.
+    // The dashboard parser expects: a "## ...الاستثمارية..." thesis paragraph,
+    // a "نقاط القوة" bullet list, and a "نقاط الضعف"/"المخاطر" bullet list.
+    if (req.query.mode === 'lookup-analysis') {
+      const sym = (req.query.sym || '').toString().trim().toUpperCase();
+      if (!sym) return res.status(400).json({ analysis_error: 'missing sym' });
+
+      const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+      if (!ANTHROPIC_KEY) return res.status(200).json({ analysis_error: 'no_anthropic_key' });
+
+      // gather the same fundamentals the lookup card uses
+      const [quoteA, profileA, kmA, ptcA, ratingA, dcfA, growthA] = await Promise.all([
+        fmpGet(`/quote?symbol=${sym}`),
+        fmpGet(`/profile?symbol=${sym}`),
+        fmpGet(`/key-metrics-ttm?symbol=${sym}`),
+        fmpGet(`/price-target-consensus?symbol=${sym}`),
+        fmpGet(`/ratings-snapshot?symbol=${sym}`),
+        fmpGet(`/discounted-cash-flow?symbol=${sym}`),
+        fmpGet(`/financial-growth?symbol=${sym}&limit=1`)
+      ]);
+      const q  = Array.isArray(quoteA)?quoteA[0]:quoteA;
+      const p  = Array.isArray(profileA)?profileA[0]:profileA;
+      const km = Array.isArray(kmA)?kmA[0]:kmA;
+      const pt = Array.isArray(ptcA)?ptcA[0]:ptcA;
+      const rt = Array.isArray(ratingA)?ratingA[0]:ratingA;
+      const dcf= Array.isArray(dcfA)?dcfA[0]:dcfA;
+      const gr = Array.isArray(growthA)?growthA[0]:growthA;
+
+      const facts = {
+        symbol: sym,
+        name: (p && (p.companyName||p.name)) || sym,
+        sector: p ? p.sector : null,
+        price: q ? q.price : null,
+        changePct: q ? (q.changePercentage ?? q.changesPercentage) : null,
+        marketCap: (q && q.marketCap) ?? (p && p.marketCap) ?? null,
+        beta: (p && p.beta) ?? null,
+        roe: km && km.returnOnEquityTTM != null ? +(km.returnOnEquityTTM*100).toFixed(1) : null,
+        revenueGrowth: gr && gr.revenueGrowth != null ? +(gr.revenueGrowth*100).toFixed(1) : null,
+        targetMean: pt ? (pt.targetConsensus ?? pt.targetMean) : null,
+        targetHigh: pt ? pt.targetHigh : null,
+        targetLow: pt ? pt.targetLow : null,
+        dcfValue: dcf ? dcf.dcf : null,
+        analystRating: rt ? rt.rating : null
+      };
+
+      const prompt =
+`أنت محلل مالي. حلّل سهم ${facts.name} (${sym}) لمستثمر إماراتي طويل الأمد.
+البيانات:
+${JSON.stringify(facts, null, 2)}
+
+اكتب تحليلاً موجزاً بالعربية الفصحى بهذا التنسيق بالضبط:
+
+## الفرضية الاستثمارية
+فقرة واحدة (٣-٤ جمل) تلخّص القصة الاستثمارية بناءً على الأرقام أعلاه فقط.
+
+نقاط القوة
+- نقطة (جملة قصيرة مبنية على رقم محدد)
+- نقطة
+- نقطة
+
+المخاطر
+- نقطة
+- نقطة
+- نقطة
+
+قواعد صارمة: استند فقط إلى الأرقام المعطاة. لا تخترع أرقاماً. إن كان رقم = null تجاهله. لا توصِ بشراء أو بيع. اجعل كل نقطة جملة واحدة قصيرة.`;
+
+      try {
+        const ar = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json', 'x-api-key':ANTHROPIC_KEY, 'anthropic-version':'2023-06-01' },
+          body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:900, messages:[{role:'user',content:prompt}] })
+        });
+        if (!ar.ok) {
+          const errTxt = await ar.text();
+          return res.status(200).json({ analysis_error: `anthropic_${ar.status}`, detail: errTxt.slice(0,200) });
+        }
+        const aj = await ar.json();
+        const analysis = (aj.content || []).map(b => b.type === 'text' ? b.text : '').join('\n').trim();
+        if (!analysis) return res.status(200).json({ analysis_error: 'empty_analysis' });
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        return res.status(200).json({ analysis, generated_at: todayUAE() });
+      } catch (e) {
+        return res.status(200).json({ analysis_error: e.message });
+      }
+    }
+
     // ── Live prices (Yahoo Finance) ──────────────────────────────────────────
     const priceMap = {};
     const priceResults = await Promise.all(
