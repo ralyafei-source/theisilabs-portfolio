@@ -3191,7 +3191,7 @@ function renderShortRow(sym, v){
   return `<div class="row short" data-sym="${sym}">
     <div class="row-top">
       <span class="score" style="color:${col}">${arNum(s)}<span class="max">/100</span></span>
-      <span class="sym">${sym}${quantPill(v)}${badge}</span>
+      <span class="sym">${(typeof ccShariaMark==='function'?ccShariaMark(sym):'')}${sym}${quantPill(v)}${badge}</span>
       <span class="lean">${lab}</span>
     </div>
     ${crossTags(v,'short')}
@@ -3217,7 +3217,7 @@ function renderGradeRow(sym, v, key){
   return `<div class="row" data-sym="${sym}">
     <div class="row-top">
       <span class="score" style="color:${col}">${arNum(s)}<span class="max">/100</span></span>
-      <span class="sym">${sym}${quantPill(v)}${badge}</span>
+      <span class="sym">${(typeof ccShariaMark==='function'?ccShariaMark(sym):'')}${sym}${quantPill(v)}${badge}</span>
       <span class="arch">
         <span class="conv" style="background:${convColor(conv)}" title="الثقة: ${convT.label}"></span>
         <span class="chip" style="color:${toneColor(term.tone)};background:${chipBg}" data-term="archetype:${ak}">${term.label}</span>
@@ -3242,6 +3242,7 @@ function renderGradeRow(sym, v, key){
 function bindKey(name){ return {Valuation:'V',Growth:'G',Profitability:'P',Momentum:'M','EPS Revisions':'R'}[name]; }
 
 function render(){
+  if(typeof loadShariaData==='function') loadShariaData();
   const scored = (DATA && DATA.scored) || {};
   const grid=document.getElementById('hz-grid'); grid.innerHTML='';
   BUCKETS.forEach(b=>{
@@ -4513,6 +4514,7 @@ function loadShariaData(){
         window._shariaUpdated=window._shariaUpdated||d.updated||null;
         window._shariaMethodAr=window._shariaMethodAr||d.method_ar||null;
         renderCommandCenter();
+        if(typeof render==='function' && document.getElementById('hz-grid')){ try{ render(); }catch(e){} }
       }).catch(function(){});
   }catch(e){}
 }
