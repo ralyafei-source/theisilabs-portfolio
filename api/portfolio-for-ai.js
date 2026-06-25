@@ -176,7 +176,110 @@ module.exports = async (req, res) => {
         earnings:  out
       });
     }
+// ── Single-symbol fundamentals lookup (?mode=lookup&sym=XXX) ─────────────
+    // Returns { data:{...}, quality:{...} } for the dashboard lookup card.
+    // Source-data sanity gate runs here; the dashboard adds a second display gate.
+    if (req.query.mode === 'lookup') {
+      const sym = (req.query.sym || '').toString().trim().toUpperCase();
+      if (!sym) return res.status(400).json({ error: 'missing sym' });
 
+      const [quoteA, profileA, kmA, ptcA, ratingA, dcfA, growthA] = await Promise.all([
+        fmpGet(`/quote?symbol=${sym}`),
+        fmpGet(`/profile?symbol=${sym}`),
+        fmpGet(`/key-metrics-ttm?symbol=${sym}`),
+        fmpGet(`/price-target-consensus?symbol=${sym}`),
+        fmpGet(`/ratings-snapshot?symbol=${sym}`),
+        fmpGet(`/discounted-cash-flow?symbol=${sym}`),
+        fmpGet(`/financial-growth?symbol=${sym}&limit=1`)
+      ]);
+
+      const q  = Array.isArray(quoteA)   ? quoteA[0]   : quoteA;
+      const p  = Array.isArray(profileA) ? profileA[0] : profileA;
+      const km = Array.isArray(kmA)      ? kmA[0]      : kmA;
+      const pt = Array.isArray(ptcA)     ? ptcA[0]     : ptcA;
+      const rt = Array.isArray(ratingA)  ? ratingA[0]  : ratingA;
+      const dcf= Array.isArray(dcfA)     ? dcfA[0]     : dcfA;
+      const gr = Array.isArray(growthA)  ? growthA[0]  : growthA;
+
+      if (!q && !p) {
+        return res.status(200).json({ error: `No data found for ${sym}` });
+      }
+
+      // analyst consensus label from ratings snapshot (or price-target buckets)
+      let consensus = null;
+      if (rt && rt.rating) consensus = rt.rating;            // e.g. "Strong Buy"
+      else if (pt) {
+        const tot = (pt.strongBuy||0)+(pt.buy||0)+(pt.hold||0)+(pt.sell||0)+(pt.strongSell||0);
+        if (tot > 0) {
+          const bull = (pt.strongBuy||0)+(pt.buy||0);
+          const bear = (pt.sell||0)+(pt.strongSell||0);
+          consensus = bull > bear*1.5 ? 'Bullish' : (bear > bull*1.5 ? 'Bearish' : 'Neutral');
+        }
+      }
+
+      const data = {
+        symbol:          sym,
+        companyName:     (p && (p.companyName || p.name)) || (q && q.name) || sym,
+        sector:          p ? p.sector  : null,
+        website:         p ? p.website : null,
+        description:     p ? p.description : null,
+        price:           q ? (q.price ?? null) : null,
+        changePct:       q ? (q.changePercentage ?? q.changesPercentage ?? null) : null,
+        marketCap:       (q && q.marketCap) ?? (p && p.marketCap) ?? null,
+        beta:            (p && p.beta) ?? (km && km.beta) ?? null,
+        pe:              (q && q.pe) ?? (km && km.peRatioTTM) ?? null,
+        peg:             km ? (km.pegRatioTTM ?? km.priceEarningsToGrowthRatioTTM ?? null) : null,
+        roe:             km ? ((km.returnOnEquityTTM != null ? km.returnOnEquityTTM * 100 : null)) : null,
+        revenueGrowth:   gr ? ((gr.revenueGrowth != null ? gr.revenueGrowth * 100 : null)) : null,
+        targetMean:      pt ? (pt.targetConsensus ?? pt.targetMean ?? null) : null,
+        targetMedian:    pt ? (pt.targetMedian ?? null) : null,
+        targetHigh:      pt ? (pt.targetHigh ?? null) : null,
+        targetLow:       pt ? (pt.targetLow ?? null) : null,
+        dcfValue:        dcf ? (dcf.dcf ?? null) : null,
+        analystConsensus: consensus
+      };
+
+      // ── Source-data sanity gate (server side) ───────────────────────────
+      const RANGES = {
+        price:[0,1000000], changePct:[-90,90], pe:[0,500], peg:[0,50],
+        roe:[-150,150], beta:[0,4], revenueGrowth:[-60,300], marketCap:[0,5e13],
+        targetMean:[0,1000000], dcfValue:[0,1000000]
+      };
+      const flags = [];
+      for (const k in RANGES) {
+        const v = data[k];
+        if (v == null) continue;
+        const n = Number(v);
+        if (isNaN(n) || n < RANGES[k][0] || n > RANGES[k][1]) {
+          flags.push({ field: k, rule: `source_sanity_${RANGES[k][0]}_${RANGES[k][1]}`, value: v });
+          data[k] = null;
+        }
+      }
+      // anchor DCF/targets to price (0.2×–5×)
+      if (data.price > 0) {
+        ['dcfValue','targetMean','targetMedian','targetHigh','targetLow'].forEach(k => {
+          if (data[k] != null && (data[k] < data.price*0.2 || data[k] > data.price*5)) {
+            flags.push({ field:k, rule:'source_anchor_vs_price', value:data[k] });
+            data[k] = null;
+          }
+        });
+      }
+
+      const missing = ['price','companyName'].filter(k => data[k] == null);
+      const confidence = missing.length ? 'low' : (flags.length ? 'medium' : 'high');
+
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      return res.status(200).json({
+        data,
+        quality: {
+          flags,
+          notes_ar: flags.length ? ['تم استبعاد بعض القيم غير المنطقية تلقائياً'] : [],
+          confidence
+        },
+        cached: false,
+        generated_at: todayUAE()
+      });
+    }
     // ── Live prices (Yahoo Finance) ──────────────────────────────────────────
     const priceMap = {};
     const priceResults = await Promise.all(
