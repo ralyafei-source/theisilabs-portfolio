@@ -6623,10 +6623,7 @@ async function lookupStock() {
   document.getElementById('lookup-error').style.display = 'none';
 
   try {
-    const token = localStorage.getItem(AUTH_SESSION_KEY) || '';
-    const r = await fetch(`/api/portfolio-for-ai?mode=lookup&sym=${encodeURIComponent(sym)}&v=6`, {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
+    const r = await fetch(`/api/portfolio-for-ai?mode=lookup&sym=${encodeURIComponent(sym)}&v=6`);
     if (!r.ok) throw new Error('فشل تحميل البيانات');
     const res = await r.json();
     if (res.error) throw new Error(res.error);
