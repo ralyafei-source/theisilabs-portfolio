@@ -4545,7 +4545,8 @@ function loadEarningsData(){
   if(window._earnData || window._earnTried){ return; }
   window._earnTried=true;
   try{
-    fetch('/api/portfolio-for-ai?format=earnings&t='+Date.now())
+    var _nick='rashed'; try{ _nick=(localStorage.getItem('theisilabs_nick')||'rashed').toLowerCase().trim()||'rashed'; }catch(e){}
+    fetch('/api/portfolio-for-ai?format=earnings&nickname='+encodeURIComponent(_nick)+'&t='+Date.now())
       .then(function(r){return r.json();})
       .then(function(d){ if(d&&d.earnings){ window._earnData=d; renderCommandCenter(); } })
       .catch(function(){});
@@ -11708,6 +11709,10 @@ async function checkSession() {
           headerRight.appendChild(soBtn);
         }
       }
+      // Reset per-user CC caches so a user switch never shows another user's data
+      try{ window._earnData=null; window._earnTried=false; window._riskData=null; window._riskTried=false;
+        window._divData=null; window._divTried=false; window._histData=null; window._histTried=false;
+        window._briefData=null; window._briefTried=false; window._hzData=null; window._shariaSetCC=null; window._shariaTried=false; }catch(_){}
       // Load their portfolio
       loadUserPortfolio(token, data.isAdmin, data.nickname);
     } else {
