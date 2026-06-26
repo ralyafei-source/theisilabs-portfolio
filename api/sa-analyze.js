@@ -565,6 +565,28 @@ module.exports = async (req, res) => {
       // Universe = grades for stocks no one owns yet (or all users' stocks).
       // Portfolio rows WIN on overlap (they carry real shares/cost → owned flag).
       // Read today's universe, else most-recent prior (same carry-forward rule).
+     // ============================================================================
+// CHANGE 2 (FIXED) — Modify bucketScore to merge sa-portfolio + sa-universe
+// ============================================================================
+//
+// Replaces the same FIND target as before. If you already pasted the earlier
+// version, replace THAT whole block with this one.
+//
+// ----------------- FIND (either the original 3 lines OR your previously-pasted merge block) -----------------
+//
+//   original:
+//       // feed BOTH stocks + etfs; let the scorer's _isETF test decide exclusion
+//       const all = [].concat(picked.store.stocks||[], picked.store.etfs||[]);
+//       const { scored, excluded_etfs } = computeBuckets(all);
+//
+// ----------------- REPLACE WITH -----------------
+
+      // -- Merge the universe store with the owned-portfolio store --
+      // Key insight: a portfolio row may have NULL grades (it lands in etfs[] when
+      // its grades did not parse), while the universe row for the same ticker has
+      // REAL grades. So we merge per-ticker: take grades/quant from whichever row
+      // HAS them (universe wins when portfolio's are null), but ALWAYS keep the
+      // portfolio row's shares/cost/value so the owned flag (shares>0) stays right.
       const readUniverse = async (date) => {
         const ufp = `data/sa-universe-${date}.json`;
         const ux = await fetch(`https://api.github.com/repos/${REPO}/contents/${ufp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
@@ -585,18 +607,43 @@ module.exports = async (req, res) => {
           }
         } catch {}
       }
- 
-      // portfolio rows first (owned data), then universe rows for tickers not already present
+
+      const symOf = r => String((r && (r.sym || r.symbol)) || '').toUpperCase();
+      const hasGrades = r => !!(r && r.grades && r.grades.V != null);
+
+      // 1) index portfolio rows by ticker (these carry shares/cost -> ownership)
       const portfolioRows = [].concat(picked.store.stocks||[], picked.store.etfs||[]);
-      const seen = new Set(portfolioRows.map(r => String(r.sym||r.symbol||'').toUpperCase()).filter(Boolean));
-      const universeRows = universeStore
-        ? [].concat(universeStore.stocks||[], universeStore.etfs||[])
-            .filter(r => { const s = String(r.sym||r.symbol||'').toUpperCase(); return s && !seen.has(s); })
-        : [];
- 
-      // feed BOTH stocks + etfs (portfolio + universe); scorer's _isETF decides exclusion
-      const all = [].concat(portfolioRows, universeRows);
+      const byTicker = {};
+      portfolioRows.forEach(r => { const s = symOf(r); if (s) byTicker[s] = r; });
+
+      // 2) fold in universe rows
+      const universeRows = universeStore ? [].concat(universeStore.stocks||[], universeStore.etfs||[]) : [];
+      universeRows.forEach(u => {
+        const s = symOf(u); if (!s) return;
+        const p = byTicker[s];
+        if (!p) {
+          // universe-only ticker -> take as-is (no shares -> not owned)
+          byTicker[s] = u;
+        } else if (!hasGrades(p) && hasGrades(u)) {
+          // portfolio row lacks grades but universe has them -> take universe grades,
+          // keep portfolio shares/cost/value/weight so ownership is preserved
+          byTicker[s] = Object.assign({}, u, {
+            shares: (p.shares != null ? p.shares : u.shares),
+            cost:   (p.cost   != null ? p.cost   : u.cost),
+            value:  (p.value  != null ? p.value  : u.value),
+            weight: (p.weight != null ? p.weight : u.weight)
+          });
+        }
+        // else portfolio already has grades -> keep it (grades are identical anyway)
+      });
+
+      // feed BOTH stocks + etfs (merged); scorer's _isETF decides exclusion
+      const all = Object.keys(byTicker).map(k => byTicker[k]);
       const { scored, excluded_etfs } = computeBuckets(all);
+
+// ----------------- END REPLACE -----------------
+//
+// Everything below (saving sa-buckets-{today}.json) stays exactly as-is.
  
 // ----------------- END REPLACE -----------------
 //
