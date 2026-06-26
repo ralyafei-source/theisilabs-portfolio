@@ -291,6 +291,60 @@ async function generateAnalysis(nickname, type, githubToken, anthropicKey) {
   return filePath;
 }
 
+// ── Build the cross-user stock universe (unique tickers, summed shares/cost) ──
+// Reads admin portfolio.json (holdings[]) + every user's portfolio-<nick>.json
+// (stocks[]). Optionally drops tickers already in scored buckets when
+// excludeScored is true. Returns { rows, count }.
+async function buildStockUniverse(users, excludeScored) {
+  // 1) gather all portfolio sources
+  const sources = [ghReadRaw('data/portfolio.json')]; // admin holdings[]
+  users.forEach(u => {
+    const nick = (u.nickname || '').trim();
+    if (!nick || nick.toLowerCase() === 'rashed') return; // admin already added
+    sources.push(ghReadRaw(`data/portfolio-${nick}.json`)); // user stocks[]
+  });
+  const loaded = await Promise.all(sources);
+
+  // 2) aggregate per ticker
+  const agg = {}; // sym -> { shares, costTotal, holders }
+  loaded.forEach(data => {
+    if (!data) return;
+    const holdings = data.holdings || data.stocks || [];
+    holdings.forEach(h => {
+      const sym = (h.sym || '').toString().trim().toUpperCase();
+      if (!sym) return;
+      const shares = Number(h.shares) || 0;
+      const costPS = Number(h.cost) || 0;
+      if (!agg[sym]) agg[sym] = { shares: 0, costTotal: 0, holders: 0 };
+      agg[sym].shares += shares;
+      agg[sym].costTotal += shares * costPS;
+      agg[sym].holders += 1;
+    });
+  });
+
+  // 3) optionally drop already-scored tickers
+  let scoredSet = new Set();
+  if (excludeScored) {
+    const today = new Date(Date.now() + 4 * 3600 * 1000).toISOString().slice(0, 10);
+    const buckets = await ghReadRaw(`data/sa-buckets-${today}.json`);
+    const scored = (buckets && buckets.scored) || {};
+    Object.keys(scored).forEach(k => scoredSet.add(k.toUpperCase()));
+  }
+
+  // 4) build rows
+  const today = new Date(Date.now() + 4 * 3600 * 1000);
+  const dateStr = `${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}/${today.getFullYear()}`;
+  const rows = Object.keys(agg)
+    .filter(s => !scoredSet.has(s))
+    .sort()
+    .map(s => {
+      const a = agg[s];
+      const blendedCost = a.shares > 0 ? +(a.costTotal / a.shares).toFixed(4) : 0;
+      return { symbol: s, quantity: +a.shares.toFixed(6), cost: blendedCost, date: dateStr, holders: a.holders };
+    });
+  return { rows, count: rows.length };
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -331,6 +385,26 @@ module.exports = async function handler(req, res) {
           lastLogin: u.sessionExpiry || null
         }));
         return res.status(200).json({ users: safeUsers });
+      }
+
+      // ── NEW: universe — unique tickers across all users for SA grading ──
+      // GET /api/admin?action=universe[&exclude_scored=1][&format=json]
+      if (action === 'universe') {
+        const excludeScored = req.query.exclude_scored === '1';
+        const { rows, count } = await buildStockUniverse(users, excludeScored);
+
+        if (req.query.format === 'json') {
+          return res.status(200).json({
+            generated_at: new Date().toISOString().slice(0, 10),
+            count, universe: rows
+          });
+        }
+        // CSV: symbol, quantity, cost, date (portfolio-style)
+        let csv = 'symbol,quantity,cost,date\n';
+        rows.forEach(r => { csv += `${r.symbol},${r.quantity},${r.cost},${r.date}\n`; });
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="stock-universe-${new Date().toISOString().slice(0,10)}.csv"`);
+        return res.status(200).send(csv);
       }
     }
 
