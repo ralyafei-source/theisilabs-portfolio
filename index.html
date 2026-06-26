@@ -2763,6 +2763,15 @@ WOLF remains at critical lows<br><br>
       <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="saHandleExcel(this)" id="sa-excel-input">
     </label>
     <div class="sa-status" id="sa-excel-status">—</div>
+    <div id="sa-universe-wrap" style="display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);">
+      <div class="sa-step-where" style="margin-bottom:8px;">ملف الكون (Universe) — درجات أسهم المستخدمين للتقييم فقط (بدون مراكز). يُحفظ منفصلاً ولا يمسّ محفظتك.</div>
+      <label class="sa-upload-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        رفع ملف الكون (Universe)
+        <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="saHandleUniverse(this)" id="sa-universe-input">
+      </label>
+      <div class="sa-status" id="sa-universe-status">—</div>
+    </div>
   </div>
 
   <!-- Step 2: Short Ideas -->
@@ -3249,6 +3258,10 @@ function bindKey(name){ return {Valuation:'V',Growth:'G',Profitability:'P',Momen
 function render(){
   if(typeof loadShariaData==='function') loadShariaData();
   const scored = (DATA && DATA.scored) || {};
+  // ── Per-user owned remap: trust the logged-in user's holdings, not the file's baked-in owned flag ──
+  var _userSyms=null;
+  try{ if(typeof stocks!=='undefined' && stocks && stocks.length){ _userSyms=new Set(stocks.map(function(s){return (s.sym||'').toUpperCase();})); } }catch(e){}
+  if(_userSyms){ Object.keys(scored).forEach(function(k){ if(scored[k]) scored[k].owned = _userSyms.has(k.toUpperCase()); }); }
   const grid=document.getElementById('hz-grid'); grid.innerHTML='';
   BUCKETS.forEach(b=>{
     const entries=Object.entries(scored).filter(([k,v])=>v[b.key] && passes(v,k));
@@ -3263,6 +3276,18 @@ function render(){
         <div class="q">${b.q}</div>
       </div><div class="col-b">${rows||'<div class="col-f">لا أسهم مطابقة</div>'}</div>${skipNote}</div>`);
   });
+  // ── Your holdings that aren't in the scored universe at all → needs SA data ──
+  try{
+    var exEtf=new Set((DATA&&DATA.excluded_etfs)||[]);
+    if(_userSyms){
+      var missing=[...(_userSyms)].filter(function(s){ return !scored[s] && !exEtf.has(s); }).sort();
+      var noteEl=document.getElementById('hz-userneeds');
+      if(!noteEl){ noteEl=document.createElement('div'); noteEl.id='hz-userneeds'; noteEl.style.cssText='margin-top:14px;font-size:12px;color:var(--txt2);line-height:1.8;'; var root=document.getElementById('hz-grid'); if(root&&root.parentNode) root.parentNode.insertBefore(noteEl, root.nextSibling); }
+      noteEl.innerHTML = missing.length
+        ? '<b>أسهمك بانتظار بيانات التقييم:</b> '+missing.map(function(s){return '<span class="pill">'+s+'</span>';}).join(' ')+' <span style="color:var(--txt3);">— لم تُضَف بعد إلى محرّك التقييم.</span>'
+        : '';
+    }
+  }catch(e){}
 }
 
 // ---- tap interactions: expand row, open term sheet, deep-read button ----
@@ -12146,6 +12171,7 @@ function showAdminButton() {
   btn.onclick = openAdminPanel;
   headerRight.appendChild(btn);
   revealHealthTab();
+  try{ var uw=document.getElementById('sa-universe-wrap'); if(uw) uw.style.display='block'; }catch(_){}
 }
 
 // ── Admin panel ──
@@ -12174,6 +12200,13 @@ async function openAdminPanel() {
           <div id="codesList" style="font-size:12px;color:var(--text2);">Loading...</div>
         </div>
         <div class="admin-section">
+          <div class="admin-section-title">Stock Universe (for Seeking Alpha grading)</div>
+          <button onclick="downloadStockUniverse(true)" style="background:var(--accent);border:none;color:#fff;border-radius:10px;padding:12px;width:100%;font-size:14px;font-weight:700;cursor:pointer;font-family:Almarai,sans-serif;">⬇ Download Unscored Tickers (CSV)</button>
+          <button onclick="downloadStockUniverse(false)" style="background:var(--bg);border:1px solid var(--border);color:var(--text2);border-radius:10px;padding:9px;width:100%;font-size:12px;font-weight:600;cursor:pointer;font-family:Almarai,sans-serif;margin-top:8px;">Download ALL tickers (incl. already scored)</button>
+          <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.6;">Unique tickers across all users' portfolios, shares &amp; cost summed. Run this list through Seeking Alpha to grade users' stocks.</div>
+          <div style="font-size:11px;color:var(--text2);text-align:center;margin-top:6px;" id="universeMsg"></div>
+        </div>
+        <div class="admin-section">
           <div class="admin-section-title">Users</div>
           <div id="usersList" style="font-size:12px;color:var(--text2);">Loading...</div>
         </div>
@@ -12183,6 +12216,26 @@ async function openAdminPanel() {
   panel.style.display = 'flex';
   // Load data
   loadAdminData(token);
+}
+
+async function downloadStockUniverse(unscoredOnly){
+  const token = localStorage.getItem(AUTH_SESSION_KEY);
+  const msg = document.getElementById('universeMsg');
+  if(msg) msg.textContent = 'Building universe…';
+  try{
+    const url = '/api/admin?action=universe' + (unscoredOnly ? '&exclude_scored=1' : '');
+    const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+    if(!r.ok){ if(msg) msg.textContent = 'Failed: HTTP ' + r.status; return; }
+    const csv = await r.text();
+    const lines = (csv.trim().split('\n').length - 1);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'stock-universe-' + new Date().toISOString().slice(0,10) + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(a.href);
+    if(msg) msg.textContent = '✅ Downloaded ' + lines + ' tickers';
+  }catch(e){ if(msg) msg.textContent = 'Error: ' + e.message; }
 }
 
 async function loadAdminData(token) {
@@ -13760,6 +13813,42 @@ function saUpdateCash() {
     if (dot) dot.className = 'sa-check-dot';
   }
   saUpdateProgress();
+}
+
+function saHandleUniverse(input){
+  const file=input.files[0]; if(!file) return;
+  const st=document.getElementById('sa-universe-status');
+  if(st){ st.textContent='⏳ جاري قراءة ملف الكون...'; st.className='sa-status'; }
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    const tok=localStorage.getItem('theisilabs_session')||'';
+    try{
+      const rows=sagParseXLSX(e.target.result);   // same 41-col parser as the portfolio file
+      try{
+        const r=await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({saveUniverse:true, rows:rows})});
+        const d=await r.json().catch(()=>({}));
+        if(d.saved){
+          if(st){ st.textContent='✓ '+(d.stocks||rows.length)+' سهم في الكون — جارٍ احتساب التقييم...'; st.className='sa-status ok'; }
+          // auto-trigger bucketScore so Horizon picks up the merged universe immediately
+          try{
+            const br=await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({bucketScore:true})});
+            const bd=await br.json().catch(()=>({}));
+            if(bd.saved){ if(st){ st.textContent='✓ '+(d.stocks||rows.length)+' سهم — تم احتساب '+(bd.scored||0)+' في التقييم'; } }
+            else { if(st){ st.textContent='✓ حُفظ الكون لكن تعذّر احتساب التقييم: '+(bd.error||'—'); } }
+          }catch(be){ if(st){ st.textContent='✓ حُفظ الكون — احتساب التقييم سيتم لاحقاً'; } }
+          // refresh horizon cache so the expanded universe loads
+          try{ window._hzData=null; window._hzTried=false; }catch(_){}
+          try{ if(typeof renderCommandCenter==='function') renderCommandCenter(); }catch(_){}
+        }
+        else { if(st){ st.textContent='✗ '+(d.error||'فشل الحفظ'); st.className='sa-status'; } }
+      }catch(err){ if(st){ st.textContent='✗ '+err.message; st.className='sa-status'; } }
+      // refresh horizon cache so the expanded universe loads after bucketScore runs
+      try{ window._hzData=null; }catch(_){}
+    }catch(err){
+      if(st){ st.textContent='✗ '+err.message; st.className='sa-status'; }
+    }
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 function saHandleExcel(input){
