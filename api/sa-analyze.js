@@ -260,6 +260,68 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(200).json({ saved: false, error: e.message }); }
   }
 
+  // ── saveUniverse: parse + save a UNIVERSE SA Excel (grades only, no positions) ──
+  //   Same 41-col format as savePortfolio, but written to its OWN file:
+  //   data/sa-universe-{date}.json. Fully independent of sa-portfolio-{date}.json,
+  //   so uploading the universe NEVER overwrites your owned-portfolio store.
+  //   bucketScore merges both stores by ticker (portfolio wins on overlap, so your
+  //   shares/cost are preserved; universe-only tickers come in as not-owned).
+  if (req.body && req.body.saveUniverse && req.body.rows && GITHUB_TOKEN) {
+    try {
+      const date = new Date().toISOString().slice(0,10);
+      const fp = `data/sa-universe-${date}.json`;
+      const raw = req.body.rows;
+      const labelOf = q => q >= 4.5 ? 'Strong Buy' : q >= 3.5 ? 'Buy' : q >= 2.5 ? 'Hold' : q >= 1.5 ? 'Sell' : 'Strong Sell';
+      const stocks = [], etfs = [];
+      const numOrNull = v => (v===undefined||v===null||v==='') ? null : (isNaN(Number(v))?v:Number(v));
+      const pick = (r, ...keys) => { for(const k of keys){ if(r[k]!==undefined&&r[k]!=='') return r[k]; } return null; };
+      for (const r of raw) {
+        const sym = r.symbol || r.sym; if(!sym) continue;
+        const sheets = r.__sheets || {};
+        const full = {}; Object.keys(r).forEach(k=>{ if(k!=='__sheets') full[k]=r[k]; });
+        full.sym = String(sym).toUpperCase();
+        full.quant       = numOrNull(pick(r,'Quant Rating','quant'));
+        full.grades = {
+          V: pick(r,'Valuation Grade','valuation','V'),
+          G: pick(r,'Growth Grade','growth','G'),
+          P: pick(r,'Profitability Grade','profitability','P'),
+          M: pick(r,'Momentum Grade','momentum','M'),
+          R: pick(r,'EPS Revision Grade','EPS Revisions Grade','eps_revision','R')
+        };
+        // universe rows carry NO positions — force shares/cost/value null so the
+        // scorer never marks a universe-only stock as owned.
+        full.shares      = null;
+        full.cost        = null;
+        full.value       = null;
+        full.weight      = null;
+        full.days_at_rating = numOrNull(pick(r,'Days at Rating','days_at_rating'));
+        full.analysts_covering = numOrNull(pick(r,'# SA Analysts Covering','# Analysts','analysts_covering'));
+        full.sheets = {
+          dashboard: sheets.dashboard || null,
+          holdings:  sheets.holdings  || null,
+          short:     sheets.short     || null,
+          dividends: sheets.dividends || null,
+          ratings:   sheets.ratings   || null,
+          summary:   sheets.summary   || null
+        };
+        const hasGrades = full.grades.V!=null;
+        (hasGrades?stocks:etfs).push(full);
+      }
+      const payload = JSON.stringify({ date, stocks, etfs, saved_at: new Date().toISOString(), count: { stocks: stocks.length, etfs: etfs.length } }, null, 2);
+      let sha = null;
+      try {
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+        if (ex.ok) sha = (await ex.json()).sha;
+      } catch {}
+      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
+        body: JSON.stringify({ message: `SA universe ${date}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) })
+      });
+      return res.status(200).json({ saved: sr.ok ? fp : false, stocks: stocks.length, etfs: etfs.length });
+    } catch(e) { return res.status(200).json({ saved: false, error: e.message }); }
+  }
+  
   // ── loadPortfolio: today's portfolio, or carry forward most recent ──
   if (req.body && req.body.loadPortfolio && GITHUB_TOKEN) {
     try {
@@ -499,9 +561,51 @@ module.exports = async (req, res) => {
         if (!picked) return res.status(200).json({ saved: false, error: 'portfolio store unreadable' });
       }
 
-      // feed BOTH stocks + etfs; let the scorer's _isETF test decide exclusion
-      const all = [].concat(picked.store.stocks||[], picked.store.etfs||[]);
+       // ── Merge the universe store (if any) with the owned-portfolio store ──
+      // Universe = grades for stocks no one owns yet (or all users' stocks).
+      // Portfolio rows WIN on overlap (they carry real shares/cost → owned flag).
+      // Read today's universe, else most-recent prior (same carry-forward rule).
+      const readUniverse = async (date) => {
+        const ufp = `data/sa-universe-${date}.json`;
+        const ux = await fetch(`https://api.github.com/repos/${REPO}/contents/${ufp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+        if (!ux.ok) return null;
+        const uf = await ux.json();
+        return JSON.parse(Buffer.from(uf.content,'base64').toString('utf8'));
+      };
+      let universeStore = await readUniverse(today);
+      if (!universeStore) {
+        try {
+          const udir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+          if (udir.ok) {
+            const ufiles = await udir.json();
+            const udates = (Array.isArray(ufiles) ? ufiles : [])
+              .map(f => (f.name||'').match(/^sa-universe-(\d{4}-\d{2}-\d{2})\.json$/))
+              .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
+            if (udates.length) universeStore = await readUniverse(udates[0]);
+          }
+        } catch {}
+      }
+ 
+      // portfolio rows first (owned data), then universe rows for tickers not already present
+      const portfolioRows = [].concat(picked.store.stocks||[], picked.store.etfs||[]);
+      const seen = new Set(portfolioRows.map(r => String(r.sym||r.symbol||'').toUpperCase()).filter(Boolean));
+      const universeRows = universeStore
+        ? [].concat(universeStore.stocks||[], universeStore.etfs||[])
+            .filter(r => { const s = String(r.sym||r.symbol||'').toUpperCase(); return s && !seen.has(s); })
+        : [];
+ 
+      // feed BOTH stocks + etfs (portfolio + universe); scorer's _isETF decides exclusion
+      const all = [].concat(portfolioRows, universeRows);
       const { scored, excluded_etfs } = computeBuckets(all);
+ 
+// ----------------- END REPLACE -----------------
+//
+// That is the ONLY change to bucketScore. Everything below it (saving
+// sa-buckets-{today}.json) stays exactly as-is. The merged `all` now contains
+// your owned holdings (with shares → owned:true) plus universe-only tickers
+// (shares null → owned:false). The buckets file gains the universe stocks; your
+// owned stocks are untouched.
+ 
 
       // save buckets for TODAY (the run date), noting which store fed it
       const fp = `data/sa-buckets-${today}.json`;
