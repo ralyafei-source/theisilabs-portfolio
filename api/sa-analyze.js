@@ -1113,6 +1113,140 @@ ${JSON.stringify(payloadIdx)}`;
       return res.status(200).json({ ...out, cached:false });
     } catch(e){ return res.status(500).json({ error:e.message }); }
   }
+
+  // ── marketRead: daily US market update formatted in Arabic ─────────────────
+// Body: { marketRead:true, forceRefresh?:bool }
+// Returns: { date, brief, detail, generated_at, cached }
+// brief = 2-sentence Arabic summary shown in the card
+// detail = full 3-block formatted update shown in popup
+if (req.body && req.body.marketRead && GITHUB_TOKEN) {
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const cachePath = `data/market-read.json`;
+
+    const readJson = async (fp) => {
+      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
+        headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' }
+      });
+      if(!ex.ok) return null;
+      const f = await ex.json();
+      return { data: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), sha: f.sha };
+    };
+
+    // serve cache unless forced
+    const cachedWrap = await readJson(cachePath);
+    if (cachedWrap && cachedWrap.data && cachedWrap.data.date === today && !req.body.forceRefresh) {
+      return res.status(200).json({ ...cachedWrap.data, cached:true });
+    }
+
+    const FMP = process.env.FMP_API_KEY || process.env.FMP_KEY || '';
+
+    // ── 1. Fetch index quotes (S&P 500, Nasdaq, Dow) ──────────────────────
+    const [spData, ndxData, djiData] = await Promise.all([
+      fetch(`https://financialmodelingprep.com/api/v3/quote/%5EGSPC?apikey=${FMP}`).then(r=>r.ok?r.json():[]).catch(()=>[]),
+      fetch(`https://financialmodelingprep.com/api/v3/quote/%5EIXIC?apikey=${FMP}`).then(r=>r.ok?r.json():[]).catch(()=>[]),
+      fetch(`https://financialmodelingprep.com/api/v3/quote/%5EDJI?apikey=${FMP}`).then(r=>r.ok?r.json():[]).catch(()=>[])
+    ]);
+
+    const sp  = spData[0]  || {};
+    const ndx = ndxData[0] || {};
+    const dji = djiData[0] || {};
+
+    // ── 2. Fetch market news (last 10 headlines) ──────────────────────────
+    const newsRes = await fetch(
+      `https://financialmodelingprep.com/api/v3/fmp/articles?page=0&size=10&apikey=${FMP}`
+    ).then(r=>r.ok?r.json():{}).catch(()=>({}));
+    const newsItems = (newsRes.content || []).slice(0,8).map(n=>n.title||'').filter(Boolean);
+
+    // ── 3. Fetch sector performance ───────────────────────────────────────
+    const sectorsRaw = await fetch(
+      `https://financialmodelingprep.com/api/v3/sectors-performance?apikey=${FMP}`
+    ).then(r=>r.ok?r.json():[]).catch(()=>[]);
+    const sectors = (Array.isArray(sectorsRaw)?sectorsRaw:sectorsRaw.sectorPerformance||[])
+      .sort((a,b)=>parseFloat(b.changesPercentage)-parseFloat(a.changesPercentage))
+      .slice(0,3)
+      .map(s=>`${s.sector}: ${s.changesPercentage}`);
+
+    // ── 4. Build raw data payload for Claude ─────────────────────────────
+    const rawData = {
+      date: today,
+      indices: {
+        sp500:  { price: sp.price,  change: sp.change,  changesPercentage: sp.changesPercentage,  yearHigh: sp.yearHigh,  yearLow: sp.yearLow },
+        nasdaq: { price: ndx.price, change: ndx.change, changesPercentage: ndx.changesPercentage, yearHigh: ndx.yearHigh, yearLow: ndx.yearLow },
+        dow:    { price: dji.price, change: dji.change, changesPercentage: dji.changesPercentage, yearHigh: dji.yearHigh, yearLow: dji.yearLow }
+      },
+      topSectors: sectors,
+      recentHeadlines: newsItems
+    };
+
+    // ── 5. Claude prompt — the exact system prompt Rashed specified ───────
+    const systemPrompt = `أنت محرر بيانات مالية دقيق. مهمتك تحويل البيانات الخام المقدّمة إلى تقرير سوقي يومي باللغة العربية بتنسيق ثلاثي صارم.
+
+قواعد صارمة:
+- اكتب كل شيء بالعربية الفصحى الواضحة.
+- رموز الأسهم والمؤشرات والأرقام والنسب المئوية تُكتب بالإنجليزية داخل النص العربي (مثال: S&P 500، Nasdaq، +2.3%).
+- لا تختصر أي رقم أو نسبة أو اسم شركة وردت في البيانات.
+- لا تضف معلومات من خارج البيانات المقدّمة.
+- احذف أي بيانات زائدة أو أكواد مرجعية.
+
+أعد JSON صارم فقط بهذا الشكل بدون أي نص خارجه:
+{
+  "brief": "جملتان بالعربية تلخّصان وضع السوق العام وأبرز محرّك اليوم",
+  "detail": "التقرير الكامل بالتنسيق التالي بالضبط:\\n\\n📊 الصورة الكلية\\n[4 جمل تحلّل حالة السوق الأمريكي: الزخم الحالي، المحرّكات الكبرى، الوضع التقييمي، والمخاطر الهيكلية ومقاييس الاتساع]\\n\\n📉 الأرقام\\n• S&P 500 — [السعر بالضبط] | [% اليومي] (يومي) | [% الأسبوعي إن وُجد] (أسبوعي)\\n• Nasdaq Composite — [السعر بالضبط] | [% اليومي] (يومي) | [% الأسبوعي إن وُجد] (أسبوعي)\\n• Dow Jones Industrial Average — [السعر بالضبط] | [% اليومي] (يومي) | [% الأسبوعي إن وُجد] (أسبوعي)\\n\\n⚡ المحفزات والتباين القطاعي\\n[3 جمل تشرح المحفزات الفورية للجلسة وتبرز أي تباين بين القطاعات]"
+}`;
+
+    const userMsg = `البيانات الخام لتقرير اليوم:\n${JSON.stringify(rawData, null, 2)}`;
+
+    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_KEY || '',
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+
+    const claudeData = await claudeRes.json();
+    let txt = (claudeData.content||[]).map(c=>c.type==='text'?c.text:'').join('').trim()
+      .replace(/```json|```/g,'').trim();
+
+    let parsed;
+    try { parsed = JSON.parse(txt); }
+    catch { parsed = { brief: txt.slice(0,300), detail: txt }; }
+
+    const out = {
+      date: today,
+      brief:  parsed.brief  || '',
+      detail: parsed.detail || '',
+      generated_at: new Date().toISOString()
+    };
+
+    // save cache to GitHub
+    try {
+      await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${GITHUB_TOKEN}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'theisi'
+        },
+        body: JSON.stringify({
+          message: `market read ${out.generated_at}`,
+          content: Buffer.from(JSON.stringify(out, null, 2)).toString('base64'),
+          ...(cachedWrap ? { sha: cachedWrap.sha } : {})
+        })
+      });
+    } catch {}
+
+    return res.status(200).json({ ...out, cached: false });
+  } catch(e) { return res.status(500).json({ error: e.message }); }
+}
   
   // ── listAnalyses: return dates that have a saved analysis ────────
   if (req.body && req.body.listAnalyses && GITHUB_TOKEN) {
