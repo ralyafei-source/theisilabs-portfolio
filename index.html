@@ -4117,9 +4117,21 @@ function renderCommandCenter(){
         ov.onclick=function(e){ if(e.target===ov) window._ccReadClose(); };
         document.body.appendChild(ov); }
       var body=detail||brief||'';
-      // wrap English/numbers in ltr isolate spans for correct mixed rendering
-      var html=body.replace(/([A-Za-z0-9][A-Za-z0-9\+\-\.%$,&]*)/g,
-        '<span dir="ltr" style="unicode-bidi:isolate;font-family:\'IBM Plex Mono\',monospace;font-size:12.5px;">$1</span>');
+      var ltr=function(s){ return String(s).replace(/([A-Za-z0-9][A-Za-z0-9\+\-\.%$,&]*)/g,
+        '<span dir="ltr" style="unicode-bidi:isolate;font-family:\'IBM Plex Mono\',monospace;font-size:13px;">$1</span>'); };
+      var lines=String(body).split(/\r?\n/);
+      var html='';
+      lines.forEach(function(ln){
+        var t=ln.trim();
+        if(!t){ html+='<div style="height:8px;"></div>'; return; }
+        if(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(t)){
+          html+='<div style="font-size:15px;font-weight:800;color:var(--text);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);">'+ltr(t)+'</div>';
+        } else if(/^[\u2022\-\*]/.test(t)){
+          html+='<div style="display:flex;gap:8px;padding:4px 0;font-size:13.5px;line-height:1.8;"><span style="color:var(--rose,#FF0A78);flex:none;">\u2022</span><span style="flex:1;">'+ltr(t.replace(/^[\u2022\-\*]\s*/,''))+'</span></div>';
+        } else {
+          html+='<div style="font-size:14px;line-height:2;margin:4px 0;">'+ltr(t)+'</div>';
+        }
+      });
       ov.innerHTML='<div dir="rtl" style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:min(680px,92vw);max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.55);">'
         +'<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--border);flex:none;">'
           +'<span style="font-size:15px;font-weight:700;color:var(--text);">'+title+'</span>'
