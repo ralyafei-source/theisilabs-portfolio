@@ -4212,7 +4212,7 @@ function renderCommandCenter(){
 
   var openingBrief=
     '<div>'+secLabel('\u0627\u0644\u0627\u0641\u062a\u062a\u0627\u062d\u064a\u0629')
-    +(moversSection?'<div style="margin-bottom:12px;">'+moversSection+'</div>':'')
+    +(moversSection?'<div style="margin-bottom:12px;display:flex;gap:12px;align-items:stretch;flex-wrap:wrap;"><div style="width:240px;flex:none;min-width:200px;">'+(fearGreedCard()||'')+'</div><div style="flex:1;min-width:280px;">'+moversSection+'</div></div>':'')
     +'<div class="cc-brief" style="display:grid;grid-template-columns:1fr 1.2fr 1fr 1fr;gap:12px;align-items:stretch;">'
       +panel(hzInner,{style:'display:flex;flex-direction:column;'})
       +panel(todayInner,{style:'display:flex;flex-direction:column;'})
@@ -4569,7 +4569,7 @@ function renderCommandCenter(){
     ov.style.display='flex'; requestAnimationFrame(function(){ ov.style.opacity='1'; });
   }
   window._ccFGPopup=_ccFGPopup;
-  var analysisCards=[panel(positionsInner),earningsCard(),riskCard(),divCard(),rangeCard(),fearGreedCard()].filter(Boolean);
+  var analysisCards=[panel(positionsInner),earningsCard(),riskCard(),divCard(),rangeCard()].filter(Boolean);
   var analysisSection='';
   if(analysisCards.length){
     var cols=Math.min(5,analysisCards.length);
