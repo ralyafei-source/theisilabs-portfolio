@@ -433,12 +433,12 @@ ${JSON.stringify(facts, null, 2)}
 
 
 // ─────────────────────────────────────────────────────────────────────────
-// BLOCK B v2 (FIXED) — mode=stock-sentiment
-// Replaces the previous Block B. Key fixes:
-//   - FMP `action` field is lowercase: upgrade/downgrade/hold/initiate → match exactly
-//   - correct date field handling + wider limit
-//   - rating ACTION counts are the primary signal; target upside is secondary (capped)
-//   - &debug=1 echoes the raw first grade record so we can confirm field names live
+// BLOCK B v3 (FINAL) — mode=stock-sentiment
+// Fix over v2: heavily-covered stocks (NVDA) get mostly "maintain" actions, so
+// up/down changes alone read flat. v3 ALSO scores the standing rating LEVEL of
+// recent actions (a wall of "maintain Buy/Overweight" is bullish; "maintain Sell"
+// bearish). Three signals now: (1) rating changes, (2) standing rating tone,
+// (3) target upside — combined and capped.
 // Test: /api/portfolio-for-ai?mode=stock-sentiment&sym=NVDA&debug=1
 // ─────────────────────────────────────────────────────────────────────────
   if (req.query.mode === 'stock-sentiment') {
@@ -446,6 +446,19 @@ ${JSON.stringify(facts, null, 2)}
       const FMP = process.env.FMP_API_KEY || process.env.FMP_KEY;
       const FMP_BASE = 'https://financialmodelingprep.com/stable';
       const debug = req.query.debug === '1';
+
+      // map a rating label → tone (+1 bullish .. -1 bearish)
+      const RATING_TONE = (() => {
+        const pos = ['strong buy','conviction buy','top pick','buy','accumulate','outperform','outperformer','overweight','sector outperform','market outperform','positive','above average','speculative buy','action list buy','buy','sector overweight','in-line sector outperform'];
+        const neg = ['strong sell','sell','reduce','underperform','underperformer','underweight','sector underperform','market underperform','below average','negative','cautious','sector underweight'];
+        return label => {
+          const l = String(label || '').toLowerCase().trim();
+          if (!l) return 0;
+          if (pos.includes(l)) return 1;
+          if (neg.includes(l)) return -1;
+          return 0; // hold / neutral / market perform / equal-weight / mixed / peer perform
+        };
+      })();
 
       let symbols = [];
       if (req.query.sym) {
@@ -467,30 +480,31 @@ ${JSON.stringify(facts, null, 2)}
       let debugRaw = null;
 
       for (const sym of symbols) {
-        // recent rating actions — newest first, take a healthy window
         let up = 0, down = 0, total90 = 0, returned = 0;
+        let toneSum = 0, toneCount = 0; // standing rating tone across recent actions
         try {
           const gr = await fetch(`${FMP_BASE}/grades?symbol=${sym}&limit=100&apikey=${FMP}`);
           if (gr.ok) {
             const gj = await gr.json();
             const arr = Array.isArray(gj) ? gj : [];
             returned = arr.length;
-            if (debug && !debugRaw && arr.length) debugRaw = arr[0]; // echo raw shape once
+            if (debug && !debugRaw && arr.length) debugRaw = arr[0];
             for (const g of arr) {
-              // date key can be `date` (YYYY-MM-DD or ISO)
-              const draw = g.date || g.publishedDate || g.gradeDate || '';
-              const d = String(draw).slice(0, 10);
+              const d = String(g.date || g.publishedDate || g.gradeDate || '').slice(0, 10);
               if (!d || d < since) continue;
               total90++;
               const action = String(g.action || '').toLowerCase().trim();
               if (action === 'upgrade') up++;
               else if (action === 'downgrade') down++;
-              // hold / initiate / maintain → neutral, ignored in up/down
+              // standing tone from the NEW grade (covers maintains + changes)
+              const t = RATING_TONE(g.newGrade);
+              if (t !== 0) { toneSum += t; toneCount++; }
             }
           }
         } catch {}
+        const toneAvg = toneCount ? (toneSum / toneCount) : null; // -1..+1
 
-        // target vs price (secondary, capped so it can't dominate)
+        // target vs price (secondary, capped)
         let targetUpside = null;
         try {
           const tr = await fetch(`${FMP_BASE}/price-target-consensus?symbol=${sym}&apikey=${FMP}`);
@@ -505,15 +519,20 @@ ${JSON.stringify(facts, null, 2)}
           }
         } catch {}
 
-        // blend: rating actions PRIMARY, target SECONDARY (capped ±15)
+        // blend: changes (strong) + standing tone (medium) + target (weak, capped)
         let score = 0;
-        score += (up - down) * 25;
-        if (targetUpside != null) score += Math.max(-15, Math.min(15, targetUpside / 4));
+        score += (up - down) * 25;                                  // rating changes
+        if (toneAvg != null) score += Math.round(toneAvg * 35);     // standing consensus tone
+        if (targetUpside != null) score += Math.max(-15, Math.min(15, targetUpside / 4)); // target, capped
         score = Math.max(-100, Math.min(100, Math.round(score)));
         const sentiment = score > 20 ? 'positive' : score < -20 ? 'negative' : 'neutral';
         const sentiment_ar = score > 20 ? 'إيجابي' : score < -20 ? 'سلبي' : 'محايد';
 
-        out.push({ sym, sentiment, sentiment_ar, score, signals: { upgrades90d: up, downgrades90d: down, ratingsIn90d: total90, targetUpsidePct: targetUpside, gradesReturned: returned } });
+        out.push({ sym, sentiment, sentiment_ar, score, signals: {
+          upgrades90d: up, downgrades90d: down, ratingsIn90d: total90,
+          standingTone: toneAvg != null ? +toneAvg.toFixed(2) : null,
+          targetUpsidePct: targetUpside, gradesReturned: returned
+        }});
       }
 
       const resp = { data: out, count: out.length, asOf: new Date().toISOString().slice(0, 10) };
