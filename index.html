@@ -94,6 +94,7 @@ header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 
 .hstat-label{font-size:10px;color:var(--text2);}
 .status-dot{width:7px;height:7px;background:var(--accent2);border-radius:50%;display:inline-block;margin-left:5px;animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.3);}}
+@keyframes fgsweep{from{stroke-dashoffset:170;}}
 .lang-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
 .lang-btn{padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text2);font-family:'Almarai',sans-serif;transition:all .15s;}
 .lang-btn.active{background:var(--accent);color:#000;}
@@ -4179,9 +4180,9 @@ function renderCommandCenter(){
       +'<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5746b;margin-inline-end:4px;"></span>\u062e\u0633\u0627\u0626\u0631 '+nLoss+'</span>'
       +'<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#3a9e6f;margin-inline-end:4px;"></span>\u0631\u0627\u0628\u062d\u0629 '+nGain+'</span>'
       +'<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#19c37d;margin-inline-end:4px;"></span>\u0631\u0627\u0628\u062d\u0629 \u0628\u0642\u0648\u0629 '+nWin+'</span></div>';
-    var track='<div style="position:relative;height:40px;margin:6px 0 2px;">'
+    var track='<div style="position:relative;height:30px;margin:4px 0 2px;">'
       +'<div style="position:absolute;top:50%;right:0;left:0;height:2px;background:var(--bg3);transform:translateY(-50%);"></div>'
-      +'<div style="position:absolute;top:8px;bottom:8px;right:'+zx.toFixed(1)+'%;width:1px;background:var(--border3,#34344A);"></div>'
+      +'<div style="position:absolute;top:6px;bottom:6px;right:'+zx.toFixed(1)+'%;width:1px;background:var(--border3,#34344A);"></div>'
       +dots+'</div>';
     moversSection=panel(
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px;">'
@@ -4503,49 +4504,42 @@ function renderCommandCenter(){
     var sc=Math.max(0,Math.min(100,d.score));
     var col=sc<25?'#e5484d':sc<45?'#e5764d':sc<55?'#e5aa00':sc<75?'#7cc34d':'#19c37d';
     var ar=d.label_ar||'';
-    var W=220, H=140, cx=110, cy=118, r=82, sw=15;
+    var uid='fg'+Math.floor(Math.random()*99999);
+    // compact semicircle, marker only (no needle), gradient arc
+    var W=130, H=74, cx=65, cy=66, r=54, sw=10;
     function pol(deg,rad){ var a=deg*Math.PI/180; return [cx+rad*Math.cos(a), cy-rad*Math.sin(a)]; }
-    // track arc (180=left/fear → 0=right/greed)
     var p0=pol(180,r), p1=pol(0,r);
     var track='M '+p0[0].toFixed(1)+' '+p0[1].toFixed(1)+' A '+r+' '+r+' 0 0 1 '+p1[0].toFixed(1)+' '+p1[1].toFixed(1);
-    // value arc end
     var vdeg=180-(sc/100)*180;
     var vEnd=pol(vdeg,r);
-    var large=(sc>50)?1:0; // sweep crossing midpoint
+    var large=(sc>50)?1:0;
     var valArc='M '+p0[0].toFixed(1)+' '+p0[1].toFixed(1)+' A '+r+' '+r+' 0 '+large+' 1 '+vEnd[0].toFixed(1)+' '+vEnd[1].toFixed(1);
-    // tick marks every 10
-    var ticks='';
-    for(var t=0;t<=100;t+=10){ var td=180-(t/100)*180; var a=pol(td,r-sw/2-2), b=pol(td,r-sw/2-7); ticks+='<line x1="'+a[0].toFixed(1)+'" y1="'+a[1].toFixed(1)+'" x2="'+b[0].toFixed(1)+'" y2="'+b[1].toFixed(1)+'" stroke="var(--bg)" stroke-width="'+(t%50===0?2:1)+'" opacity="0.5"/>'; }
-    // needle
-    var nTip=pol(vdeg,r-sw-4), nBackL=pol(vdeg+90,7), nBackR=pol(vdeg-90,7);
-    var needle='<polygon points="'+nTip[0].toFixed(1)+','+nTip[1].toFixed(1)+' '+nBackL[0].toFixed(1)+','+nBackL[1].toFixed(1)+' '+nBackR[0].toFixed(1)+','+nBackR[1].toFixed(1)+'" fill="var(--text)"/>';
-    var uid='fg'+Math.floor(Math.random()*99999);
-    var svg='<svg viewBox="0 0 '+W+' '+H+'" dir="ltr" style="width:100%;max-width:230px;height:auto;display:block;margin:0 auto;">'
+    var arcLen=Math.PI*r;
+    var gauge='<svg viewBox="0 0 '+W+' '+H+'" dir="ltr" style="width:130px;height:74px;flex:none;">'
       +'<defs>'
         +'<linearGradient id="'+uid+'g" x1="0%" y1="0%" x2="100%" y2="0%">'
-          +'<stop offset="0%" stop-color="#e5484d"/><stop offset="28%" stop-color="#e5764d"/>'
-          +'<stop offset="50%" stop-color="#e5aa00"/><stop offset="72%" stop-color="#7cc34d"/>'
+          +'<stop offset="0%" stop-color="#e5484d"/><stop offset="30%" stop-color="#e5764d"/>'
+          +'<stop offset="52%" stop-color="#e5aa00"/><stop offset="74%" stop-color="#7cc34d"/>'
           +'<stop offset="100%" stop-color="#19c37d"/>'
         +'</linearGradient>'
-        +'<filter id="'+uid+'glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
+        +'<filter id="'+uid+'glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
       +'</defs>'
       +'<path d="'+track+'" fill="none" stroke="var(--bg3)" stroke-width="'+sw+'" stroke-linecap="round"/>'
-      +'<path d="'+valArc+'" fill="none" stroke="url(#'+uid+'g)" stroke-width="'+sw+'" stroke-linecap="round" filter="url(#'+uid+'glow)"/>'
-      +ticks
-      +'<circle cx="'+vEnd[0].toFixed(1)+'" cy="'+vEnd[1].toFixed(1)+'" r="4.5" fill="#fff" filter="url(#'+uid+'glow)"/>'
-      +needle
-      +'<circle cx="'+cx+'" cy="'+cy+'" r="9" fill="var(--bg2)" stroke="'+col+'" stroke-width="2.5"/>'
-      +'<text x="'+cx+'" y="'+(cy+5)+'" text-anchor="middle" font-size="13" font-weight="800" fill="'+col+'" font-family="'+MONO+'">'+sc+'</text>'
-      +'<text x="22" y="135" font-size="8" fill="#e5484d" font-weight="700">\u062e\u0648\u0641</text>'
-      +'<text x="176" y="135" font-size="8" fill="#19c37d" font-weight="700">\u062c\u0634\u0639</text>'
+      +'<path d="'+valArc+'" fill="none" stroke="url(#'+uid+'g)" stroke-width="'+sw+'" stroke-linecap="round" stroke-dasharray="'+arcLen.toFixed(1)+'" stroke-dashoffset="'+(arcLen*(1-sc/100)).toFixed(1)+'" filter="url(#'+uid+'glow)" style="animation:fgsweep 1s ease-out;"/>'
+      +'<circle cx="'+vEnd[0].toFixed(1)+'" cy="'+vEnd[1].toFixed(1)+'" r="6.5" fill="'+col+'" opacity="0.28" filter="url(#'+uid+'glow)"/>'
+      +'<circle cx="'+vEnd[0].toFixed(1)+'" cy="'+vEnd[1].toFixed(1)+'" r="4" fill="#fff"/>'
+      +'<circle cx="'+vEnd[0].toFixed(1)+'" cy="'+vEnd[1].toFixed(1)+'" r="2" fill="'+col+'"/>'
+      +'<text x="6" y="72" font-size="7.5" fill="#e5484d" font-weight="700">\u062e\u0648\u0641</text>'
+      +'<text x="106" y="72" font-size="7.5" fill="#19c37d" font-weight="700">\u062c\u0634\u0639</text>'
       +'</svg>';
     var I=function(x){return '<span dir="ltr" style="unicode-bidi:isolate;">'+x+'</span>';};
-    var body='<div onclick="_ccFGPopup()" style="text-align:center;cursor:pointer;">'+svg
-      +'<div style="font-size:16px;color:'+col+';font-weight:800;margin-top:6px;letter-spacing:.3px;">'+ar+' <span style="color:var(--text3);font-size:10px;font-weight:400;">\u24d8</span></div>'
-      +'<div style="font-size:10.5px;color:var(--text3);margin-top:8px;line-height:1.7;">'+I('VIX '+d.vix)+' \u00b7 \u0623\u0639\u0644\u0649 \u0645\u0646 '+I(d.vixPercentile+'%')+' \u0645\u0646 \u0623\u064a\u0627\u0645 \u0627\u0644\u0633\u0646\u0629</div>'
-      +'<div style="font-size:9px;color:var(--text3);margin-top:5px;opacity:.8;">\u0627\u0636\u063a\u0637 \u0644\u0644\u0634\u0631\u062d</div>'
+    var info='<div style="flex:1;text-align:center;min-width:0;">'
+      +'<div style="font-size:34px;font-weight:800;color:'+col+';font-family:'+MONO+';line-height:1;">'+sc+'</div>'
+      +'<div style="font-size:14px;color:'+col+';font-weight:800;margin-top:2px;">'+ar+' <span style="color:var(--text3);font-size:9px;font-weight:400;">\u24d8</span></div>'
+      +'<div style="font-size:9.5px;color:var(--text3);margin-top:5px;line-height:1.5;">'+I('VIX '+d.vix)+' \u00b7 '+I(d.vixPercentile+'%')+' \u0645\u0646 \u0627\u0644\u0633\u0646\u0629</div>'
       +'</div>';
-    return panel(secLabel('\u0645\u0632\u0627\u062c \u0627\u0644\u0633\u0648\u0642')+body);
+    var body='<div onclick="_ccFGPopup()" style="cursor:pointer;display:flex;align-items:center;gap:10px;justify-content:center;height:100%;min-height:74px;">'+gauge+info+'</div>';
+    return panel(secLabel('\u0645\u0632\u0627\u062c \u0627\u0644\u0633\u0648\u0642')+body,{style:'display:flex;flex-direction:column;'});
   }
   function _ccFGPopup(){
     var d=window._fgData; if(!d||d.score==null) return;
