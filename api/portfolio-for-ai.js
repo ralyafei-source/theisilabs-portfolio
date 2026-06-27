@@ -433,73 +433,64 @@ ${JSON.stringify(facts, null, 2)}
 
 
 // ─────────────────────────────────────────────────────────────────────────
-// BLOCK B — mode=stock-sentiment  →  per-stock analyst tone
-// Test URL after deploy:  /api/portfolio-for-ai?mode=stock-sentiment&sym=NVDA
-//   (or &nickname=rashed to pull the whole portfolio's symbols)
-// Returns: { data: [ { sym, sentiment, sentiment_ar, score, signals:{...} } ] }
-//
-// Signals used (all auto-pullable from FMP):
-//   - grades (recent rating changes: upgrades vs downgrades, last ~90d)
-//   - price-target-consensus (target vs current price)
-// SA EPS-revision/momentum grades are added later from sa-buckets (in the card),
-// this test block proves the FMP half works.
+// BLOCK B v2 (FIXED) — mode=stock-sentiment
+// Replaces the previous Block B. Key fixes:
+//   - FMP `action` field is lowercase: upgrade/downgrade/hold/initiate → match exactly
+//   - correct date field handling + wider limit
+//   - rating ACTION counts are the primary signal; target upside is secondary (capped)
+//   - &debug=1 echoes the raw first grade record so we can confirm field names live
+// Test: /api/portfolio-for-ai?mode=stock-sentiment&sym=NVDA&debug=1
 // ─────────────────────────────────────────────────────────────────────────
   if (req.query.mode === 'stock-sentiment') {
     try {
       const FMP = process.env.FMP_API_KEY || process.env.FMP_KEY;
       const FMP_BASE = 'https://financialmodelingprep.com/stable';
+      const debug = req.query.debug === '1';
 
-      // resolve symbol list: explicit &sym=, else portfolio by &nickname=
       let symbols = [];
       if (req.query.sym) {
         symbols = String(req.query.sym).toUpperCase().split(',').map(s => s.trim()).filter(Boolean);
       } else {
-        // reuse however this file already loads a portfolio's holdings.
-        // Minimal fallback: read the GitHub portfolio file directly.
         const nick = (req.query.nickname || 'rashed').toLowerCase();
         const REPO_RAW = 'https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main';
         const pfPath = nick === 'rashed' ? 'data/portfolio.json' : `data/portfolio-${nick}.json`;
         try {
           const pr = await fetch(`${REPO_RAW}/${pfPath}?t=${Date.now()}`);
-          if (pr.ok) {
-            const pd = await pr.json();
-            const hold = pd.holdings || pd.stocks || [];
-            symbols = hold.map(h => (h.sym || '').toUpperCase()).filter(Boolean);
-          }
+          if (pr.ok) { const pd = await pr.json(); const hold = pd.holdings || pd.stocks || []; symbols = hold.map(h => (h.sym || '').toUpperCase()).filter(Boolean); }
         } catch {}
       }
       if (!symbols.length) return res.status(200).json({ error: 'no symbols', hint: 'pass &sym=NVDA or &nickname=' });
-      symbols = symbols.slice(0, 50); // safety cap
+      symbols = symbols.slice(0, 50);
 
       const since = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
       const out = [];
+      let debugRaw = null;
+
       for (const sym of symbols) {
-        // recent rating actions
-        let up = 0, down = 0, gradesRaw = null;
+        // recent rating actions — newest first, take a healthy window
+        let up = 0, down = 0, total90 = 0, returned = 0;
         try {
-          const gr = await fetch(`${FMP_BASE}/grades?symbol=${sym}&limit=15&apikey=${FMP}`);
+          const gr = await fetch(`${FMP_BASE}/grades?symbol=${sym}&limit=100&apikey=${FMP}`);
           if (gr.ok) {
             const gj = await gr.json();
-            gradesRaw = Array.isArray(gj) ? gj.length : 0;
-            (Array.isArray(gj) ? gj : []).forEach(g => {
-              const d = (g.date || '').slice(0, 10);
-              if (d && d >= since) {
-                const action = (g.action || g.newGrade ? (g.action || '') : '').toLowerCase();
-                if (action.includes('up')) up++;
-                else if (action.includes('down')) down++;
-                else {
-                  // fall back to grade direction if action missing
-                  const ng = (g.newGrade || '').toLowerCase(), pg = (g.previousGrade || '').toLowerCase();
-                  const rank = x => ({ 'strong buy': 5, buy: 4, outperform: 4, overweight: 4, hold: 3, neutral: 3, underperform: 2, underweight: 2, sell: 1 }[x] || null);
-                  const a = rank(ng), b = rank(pg);
-                  if (a != null && b != null) { if (a > b) up++; else if (a < b) down++; }
-                }
-              }
-            });
+            const arr = Array.isArray(gj) ? gj : [];
+            returned = arr.length;
+            if (debug && !debugRaw && arr.length) debugRaw = arr[0]; // echo raw shape once
+            for (const g of arr) {
+              // date key can be `date` (YYYY-MM-DD or ISO)
+              const draw = g.date || g.publishedDate || g.gradeDate || '';
+              const d = String(draw).slice(0, 10);
+              if (!d || d < since) continue;
+              total90++;
+              const action = String(g.action || '').toLowerCase().trim();
+              if (action === 'upgrade') up++;
+              else if (action === 'downgrade') down++;
+              // hold / initiate / maintain → neutral, ignored in up/down
+            }
           }
         } catch {}
 
-        // target vs price
+        // target vs price (secondary, capped so it can't dominate)
         let targetUpside = null;
         try {
           const tr = await fetch(`${FMP_BASE}/price-target-consensus?symbol=${sym}&apikey=${FMP}`);
@@ -514,18 +505,20 @@ ${JSON.stringify(facts, null, 2)}
           }
         } catch {}
 
-        // simple blend → score -100..+100
+        // blend: rating actions PRIMARY, target SECONDARY (capped ±15)
         let score = 0;
-        score += (up - down) * 20;
-        if (targetUpside != null) score += Math.max(-30, Math.min(30, targetUpside));
-        score = Math.max(-100, Math.min(100, score));
+        score += (up - down) * 25;
+        if (targetUpside != null) score += Math.max(-15, Math.min(15, targetUpside / 4));
+        score = Math.max(-100, Math.min(100, Math.round(score)));
         const sentiment = score > 20 ? 'positive' : score < -20 ? 'negative' : 'neutral';
         const sentiment_ar = score > 20 ? 'إيجابي' : score < -20 ? 'سلبي' : 'محايد';
 
-        out.push({ sym, sentiment, sentiment_ar, score, signals: { upgrades90d: up, downgrades90d: down, targetUpsidePct: targetUpside, gradesReturned: gradesRaw } });
+        out.push({ sym, sentiment, sentiment_ar, score, signals: { upgrades90d: up, downgrades90d: down, ratingsIn90d: total90, targetUpsidePct: targetUpside, gradesReturned: returned } });
       }
 
-      return res.status(200).json({ data: out, count: out.length, asOf: new Date().toISOString().slice(0, 10) });
+      const resp = { data: out, count: out.length, asOf: new Date().toISOString().slice(0, 10) };
+      if (debug) resp.debug_first_grade_record = debugRaw;
+      return res.status(200).json(resp);
     } catch (e) {
       return res.status(200).json({ error: e.message });
     }
