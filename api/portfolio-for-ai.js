@@ -425,7 +425,7 @@ ${JSON.stringify(facts, null, 2)}
       // 30-day trend: for each of the last 30 days, score that day's VIX
       // against the 252 days *ending that day* (rolling window).
       const trend = [];
-      const N = Math.min(30, series.length);
+      const N = Math.min(90, series.length);
       for (let i = N - 1; i >= 0; i--) {
         // series[i] is the day; window = series[i..i+251] (older days are higher index)
         const win = series.slice(i, i + 252).map(x => x.v);
@@ -453,7 +453,6 @@ ${JSON.stringify(facts, null, 2)}
       return res.status(200).json({ error: e.message });
     }
   }
-
 
 // ─────────────────────────────────────────────────────────────────────────
 // BLOCK B FINAL — mode=stock-sentiment  (two separate signals)
