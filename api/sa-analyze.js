@@ -564,10 +564,10 @@ module.exports = async (req, res) => {
       const cachedWrap = await readJson(cachePath);
       if (!req.body.forceRefresh && !req.body.debug && cachedWrap && cachedWrap.data && cachedWrap.data.date === today) return res.status(200).json({ ...cachedWrap.data, cached:true });
       const [spyQ, qqqQ, diaQ] = await Promise.all([ fmpGet('/quote?symbol=SPY'), fmpGet('/quote?symbol=QQQ'), fmpGet('/quote?symbol=DIA') ]);
+      // Debug: return raw FMP before any parsing
+      if (req.body.debug) return res.status(200).json({ raw_fmp: { spyQ, qqqQ, diaQ } });
       const q = (d) => { const r = Array.isArray(d) ? d[0] : d; if (!r || !r.price) return null; return { price: +r.price.toFixed(2), dailyChg: r.changesPercentage != null ? +parseFloat(r.changesPercentage).toFixed(2) : null, change: r.change != null ? +parseFloat(r.change).toFixed(2) : null }; };
       const spy = q(spyQ), qqq = q(qqqQ), dia = q(diaQ);
-      // Debug: return raw FMP data before Claude call
-      if (req.body.debug) return res.status(200).json({ raw: { spyQ, qqqQ, diaQ }, parsed: { spy, qqq, dia }, rawText: `SPY:${spy?.price} QQQ:${qqq?.price} DIA:${dia?.price}` });
       if (!spy) return res.status(200).json({ date: today, brief: 'السوق مغلق أو البيانات غير متاحة حالياً.', detail: '', generated_at: new Date().toISOString(), error: 'no_data' });
       const sectorEtfs = ['XLK','XLF','XLV','XLE','XLI','XLY','XLP','XLB','XLC','XLRE','XLU'];
       const sectorNames = { XLK:'التقنية', XLF:'المالية', XLV:'الرعاية الصحية', XLE:'الطاقة', XLI:'الصناعات', XLY:'الاستهلاك التقديري', XLP:'الاستهلاك الأساسي', XLB:'المواد', XLC:'الاتصالات', XLRE:'العقارات', XLU:'المرافق' };
