@@ -433,109 +433,129 @@ ${JSON.stringify(facts, null, 2)}
 
 
 // ─────────────────────────────────────────────────────────────────────────
-// BLOCK B v3 (FINAL) — mode=stock-sentiment
-// Fix over v2: heavily-covered stocks (NVDA) get mostly "maintain" actions, so
-// up/down changes alone read flat. v3 ALSO scores the standing rating LEVEL of
-// recent actions (a wall of "maintain Buy/Overweight" is bullish; "maintain Sell"
-// bearish). Three signals now: (1) rating changes, (2) standing rating tone,
-// (3) target upside — combined and capped.
-// Test: /api/portfolio-for-ai?mode=stock-sentiment&sym=NVDA&debug=1
+// BLOCK B FINAL — mode=stock-sentiment  (two separate signals)
+// Returns per symbol:
+//   analyst: FMP analyst tone (changes + standing rating + target)
+//   sa:      Seeking Alpha EPS-revisions + momentum grades (from sa-buckets)
+// The card shows BOTH so conflicts (e.g. BMRN: analyst positive, SA revisions weak)
+// are visible, not averaged away.
+// Test: /api/portfolio-for-ai?mode=stock-sentiment&sym=NVDA,BMRN
 // ─────────────────────────────────────────────────────────────────────────
   if (req.query.mode === 'stock-sentiment') {
     try {
       const FMP = process.env.FMP_API_KEY || process.env.FMP_KEY;
       const FMP_BASE = 'https://financialmodelingprep.com/stable';
+      const REPO_RAW = 'https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main';
       const debug = req.query.debug === '1';
 
-      // map a rating label → tone (+1 bullish .. -1 bearish)
       const RATING_TONE = (() => {
-        const pos = ['strong buy','conviction buy','top pick','buy','accumulate','outperform','outperformer','overweight','sector outperform','market outperform','positive','above average','speculative buy','action list buy','buy','sector overweight','in-line sector outperform'];
+        const pos = ['strong buy','conviction buy','top pick','buy','accumulate','outperform','outperformer','overweight','sector outperform','market outperform','positive','above average','speculative buy','action list buy','sector overweight','in-line sector outperform'];
         const neg = ['strong sell','sell','reduce','underperform','underperformer','underweight','sector underperform','market underperform','below average','negative','cautious','sector underweight'];
-        return label => {
-          const l = String(label || '').toLowerCase().trim();
-          if (!l) return 0;
-          if (pos.includes(l)) return 1;
-          if (neg.includes(l)) return -1;
-          return 0; // hold / neutral / market perform / equal-weight / mixed / peer perform
-        };
+        return label => { const l = String(label||'').toLowerCase().trim(); if(!l) return 0; if(pos.includes(l)) return 1; if(neg.includes(l)) return -1; return 0; };
       })();
 
+      // grade letter → tone (+1 best .. -1 worst), for SA EPS-revisions / momentum
+      const GRADE_TONE = g => {
+        const m = { 'A+':1,'A':0.9,'A-':0.8,'B+':0.5,'B':0.4,'B-':0.3,'C+':0.0,'C':-0.05,'C-':-0.1,'D+':-0.4,'D':-0.5,'D-':-0.6,'F':-1 };
+        return (g!=null && m[String(g).toUpperCase()]!=null) ? m[String(g).toUpperCase()] : null;
+      };
+
+      // resolve symbols
       let symbols = [];
       if (req.query.sym) {
         symbols = String(req.query.sym).toUpperCase().split(',').map(s => s.trim()).filter(Boolean);
       } else {
         const nick = (req.query.nickname || 'rashed').toLowerCase();
-        const REPO_RAW = 'https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main';
         const pfPath = nick === 'rashed' ? 'data/portfolio.json' : `data/portfolio-${nick}.json`;
-        try {
-          const pr = await fetch(`${REPO_RAW}/${pfPath}?t=${Date.now()}`);
-          if (pr.ok) { const pd = await pr.json(); const hold = pd.holdings || pd.stocks || []; symbols = hold.map(h => (h.sym || '').toUpperCase()).filter(Boolean); }
-        } catch {}
+        try { const pr = await fetch(`${REPO_RAW}/${pfPath}?t=${Date.now()}`); if (pr.ok) { const pd = await pr.json(); const hold = pd.holdings || pd.stocks || []; symbols = hold.map(h => (h.sym||'').toUpperCase()).filter(Boolean); } } catch {}
       }
       if (!symbols.length) return res.status(200).json({ error: 'no symbols', hint: 'pass &sym=NVDA or &nickname=' });
       symbols = symbols.slice(0, 50);
 
-      const since = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+      // load SA buckets once (today, else most-recent prior) for the SA signal
+      let scored = {};
+      try {
+        const today = new Date().toISOString().slice(0,10);
+        let br = await fetch(`${REPO_RAW}/data/sa-buckets-${today}.json?t=${Date.now()}`);
+        let bd = br.ok ? await br.json() : null;
+        if (!bd || !bd.scored) {
+          // walk back up to ~10 days
+          for (let i=1;i<=10 && (!bd||!bd.scored);i++){
+            const d = new Date(Date.now()-i*86400000).toISOString().slice(0,10);
+            const r2 = await fetch(`${REPO_RAW}/data/sa-buckets-${d}.json?t=${Date.now()}`);
+            if (r2.ok){ const j=await r2.json(); if(j&&j.scored){bd=j;break;} }
+          }
+        }
+        scored = (bd && bd.scored) || {};
+      } catch {}
+
+      const since = new Date(Date.now() - 90*86400000).toISOString().slice(0,10);
       const out = [];
       let debugRaw = null;
 
       for (const sym of symbols) {
-        let up = 0, down = 0, total90 = 0, returned = 0;
-        let toneSum = 0, toneCount = 0; // standing rating tone across recent actions
+        // ── analyst (FMP) ──
+        let up=0, down=0, total90=0, returned=0, toneSum=0, toneCount=0;
         try {
           const gr = await fetch(`${FMP_BASE}/grades?symbol=${sym}&limit=100&apikey=${FMP}`);
           if (gr.ok) {
-            const gj = await gr.json();
-            const arr = Array.isArray(gj) ? gj : [];
-            returned = arr.length;
-            if (debug && !debugRaw && arr.length) debugRaw = arr[0];
-            for (const g of arr) {
-              const d = String(g.date || g.publishedDate || g.gradeDate || '').slice(0, 10);
-              if (!d || d < since) continue;
+            const arr = await gr.json(); const a = Array.isArray(arr)?arr:[];
+            returned = a.length;
+            if (debug && !debugRaw && a.length) debugRaw = a[0];
+            for (const g of a) {
+              const d = String(g.date||g.publishedDate||g.gradeDate||'').slice(0,10);
+              if(!d||d<since) continue;
               total90++;
-              const action = String(g.action || '').toLowerCase().trim();
-              if (action === 'upgrade') up++;
-              else if (action === 'downgrade') down++;
-              // standing tone from the NEW grade (covers maintains + changes)
-              const t = RATING_TONE(g.newGrade);
-              if (t !== 0) { toneSum += t; toneCount++; }
+              const act = String(g.action||'').toLowerCase().trim();
+              if(act==='upgrade') up++; else if(act==='downgrade') down++;
+              const t = RATING_TONE(g.newGrade); if(t!==0){ toneSum+=t; toneCount++; }
             }
           }
         } catch {}
-        const toneAvg = toneCount ? (toneSum / toneCount) : null; // -1..+1
-
-        // target vs price (secondary, capped)
+        const toneAvg = toneCount ? toneSum/toneCount : null;
         let targetUpside = null;
         try {
           const tr = await fetch(`${FMP_BASE}/price-target-consensus?symbol=${sym}&apikey=${FMP}`);
-          if (tr.ok) {
-            const tj = await tr.json();
-            const t = Array.isArray(tj) ? tj[0] : tj;
+          if (tr.ok) { const tj = await tr.json(); const t = Array.isArray(tj)?tj[0]:tj;
             const qr2 = await fetch(`${FMP_BASE}/quote-short?symbol=${sym}&apikey=${FMP}`);
-            const qj2 = qr2.ok ? await qr2.json() : [];
-            const price = Array.isArray(qj2) && qj2[0] ? Number(qj2[0].price) : null;
-            const tgt = t ? Number(t.targetConsensus || t.targetMedian || t.targetMean) : null;
-            if (price && tgt) targetUpside = +(((tgt - price) / price) * 100).toFixed(1);
+            const qj2 = qr2.ok?await qr2.json():[]; const price = Array.isArray(qj2)&&qj2[0]?Number(qj2[0].price):null;
+            const tgt = t?Number(t.targetConsensus||t.targetMedian||t.targetMean):null;
+            if(price&&tgt) targetUpside = +(((tgt-price)/price)*100).toFixed(1);
           }
         } catch {}
+        let aScore = 0;
+        aScore += (up-down)*25;
+        if(toneAvg!=null) aScore += Math.round(toneAvg*35);
+        if(targetUpside!=null) aScore += Math.max(-15,Math.min(15,targetUpside/4));
+        aScore = Math.max(-100,Math.min(100,Math.round(aScore)));
+        const aSent = aScore>20?'positive':aScore<-20?'negative':'neutral';
+        const aSent_ar = aScore>20?'إيجابي':aScore<-20?'سلبي':'محايد';
 
-        // blend: changes (strong) + standing tone (medium) + target (weak, capped)
-        let score = 0;
-        score += (up - down) * 25;                                  // rating changes
-        if (toneAvg != null) score += Math.round(toneAvg * 35);     // standing consensus tone
-        if (targetUpside != null) score += Math.max(-15, Math.min(15, targetUpside / 4)); // target, capped
-        score = Math.max(-100, Math.min(100, Math.round(score)));
-        const sentiment = score > 20 ? 'positive' : score < -20 ? 'negative' : 'neutral';
-        const sentiment_ar = score > 20 ? 'إيجابي' : score < -20 ? 'سلبي' : 'محايد';
+        // ── SA (EPS revisions + momentum) ──
+        const o = scored[sym] || null;
+        const Rg = o && o.grades ? o.grades.R : null;   // EPS revisions
+        const Mg = o && o.grades ? o.grades.M : null;   // momentum
+        const rTone = GRADE_TONE(Rg), mTone = GRADE_TONE(Mg);
+        let saScore = null, saSent = null, saSent_ar = null;
+        if (rTone!=null || mTone!=null) {
+          const parts = []; if(rTone!=null) parts.push(rTone*0.65); if(mTone!=null) parts.push(mTone*0.35);
+          const norm = (rTone!=null?0.65:0)+(mTone!=null?0.35:0);
+          saScore = Math.round((parts.reduce((a,b)=>a+b,0)/norm)*100);
+          saSent = saScore>20?'positive':saScore<-20?'negative':'neutral';
+          saSent_ar = saScore>20?'إيجابي':saScore<-20?'سلبي':'محايد';
+        }
 
-        out.push({ sym, sentiment, sentiment_ar, score, signals: {
-          upgrades90d: up, downgrades90d: down, ratingsIn90d: total90,
-          standingTone: toneAvg != null ? +toneAvg.toFixed(2) : null,
-          targetUpsidePct: targetUpside, gradesReturned: returned
-        }});
+        const conflict = (saSent && aSent && saSent!=='neutral' && aSent!=='neutral' && saSent!==aSent);
+
+        out.push({
+          sym,
+          analyst: { sentiment:aSent, sentiment_ar:aSent_ar, score:aScore, upgrades90d:up, downgrades90d:down, ratingsIn90d:total90, standingTone: toneAvg!=null?+toneAvg.toFixed(2):null, targetUpsidePct:targetUpside },
+          sa: { sentiment:saSent, sentiment_ar:saSent_ar, score:saScore, epsRevisions:Rg, momentum:Mg, hasData: o!=null },
+          conflict
+        });
       }
 
-      const resp = { data: out, count: out.length, asOf: new Date().toISOString().slice(0, 10) };
+      const resp = { data: out, count: out.length, asOf: new Date().toISOString().slice(0,10) };
       if (debug) resp.debug_first_grade_record = debugRaw;
       return res.status(200).json(resp);
     } catch (e) {
