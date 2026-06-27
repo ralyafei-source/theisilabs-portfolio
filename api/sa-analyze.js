@@ -1117,14 +1117,15 @@ ${JSON.stringify(payloadIdx)}`;
   // ── marketRead: daily US market update formatted in Arabic ─────────────────
 // Body: { marketRead:true, forceRefresh?:bool }
 // Returns: { date, brief, detail, generated_at, cached }
-// brief = 2-sentence Arabic summary shown in the card
-// detail = full 3-block formatted update shown in popup
-if (req.body && req.body.marketRead && GITHUB_TOKEN) {
+if (req.body && req.body.marketRead) {
   try {
     const today = new Date().toISOString().slice(0,10);
     const cachePath = `data/market-read.json`;
+    const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_KEY || '';
+    const FMP_KEY = process.env.FMP_API_KEY || process.env.FMP_KEY || '';
 
     const readJson = async (fp) => {
+      if (!GITHUB_TOKEN) return null;
       const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
         headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' }
       });
@@ -1134,87 +1135,146 @@ if (req.body && req.body.marketRead && GITHUB_TOKEN) {
     };
 
     // serve cache unless forced
-    const cachedWrap = await readJson(cachePath);
-    if (cachedWrap && cachedWrap.data && cachedWrap.data.date === today && !req.body.forceRefresh) {
-      return res.status(200).json({ ...cachedWrap.data, cached:true });
+    if (!req.body.forceRefresh) {
+      const cachedWrap = await readJson(cachePath);
+      if (cachedWrap && cachedWrap.data && cachedWrap.data.date === today) {
+        return res.status(200).json({ ...cachedWrap.data, cached:true });
+      }
     }
+    const cachedWrap = await readJson(cachePath); // still need sha for PUT
 
-    const FMP = process.env.FMP_API_KEY || process.env.FMP_KEY || '';
-
-    // ── 1. Fetch index quotes (S&P 500, Nasdaq, Dow) ──────────────────────
-    const [spData, ndxData, djiData] = await Promise.all([
-      fetch(`https://financialmodelingprep.com/api/v3/quote/%5EGSPC?apikey=${FMP}`).then(r=>r.ok?r.json():[]).catch(()=>[]),
-      fetch(`https://financialmodelingprep.com/api/v3/quote/%5EIXIC?apikey=${FMP}`).then(r=>r.ok?r.json():[]).catch(()=>[]),
-      fetch(`https://financialmodelingprep.com/api/v3/quote/%5EDJI?apikey=${FMP}`).then(r=>r.ok?r.json():[]).catch(()=>[])
-    ]);
-
-    const sp  = spData[0]  || {};
-    const ndx = ndxData[0] || {};
-    const dji = djiData[0] || {};
-
-    // ── 2. Fetch market news (last 10 headlines) ──────────────────────────
-    const newsRes = await fetch(
-      `https://financialmodelingprep.com/api/v3/fmp/articles?page=0&size=10&apikey=${FMP}`
-    ).then(r=>r.ok?r.json():{}).catch(()=>({}));
-    const newsItems = (newsRes.content || []).slice(0,8).map(n=>n.title||'').filter(Boolean);
-
-    // ── 3. Fetch sector performance ───────────────────────────────────────
-    const sectorsRaw = await fetch(
-      `https://financialmodelingprep.com/api/v3/sectors-performance?apikey=${FMP}`
-    ).then(r=>r.ok?r.json():[]).catch(()=>[]);
-    const sectors = (Array.isArray(sectorsRaw)?sectorsRaw:sectorsRaw.sectorPerformance||[])
-      .sort((a,b)=>parseFloat(b.changesPercentage)-parseFloat(a.changesPercentage))
-      .slice(0,3)
-      .map(s=>`${s.sector}: ${s.changesPercentage}`);
-
-    // ── 4. Build raw data payload for Claude ─────────────────────────────
-    const rawData = {
-      date: today,
-      indices: {
-        sp500:  { price: sp.price,  change: sp.change,  changesPercentage: sp.changesPercentage,  yearHigh: sp.yearHigh,  yearLow: sp.yearLow },
-        nasdaq: { price: ndx.price, change: ndx.change, changesPercentage: ndx.changesPercentage, yearHigh: ndx.yearHigh, yearLow: ndx.yearLow },
-        dow:    { price: dji.price, change: dji.change, changesPercentage: dji.changesPercentage, yearHigh: dji.yearHigh, yearLow: dji.yearLow }
-      },
-      topSectors: sectors,
-      recentHeadlines: newsItems
+    // ── 1. Fetch index quotes via Yahoo Finance (same as main API) ──────────
+    const yahooQuote = async (symbol) => {
+      try {
+        const r = await fetch(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`,
+          { headers:{ 'User-Agent':'Mozilla/5.0' } }
+        );
+        if(!r.ok) return null;
+        const d = await r.json();
+        const meta = d?.chart?.result?.[0]?.meta;
+        if(!meta) return null;
+        const close = d?.chart?.result?.[0]?.indicators?.quote?.[0]?.close || [];
+        const prevClose = close.filter(Boolean).slice(-2)[0] || meta.chartPreviousClose || meta.previousClose;
+        const price = meta.regularMarketPrice || meta.price;
+        const dailyChg = prevClose ? ((price - prevClose) / prevClose * 100) : null;
+        // weekly: compare first close of the 5d window
+        const weekStart = close.filter(Boolean)[0];
+        const weeklyChg = weekStart ? ((price - weekStart) / weekStart * 100) : null;
+        return {
+          price: price ? +price.toFixed(2) : null,
+          dailyChg: dailyChg ? +dailyChg.toFixed(2) : null,
+          weeklyChg: weeklyChg ? +weeklyChg.toFixed(2) : null,
+          prevClose: prevClose ? +prevClose.toFixed(2) : null
+        };
+      } catch { return null; }
     };
 
-    // ── 5. Claude prompt — the exact system prompt Rashed specified ───────
+    const [sp, ndx, dji] = await Promise.all([
+      yahooQuote('^GSPC'),
+      yahooQuote('^IXIC'),
+      yahooQuote('^DJI')
+    ]);
+
+    // ── 2. Sector performance from FMP stable ──────────────────────────────
+    let sectors = [];
+    if (FMP_KEY) {
+      try {
+        const sr = await fetch(
+          `https://financialmodelingprep.com/stable/sector-performance?apikey=${FMP_KEY}`,
+          { headers:{ 'User-Agent':'theisi' } }
+        );
+        if(sr.ok) {
+          const sd = await sr.json();
+          const arr = Array.isArray(sd) ? sd : (sd.sectorPerformance || []);
+          sectors = arr
+            .sort((a,b) => parseFloat(b.changesPercentage||b.changePercentage||0) - parseFloat(a.changesPercentage||a.changePercentage||0))
+            .slice(0,4)
+            .map(s => `${s.sector}: ${parseFloat(s.changesPercentage||s.changePercentage||0).toFixed(2)}%`);
+        }
+      } catch {}
+    }
+
+    // ── 3. Market news from FMP ────────────────────────────────────────────
+    let headlines = [];
+    if (FMP_KEY) {
+      try {
+        const nr = await fetch(
+          `https://financialmodelingprep.com/stable/fmp/articles?page=0&size=8&apikey=${FMP_KEY}`,
+          { headers:{ 'User-Agent':'theisi' } }
+        );
+        if(nr.ok) {
+          const nd = await nr.json();
+          const items = nd.content || nd || [];
+          headlines = Array.isArray(items) ? items.slice(0,6).map(n=>n.title||n.headline||'').filter(Boolean) : [];
+        }
+      } catch {}
+    }
+
+    // ── 4. Validate we have at least index data ────────────────────────────
+    if (!sp || !sp.price) {
+      return res.status(200).json({
+        date: today,
+        brief: 'تعذّر جلب بيانات السوق الآن. يرجى المحاولة بعد افتتاح الجلسة الأمريكية.',
+        detail: '',
+        generated_at: new Date().toISOString(),
+        error: 'no_market_data'
+      });
+    }
+
+    // ── 5. Build raw data string for Claude ───────────────────────────────
+    const fmt = (v, suffix='') => v != null ? `${v}${suffix}` : 'غير متاح';
+    const fmtPct = (v) => v != null ? `${v > 0 ? '+' : ''}${v}%` : 'غير متاح';
+
+    const rawText = `
+تاريخ التقرير: ${today}
+
+المؤشرات الأمريكية:
+- S&P 500: السعر ${fmt(sp?.price)} | التغيير اليومي ${fmtPct(sp?.dailyChg)} | التغيير الأسبوعي ${fmtPct(sp?.weeklyChg)}
+- Nasdaq Composite: السعر ${fmt(ndx?.price)} | التغيير اليومي ${fmtPct(ndx?.dailyChg)} | التغيير الأسبوعي ${fmtPct(ndx?.weeklyChg)}
+- Dow Jones Industrial Average: السعر ${fmt(dji?.price)} | التغيير اليومي ${fmtPct(dji?.dailyChg)} | التغيير الأسبوعي ${fmtPct(dji?.weeklyChg)}
+
+أداء القطاعات اليوم (الأعلى أداءً):
+${sectors.length ? sectors.join('\n') : 'غير متاح'}
+
+أبرز عناوين الأخبار:
+${headlines.length ? headlines.map((h,i)=>`${i+1}. ${h}`).join('\n') : 'غير متاح'}
+`.trim();
+
+    // ── 6. Claude call with the exact system prompt ───────────────────────
     const systemPrompt = `أنت محرر بيانات مالية دقيق. مهمتك تحويل البيانات الخام المقدّمة إلى تقرير سوقي يومي باللغة العربية بتنسيق ثلاثي صارم.
 
 قواعد صارمة:
 - اكتب كل شيء بالعربية الفصحى الواضحة.
-- رموز الأسهم والمؤشرات والأرقام والنسب المئوية تُكتب بالإنجليزية داخل النص العربي (مثال: S&P 500، Nasdaq، +2.3%).
-- لا تختصر أي رقم أو نسبة أو اسم شركة وردت في البيانات.
-- لا تضف معلومات من خارج البيانات المقدّمة.
-- احذف أي بيانات زائدة أو أكواد مرجعية.
+- رموز المؤشرات والأسهم والشركات والأرقام والنسب المئوية تُكتب بالإنجليزية كما هي داخل النص العربي.
+- لا تختصر أي رقم أو نسبة أو اسم وردا في البيانات.
+- لا تضف معلومات لم ترد في البيانات المقدّمة.
+- حذار: لا تكتب أبداً "البيانات غير كافية" أو ما شابهها — استخدم ما لديك.
 
 أعد JSON صارم فقط بهذا الشكل بدون أي نص خارجه:
 {
-  "brief": "جملتان بالعربية تلخّصان وضع السوق العام وأبرز محرّك اليوم",
-  "detail": "التقرير الكامل بالتنسيق التالي بالضبط:\\n\\n📊 الصورة الكلية\\n[4 جمل تحلّل حالة السوق الأمريكي: الزخم الحالي، المحرّكات الكبرى، الوضع التقييمي، والمخاطر الهيكلية ومقاييس الاتساع]\\n\\n📉 الأرقام\\n• S&P 500 — [السعر بالضبط] | [% اليومي] (يومي) | [% الأسبوعي إن وُجد] (أسبوعي)\\n• Nasdaq Composite — [السعر بالضبط] | [% اليومي] (يومي) | [% الأسبوعي إن وُجد] (أسبوعي)\\n• Dow Jones Industrial Average — [السعر بالضبط] | [% اليومي] (يومي) | [% الأسبوعي إن وُجد] (أسبوعي)\\n\\n⚡ المحفزات والتباين القطاعي\\n[3 جمل تشرح المحفزات الفورية للجلسة وتبرز أي تباين بين القطاعات]"
+  "brief": "جملتان بالعربية: الأولى تصف حالة السوق العامة بالأرقام الدقيقة، الثانية تذكر أبرز محرّك أو قطاع اليوم",
+  "detail": "📊 الصورة الكلية\\n[4 جمل تحلّل: الزخم الحالي بالأرقام، المحرّكات الكبرى من الأخبار، الوضع التقييمي للقطاعات، والمخاطر أو الفرص الهيكلية]\\n\\n📉 الأرقام\\n• S&P 500 — [السعر بالضبط] | [% اليومي] (يومي) | [% الأسبوعي] (أسبوعي)\\n• Nasdaq Composite — [السعر بالضبط] | [% اليومي] (يومي) | [% الأسبوعي] (أسبوعي)\\n• Dow Jones Industrial Average — [السعر بالضبط] | [% اليومي] (يومي) | [% الأسبوعي] (أسبوعي)\\n\\n⚡ المحفزات والتباين القطاعي\\n[3 جمل: المحفز الرئيسي للجلسة، التباين بين القطاعات، وأبرز حركة في الأخبار]"
 }`;
-
-    const userMsg = `البيانات الخام لتقرير اليوم:\n${JSON.stringify(rawData, null, 2)}`;
 
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_KEY || '',
+        'x-api-key': ANTHROPIC_KEY,
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 2000,
         system: systemPrompt,
-        messages: [{ role: 'user', content: userMsg }]
+        messages: [{ role: 'user', content: `البيانات الخام:\n${rawText}` }]
       })
     });
 
     const claudeData = await claudeRes.json();
     let txt = (claudeData.content||[]).map(c=>c.type==='text'?c.text:'').join('').trim()
-      .replace(/```json|```/g,'').trim();
+      .replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
 
     let parsed;
     try { parsed = JSON.parse(txt); }
@@ -1229,19 +1289,21 @@ if (req.body && req.body.marketRead && GITHUB_TOKEN) {
 
     // save cache to GitHub
     try {
-      await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `token ${GITHUB_TOKEN}`,
-          'Content-Type': 'application/json',
-          'User-Agent': 'theisi'
-        },
-        body: JSON.stringify({
-          message: `market read ${out.generated_at}`,
-          content: Buffer.from(JSON.stringify(out, null, 2)).toString('base64'),
-          ...(cachedWrap ? { sha: cachedWrap.sha } : {})
-        })
-      });
+      if (GITHUB_TOKEN) {
+        await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `token ${GITHUB_TOKEN}`,
+            'Content-Type': 'application/json',
+            'User-Agent': 'theisi'
+          },
+          body: JSON.stringify({
+            message: `market read ${out.generated_at}`,
+            content: Buffer.from(JSON.stringify(out, null, 2)).toString('base64'),
+            ...(cachedWrap ? { sha: cachedWrap.sha } : {})
+          })
+        });
+      }
     } catch {}
 
     return res.status(200).json({ ...out, cached: false });
