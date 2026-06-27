@@ -370,6 +370,167 @@ ${JSON.stringify(facts, null, 2)}
       }
     }
 
+// ============================================================================
+// SENTIMENT ENDPOINTS for portfolio-for-ai.js  (TEST FIRST, build cards after)
+// Paste these two blocks alongside your other `if (mode === '...')` branches,
+// AFTER the auth check but with the other mode branches.
+// Both use your existing FMP_API_KEY env var.
+// ============================================================================
+//
+// Your file already defines the FMP key. These blocks assume:
+//   const FMP = process.env.FMP_API_KEY || process.env.FMP_KEY;
+//   const FMP_BASE = 'https://financialmodelingprep.com/stable';
+// If your file names them differently, adjust the two consts below to match.
+
+
+// ─────────────────────────────────────────────────────────────────────────
+// BLOCK A — mode=sentiment  →  Fear & Greed gauge from VIX
+// Test URL after deploy:  /api/portfolio-for-ai?mode=sentiment
+// Returns: { score, label, label_ar, vix, vixPercentile, asOf }
+// ─────────────────────────────────────────────────────────────────────────
+  if (req.query.mode === 'sentiment') {
+    try {
+      const FMP = process.env.FMP_API_KEY || process.env.FMP_KEY;
+      const FMP_BASE = 'https://financialmodelingprep.com/stable';
+
+      // current VIX
+      const qr = await fetch(`${FMP_BASE}/quote?symbol=^VIX&apikey=${FMP}`);
+      const qj = qr.ok ? await qr.json() : [];
+      const vixNow = Array.isArray(qj) && qj[0] ? Number(qj[0].price) : null;
+
+      // ~1y VIX history for percentile context
+      const hr = await fetch(`${FMP_BASE}/historical-price-eod/light?symbol=^VIX&apikey=${FMP}`);
+      const hj = hr.ok ? await hr.json() : null;
+      // FMP may return {historical:[...]} or a bare array; handle both
+      const hist = Array.isArray(hj) ? hj : (hj && Array.isArray(hj.historical) ? hj.historical : []);
+      const closes = hist.map(d => Number(d.price != null ? d.price : d.close)).filter(v => isFinite(v)).slice(0, 252);
+
+      if (vixNow == null || !closes.length) {
+        return res.status(200).json({ error: 'VIX data unavailable', vixNow, histCount: closes.length, rawQuote: qj, rawHistType: typeof hj });
+      }
+
+      // percentile of current VIX within the trailing window
+      const below = closes.filter(v => v < vixNow).length;
+      const vixPct = below / closes.length; // 0..1, high = VIX elevated = more fear
+      // invert: high VIX -> fear (low score); low VIX -> greed (high score)
+      const score = Math.round((1 - vixPct) * 100);
+
+      const label = score < 25 ? 'Extreme Fear' : score < 45 ? 'Fear' : score < 55 ? 'Neutral' : score < 75 ? 'Greed' : 'Extreme Greed';
+      const label_ar = score < 25 ? 'خوف شديد' : score < 45 ? 'خوف' : score < 55 ? 'محايد' : score < 75 ? 'جشع' : 'جشع شديد';
+
+      return res.status(200).json({
+        score, label, label_ar,
+        vix: +vixNow.toFixed(2),
+        vixPercentile: +(vixPct * 100).toFixed(0),
+        windowDays: closes.length,
+        asOf: new Date().toISOString().slice(0, 10),
+        method: 'VIX percentile (inverted) over trailing window'
+      });
+    } catch (e) {
+      return res.status(200).json({ error: e.message });
+    }
+  }
+
+
+// ─────────────────────────────────────────────────────────────────────────
+// BLOCK B — mode=stock-sentiment  →  per-stock analyst tone
+// Test URL after deploy:  /api/portfolio-for-ai?mode=stock-sentiment&sym=NVDA
+//   (or &nickname=rashed to pull the whole portfolio's symbols)
+// Returns: { data: [ { sym, sentiment, sentiment_ar, score, signals:{...} } ] }
+//
+// Signals used (all auto-pullable from FMP):
+//   - grades (recent rating changes: upgrades vs downgrades, last ~90d)
+//   - price-target-consensus (target vs current price)
+// SA EPS-revision/momentum grades are added later from sa-buckets (in the card),
+// this test block proves the FMP half works.
+// ─────────────────────────────────────────────────────────────────────────
+  if (req.query.mode === 'stock-sentiment') {
+    try {
+      const FMP = process.env.FMP_API_KEY || process.env.FMP_KEY;
+      const FMP_BASE = 'https://financialmodelingprep.com/stable';
+
+      // resolve symbol list: explicit &sym=, else portfolio by &nickname=
+      let symbols = [];
+      if (req.query.sym) {
+        symbols = String(req.query.sym).toUpperCase().split(',').map(s => s.trim()).filter(Boolean);
+      } else {
+        // reuse however this file already loads a portfolio's holdings.
+        // Minimal fallback: read the GitHub portfolio file directly.
+        const nick = (req.query.nickname || 'rashed').toLowerCase();
+        const REPO_RAW = 'https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main';
+        const pfPath = nick === 'rashed' ? 'data/portfolio.json' : `data/portfolio-${nick}.json`;
+        try {
+          const pr = await fetch(`${REPO_RAW}/${pfPath}?t=${Date.now()}`);
+          if (pr.ok) {
+            const pd = await pr.json();
+            const hold = pd.holdings || pd.stocks || [];
+            symbols = hold.map(h => (h.sym || '').toUpperCase()).filter(Boolean);
+          }
+        } catch {}
+      }
+      if (!symbols.length) return res.status(200).json({ error: 'no symbols', hint: 'pass &sym=NVDA or &nickname=' });
+      symbols = symbols.slice(0, 50); // safety cap
+
+      const since = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+      const out = [];
+      for (const sym of symbols) {
+        // recent rating actions
+        let up = 0, down = 0, gradesRaw = null;
+        try {
+          const gr = await fetch(`${FMP_BASE}/grades?symbol=${sym}&limit=15&apikey=${FMP}`);
+          if (gr.ok) {
+            const gj = await gr.json();
+            gradesRaw = Array.isArray(gj) ? gj.length : 0;
+            (Array.isArray(gj) ? gj : []).forEach(g => {
+              const d = (g.date || '').slice(0, 10);
+              if (d && d >= since) {
+                const action = (g.action || g.newGrade ? (g.action || '') : '').toLowerCase();
+                if (action.includes('up')) up++;
+                else if (action.includes('down')) down++;
+                else {
+                  // fall back to grade direction if action missing
+                  const ng = (g.newGrade || '').toLowerCase(), pg = (g.previousGrade || '').toLowerCase();
+                  const rank = x => ({ 'strong buy': 5, buy: 4, outperform: 4, overweight: 4, hold: 3, neutral: 3, underperform: 2, underweight: 2, sell: 1 }[x] || null);
+                  const a = rank(ng), b = rank(pg);
+                  if (a != null && b != null) { if (a > b) up++; else if (a < b) down++; }
+                }
+              }
+            });
+          }
+        } catch {}
+
+        // target vs price
+        let targetUpside = null;
+        try {
+          const tr = await fetch(`${FMP_BASE}/price-target-consensus?symbol=${sym}&apikey=${FMP}`);
+          if (tr.ok) {
+            const tj = await tr.json();
+            const t = Array.isArray(tj) ? tj[0] : tj;
+            const qr2 = await fetch(`${FMP_BASE}/quote-short?symbol=${sym}&apikey=${FMP}`);
+            const qj2 = qr2.ok ? await qr2.json() : [];
+            const price = Array.isArray(qj2) && qj2[0] ? Number(qj2[0].price) : null;
+            const tgt = t ? Number(t.targetConsensus || t.targetMedian || t.targetMean) : null;
+            if (price && tgt) targetUpside = +(((tgt - price) / price) * 100).toFixed(1);
+          }
+        } catch {}
+
+        // simple blend → score -100..+100
+        let score = 0;
+        score += (up - down) * 20;
+        if (targetUpside != null) score += Math.max(-30, Math.min(30, targetUpside));
+        score = Math.max(-100, Math.min(100, score));
+        const sentiment = score > 20 ? 'positive' : score < -20 ? 'negative' : 'neutral';
+        const sentiment_ar = score > 20 ? 'إيجابي' : score < -20 ? 'سلبي' : 'محايد';
+
+        out.push({ sym, sentiment, sentiment_ar, score, signals: { upgrades90d: up, downgrades90d: down, targetUpsidePct: targetUpside, gradesReturned: gradesRaw } });
+      }
+
+      return res.status(200).json({ data: out, count: out.length, asOf: new Date().toISOString().slice(0, 10) });
+    } catch (e) {
+      return res.status(200).json({ error: e.message });
+    }
+  }
+    
     // ── Live prices (Yahoo Finance) ──────────────────────────────────────────
     const priceMap = {};
     const priceResults = await Promise.all(
