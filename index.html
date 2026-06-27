@@ -4310,7 +4310,7 @@ function renderCommandCenter(){
     // also add individual portfolio news headlines (more items = fuller ticker)
     var NF=window._newsFeed;
     if(NF && NF.items && NF.items.length){
-      NF.items.slice(0,20).forEach(function(it){
+      NF.items.slice(0,30).forEach(function(it){
         var t=(it.title||'').trim(); if(t.length>110) t=t.slice(0,110).trim()+'\u2026';
         if(t) tickerItems.push({sym:it.sym||'', txt:t});
       });
