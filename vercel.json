@@ -28,5 +28,6 @@
   "crons": [
     { "path": "/api/cron-daily-brief", "schedule": "0 20 * * *" },
     { "path": "/api/cron-daily-brief", "schedule": "0 14 * * *" }
+    { "path": "/api/cron-market-read", "schedule": "30 16 * * 1-5" }
   ]
 }
