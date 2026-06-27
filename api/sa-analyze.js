@@ -6,38 +6,28 @@ const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 const GITHUB_TOKEN  = process.env.GITHUB_TOKEN;
 const REPO          = 'ralyafei-source/theisilabs-portfolio';
 
-// Bucket scorer lives in api/_lib/ — the leading underscore means Vercel does NOT
-// turn it into a Serverless Function (utility-file rule), so it does not count
-// toward the 12-function limit. It is imported here, not routed.
 const { computeBuckets } = require('./_lib/bucket-scorer.js');
-// Deep-read prompt builder (non-routed _lib — see scorer note above).
 const { buildDeepReadPrompt } = require('./_lib/deep-read.js');
 const { fetchExtrasForSymbol, buildCatalysts, benzingaNews, fmpNews, daysAgoUAE, todayUAE } = require('./_lib/catalysts.js');
 
 function buildPrompt(inputs) {
   const cashUSD = inputs.cashUSD || 0;
   const cashStr = cashUSD > 0 ? '$' + Number(cashUSD).toLocaleString() + ' / ' + Number(inputs.cash||0).toLocaleString() + ' ' + (inputs.currency||'AED') : 'غير محدد';
-
-  // REAL portfolio from the store (no hardcoding). Value total computed in code.
   const rows = Array.isArray(inputs.excelRows) ? inputs.excelRows : [];
   let totalVal = 0;
   rows.forEach(r => { const v = Number(r.Value || r.value || 0); if(!isNaN(v)) totalVal += v; });
   const totalStr = totalVal > 0 ? '$' + Math.round(totalVal).toLocaleString() : 'غير متوفر';
-
-  // per-stock grade lines so the AI never writes N/A for a stock we own
   const gradeLines = rows.filter(r => r.symbol || r.sym).map(r => {
     const g = r.grades || {};
     const sym = (r.symbol || r.sym);
     return `${sym}: Quant ${r.quant ?? r['Quant Rating'] ?? '—'} | V:${g.V ?? r['Valuation Grade'] ?? '—'} G:${g.G ?? r['Growth Grade'] ?? '—'} P:${g.P ?? r['Profitability Grade'] ?? '—'} M:${g.M ?? r['Momentum Grade'] ?? '—'} R:${g.R ?? r['EPS Revision Grade'] ?? '—'} | shares ${r.shares ?? '—'} cost ${r.cost ?? '—'} value ${r.Value ?? r.value ?? '—'}`;
   }).join('\n');
-
   const portfolioBlock =
 `القيمة الإجمالية للمحفظة (محسوبة من الملف — استخدمها كما هي، لا تعِد حسابها ولا تخمّن غيرها): ${totalStr}
 عدد الأسهم: ${rows.length}. الكاش: ${cashStr}.
 
 درجات كل سهم تملكه (استخدم هذه الدرجات حرفياً في warnings وstrong_positions — لا تكتب N/A لسهم موجود هنا):
 ${gradeLines}`;
-
   const parts = [
     inputs.updownMine   ? `[UPGRADES_MINE]\n${inputs.updownMine.slice(0,4000)}`  : '',
     inputs.updownMarket ? `[UPGRADES_MARKET]\n${inputs.updownMarket.slice(0,3000)}` : '',
@@ -47,7 +37,6 @@ ${gradeLines}`;
     inputs.exclusive    ? `[EXCLUSIVE]\n${inputs.exclusive.slice(0,3000)}`        : '',
     inputs.stockDetail  ? `[STOCK_DETAIL]\n${inputs.stockDetail.slice(0,3000)}`  : ''
   ].filter(Boolean).join('\n\n');
-
   return `محلل استثماري — مستثمر إماراتي لا ضريبة. ${portfolioBlock}
 
 ${parts}
@@ -80,138 +69,94 @@ module.exports = async (req, res) => {
   const { inputs, prompt, saveOnly } = req.body || {};
   if (!ANTHROPIC_KEY) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set' });
 
-  // ── saveOnly: just save inputs, return fast ────────────────────────────────
+  // ── saveOnly ────────────────────────────────────────────────────────────────
   if (saveOnly && inputs && GITHUB_TOKEN) {
     try {
       const date = new Date().toISOString().slice(0,10);
       const fp = `data/sa-inputs-${date}.json`;
       const fc = JSON.stringify({ date, inputs, savedAt: new Date().toISOString() }, null, 2);
       let sha = null;
-      try {
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-          headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
-        });
-        if (ex.ok) sha = (await ex.json()).sha;
-      } catch {}
-      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
-        body: JSON.stringify({ message: `SA inputs ${date}`, content: Buffer.from(fc).toString('base64'), ...(sha ? { sha } : {}) })
-      });
+      try { const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (ex.ok) sha = (await ex.json()).sha; } catch {}
+      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { method: 'PUT', headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' }, body: JSON.stringify({ message: `SA inputs ${date}`, content: Buffer.from(fc).toString('base64'), ...(sha ? { sha } : {}) }) });
       return res.status(200).json({ saved: sr.ok ? fp : false });
-    } catch(e) {
-      return res.status(200).json({ saved: false, error: e.message });
-    }
+    } catch(e) { return res.status(200).json({ saved: false, error: e.message }); }
   }
 
-  // ── loadInputs: today's inputs, or fall back to most recent prior day ──
+  // ── loadInputs ──────────────────────────────────────────────────────────────
   if (req.body && req.body.loadInputs && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
       const readDay = async (date) => {
         const fp = `data/sa-inputs-${date}.json`;
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-          headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
-        });
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
         if (!ex.ok) return null;
         const f = await ex.json();
         const decoded = JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
         return { inputs: decoded.inputs || null, savedAt: decoded.savedAt || null, date };
       };
-      // try today first
       let result = await readDay(today);
-      if (result && result.inputs) {
-        return res.status(200).json({ ...result, isCarryForward: false });
-      }
-      // fall back: list sa-inputs-*.json, pick most recent date < today
-      const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, {
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
-      });
+      if (result && result.inputs) return res.status(200).json({ ...result, isCarryForward: false });
+      const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
       if (!dir.ok) return res.status(200).json({ inputs: null });
       const files = await dir.json();
-      const dates = (Array.isArray(files) ? files : [])
-        .map(f => (f.name||'').match(/^sa-inputs-(\d{4}-\d{2}-\d{2})\.json$/))
-        .filter(Boolean).map(m => m[1])
-        .filter(dt => dt < today)
-        .sort().reverse();
+      const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(/^sa-inputs-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
       if (!dates.length) return res.status(200).json({ inputs: null });
       const prior = await readDay(dates[0]);
-      if (prior && prior.inputs) {
-        return res.status(200).json({ ...prior, isCarryForward: true });
-      }
+      if (prior && prior.inputs) return res.status(200).json({ ...prior, isCarryForward: true });
       return res.status(200).json({ inputs: null });
-    } catch(e) {
-      return res.status(200).json({ inputs: null, error: e.message });
-    }
+    } catch(e) { return res.status(200).json({ inputs: null, error: e.message }); }
   }
 
-  // ── saveResult: store analysis result, keep last 3 per day ───────
+  // ── saveResult ──────────────────────────────────────────────────────────────
   if (req.body && req.body.saveResult && req.body.result && GITHUB_TOKEN) {
     try {
       const date = new Date().toISOString().slice(0,10);
       const fp = `data/sa-analysis-${date}.json`;
       let runs = [], sha = null;
-      try {
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-          headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
-        });
-        if (ex.ok) {
-          const f = await ex.json(); sha = f.sha;
-          const prev = JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
-          runs = Array.isArray(prev.runs) ? prev.runs : [];
-        }
-      } catch {}
+      try { const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (ex.ok) { const f = await ex.json(); sha = f.sha; const prev = JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); runs = Array.isArray(prev.runs) ? prev.runs : []; } } catch {}
       const version = (runs.length ? (runs[runs.length-1].version || runs.length) : 0) + 1;
       runs.push({ version, savedAt: new Date().toISOString(), result: req.body.result });
       if (runs.length > 3) runs = runs.slice(runs.length - 3);
       const body = JSON.stringify({ date, runs }, null, 2);
-      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
-        body: JSON.stringify({ message: `SA analysis ${date} v${version}`, content: Buffer.from(body).toString('base64'), ...(sha?{sha}:{}) })
-      });
+      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { method: 'PUT', headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' }, body: JSON.stringify({ message: `SA analysis ${date} v${version}`, content: Buffer.from(body).toString('base64'), ...(sha?{sha}:{}) }) });
       return res.status(200).json({ saved: sr.ok, version });
-    } catch(e) {
-      return res.status(200).json({ saved: false, error: e.message });
-    }
+    } catch(e) { return res.status(200).json({ saved: false, error: e.message }); }
   }
 
-  // ── loadResult: return a result (optionally a specific date/version) ──
+  // ── loadResult ──────────────────────────────────────────────────────────────
   if (req.body && req.body.loadResult && GITHUB_TOKEN) {
     try {
-      const date = (req.body.date && /^\d{4}-\d{2}-\d{2}$/.test(req.body.date))
-        ? req.body.date : new Date().toISOString().slice(0,10);
+      const date = (req.body.date && /^\d{4}-\d{2}-\d{2}$/.test(req.body.date)) ? req.body.date : new Date().toISOString().slice(0,10);
       const fp = `data/sa-analysis-${date}.json`;
-      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
-      });
+      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
       if (!ex.ok) return res.status(200).json({ result: null });
       const f = await ex.json();
       const data = JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
       const runs = Array.isArray(data.runs) ? data.runs : [];
       if (!runs.length) return res.status(200).json({ result: null });
       let run = runs[runs.length-1];
-      if (req.body.version != null) {
-        const found = runs.find(r => r.version === req.body.version);
-        if (found) run = found;
-      }
-      return res.status(200).json({
-        result: run.result, savedAt: run.savedAt, version: run.version,
-        count: runs.length, versions: runs.map(r => ({ version: r.version, savedAt: r.savedAt })), date
-      });
-    } catch(e) {
-      return res.status(200).json({ result: null, error: e.message });
-    }
+      if (req.body.version != null) { const found = runs.find(r => r.version === req.body.version); if (found) run = found; }
+      return res.status(200).json({ result: run.result, savedAt: run.savedAt, version: run.version, count: runs.length, versions: runs.map(r => ({ version: r.version, savedAt: r.savedAt })), date });
+    } catch(e) { return res.status(200).json({ result: null, error: e.message }); }
   }
 
-  // ── savePortfolio: parse + save SA portfolio Excel data ──────────
+  // ── listAnalyses ────────────────────────────────────────────────────────────
+  if (req.body && req.body.listAnalyses && GITHUB_TOKEN) {
+    try {
+      const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+      if (!dir.ok) return res.status(200).json({ dates: [] });
+      const files = await dir.json();
+      const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(/^sa-analysis-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).sort().reverse();
+      return res.status(200).json({ dates });
+    } catch(e) { return res.status(200).json({ dates: [], error: e.message }); }
+  }
+
+  // ── savePortfolio ───────────────────────────────────────────────────────────
   if (req.body && req.body.savePortfolio && req.body.rows && GITHUB_TOKEN) {
     try {
       const date = new Date().toISOString().slice(0,10);
       const fp = `data/sa-portfolio-${date}.json`;
       const raw = req.body.rows;
-      const GRADE_MAP = { 'A+':4.3,'A':4.0,'A-':3.7,'B+':3.3,'B':3.0,'B-':2.7,'C+':2.3,'C':2.0,'C-':1.7,'D+':1.3,'D':1.0,'D-':0.7,'F':0 };
-      const labelOf = q => q >= 4.5 ? 'Strong Buy' : q >= 3.5 ? 'Buy' : q >= 2.5 ? 'Hold' : q >= 1.5 ? 'Sell' : 'Strong Sell';
       const stocks = [], etfs = [];
       const numOrNull = v => (v===undefined||v===null||v==='') ? null : (isNaN(Number(v))?v:Number(v));
       const pick = (r, ...keys) => { for(const k of keys){ if(r[k]!==undefined&&r[k]!=='') return r[k]; } return null; };
@@ -220,58 +165,31 @@ module.exports = async (req, res) => {
         const sheets = r.__sheets || {};
         const full = {}; Object.keys(r).forEach(k=>{ if(k!=='__sheets') full[k]=r[k]; });
         full.sym = String(sym).toUpperCase();
-        full.quant       = numOrNull(pick(r,'Quant Rating','quant'));
-        full.grades = {
-          V: pick(r,'Valuation Grade','valuation','V'),
-          G: pick(r,'Growth Grade','growth','G'),
-          P: pick(r,'Profitability Grade','profitability','P'),
-          M: pick(r,'Momentum Grade','momentum','M'),
-          R: pick(r,'EPS Revision Grade','EPS Revisions Grade','eps_revision','R')
-        };
-        full.shares      = numOrNull(pick(r,'Shares','shares'));
-        full.cost        = numOrNull(pick(r,'Cost','Avg Cost','cost'));
-        full.value       = numOrNull(pick(r,'Value','Market Value','value'));
-        full.weight      = pick(r,'Weight','weight');
+        full.quant = numOrNull(pick(r,'Quant Rating','quant'));
+        full.grades = { V: pick(r,'Valuation Grade','valuation','V'), G: pick(r,'Growth Grade','growth','G'), P: pick(r,'Profitability Grade','profitability','P'), M: pick(r,'Momentum Grade','momentum','M'), R: pick(r,'EPS Revision Grade','EPS Revisions Grade','eps_revision','R') };
+        full.shares = numOrNull(pick(r,'Shares','shares'));
+        full.cost = numOrNull(pick(r,'Cost','Avg Cost','cost'));
+        full.value = numOrNull(pick(r,'Value','Market Value','value'));
+        full.weight = pick(r,'Weight','weight');
         full.days_at_rating = numOrNull(pick(r,'Days at Rating','days_at_rating'));
         full.analysts_covering = numOrNull(pick(r,'# SA Analysts Covering','# Analysts','analysts_covering'));
-        full.sheets = {
-          dashboard: sheets.dashboard || null,
-          holdings:  sheets.holdings  || null,
-          short:     sheets.short     || null,
-          dividends: sheets.dividends || null,
-          ratings:   sheets.ratings   || null,
-          summary:   sheets.summary   || null
-        };
-        const hasGrades = full.grades.V!=null;
-        (hasGrades?stocks:etfs).push(full);
+        full.sheets = { dashboard: sheets.dashboard||null, holdings: sheets.holdings||null, short: sheets.short||null, dividends: sheets.dividends||null, ratings: sheets.ratings||null, summary: sheets.summary||null };
+        (full.grades.V!=null?stocks:etfs).push(full);
       }
       const payload = JSON.stringify({ date, stocks, etfs, saved_at: new Date().toISOString(), count: { stocks: stocks.length, etfs: etfs.length } }, null, 2);
       let sha = null;
-      try {
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (ex.ok) sha = (await ex.json()).sha;
-      } catch {}
-      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
-        body: JSON.stringify({ message: `SA portfolio ${date}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) })
-      });
+      try { const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (ex.ok) sha = (await ex.json()).sha; } catch {}
+      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { method: 'PUT', headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' }, body: JSON.stringify({ message: `SA portfolio ${date}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) }) });
       return res.status(200).json({ saved: sr.ok ? fp : false, stocks: stocks.length, etfs: etfs.length });
     } catch(e) { return res.status(200).json({ saved: false, error: e.message }); }
   }
 
-  // ── saveUniverse: parse + save a UNIVERSE SA Excel (grades only, no positions) ──
-  //   Same 41-col format as savePortfolio, but written to its OWN file:
-  //   data/sa-universe-{date}.json. Fully independent of sa-portfolio-{date}.json,
-  //   so uploading the universe NEVER overwrites your owned-portfolio store.
-  //   bucketScore merges both stores by ticker (portfolio wins on overlap, so your
-  //   shares/cost are preserved; universe-only tickers come in as not-owned).
+  // ── saveUniverse ────────────────────────────────────────────────────────────
   if (req.body && req.body.saveUniverse && req.body.rows && GITHUB_TOKEN) {
     try {
       const date = new Date().toISOString().slice(0,10);
       const fp = `data/sa-universe-${date}.json`;
       const raw = req.body.rows;
-      const labelOf = q => q >= 4.5 ? 'Strong Buy' : q >= 3.5 ? 'Buy' : q >= 2.5 ? 'Hold' : q >= 1.5 ? 'Sell' : 'Strong Sell';
       const stocks = [], etfs = [];
       const numOrNull = v => (v===undefined||v===null||v==='') ? null : (isNaN(Number(v))?v:Number(v));
       const pick = (r, ...keys) => { for(const k of keys){ if(r[k]!==undefined&&r[k]!=='') return r[k]; } return null; };
@@ -280,67 +198,33 @@ module.exports = async (req, res) => {
         const sheets = r.__sheets || {};
         const full = {}; Object.keys(r).forEach(k=>{ if(k!=='__sheets') full[k]=r[k]; });
         full.sym = String(sym).toUpperCase();
-        full.quant       = numOrNull(pick(r,'Quant Rating','quant'));
-        full.grades = {
-          V: pick(r,'Valuation Grade','valuation','V'),
-          G: pick(r,'Growth Grade','growth','G'),
-          P: pick(r,'Profitability Grade','profitability','P'),
-          M: pick(r,'Momentum Grade','momentum','M'),
-          R: pick(r,'EPS Revision Grade','EPS Revisions Grade','eps_revision','R')
-        };
-        // universe rows carry NO positions — force shares/cost/value null so the
-        // scorer never marks a universe-only stock as owned.
-        full.shares      = null;
-        full.cost        = null;
-        full.value       = null;
-        full.weight      = null;
+        full.quant = numOrNull(pick(r,'Quant Rating','quant'));
+        full.grades = { V: pick(r,'Valuation Grade','valuation','V'), G: pick(r,'Growth Grade','growth','G'), P: pick(r,'Profitability Grade','profitability','P'), M: pick(r,'Momentum Grade','momentum','M'), R: pick(r,'EPS Revision Grade','EPS Revisions Grade','eps_revision','R') };
+        full.shares = null; full.cost = null; full.value = null; full.weight = null;
         full.days_at_rating = numOrNull(pick(r,'Days at Rating','days_at_rating'));
         full.analysts_covering = numOrNull(pick(r,'# SA Analysts Covering','# Analysts','analysts_covering'));
-        full.sheets = {
-          dashboard: sheets.dashboard || null,
-          holdings:  sheets.holdings  || null,
-          short:     sheets.short     || null,
-          dividends: sheets.dividends || null,
-          ratings:   sheets.ratings   || null,
-          summary:   sheets.summary   || null
-        };
-        const hasGrades = full.grades.V!=null;
-        (hasGrades?stocks:etfs).push(full);
+        full.sheets = { dashboard: sheets.dashboard||null, holdings: sheets.holdings||null, short: sheets.short||null, dividends: sheets.dividends||null, ratings: sheets.ratings||null, summary: sheets.summary||null };
+        (full.grades.V!=null?stocks:etfs).push(full);
       }
       const payload = JSON.stringify({ date, stocks, etfs, saved_at: new Date().toISOString(), count: { stocks: stocks.length, etfs: etfs.length } }, null, 2);
       let sha = null;
-      try {
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (ex.ok) sha = (await ex.json()).sha;
-      } catch {}
-      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
-        body: JSON.stringify({ message: `SA universe ${date}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) })
-      });
+      try { const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (ex.ok) sha = (await ex.json()).sha; } catch {}
+      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { method: 'PUT', headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' }, body: JSON.stringify({ message: `SA universe ${date}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) }) });
       return res.status(200).json({ saved: sr.ok ? fp : false, stocks: stocks.length, etfs: etfs.length });
     } catch(e) { return res.status(200).json({ saved: false, error: e.message }); }
   }
-  
-  // ── loadPortfolio: today's portfolio, or carry forward most recent ──
+
+  // ── loadPortfolio ───────────────────────────────────────────────────────────
   if (req.body && req.body.loadPortfolio && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
-      const readDay = async (date) => {
-        const fp = `data/sa-portfolio-${date}.json`;
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (!ex.ok) return null;
-        const f = await ex.json();
-        return JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
-      };
+      const readDay = async (date) => { const fp = `data/sa-portfolio-${date}.json`; const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ex.ok) return null; const f = await ex.json(); return JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); };
       let result = await readDay(today);
       if (result) return res.status(200).json({ ...result, isCarryForward: false });
       const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
       if (!dir.ok) return res.status(200).json({ stocks: [], etfs: [] });
       const files = await dir.json();
-      const dates = (Array.isArray(files) ? files : [])
-        .map(f => (f.name||'').match(/^sa-portfolio-(\d{4}-\d{2}-\d{2})\.json$/))
-        .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
+      const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(/^sa-portfolio-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
       if (!dates.length) return res.status(200).json({ stocks: [], etfs: [] });
       const prior = await readDay(dates[0]);
       if (prior) return res.status(200).json({ ...prior, isCarryForward: true });
@@ -348,71 +232,39 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(200).json({ stocks: [], etfs: [], error: e.message }); }
   }
 
-  // ── saveRisk: parse the SA "Risks" sheet rows, save data/sa-risk-{date}.json ──
+  // ── saveRisk ────────────────────────────────────────────────────────────────
   if (req.body && req.body.saveRisk && req.body.rows && GITHUB_TOKEN) {
     try {
       const date = new Date().toISOString().slice(0,10);
       const fp = `data/sa-risk-${date}.json`;
       const raw = req.body.rows;
-      // '-' / '' / null  => null (no data); numbers => Number
-      const num = v => {
-        if (v===undefined || v===null) return null;
-        const s = String(v).trim();
-        if (s==='' || s==='-' || s==='—' || s.toLowerCase()==='n/a') return null;
-        const n = Number(s.replace(/[$,%\s]/g,''));
-        return isNaN(n) ? null : n;
-      };
+      const num = v => { if(v===undefined||v===null) return null; const s=String(v).trim(); if(s===''||s==='-'||s==='—'||s.toLowerCase()==='n/a') return null; const n=Number(s.replace(/[$,%\s]/g,'')); return isNaN(n)?null:n; };
       const pick = (r, ...keys) => { for(const k of keys){ if(r[k]!==undefined&&r[k]!==null&&r[k]!=='') return r[k]; } return null; };
       const symbols = {};
       for (const r of raw) {
         const sym = (r.symbol || r.sym || r.Symbol); if(!sym) continue;
         const S = String(sym).toUpperCase();
-        symbols[S] = {
-          beta24:    num(pick(r,'24M Beta','beta24','Beta','beta')),
-          beta60:    num(pick(r,'60M Beta','beta60')),
-          low52:     num(pick(r,'52W Low','low52')),
-          high52:    num(pick(r,'52W High','high52')),
-          altmanZ:   num(pick(r,'Altman Z Score','Altman Z','altmanZ')),
-          volume:    num(pick(r,'Volume','volume')),
-          marketCap: num(pick(r,'Market Cap','marketCap')),
-          price:     num(pick(r,'Price','price')),
-          changePct: num(pick(r,'Change %','changePct'))
-        };
+        symbols[S] = { beta24: num(pick(r,'24M Beta','beta24','Beta','beta')), beta60: num(pick(r,'60M Beta','beta60')), low52: num(pick(r,'52W Low','low52')), high52: num(pick(r,'52W High','high52')), altmanZ: num(pick(r,'Altman Z Score','Altman Z','altmanZ')), volume: num(pick(r,'Volume','volume')), marketCap: num(pick(r,'Market Cap','marketCap')), price: num(pick(r,'Price','price')), changePct: num(pick(r,'Change %','changePct')) };
       }
       const payload = JSON.stringify({ date, symbols, saved_at: new Date().toISOString(), count: Object.keys(symbols).length }, null, 2);
       let sha = null;
-      try {
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (ex.ok) sha = (await ex.json()).sha;
-      } catch {}
-      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
-        body: JSON.stringify({ message: `SA risk ${date}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) })
-      });
+      try { const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (ex.ok) sha = (await ex.json()).sha; } catch {}
+      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { method: 'PUT', headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' }, body: JSON.stringify({ message: `SA risk ${date}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) }) });
       return res.status(200).json({ saved: sr.ok ? fp : false, count: Object.keys(symbols).length });
     } catch(e) { return res.status(200).json({ saved: false, error: e.message }); }
   }
 
-  // ── loadRisk: today's risk store, carry forward to most recent prior ──
+  // ── loadRisk ────────────────────────────────────────────────────────────────
   if (req.body && req.body.loadRisk && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
-      const readDay = async (date) => {
-        const fp = `data/sa-risk-${date}.json`;
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (!ex.ok) return null;
-        const f = await ex.json();
-        return JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
-      };
+      const readDay = async (date) => { const fp = `data/sa-risk-${date}.json`; const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ex.ok) return null; const f = await ex.json(); return JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); };
       let result = await readDay(today);
       if (result) return res.status(200).json({ ...result, isCarryForward: false });
       const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
       if (!dir.ok) return res.status(200).json({ symbols: {} });
       const files = await dir.json();
-      const dates = (Array.isArray(files) ? files : [])
-        .map(f => (f.name||'').match(/^sa-risk-(\d{4}-\d{2}-\d{2})\.json$/))
-        .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
+      const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(/^sa-risk-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
       if (!dates.length) return res.status(200).json({ symbols: {} });
       const prior = await readDay(dates[0]);
       if (prior) return res.status(200).json({ ...prior, isCarryForward: true });
@@ -420,7 +272,7 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(200).json({ symbols: {}, error: e.message }); }
   }
 
-  // ── saveDividends: parse the SA "Dividends" sheet rows, save data/sa-div-{date}.json ──
+  // ── saveDividends ───────────────────────────────────────────────────────────
   if (req.body && req.body.saveDividends && req.body.rows && GITHUB_TOKEN) {
     try {
       const date = new Date().toISOString().slice(0,10);
@@ -433,51 +285,27 @@ module.exports = async (req, res) => {
       for (const r of raw) {
         const sym = (r.symbol || r.sym || r.Symbol); if(!sym) continue;
         const S = String(sym).toUpperCase();
-        symbols[S] = {
-          yield:       num(pick(r,'Yield FWD','Yield TTM','yieldFwd')),
-          yieldTtm:    num(pick(r,'Yield TTM','yieldTtm')),
-          yieldGrade:  str(pick(r,'Yield')),
-          safety:      str(pick(r,'Safety','safety')),
-          growth:      str(pick(r,'Growth','growth')),
-          estIncome:   num(pick(r,'Est Annual Income','estIncome')),
-          divRateFwd:  num(pick(r,'Div Rate FWD','divRateFwd')),
-          frequency:   str(pick(r,'Frequency','frequency')),
-          payoutRatio: num(pick(r,'Payout Ratio','payoutRatio')),
-          exDiv:       str(pick(r,'Ex-Div Date','exDiv')),
-          consecutive: str(pick(r,'Consecutive Years','consecutive'))
-        };
+        symbols[S] = { yield: num(pick(r,'Yield FWD','Yield TTM','yieldFwd')), yieldTtm: num(pick(r,'Yield TTM','yieldTtm')), yieldGrade: str(pick(r,'Yield')), safety: str(pick(r,'Safety','safety')), growth: str(pick(r,'Growth','growth')), estIncome: num(pick(r,'Est Annual Income','estIncome')), divRateFwd: num(pick(r,'Div Rate FWD','divRateFwd')), frequency: str(pick(r,'Frequency','frequency')), payoutRatio: num(pick(r,'Payout Ratio','payoutRatio')), exDiv: str(pick(r,'Ex-Div Date','exDiv')), consecutive: str(pick(r,'Consecutive Years','consecutive')) };
       }
       const payload = JSON.stringify({ date, symbols, saved_at: new Date().toISOString(), count: Object.keys(symbols).length }, null, 2);
       let sha = null;
       try { const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (ex.ok) sha = (await ex.json()).sha; } catch {}
-      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
-        body: JSON.stringify({ message: `SA dividends ${date}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) })
-      });
+      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { method: 'PUT', headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' }, body: JSON.stringify({ message: `SA dividends ${date}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) }) });
       return res.status(200).json({ saved: sr.ok ? fp : false, count: Object.keys(symbols).length });
     } catch(e) { return res.status(200).json({ saved: false, error: e.message }); }
   }
 
-  // ── loadDividends: today's div store, carry forward to most recent prior ──
+  // ── loadDividends ───────────────────────────────────────────────────────────
   if (req.body && req.body.loadDividends && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
-      const readDay = async (date) => {
-        const fp = `data/sa-div-${date}.json`;
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (!ex.ok) return null;
-        const f = await ex.json();
-        return JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
-      };
+      const readDay = async (date) => { const fp = `data/sa-div-${date}.json`; const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ex.ok) return null; const f = await ex.json(); return JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); };
       let result = await readDay(today);
       if (result) return res.status(200).json({ ...result, isCarryForward: false });
       const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
       if (!dir.ok) return res.status(200).json({ symbols: {} });
       const files = await dir.json();
-      const dates = (Array.isArray(files) ? files : [])
-        .map(f => (f.name||'').match(/^sa-div-(\d{4}-\d{2}-\d{2})\.json$/))
-        .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
+      const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(/^sa-div-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
       if (!dates.length) return res.status(200).json({ symbols: {} });
       const prior = await readDay(dates[0]);
       if (prior) return res.status(200).json({ ...prior, isCarryForward: true });
@@ -485,9 +313,7 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(200).json({ symbols: {}, error: e.message }); }
   }
 
-  // ── snapshotValue: append/overwrite today's portfolio total in a history file ──
-  //    Body: { snapshotValue:true, value:<number>, dayChange:<number|null> }
-  //    Idempotent per day (re-running same day overwrites that day's entry).
+  // ── snapshotValue ───────────────────────────────────────────────────────────
   if (req.body && req.body.snapshotValue && req.body.value != null && GITHUB_TOKEN) {
     try {
       const date = new Date().toISOString().slice(0,10);
@@ -495,30 +321,20 @@ module.exports = async (req, res) => {
       const val = Number(req.body.value);
       if (!isFinite(val) || val <= 0) return res.status(200).json({ saved:false, error:'invalid value' });
       const dayChange = (req.body.dayChange!=null && isFinite(Number(req.body.dayChange))) ? Number(req.body.dayChange) : null;
-      // read existing history
       let history = [], sha = null;
-      try {
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (ex.ok) { const f = await ex.json(); sha = f.sha; const parsed = JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); if (Array.isArray(parsed)) history = parsed; else if (parsed && Array.isArray(parsed.points)) history = parsed.points; }
-      } catch {}
-      // upsert today
+      try { const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (ex.ok) { const f = await ex.json(); sha = f.sha; const parsed = JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); if (Array.isArray(parsed)) history = parsed; else if (parsed && Array.isArray(parsed.points)) history = parsed.points; } } catch {}
       const idx = history.findIndex(p => p && p.date === date);
       const entry = { date, value: Math.round(val), dayChange: dayChange!=null?Math.round(dayChange):null };
       if (idx >= 0) history[idx] = entry; else history.push(entry);
       history.sort((a,b) => (a.date < b.date ? -1 : 1));
-      // cap to last 400 days
       if (history.length > 400) history = history.slice(-400);
       const payload = JSON.stringify({ points: history, updated_at: new Date().toISOString() }, null, 2);
-      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
-        body: JSON.stringify({ message: `portfolio snapshot ${date}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) })
-      });
+      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { method: 'PUT', headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' }, body: JSON.stringify({ message: `portfolio snapshot ${date}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) }) });
       return res.status(200).json({ saved: sr.ok ? fp : false, date, value: entry.value, points: history.length });
     } catch(e) { return res.status(200).json({ saved:false, error: e.message }); }
   }
 
-  // ── loadHistory: return the portfolio value history array ──
+  // ── loadHistory ─────────────────────────────────────────────────────────────
   if (req.body && req.body.loadHistory && GITHUB_TOKEN) {
     try {
       const fp = `data/portfolio-history.json`;
@@ -531,183 +347,63 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(200).json({ points: [], error: e.message }); }
   }
 
-  // ── bucketScore: read the SA portfolio store, run the horizon scorer, save buckets ──
-  // Reads today's sa-portfolio-{date}.json (carry-forward to most recent prior if today
-  // is missing, same as loadPortfolio), feeds stocks+etfs into computeBuckets (the
-  // scorer's own _isETF test does exclusion — not the store's grade-presence split),
-  // and writes data/sa-buckets-{date}.json. CODE computes; no Claude here.
+  // ── bucketScore ─────────────────────────────────────────────────────────────
   if (req.body && req.body.bucketScore && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
-      const readDay = async (date) => {
-        const fp = `data/sa-portfolio-${date}.json`;
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (!ex.ok) return null;
-        const f = await ex.json();
-        return { store: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), date };
-      };
-      // resolve which portfolio store to score (today, else most recent prior)
+      const readDay = async (date) => { const fp = `data/sa-portfolio-${date}.json`; const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ex.ok) return null; const f = await ex.json(); return { store: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), date }; };
       let picked = await readDay(today);
       let sourceDate = today, isCarryForward = false;
       if (!picked) {
         const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
         if (!dir.ok) return res.status(200).json({ saved: false, error: 'no portfolio store found' });
         const files = await dir.json();
-        const dates = (Array.isArray(files) ? files : [])
-          .map(f => (f.name||'').match(/^sa-portfolio-(\d{4}-\d{2}-\d{2})\.json$/))
-          .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
+        const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(/^sa-portfolio-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
         if (!dates.length) return res.status(200).json({ saved: false, error: 'no portfolio store found' });
         picked = await readDay(dates[0]); sourceDate = dates[0]; isCarryForward = true;
         if (!picked) return res.status(200).json({ saved: false, error: 'portfolio store unreadable' });
       }
-
-       // ── Merge the universe store (if any) with the owned-portfolio store ──
-      // Universe = grades for stocks no one owns yet (or all users' stocks).
-      // Portfolio rows WIN on overlap (they carry real shares/cost → owned flag).
-      // Read today's universe, else most-recent prior (same carry-forward rule).
-     // ============================================================================
-// CHANGE 2 (FIXED) — Modify bucketScore to merge sa-portfolio + sa-universe
-// ============================================================================
-//
-// Replaces the same FIND target as before. If you already pasted the earlier
-// version, replace THAT whole block with this one.
-//
-// ----------------- FIND (either the original 3 lines OR your previously-pasted merge block) -----------------
-//
-//   original:
-//       // feed BOTH stocks + etfs; let the scorer's _isETF test decide exclusion
-//       const all = [].concat(picked.store.stocks||[], picked.store.etfs||[]);
-//       const { scored, excluded_etfs } = computeBuckets(all);
-//
-// ----------------- REPLACE WITH -----------------
-
-      // -- Merge the universe store with the owned-portfolio store --
-      // Key insight: a portfolio row may have NULL grades (it lands in etfs[] when
-      // its grades did not parse), while the universe row for the same ticker has
-      // REAL grades. So we merge per-ticker: take grades/quant from whichever row
-      // HAS them (universe wins when portfolio's are null), but ALWAYS keep the
-      // portfolio row's shares/cost/value so the owned flag (shares>0) stays right.
-      const readUniverse = async (date) => {
-        const ufp = `data/sa-universe-${date}.json`;
-        const ux = await fetch(`https://api.github.com/repos/${REPO}/contents/${ufp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (!ux.ok) return null;
-        const uf = await ux.json();
-        return JSON.parse(Buffer.from(uf.content,'base64').toString('utf8'));
-      };
+      const readUniverse = async (date) => { const ufp = `data/sa-universe-${date}.json`; const ux = await fetch(`https://api.github.com/repos/${REPO}/contents/${ufp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ux.ok) return null; const uf = await ux.json(); return JSON.parse(Buffer.from(uf.content,'base64').toString('utf8')); };
       let universeStore = await readUniverse(today);
       if (!universeStore) {
-        try {
-          const udir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-          if (udir.ok) {
-            const ufiles = await udir.json();
-            const udates = (Array.isArray(ufiles) ? ufiles : [])
-              .map(f => (f.name||'').match(/^sa-universe-(\d{4}-\d{2}-\d{2})\.json$/))
-              .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
-            if (udates.length) universeStore = await readUniverse(udates[0]);
-          }
-        } catch {}
+        try { const udir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (udir.ok) { const ufiles = await udir.json(); const udates = (Array.isArray(ufiles) ? ufiles : []).map(f => (f.name||'').match(/^sa-universe-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse(); if (udates.length) universeStore = await readUniverse(udates[0]); } } catch {}
       }
-
       const symOf = r => String((r && (r.sym || r.symbol)) || '').toUpperCase();
       const hasGrades = r => !!(r && r.grades && r.grades.V != null);
-
-      // 1) index portfolio rows by ticker (these carry shares/cost -> ownership)
       const portfolioRows = [].concat(picked.store.stocks||[], picked.store.etfs||[]);
       const byTicker = {};
       portfolioRows.forEach(r => { const s = symOf(r); if (s) byTicker[s] = r; });
-
-      // 2) fold in universe rows
       const universeRows = universeStore ? [].concat(universeStore.stocks||[], universeStore.etfs||[]) : [];
       universeRows.forEach(u => {
         const s = symOf(u); if (!s) return;
         const p = byTicker[s];
-        if (!p) {
-          // universe-only ticker -> take as-is (no shares -> not owned)
-          byTicker[s] = u;
-        } else if (!hasGrades(p) && hasGrades(u)) {
-          // portfolio row lacks grades but universe has them -> take universe grades,
-          // keep portfolio shares/cost/value/weight so ownership is preserved
-          byTicker[s] = Object.assign({}, u, {
-            shares: (p.shares != null ? p.shares : u.shares),
-            cost:   (p.cost   != null ? p.cost   : u.cost),
-            value:  (p.value  != null ? p.value  : u.value),
-            weight: (p.weight != null ? p.weight : u.weight)
-          });
-        }
-        // else portfolio already has grades -> keep it (grades are identical anyway)
+        if (!p) { byTicker[s] = u; }
+        else if (!hasGrades(p) && hasGrades(u)) { byTicker[s] = Object.assign({}, u, { shares: (p.shares != null ? p.shares : u.shares), cost: (p.cost != null ? p.cost : u.cost), value: (p.value != null ? p.value : u.value), weight: (p.weight != null ? p.weight : u.weight) }); }
       });
-
-      // feed BOTH stocks + etfs (merged); scorer's _isETF decides exclusion
       const all = Object.keys(byTicker).map(k => byTicker[k]);
       const { scored, excluded_etfs } = computeBuckets(all);
-
-// ----------------- END REPLACE -----------------
-//
-// Everything below (saving sa-buckets-{today}.json) stays exactly as-is.
- 
-// ----------------- END REPLACE -----------------
-//
-// That is the ONLY change to bucketScore. Everything below it (saving
-// sa-buckets-{today}.json) stays exactly as-is. The merged `all` now contains
-// your owned holdings (with shares → owned:true) plus universe-only tickers
-// (shares null → owned:false). The buckets file gains the universe stocks; your
-// owned stocks are untouched.
- 
-
-      // save buckets for TODAY (the run date), noting which store fed it
       const fp = `data/sa-buckets-${today}.json`;
-      const payload = JSON.stringify({
-        date: today,
-        source_portfolio_date: sourceDate,
-        isCarryForward,
-        scored,
-        excluded_etfs,
-        count: { scored: Object.keys(scored).length, excluded: excluded_etfs.length },
-        generated_at: new Date().toISOString()
-      }, null, 2);
+      const payload = JSON.stringify({ date: today, source_portfolio_date: sourceDate, isCarryForward, scored, excluded_etfs, count: { scored: Object.keys(scored).length, excluded: excluded_etfs.length }, generated_at: new Date().toISOString() }, null, 2);
       let sha = null;
-      try {
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (ex.ok) sha = (await ex.json()).sha;
-      } catch {}
-      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
-        body: JSON.stringify({ message: `SA buckets ${today}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) })
-      });
-      return res.status(200).json({
-        saved: sr.ok ? fp : false,
-        scored: Object.keys(scored).length,
-        excluded: excluded_etfs.length,
-        source_portfolio_date: sourceDate,
-        isCarryForward
-      });
+      try { const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (ex.ok) sha = (await ex.json()).sha; } catch {}
+      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { method: 'PUT', headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' }, body: JSON.stringify({ message: `SA buckets ${today}`, content: Buffer.from(payload).toString('base64'), ...(sha ? { sha } : {}) }) });
+      return res.status(200).json({ saved: sr.ok ? fp : false, scored: Object.keys(scored).length, excluded: excluded_etfs.length, source_portfolio_date: sourceDate, isCarryForward });
     } catch(e) { return res.status(200).json({ saved: false, error: e.message }); }
   }
 
-  // ── loadBuckets: return today's buckets, or carry forward most recent prior ──
+  // ── loadBuckets ─────────────────────────────────────────────────────────────
   if (req.body && req.body.loadBuckets && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
       const reqDate = (req.body.date && /^\d{4}-\d{2}-\d{2}$/.test(req.body.date)) ? req.body.date : null;
-      const readDay = async (date) => {
-        const fp = `data/sa-buckets-${date}.json`;
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (!ex.ok) return null;
-        const f = await ex.json();
-        return JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
-      };
-      // a specific date, else today
+      const readDay = async (date) => { const fp = `data/sa-buckets-${date}.json`; const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ex.ok) return null; const f = await ex.json(); return JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); };
       let result = await readDay(reqDate || today);
       if (result) return res.status(200).json({ ...result, isCarryForward: result.isCarryForward || false });
-      if (reqDate) return res.status(200).json({ scored: {}, excluded_etfs: [] }); // asked for a specific day, none there
-      // fall back: most recent prior buckets file
+      if (reqDate) return res.status(200).json({ scored: {}, excluded_etfs: [] });
       const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
       if (!dir.ok) return res.status(200).json({ scored: {}, excluded_etfs: [] });
       const files = await dir.json();
-      const dates = (Array.isArray(files) ? files : [])
-        .map(f => (f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/))
-        .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
+      const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
       if (!dates.length) return res.status(200).json({ scored: {}, excluded_etfs: [] });
       const prior = await readDay(dates[0]);
       if (prior) return res.status(200).json({ ...prior, isCarryForward: true });
@@ -715,243 +411,91 @@ module.exports = async (req, res) => {
     } catch(e) { return res.status(200).json({ scored: {}, excluded_etfs: [], error: e.message }); }
   }
 
-  // ── deepRead: cached AI deep-read for ONE stock.
-  // Caching model (Task 4 v2): the read is saved to data/deep-reads-{SYM}.json with a
-  // fact fingerprint (grades + archetype + scores + conviction). On open we return the
-  // cached read instantly (no AI call). A fresh AI call happens only when:
-  //   (a) no cached read exists, OR
-  //   (b) forceRefresh AND (24h passed since cached read  OR  facts changed  OR  adminTest), OR
-  //   (c) facts changed (auto-allows a refresh).
-  // The 24h / facts / admin gate is enforced HERE (server-side) so the client can't spam.
+  // ── deepRead ────────────────────────────────────────────────────────────────
   if (req.body && req.body.deepRead && req.body.symbol && GITHUB_TOKEN) {
     try {
       const sym = String(req.body.symbol).toUpperCase();
       const forceRefresh = !!req.body.forceRefresh;
       const adminTest = !!req.body.adminTest;
       const today = new Date().toISOString().slice(0,10);
-      const readJson = async (fp) => {
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (!ex.ok) return null;
-        const f = await ex.json();
-        return { data: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), sha: f.sha };
-      };
-
-      // resolve buckets (today, else most-recent prior)
+      const readJson = async (fp) => { const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ex.ok) return null; const f = await ex.json(); return { data: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), sha: f.sha }; };
       let bucketsWrap = await readJson(`data/sa-buckets-${today}.json`);
       let buckets = bucketsWrap ? bucketsWrap.data : null;
-      if (!buckets) {
-        const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (dir.ok) {
-          const files = await dir.json();
-          const dates = (Array.isArray(files)?files:[])
-            .map(f => (f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/))
-            .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
-          if (dates.length){ const w = await readJson(`data/sa-buckets-${dates[0]}.json`); buckets = w?w.data:null; }
-        }
-      }
-      if (!buckets || !buckets.scored || !buckets.scored[sym]) {
-        return res.status(200).json({ symbol: sym, result: null, error: 'no buckets entry for symbol' });
-      }
+      if (!buckets) { const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (dir.ok) { const files = await dir.json(); const dates = (Array.isArray(files)?files:[]).map(f => (f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse(); if (dates.length){ const w = await readJson(`data/sa-buckets-${dates[0]}.json`); buckets = w?w.data:null; } } }
+      if (!buckets || !buckets.scored || !buckets.scored[sym]) return res.status(200).json({ symbol: sym, result: null, error: 'no buckets entry for symbol' });
       const o = buckets.scored[sym];
-
-      // fact fingerprint + a labeled snapshot for human-readable change detection
-      const snapshot = {
-        grades: o.grades || {},
-        archetype: (o.long && o.long.archetype) || null,
-        short: o.short ? o.short.score : null,
-        mid: o.mid ? o.mid.score : null,
-        long: o.long ? o.long.score : null,
-        conviction: (o.long && o.long.conviction) ? o.long.conviction.tier : null,
-        quant: o.quant != null ? o.quant : null
-      };
+      const snapshot = { grades: o.grades || {}, archetype: (o.long && o.long.archetype) || null, short: o.short ? o.short.score : null, mid: o.mid ? o.mid.score : null, long: o.long ? o.long.score : null, conviction: (o.long && o.long.conviction) ? o.long.conviction.tier : null, quant: o.quant != null ? o.quant : null };
       const fingerprint = JSON.stringify(snapshot);
-
-      // load any cached read
       const cachePath = `data/deep-reads-${sym}.json`;
       const cachedWrap = await readJson(cachePath);
       const cached = cachedWrap ? cachedWrap.data : null;
-
-      // human-readable diff between cached snapshot and current
       const GLABEL = { V:'التقييم', G:'النمو', P:'الربحية', M:'الزخم', R:'مراجعات الأرباح' };
       const HLABEL = { short:'القصير', mid:'المتوسط', long:'الطويل' };
-      function computeChanges(oldSnap, newSnap){
-        if (!oldSnap) return [];
-        const ch = [];
-        for (const k of ['V','G','P','M','R']) {
-          const a = (oldSnap.grades||{})[k], b = (newSnap.grades||{})[k];
-          if (a !== b) ch.push({ field: GLABEL[k], from: a||'—', to: b||'—' });
-        }
-        for (const k of ['short','mid','long']) {
-          if (oldSnap[k] !== newSnap[k]) ch.push({ field: HLABEL[k], from: oldSnap[k]==null?'—':String(oldSnap[k]), to: newSnap[k]==null?'—':String(newSnap[k]) });
-        }
-        if (oldSnap.archetype !== newSnap.archetype) ch.push({ field: 'نوع الموقف', from: oldSnap.archetype||'—', to: newSnap.archetype||'—' });
-        if (oldSnap.conviction !== newSnap.conviction) ch.push({ field: 'الثقة', from: oldSnap.conviction||'—', to: newSnap.conviction||'—' });
-        if (oldSnap.quant !== newSnap.quant) ch.push({ field: 'الكوانت', from: oldSnap.quant==null?'—':String(oldSnap.quant), to: newSnap.quant==null?'—':String(newSnap.quant) });
-        return ch;
-      }
+      function computeChanges(oldSnap, newSnap){ if (!oldSnap) return []; const ch = []; for (const k of ['V','G','P','M','R']) { const a = (oldSnap.grades||{})[k], b = (newSnap.grades||{})[k]; if (a !== b) ch.push({ field: GLABEL[k], from: a||'—', to: b||'—' }); } for (const k of ['short','mid','long']) { if (oldSnap[k] !== newSnap[k]) ch.push({ field: HLABEL[k], from: oldSnap[k]==null?'—':String(oldSnap[k]), to: newSnap[k]==null?'—':String(newSnap[k]) }); } if (oldSnap.archetype !== newSnap.archetype) ch.push({ field: 'نوع الموقف', from: oldSnap.archetype||'—', to: newSnap.archetype||'—' }); if (oldSnap.conviction !== newSnap.conviction) ch.push({ field: 'الثقة', from: oldSnap.conviction||'—', to: newSnap.conviction||'—' }); if (oldSnap.quant !== newSnap.quant) ch.push({ field: 'الكوانت', from: oldSnap.quant==null?'—':String(oldSnap.quant), to: newSnap.quant==null?'—':String(newSnap.quant) }); return ch; }
       const factsChanged = cached ? (cached.fingerprint !== fingerprint) : false;
       const changes = cached ? computeChanges(cached.snapshot, snapshot) : [];
-
-      // 24h check against the cached read's timestamp
       let hoursSince = Infinity;
       if (cached && cached.generated_at) hoursSince = (Date.now() - new Date(cached.generated_at).getTime()) / 3600000;
       const cooldownPassed = hoursSince >= 24;
       const refreshAllowed = adminTest || factsChanged || cooldownPassed;
-
-      // DECISION: serve cache, or generate?
-      const mustGenerate = !cached;                              // nothing cached yet
-      const wantGenerate = forceRefresh && refreshAllowed;       // user asked + allowed
-      if (!mustGenerate && !wantGenerate) {
-        // serve cached read; tell the client the refresh state + any changes
-        return res.status(200).json({
-          symbol: sym, result: cached.text, cached: true,
-          generated_at: cached.generated_at,
-          factsChanged, changes,
-          refreshAllowed, hoursSinceRead: Math.floor(hoursSince),
-          nextRefreshInHours: cooldownPassed ? 0 : Math.ceil(24 - hoursSince),
-          usage: cached.usage || undefined
-        });
-      }
-
-      // ---- generate a fresh read ----
-      // portfolio store for personal context (today, else most-recent prior)
+      const mustGenerate = !cached;
+      const wantGenerate = forceRefresh && refreshAllowed;
+      if (!mustGenerate && !wantGenerate) return res.status(200).json({ symbol: sym, result: cached.text, cached: true, generated_at: cached.generated_at, factsChanged, changes, refreshAllowed, hoursSinceRead: Math.floor(hoursSince), nextRefreshInHours: cooldownPassed ? 0 : Math.ceil(24 - hoursSince), usage: cached.usage || undefined });
       let storeWrap = await readJson(`data/sa-portfolio-${today}.json`);
       let store = storeWrap ? storeWrap.data : null;
-      if (!store) {
-        const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (dir.ok) {
-          const files = await dir.json();
-          const dates = (Array.isArray(files)?files:[])
-            .map(f => (f.name||'').match(/^sa-portfolio-(\d{4}-\d{2}-\d{2})\.json$/))
-            .filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
-          if (dates.length){ const w = await readJson(`data/sa-portfolio-${dates[0]}.json`); store = w?w.data:null; }
-        }
-      }
+      if (!store) { const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (dir.ok) { const files = await dir.json(); const dates = (Array.isArray(files)?files:[]).map(f => (f.name||'').match(/^sa-portfolio-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse(); if (dates.length){ const w = await readJson(`data/sa-portfolio-${dates[0]}.json`); store = w?w.data:null; } } }
       const allRecs = store ? [].concat(store.stocks||[], store.etfs||[]) : [];
-      // tracked = everything in the store; owned = positions with shares > 0
       const trackedSet = new Set(allRecs.map(r => (r.symbol||r.sym)).filter(Boolean));
-      const ownedSet = new Set(allRecs.filter(r => {
-        const sh = r.shares ?? ((r.sheets&&r.sheets.holdings)||{})['Shares'];
-        return Number(sh) > 0;
-      }).map(r => (r.symbol||r.sym)));
+      const ownedSet = new Set(allRecs.filter(r => { const sh = r.shares ?? ((r.sheets&&r.sheets.holdings)||{})['Shares']; return Number(sh) > 0; }).map(r => (r.symbol||r.sym)));
       let extras = null;
       try { extras = await fetchExtrasForSymbol(sym, trackedSet, ownedSet); } catch { extras = null; }
-      const prompt = buildDeepReadPrompt(sym, o, allRecs, extras);
-
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] })
-      });
+      const promptText = buildDeepReadPrompt(sym, o, allRecs, extras);
+      const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages: [{ role: 'user', content: promptText }] }) });
       const d = await r.json();
       const text = d.content && d.content[0] && d.content[0].text ? d.content[0].text.trim() : null;
-      if (!text) {
-        // generation failed — fall back to cache if we have one
-        if (cached) return res.status(200).json({ symbol: sym, result: cached.text, cached: true, generated_at: cached.generated_at, factsChanged, changes, refreshAllowed, error: 'generation failed, served cache' });
-        return res.status(200).json({ symbol: sym, result: null, error: 'generation failed', raw: JSON.stringify(d).slice(0,300) });
-      }
+      if (!text) { if (cached) return res.status(200).json({ symbol: sym, result: cached.text, cached: true, generated_at: cached.generated_at, factsChanged, changes, refreshAllowed, error: 'generation failed, served cache' }); return res.status(200).json({ symbol: sym, result: null, error: 'generation failed', raw: JSON.stringify(d).slice(0,300) }); }
       const usage = { input_tokens: d.usage?.input_tokens || 0, output_tokens: d.usage?.output_tokens || 0 };
       usage.est_cost_usd = +((usage.input_tokens/1e6*3) + (usage.output_tokens/1e6*15)).toFixed(4);
-
-      // save the read + fingerprint + snapshot to GitHub
-      const payload = JSON.stringify({
-        symbol: sym, text, fingerprint, snapshot,
-        generated_at: new Date().toISOString(),
-        source_buckets_date: buckets.date || null,
-        usage
-      }, null, 2);
-      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' },
-        body: JSON.stringify({ message: `Deep read ${sym} ${today}`, content: Buffer.from(payload).toString('base64'), ...(cachedWrap?{sha:cachedWrap.sha}:{}) })
-      });
-
-      return res.status(200).json({
-        symbol: sym, result: text, cached: false,
-        generated_at: new Date().toISOString(),
-        saved: sr.ok,
-        factsChanged: false, changes: [],
-        refreshAllowed: false, hoursSinceRead: 0, nextRefreshInHours: 24,
-        usage, prompt_used: prompt
-      });
+      const savePayload = JSON.stringify({ symbol: sym, text, fingerprint, snapshot, generated_at: new Date().toISOString(), source_buckets_date: buckets.date || null, usage }, null, 2);
+      const sr = await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, { method: 'PUT', headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'User-Agent': 'theisi' }, body: JSON.stringify({ message: `Deep read ${sym} ${today}`, content: Buffer.from(savePayload).toString('base64'), ...(cachedWrap?{sha:cachedWrap.sha}:{}) }) });
+      return res.status(200).json({ symbol: sym, result: text, cached: false, generated_at: new Date().toISOString(), saved: sr.ok, factsChanged: false, changes: [], refreshAllowed: false, hoursSinceRead: 0, nextRefreshInHours: 24, usage, prompt_used: promptText });
     } catch(e) { return res.status(200).json({ symbol: req.body.symbol, result: null, error: e.message }); }
   }
 
-// ── newsFeed: light, no-Claude headlines for holdings + watchlist ──────────
-  // Body: { newsFeed:true }  → { date, items:[{sym, title, date}] }
+  // ── newsFeed ────────────────────────────────────────────────────────────────
   if (req.body && req.body.newsFeed && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
-      const readDay = async (date) => {
-        const fp = `data/sa-buckets-${date}.json`;
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } });
-        if(!ex.ok) return null;
-        return JSON.parse(Buffer.from((await ex.json()).content,'base64').toString('utf8'));
-      };
+      const readDay = async (date) => { const fp = `data/sa-buckets-${date}.json`; const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } }); if(!ex.ok) return null; return JSON.parse(Buffer.from((await ex.json()).content,'base64').toString('utf8')); };
       let b = await readDay(today);
-      if(!b){
-        const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } });
-        if(dir.ok){ const files=await dir.json(); const dates=(Array.isArray(files)?files:[]).map(f=>(f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m=>m[1]).filter(d=>d<today).sort().reverse(); if(dates.length) b=await readDay(dates[0]); }
-      }
+      if(!b){ const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } }); if(dir.ok){ const files=await dir.json(); const dates=(Array.isArray(files)?files:[]).map(f=>(f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m=>m[1]).filter(d=>d<today).sort().reverse(); if(dates.length) b=await readDay(dates[0]); } }
       const scored = (b && b.scored) || {};
-      const syms = Object.keys(scored).slice(0, 30);    // cap to protect rate limits
+      const syms = Object.keys(scored).slice(0, 30);
       const from = daysAgoUAE(7);
-      const results = await Promise.all(syms.map(async sym => {
-        const news = await benzingaNews(sym, from);
-        return news.map(n => ({ sym, title: n.title, date: n.date }));
-      }));
+      const results = await Promise.all(syms.map(async sym => { const news = await benzingaNews(sym, from); return news.map(n => ({ sym, title: n.title, date: n.date })); }));
       const items = results.flat().sort((a,b)=>(b.date<a.date?-1:1)).slice(0, 25);
       return res.status(200).json({ date: today, items });
     } catch(e){ return res.status(200).json({ date:new Date().toISOString().slice(0,10), items:[], error:e.message }); }
   }
 
-  // ── dailyRead: the twice-daily Khaleeji portfolio brief ────────────────────
-  // Body: { dailyRead:true, forceRefresh?:bool }
-  // Cron hits with forceRefresh:true at 00:00 + 18:00 UAE. Dashboard reads cache.
+  // ── dailyRead ───────────────────────────────────────────────────────────────
   if (req.body && req.body.dailyRead && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
       const cachePath = `data/daily-brief.json`;
-      const readJson = async (fp) => {
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } });
-        if(!ex.ok) return null;
-        const f = await ex.json();
-        return { data: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), sha: f.sha };
-      };
-
-      // serve cache unless forced (cron forces; dashboard does not)
+      const readJson = async (fp) => { const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } }); if(!ex.ok) return null; const f = await ex.json(); return { data: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), sha: f.sha }; };
       const cachedWrap = await readJson(cachePath);
-      if (cachedWrap && cachedWrap.data && !req.body.forceRefresh) {
-        return res.status(200).json({ ...cachedWrap.data, cached:true });
-      }
-
-      // resolve buckets (today, else most recent prior)
-      const readBuckets = async (date) => {
-        const w = await readJson(`data/sa-buckets-${date}.json`);
-        return w ? w.data : null;
-      };
+      if (cachedWrap && cachedWrap.data && !req.body.forceRefresh) return res.status(200).json({ ...cachedWrap.data, cached:true });
+      const readBuckets = async (date) => { const w = await readJson(`data/sa-buckets-${date}.json`); return w ? w.data : null; };
       let buckets = await readBuckets(today);
-      if(!buckets){
-        const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } });
-        if(dir.ok){ const files=await dir.json(); const dates=(Array.isArray(files)?files:[]).map(f=>(f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m=>m[1]).filter(d=>d<today).sort().reverse(); if(dates.length) buckets=await readBuckets(dates[0]); }
-      }
+      if(!buckets){ const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } }); if(dir.ok){ const files=await dir.json(); const dates=(Array.isArray(files)?files:[]).map(f=>(f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m=>m[1]).filter(d=>d<today).sort().reverse(); if(dates.length) buckets=await readBuckets(dates[0]); } }
       const scored = (buckets && buckets.scored) || {};
-      if (!Object.keys(scored).length) {
-        return res.status(200).json({ date:today, brief:'لا توجد بيانات محفظة بعد.', detail:'', generated_at:new Date().toISOString() });
-      }
-
-      // owned + tracked sets
+      if (!Object.keys(scored).length) return res.status(200).json({ date:today, brief:'لا توجد بيانات محفظة بعد.', detail:'', generated_at:new Date().toISOString() });
       const ownedSet = new Set(Object.keys(scored).filter(s => scored[s].owned));
       const trackedSet = new Set(Object.keys(scored));
-
-      // posture: strongest/weakest by long score (owned), deduped for small portfolios
-      const ownedByLong = Object.keys(scored)
-        .filter(s => scored[s].owned && scored[s].long && scored[s].long.score!=null)
-        .sort((a,b)=>scored[b].long.score-scored[a].long.score);
+      const ownedByLong = Object.keys(scored).filter(s => scored[s].owned && scored[s].long && scored[s].long.score!=null).sort((a,b)=>scored[b].long.score-scored[a].long.score);
       const strongest = ownedByLong.slice(0,2);
       const weakest = ownedByLong.slice(-2).filter(s => !strongest.includes(s));
-
-      // catalysts (live) across tracked set
       const symbols = Object.keys(scored);
       const [pastEarnings, gradeArrays] = await Promise.all([
         fetch(`https://financialmodelingprep.com/stable/earnings-calendar?from=${daysAgoUAE(14)}&to=${today}&symbol=${symbols.join(',')}&apikey=${process.env.FMP_API_KEY||process.env.FMP_KEY}`).then(r=>r.ok?r.json():[]).catch(()=>[]),
@@ -962,371 +506,105 @@ module.exports = async (req, res) => {
       const changes = [];
       Object.entries(catMap).forEach(([sym,arr]) => arr.forEach(c => changes.push({ sym, type:c.type, detail:c.detail, age:c.age_days, held:c.owned })));
       changes.sort((a,b)=>a.age-b.age);
-
-      // news for stocks that have a catalyst (the "why")
       const catSyms = Object.keys(catMap);
       const newsByStock = {};
-      await Promise.all(catSyms.slice(0,8).map(async sym => {
-        const n = await benzingaNews(sym, daysAgoUAE(14));
-        if(n.length) newsByStock[sym] = n.map(x=>x.title);
-      }));
-
+      await Promise.all(catSyms.slice(0,8).map(async sym => { const n = await benzingaNews(sym, daysAgoUAE(14)); if(n.length) newsByStock[sym] = n.map(x=>x.title); }));
       const G = s => scored[s] ? scored[s].grades : {};
-      const payload = {
-        posture: {
-          strongest: strongest.map(s=>({sym:s, long:scored[s].long.score, grades:G(s)})),
-          weakest: weakest.map(s=>({sym:s, long:scored[s].long.score, grades:G(s)})),
-          owned_count: ownedSet.size
-        },
-        changes: changes.slice(0,8),
-        news: newsByStock
-      };
-
-      const prompt = `أنت تكتب «موجز المحفظة» اليومي لمستثمر إماراتي (لا ضريبة) بالخليجية الودّية — صديق ذكي، مو تقرير بنكي. ممنوع الفصحى المتكلّفة.
-
-قواعد صارمة:
-- اشرح، لا توصِ. ممنوع «اشترِ/بِع». ممنوع تخترع أرقاماً أو أهدافاً أو نسباً.
-- الدرجات والنقاط (٠–١٠٠) قراءات ترتيبية — مو نسب ولا عوائد. أعد ذكرها لا تعِد تفسيرها.
-- استخدم الأخبار فقط لتفسير «لماذا» حدث محفّز. لا تكرّر أي توقّع ورد في الخبر.
-- إذا تعارض محفّز مع الدرجات، وضّح التعارض بصراحة.
-- رموز الأسهم بالإنجليزي. الانتقالات بالعربي (من X إلى Y).
-- نص عادي فقط، بدون ماركداون.
-
-أعد JSON صارم فقط:
-{"brief":"٢-٣ جمل: وضع المحفظة العام (الأقوى/الأضعف) ثم أبرز ما تغيّر","detail":"٤-٦ جمل: تفصيل المحفّزات الحديثة بتواريخها و«لماذا» من الأخبار، والتعارضات إن وُجدت","posture_line":"جملة واحدة تلخّص الوضع"}
-
-البيانات:
-${JSON.stringify(payload)}`;
-
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01' },
-        body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:1200, messages:[{role:'user',content:prompt}] })
-      });
+      const payload = { posture: { strongest: strongest.map(s=>({sym:s, long:scored[s].long.score, grades:G(s)})), weakest: weakest.map(s=>({sym:s, long:scored[s].long.score, grades:G(s)})), owned_count: ownedSet.size }, changes: changes.slice(0,8), news: newsByStock };
+      const prompt = `أنت تكتب «موجز المحفظة» اليومي لمستثمر إماراتي (لا ضريبة) بالخليجية الودّية — صديق ذكي، مو تقرير بنكي. ممنوع الفصحى المتكلّفة.\n\nقواعد صارمة:\n- اشرح، لا توصِ. ممنوع «اشترِ/بِع». ممنوع تخترع أرقاماً أو أهدافاً أو نسباً.\n- الدرجات والنقاط (٠–١٠٠) قراءات ترتيبية — مو نسب ولا عوائد. أعد ذكرها لا تعِد تفسيرها.\n- استخدم الأخبار فقط لتفسير «لماذا» حدث محفّز. لا تكرّر أي توقّع ورد في الخبر.\n- إذا تعارض محفّز مع الدرجات، وضّح التعارض بصراحة.\n- رموز الأسهم بالإنجليزي. الانتقالات بالعربي (من X إلى Y).\n- نص عادي فقط، بدون ماركداون.\n\nأعد JSON صارم فقط:\n{"brief":"٢-٣ جمل: وضع المحفظة العام (الأقوى/الأضعف) ثم أبرز ما تغيّر","detail":"٤-٦ جمل: تفصيل المحفّزات الحديثة بتواريخها و«لماذا» من الأخبار، والتعارضات إن وُجدت","posture_line":"جملة واحدة تلخّص الوضع"}\n\nالبيانات:\n${JSON.stringify(payload)}`;
+      const r = await fetch('https://api.anthropic.com/v1/messages', { method:'POST', headers:{ 'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01' }, body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:1200, messages:[{role:'user',content:prompt}] }) });
       const d = await r.json();
       let txt = (d.content||[]).map(c=>c.type==='text'?c.text:'').join('').trim().replace(/```json|```/g,'').trim();
-      let parsed;
-      try { parsed = JSON.parse(txt); } catch { parsed = { brief: txt.slice(0,400), detail:'', posture_line:'' }; }
-
-      const out = {
-        date: today,
-        brief: parsed.brief || '',
-        detail: parsed.detail || '',
-        posture_line: parsed.posture_line || '',
-        change_count: changes.length,
-        generated_at: new Date().toISOString()
-      };
-      // save cache
-      try {
-        await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, {
-          method:'PUT',
-          headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','User-Agent':'theisi' },
-          body: JSON.stringify({ message:`daily brief ${out.generated_at}`, content:Buffer.from(JSON.stringify(out,null,2)).toString('base64'), ...(cachedWrap?{sha:cachedWrap.sha}:{}) })
-        });
-      } catch {}
+      let parsed; try { parsed = JSON.parse(txt); } catch { parsed = { brief: txt.slice(0,400), detail:'', posture_line:'' }; }
+      const out = { date: today, brief: parsed.brief || '', detail: parsed.detail || '', posture_line: parsed.posture_line || '', change_count: changes.length, generated_at: new Date().toISOString() };
+      try { await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, { method:'PUT', headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','User-Agent':'theisi' }, body: JSON.stringify({ message:`daily brief ${out.generated_at}`, content:Buffer.from(JSON.stringify(out,null,2)).toString('base64'), ...(cachedWrap?{sha:cachedWrap.sha}:{}) }) }); } catch {}
       return res.status(200).json({ ...out, cached:false });
     } catch(e){ return res.status(500).json({ error:e.message }); }
   }
 
-  // ── themedNews: Arabic themed news (themes + affected tickers + source articles) ──
-  // Body: { themedNews:true, forceRefresh?:bool } → { date, themes:[{summary,tickers,articles}] }
-  // Replaces the old /api/analysis "أخبار تمس محفظتك". Cached daily.
+  // ── themedNews ──────────────────────────────────────────────────────────────
   if (req.body && req.body.themedNews && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
       const cachePath = `data/themed-news.json`;
-      const readJson = async (fp) => {
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } });
-        if(!ex.ok) return null;
-        const f = await ex.json();
-        return { data: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), sha: f.sha };
-      };
-
-      // serve cache unless forced
+      const readJson = async (fp) => { const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } }); if(!ex.ok) return null; const f = await ex.json(); return { data: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), sha: f.sha }; };
       const cachedWrap = await readJson(cachePath);
-      if (cachedWrap && cachedWrap.data && cachedWrap.data.date===today && !req.body.forceRefresh) {
-        return res.status(200).json({ ...cachedWrap.data, cached:true });
-      }
-
-      // resolve tracked symbols from buckets (holdings + watchlist)
+      if (cachedWrap && cachedWrap.data && cachedWrap.data.date===today && !req.body.forceRefresh) return res.status(200).json({ ...cachedWrap.data, cached:true });
       const readBuckets = async (date) => { const w = await readJson(`data/sa-buckets-${date}.json`); return w?w.data:null; };
       let buckets = await readBuckets(today);
-      if(!buckets){
-        const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } });
-        if(dir.ok){ const files=await dir.json(); const dates=(Array.isArray(files)?files:[]).map(f=>(f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m=>m[1]).filter(d=>d<today).sort().reverse(); if(dates.length) buckets=await readBuckets(dates[0]); }
-      }
+      if(!buckets){ const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } }); if(dir.ok){ const files=await dir.json(); const dates=(Array.isArray(files)?files:[]).map(f=>(f.name||'').match(/^sa-buckets-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m=>m[1]).filter(d=>d<today).sort().reverse(); if(dates.length) buckets=await readBuckets(dates[0]); } }
       const symbols = buckets && buckets.scored ? Object.keys(buckets.scored) : [];
       if (!symbols.length) return res.status(200).json({ date:today, themes:[], note:'no symbols' });
-
-      // fetch FMP news for the tracked set
       const news = await fmpNews(symbols, 60);
-      if (!news.length) {
-        const out = { date:today, themes:[], generated_at:new Date().toISOString() };
-        return res.status(200).json({ ...out, cached:false });
-      }
-
-      // compact payload (with index) so the model can point each theme to its sources
+      if (!news.length) { const out = { date:today, themes:[], generated_at:new Date().toISOString() }; return res.status(200).json({ ...out, cached:false }); }
       const payloadIdx = news.slice(0, 40).map((n,i) => ({ i, t: n.title, s: (n.text||'').slice(0,300), sym: n.sym, d: n.date }));
-
-      const prompt = `أنت محرّر أخبار THEISI. عندك عناوين ومقتطفات أخبار حديثة تمسّ أسهم محفظة مستثمر إماراتي.
-مهمتك: اجمع الأخبار في ٣-٥ مواضيع (themes) واضحة. لكل موضوع اكتب ملخّصين بالعربية الخليجية الودّية (مو فصحى متكلّفة):
-- "summary": جملة واحدة قصيرة تلخّص الموضوع.
-- "detail": ٤-٧ جمل تشرح مضمون الأخبار في الموضوع (مو العناوين فقط — استخدم المقتطفات "s" لفهم المحتوى وتلخيصه).
-
-قواعد صارمة:
-- اشرح ما يحدث، لا توصِ. ممنوع «اشترِ/بِع». ممنوع تخترع أرقاماً أو أهدافاً.
-- رموز الأسهم بالإنجليزي كما هي.
-- لا تكرّر نفس الموضوع. ادمج الأخبار المتشابهة.
-- إذا خبر يخص عدة أسهم، اذكرها كلها في tickers.
-- لخّص المضمون من المقتطفات، لا تكتفِ بإعادة صياغة العناوين.
-- نص عادي، بدون ماركداون.
-
-أعد JSON صارم فقط:
-{"themes":[{"summary":"جملة قصيرة","detail":"٤-٧ جمل عن المضمون","tickers":["SYM1","SYM2"]}]}
-
-الأخبار:
-${JSON.stringify(payloadIdx)}`;
-
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01' },
-        body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:4500, messages:[{role:'user',content:prompt}] })
-      });
+      const prompt = `أنت محرّر أخبار THEISI. عندك عناوين ومقتطفات أخبار حديثة تمسّ أسهم محفظة مستثمر إماراتي.\nمهمتك: اجمع الأخبار في ٣-٥ مواضيع (themes) واضحة. لكل موضوع اكتب ملخّصين بالعربية الخليجية الودّية (مو فصحى متكلّفة):\n- "summary": جملة واحدة قصيرة تلخّص الموضوع.\n- "detail": ٤-٧ جمل تشرح مضمون الأخبار في الموضوع.\n\nقواعد صارمة:\n- اشرح ما يحدث، لا توصِ. ممنوع «اشترِ/بِع».\n- رموز الأسهم بالإنجليزي كما هي.\n- لا تكرّر نفس الموضوع. ادمج الأخبار المتشابهة.\n- نص عادي، بدون ماركداون.\n\nأعد JSON صارم فقط:\n{"themes":[{"summary":"جملة قصيرة","detail":"٤-٧ جمل","tickers":["SYM1","SYM2"]}]}\n\nالأخبار:\n${JSON.stringify(payloadIdx)}`;
+      const r = await fetch('https://api.anthropic.com/v1/messages', { method:'POST', headers:{ 'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01' }, body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:4500, messages:[{role:'user',content:prompt}] }) });
       const d = await r.json();
       let txt = (d.content||[]).map(c=>c.type==='text'?c.text:'').join('').trim().replace(/```json|```/g,'').trim();
       let parsed; try { parsed = JSON.parse(txt); } catch { parsed = { themes:[] }; }
       let themes = Array.isArray(parsed.themes) ? parsed.themes.slice(0,6) : [];
-      themes = themes.map(th => ({
-        summary: th.summary || '',
-        detail: th.detail || '',
-        tickers: th.tickers || []
-      }));
-
+      themes = themes.map(th => ({ summary: th.summary || '', detail: th.detail || '', tickers: th.tickers || [] }));
       const out = { date:today, themes, generated_at:new Date().toISOString() };
-      try {
-        await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, {
-          method:'PUT',
-          headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','User-Agent':'theisi' },
-          body: JSON.stringify({ message:`themed news ${out.generated_at}`, content:Buffer.from(JSON.stringify(out,null,2)).toString('base64'), ...(cachedWrap?{sha:cachedWrap.sha}:{}) })
-        });
-      } catch {}
+      try { await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, { method:'PUT', headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','User-Agent':'theisi' }, body: JSON.stringify({ message:`themed news ${out.generated_at}`, content:Buffer.from(JSON.stringify(out,null,2)).toString('base64'), ...(cachedWrap?{sha:cachedWrap.sha}:{}) }) }); } catch {}
       return res.status(200).json({ ...out, cached:false });
     } catch(e){ return res.status(500).json({ error:e.message }); }
   }
 
-// ── marketRead: daily US market update formatted in Arabic ─────────────────
-// Body: { marketRead:true, forceRefresh?:bool }
-// Uses SPY/QQQ/DIA as index proxies (same FMP stable endpoint as portfolio stocks)
-if (req.body && req.body.marketRead) {
-  try {
-    const today = new Date().toISOString().slice(0,10);
-    const cachePath = `data/market-read.json`;
-    const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_KEY || '';
-    const FMP_KEY = process.env.FMP_API_KEY || process.env.FMP_KEY || 'pSwvmzs4KUzvmePFIbSF0ulu5KnxcrHj';
-    const FMP_BASE = 'https://financialmodelingprep.com/stable';
-
-    const fmpGet = async (path) => {
-      try {
-        const sep = path.includes('?') ? '&' : '?';
-        const r = await fetch(`${FMP_BASE}${path}${sep}apikey=${FMP_KEY}`, { headers:{ 'User-Agent':'theisi' } });
-        if(!r.ok) return null;
-        const d = await r.json();
-        return Array.isArray(d) ? d : (d?.Error ? null : d);
-      } catch { return null; }
-    };
-
-    const readJson = async (fp) => {
-      if (!GITHUB_TOKEN) return null;
-      try {
-        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-          headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' }
-        });
-        if(!ex.ok) return null;
-        const f = await ex.json();
-        return { data: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), sha: f.sha };
-      } catch { return null; }
-    };
-
-    // serve cache unless forced
-    if (!req.body.forceRefresh) {
+  // ── marketRead ──────────────────────────────────────────────────────────────
+  if (req.body && req.body.marketRead) {
+    try {
+      const today = new Date().toISOString().slice(0,10);
+      const cachePath = `data/market-read.json`;
+      const MR_ANTHROPIC = process.env.ANTHROPIC_API_KEY || '';
+      const FMP_KEY = process.env.FMP_API_KEY || process.env.FMP_KEY || 'pSwvmzs4KUzvmePFIbSF0ulu5KnxcrHj';
+      const FMP_BASE = 'https://financialmodelingprep.com/stable';
+      const fmpGet = async (path) => { try { const sep = path.includes('?') ? '&' : '?'; const r = await fetch(`${FMP_BASE}${path}${sep}apikey=${FMP_KEY}`, { headers:{ 'User-Agent':'theisi' } }); if(!r.ok) return null; const d = await r.json(); return Array.isArray(d) ? d : (d?.Error ? null : d); } catch { return null; } };
+      const readJson = async (fp) => { if (!GITHUB_TOKEN) return null; try { const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } }); if(!ex.ok) return null; const f = await ex.json(); return { data: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), sha: f.sha }; } catch { return null; } };
       const cachedWrap = await readJson(cachePath);
-      if (cachedWrap && cachedWrap.data && cachedWrap.data.date === today) {
-        return res.status(200).json({ ...cachedWrap.data, cached:true });
-      }
-    }
-    const cachedWrap = await readJson(cachePath);
+      if (!req.body.forceRefresh && cachedWrap && cachedWrap.data && cachedWrap.data.date === today) return res.status(200).json({ ...cachedWrap.data, cached:true });
+      const [spyQ, qqqQ, diaQ] = await Promise.all([ fmpGet('/quote?symbol=SPY'), fmpGet('/quote?symbol=QQQ'), fmpGet('/quote?symbol=DIA') ]);
+      const q = (d) => { const r = Array.isArray(d) ? d[0] : d; if (!r || !r.price) return null; return { price: +r.price.toFixed(2), dailyChg: r.changesPercentage != null ? +parseFloat(r.changesPercentage).toFixed(2) : null, change: r.change != null ? +parseFloat(r.change).toFixed(2) : null }; };
+      const spy = q(spyQ), qqq = q(qqqQ), dia = q(diaQ);
+      if (!spy) return res.status(200).json({ date: today, brief: 'السوق مغلق أو البيانات غير متاحة حالياً.', detail: '', generated_at: new Date().toISOString(), error: 'no_data' });
+      const sectorEtfs = ['XLK','XLF','XLV','XLE','XLI','XLY','XLP','XLB','XLC','XLRE','XLU'];
+      const sectorNames = { XLK:'التقنية', XLF:'المالية', XLV:'الرعاية الصحية', XLE:'الطاقة', XLI:'الصناعات', XLY:'الاستهلاك التقديري', XLP:'الاستهلاك الأساسي', XLB:'المواد', XLC:'الاتصالات', XLRE:'العقارات', XLU:'المرافق' };
+      const sectorData = await fmpGet(`/quote?symbol=${sectorEtfs.join(',')}`);
+      let sectors = [];
+      if (Array.isArray(sectorData)) { sectors = sectorData.filter(s => s && s.changesPercentage != null).map(s => ({ name: sectorNames[s.symbol]||s.symbol, chg: +parseFloat(s.changesPercentage).toFixed(2) })).sort((a,b) => b.chg - a.chg); }
+      const topSectors = sectors.slice(0,3).map(s=>`${s.name} ${s.chg>0?'+':''}${s.chg}%`);
+      const bottomSectors = sectors.slice(-2).map(s=>`${s.name} ${s.chg}%`);
+      let headlines = [];
+      try { const nr = await fmpGet('/fmp/articles?page=0&size=6'); const items = nr?.content || (Array.isArray(nr) ? nr : []); headlines = items.slice(0,5).map(n => n.title||n.headline||'').filter(Boolean); } catch {}
+      const fmtPct = v => v != null ? `${v>0?'+':''}${v}%` : '—';
+      const rawText = `تاريخ التقرير: ${today}\n\nأسعار المؤشرات (عبر ETFs):\n- S&P 500 (SPY): ${spy.price} | اليومي: ${fmtPct(spy.dailyChg)} | التغيير: ${spy.change}\n- Nasdaq 100 (QQQ): ${qqq?.price||'—'} | اليومي: ${fmtPct(qqq?.dailyChg)} | التغيير: ${qqq?.change||'—'}\n- Dow Jones (DIA): ${dia?.price||'—'} | اليومي: ${fmtPct(dia?.dailyChg)} | التغيير: ${dia?.change||'—'}\n\nأداء القطاعات اليوم:\n- الأفضل أداءً: ${topSectors.join(' | ')||'—'}\n- الأضعف أداءً: ${bottomSectors.join(' | ')||'—'}\n\nعناوين السوق:\n${headlines.length ? headlines.map((h,i)=>`${i+1}. ${h}`).join('\n') : 'غير متاح'}`.trim();
+      const systemPrompt = `أنت محرر بيانات مالية دقيق. حوّل البيانات الخام إلى تقرير سوقي يومي بالعربية.\n\nقواعد صارمة:\n- اكتب بالعربية الفصحى. رموز المؤشرات والأسهم والأرقام والنسب بالإنجليزية كما هي.\n- استخدم الأرقام الواردة بالضبط. لا تخترع أرقاماً.\n- لا تقل أبداً "البيانات غير كافية" — استخدم ما هو موجود.\n\nأعد JSON فقط بدون أي نص خارجه:\n{\n  "brief": "جملتان: الأولى تصف حالة السوق بالأرقام الدقيقة، الثانية أبرز محرّك أو قطاع اليوم",\n  "detail": "📊 الصورة الكلية\\n[4 جمل: الزخم بالأرقام، المحرّكات، أداء القطاعات، والمخاطر أو الفرص]\\n\\n📉 الأرقام\\n• S&P 500 (SPY) — [السعر] | [% اليومي] (يومي)\\n• Nasdaq 100 (QQQ) — [السعر] | [% اليومي] (يومي)\\n• Dow Jones (DIA) — [السعر] | [% اليومي] (يومي)\\n\\n⚡ المحفزات والتباين القطاعي\\n[3 جمل: المحفز الرئيسي، التباين بين القطاعات، أبرز حركة في الأخبار]"\n}`;
+      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type':'application/json', 'x-api-key': MR_ANTHROPIC, 'anthropic-version':'2023-06-01' }, body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 2000, system: systemPrompt, messages: [{ role:'user', content:`البيانات:\n${rawText}` }] }) });
+      const cd = await claudeRes.json();
+      let txt = (cd.content||[]).map(c=>c.type==='text'?c.text:'').join('').trim().replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
+      let parsed; try { parsed = JSON.parse(txt); } catch { parsed = { brief: txt.slice(0,300), detail: txt }; }
+      const out = { date:today, brief:parsed.brief||'', detail:parsed.detail||'', generated_at:new Date().toISOString() };
+      try { if (GITHUB_TOKEN) { await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, { method:'PUT', headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','User-Agent':'theisi' }, body: JSON.stringify({ message:`market read ${out.generated_at}`, content: Buffer.from(JSON.stringify(out,null,2)).toString('base64'), ...(cachedWrap ? { sha:cachedWrap.sha } : {}) }) }); } } catch {}
+      return res.status(200).json({ ...out, cached:false });
+    } catch(e){ return res.status(500).json({ error:e.message }); }
+  }
 
-    // ── 1. Quotes via FMP stable /quote — SPY=S&P500, QQQ=Nasdaq, DIA=Dow ──
-    const [spyQ, qqqQ, diaQ] = await Promise.all([
-      fmpGet('/quote?symbol=SPY'),
-      fmpGet('/quote?symbol=QQQ'),
-      fmpGet('/quote?symbol=DIA')
-    ]);
-
-    const q = (d) => {
-      const r = Array.isArray(d) ? d[0] : d;
-      if (!r || !r.price) return null;
-      return {
-        price:      +r.price.toFixed(2),
-        dailyChg:   r.changesPercentage != null ? +parseFloat(r.changesPercentage).toFixed(2) : null,
-        change:     r.change != null ? +parseFloat(r.change).toFixed(2) : null,
-        prevClose:  r.previousClose != null ? +parseFloat(r.previousClose).toFixed(2) : null,
-        yearHigh:   r.yearHigh  || null,
-        yearLow:    r.yearLow   || null,
-        volume:     r.volume    || null
-      };
-    };
-
-    const spy = q(spyQ);
-    const qqq = q(qqqQ);
-    const dia = q(diaQ);
-
-    if (!spy) {
-      return res.status(200).json({
-        date: today, brief: 'السوق مغلق أو البيانات غير متاحة حالياً.',
-        detail: '', generated_at: new Date().toISOString(), error: 'no_data'
-      });
-    }
-
-    // ── 2. Sector ETFs for sector performance ─────────────────────────────
-    const sectorEtfs = ['XLK','XLF','XLV','XLE','XLI','XLY','XLP','XLB','XLC','XLRE','XLU'];
-    const sectorNames = { XLK:'التقنية', XLF:'المالية', XLV:'الرعاية الصحية', XLE:'الطاقة',
-      XLI:'الصناعات', XLY:'الاستهلاك التقديري', XLP:'الاستهلاك الأساسي',
-      XLB:'المواد', XLC:'الاتصالات', XLRE:'العقارات', XLU:'المرافق' };
-    const sectorData = await fmpGet(`/quote?symbol=${sectorEtfs.join(',')}`);
-    let sectors = [];
-    if (Array.isArray(sectorData)) {
-      sectors = sectorData
-        .filter(s => s && s.changesPercentage != null)
-        .map(s => ({ name: sectorNames[s.symbol]||s.symbol, chg: +parseFloat(s.changesPercentage).toFixed(2) }))
-        .sort((a,b) => b.chg - a.chg);
-    }
-    const topSectors    = sectors.slice(0,3).map(s=>`${s.name} ${s.chg>0?'+':''}${s.chg}%`);
-    const bottomSectors = sectors.slice(-2).map(s=>`${s.name} ${s.chg}%`);
-
-    // ── 3. Market news ─────────────────────────────────────────────────────
-    let headlines = [];
-    try {
-      const nr = await fmpGet('/fmp/articles?page=0&size=6');
-      const items = nr?.content || (Array.isArray(nr) ? nr : []);
-      headlines = items.slice(0,5).map(n => n.title||n.headline||'').filter(Boolean);
-    } catch {}
-
-    // ── 4. Build raw text payload ──────────────────────────────────────────
-    const fmtPct = v => v != null ? `${v>0?'+':''}${v}%` : '—';
-    const rawText = `
-تاريخ التقرير: ${today}
-
-أسعار المؤشرات (عبر ETFs):
-- S&P 500 (SPY): ${spy.price} | اليومي: ${fmtPct(spy.dailyChg)} | التغيير: ${spy.change}
-- Nasdaq 100 (QQQ): ${qqq?.price||'—'} | اليومي: ${fmtPct(qqq?.dailyChg)} | التغيير: ${qqq?.change||'—'}
-- Dow Jones (DIA): ${dia?.price||'—'} | اليومي: ${fmtPct(dia?.dailyChg)} | التغيير: ${dia?.change||'—'}
-
-أداء القطاعات اليوم:
-- الأفضل أداءً: ${topSectors.join(' | ')||'—'}
-- الأضعف أداءً: ${bottomSectors.join(' | ')||'—'}
-
-عناوين السوق:
-${headlines.length ? headlines.map((h,i)=>`${i+1}. ${h}`).join('\n') : 'غير متاح'}
-`.trim();
-
-    // ── 5. Claude call ─────────────────────────────────────────────────────
-    const systemPrompt = `أنت محرر بيانات مالية دقيق. حوّل البيانات الخام إلى تقرير سوقي يومي بالعربية.
-
-قواعد صارمة:
-- اكتب بالعربية الفصحى. رموز الأسهم والمؤشرات والأرقام والنسب بالإنجليزية كما هي.
-- استخدم الأرقام الواردة بالضبط. لا تخترع أرقاماً.
-- لا تقل أبداً "البيانات غير كافية" — استخدم ما هو موجود.
-
-أعد JSON فقط بدون أي نص خارجه:
-{
-  "brief": "جملتان: الأولى تصف حالة السوق بالأرقام الدقيقة، الثانية أبرز محرّك أو قطاع اليوم",
-  "detail": "📊 الصورة الكلية\\n[4 جمل: الزخم بالأرقام، المحرّكات، أداء القطاعات، والمخاطر أو الفرص]\\n\\n📉 الأرقام\\n• S&P 500 (SPY) — [السعر] | [% اليومي] (يومي)\\n• Nasdaq 100 (QQQ) — [السعر] | [% اليومي] (يومي)\\n• Dow Jones (DIA) — [السعر] | [% اليومي] (يومي)\\n\\n⚡ المحفزات والتباين القطاعي\\n[3 جمل: المحفز الرئيسي، التباين بين القطاعات، أبرز حركة في الأخبار]"
-}`;
-
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'x-api-key':ANTHROPIC_KEY, 'anthropic-version':'2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
-        system: systemPrompt,
-        messages: [{ role:'user', content:`البيانات:\n${rawText}` }]
-      })
-    });
-
-    const cd = await claudeRes.json();
-    let txt = (cd.content||[]).map(c=>c.type==='text'?c.text:'').join('').trim()
-      .replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
-
-    let parsed;
-    try { parsed = JSON.parse(txt); }
-    catch { parsed = { brief: txt.slice(0,300), detail: txt }; }
-
-    const out = { date:today, brief:parsed.brief||'', detail:parsed.detail||'', generated_at:new Date().toISOString() };
-
-    // save cache
-    try {
-      if (GITHUB_TOKEN) {
-        await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, {
-          method:'PUT',
-          headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','User-Agent':'theisi' },
-          body: JSON.stringify({
-            message:`market read ${out.generated_at}`,
-            content: Buffer.from(JSON.stringify(out,null,2)).toString('base64'),
-            ...(cachedWrap ? { sha:cachedWrap.sha } : {})
-          })
-        });
-      }
-    } catch {}
-
-    return res.status(200).json({ ...out, cached:false });
-  } catch(e){ return res.status(500).json({ error:e.message }); }
-}
-
-  // ── Analysis: build prompt + call Claude (NO GitHub save here) ────────────
-  // Always hydrate the real portfolio from the store (don't trust the client to send it)
+  // ── Main Analysis ───────────────────────────────────────────────────────────
   if (inputs && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
       const fp = `data/sa-portfolio-${today}.json`;
-      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
-      });
-      if (ex.ok) {
-        const f = await ex.json();
-        const store = JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
-        const all = [].concat(store.stocks||[], store.etfs||[]);
-        if (all.length) inputs.excelRows = all;   // override whatever client sent
-      }
+      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+      if (ex.ok) { const f = await ex.json(); const store = JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); const all = [].concat(store.stocks||[], store.etfs||[]); if (all.length) inputs.excelRows = all; }
     } catch (_) {}
   }
   const finalPrompt = inputs ? buildPrompt(inputs) : prompt;
   if (!finalPrompt) return res.status(400).json({ error: 'inputs or prompt required' });
-
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 12000, messages: [{ role: 'user', content: finalPrompt }] })
-    });
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' }, body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 12000, messages: [{ role: 'user', content: finalPrompt }] }) });
     const d = await r.json();
     if (!d.content?.[0]?.text) return res.status(500).json({ error: 'No response', raw: JSON.stringify(d).slice(0,200) });
-    let cleaned = d.content[0].text.trim();
-    // strip ```json … ``` or ``` … ``` fences if present
-    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/,'').trim();
-    return res.status(200).json({
-      result: cleaned,
-      usage: {
-        input_tokens:  d.usage?.input_tokens  || 0,
-        output_tokens: d.usage?.output_tokens || 0,
-        total_tokens:  (d.usage?.input_tokens||0) + (d.usage?.output_tokens||0),
-        input_cost:  ((d.usage?.input_tokens||0)  / 1000000 * 3).toFixed(4),
-        output_cost: ((d.usage?.output_tokens||0) / 1000000 * 15).toFixed(4),
-        total_cost:  (((d.usage?.input_tokens||0)/1000000*3)+((d.usage?.output_tokens||0)/1000000*15)).toFixed(4)
-      }
-    });
-  } catch(e) {
-    return res.status(500).json({ error: e.message });
-  }
+    let cleaned = d.content[0].text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/,'').trim();
+    return res.status(200).json({ result: cleaned, usage: { input_tokens: d.usage?.input_tokens||0, output_tokens: d.usage?.output_tokens||0, total_tokens: (d.usage?.input_tokens||0)+(d.usage?.output_tokens||0), input_cost: ((d.usage?.input_tokens||0)/1000000*3).toFixed(4), output_cost: ((d.usage?.output_tokens||0)/1000000*15).toFixed(4), total_cost: (((d.usage?.input_tokens||0)/1000000*3)+((d.usage?.output_tokens||0)/1000000*15)).toFixed(4) } });
+  } catch(e) { return res.status(500).json({ error: e.message }); }
 };
