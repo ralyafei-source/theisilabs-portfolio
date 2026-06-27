@@ -4304,12 +4304,16 @@ function renderCommandCenter(){
       TN.themes.forEach(function(th){
         var syms=(th.tickers&&th.tickers.length)?th.tickers.slice(0,3).join(' '):'';
         var t=(th.summary||'').trim(); if(t.length>110) t=t.slice(0,110).trim()+'\u2026';
-        tickerItems.push({sym:syms, txt:t});
+        if(t) tickerItems.push({sym:syms, txt:t});
       });
     }
+    // also add individual portfolio news headlines (more items = fuller ticker)
     var NF=window._newsFeed;
-    if((!tickerItems.length) && NF && NF.items && NF.items.length){
-      NF.items.slice(0,12).forEach(function(it){ tickerItems.push({sym:it.sym||'', txt:(it.title||'').trim()}); });
+    if(NF && NF.items && NF.items.length){
+      NF.items.slice(0,20).forEach(function(it){
+        var t=(it.title||'').trim(); if(t.length>110) t=t.slice(0,110).trim()+'\u2026';
+        if(t) tickerItems.push({sym:it.sym||'', txt:t});
+      });
     }
   } catch(e){}
   var tickerHtml='';
@@ -4317,8 +4321,10 @@ function renderCommandCenter(){
     var oneRun=tickerItems.map(function(it){
       return '<span class="cc-ticker-item">'+(it.sym?'<span class="tk-sym">'+it.sym+'</span>':'')+it.txt+'</span>';
     }).join('');
-    // duplicate the run so the loop is seamless (animation translates -50%)
-    var trackOne='<div class="cc-ticker-track">'+oneRun+'</div>';
+    // repeat content several times so the strip is always wider than the view (no gap/disappear)
+    var reps=tickerItems.length<6?4:2;
+    var runs=''; for(var ri=0;ri<reps;ri++){ runs+=oneRun; }
+    var trackOne='<div class="cc-ticker-track">'+runs+'</div>';
     tickerHtml='<div class="cc-ticker-wrap"><div class="cc-ticker-tag">\ud83d\udcf0 \u0623\u062e\u0628\u0627\u0631</div>'
       +'<div class="cc-ticker-view">'+trackOne+trackOne+'</div></div>';
   }
@@ -14882,4 +14888,3 @@ ${dataBlock}
 
 </body>
 </html>
-          
