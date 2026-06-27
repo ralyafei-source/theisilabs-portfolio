@@ -510,31 +510,55 @@ module.exports = async (req, res) => {
       const newsByStock = {};
       await Promise.all(catSyms.slice(0,8).map(async sym => { const n = await benzingaNews(sym, daysAgoUAE(14)); if(n.length) newsByStock[sym] = n.map(x=>x.title); }));
 
-      // ── Big movers: fetch live quotes, flag any |daily move| >= 5% ──────────
+      // ── Big movers: daily (>=5%) AND 5-day drift (>=5%) ─────────────────────
       const FMP_K = process.env.FMP_API_KEY || process.env.FMP_KEY || 'pSwvmzs4KUzvmePFIbSF0ulu5KnxcrHj';
       let bigMoves = [];
+      const moveMap = {}; // sym -> { sym, daily, fiveDay, price, held }
       try {
+        // 1) daily moves from live quote
         const quoteRes = await fetch(`https://financialmodelingprep.com/stable/quote?symbol=${symbols.join(',')}&apikey=${FMP_K}`, { headers:{ 'User-Agent':'theisi' } });
         if (quoteRes.ok) {
           const quotes = await quoteRes.json();
           (Array.isArray(quotes)?quotes:[]).forEach(qq => {
             const chg = qq && qq.changesPercentage != null ? parseFloat(qq.changesPercentage) : null;
-            if (chg != null && Math.abs(chg) >= 5) {
-              bigMoves.push({ sym: qq.symbol, chg: +chg.toFixed(2), price: qq.price, held: ownedSet.has(qq.symbol) });
-            }
+            if (qq && qq.symbol) moveMap[qq.symbol] = { sym: qq.symbol, daily: (chg!=null?+chg.toFixed(2):null), fiveDay: null, price: qq.price, held: ownedSet.has(qq.symbol) };
           });
-          bigMoves.sort((a,b)=>Math.abs(b.chg)-Math.abs(a.chg));
-          bigMoves = bigMoves.slice(0,6);
         }
+        // 2) 5-day drift: compare latest close vs close ~5 trading days ago
+        await Promise.all(symbols.map(async sym => {
+          try {
+            const hr = await fetch(`https://financialmodelingprep.com/stable/historical-price-eod/light?symbol=${sym}&apikey=${FMP_K}`, { headers:{ 'User-Agent':'theisi' } });
+            if (!hr.ok) return;
+            const hd = await hr.json();
+            const arr = Array.isArray(hd) ? hd : (hd.historical || []);
+            if (arr.length < 6) return;
+            const latest = arr[0].close ?? arr[0].price;
+            const fiveAgo = arr[5].close ?? arr[5].price;
+            if (latest && fiveAgo) {
+              const pct = +(((latest - fiveAgo) / fiveAgo) * 100).toFixed(2);
+              if (!moveMap[sym]) moveMap[sym] = { sym, daily: null, fiveDay: pct, price: latest, held: ownedSet.has(sym) };
+              else moveMap[sym].fiveDay = pct;
+            }
+          } catch {}
+        }));
+        // keep symbols where daily >=5% OR 5-day >=5%
+        Object.values(moveMap).forEach(m => {
+          const dBig = m.daily != null && Math.abs(m.daily) >= 5;
+          const fBig = m.fiveDay != null && Math.abs(m.fiveDay) >= 5;
+          if (dBig || fBig) bigMoves.push(m);
+        });
+        // sort by the larger of the two magnitudes
+        bigMoves.sort((a,b) => Math.max(Math.abs(b.daily||0),Math.abs(b.fiveDay||0)) - Math.max(Math.abs(a.daily||0),Math.abs(a.fiveDay||0)));
+        bigMoves = bigMoves.slice(0,8);
       } catch {}
       // pull news for big movers that don't already have catalyst news (the "why")
       await Promise.all(bigMoves.map(async m => {
-        if (!newsByStock[m.sym]) { const n = await benzingaNews(m.sym, daysAgoUAE(5)); if(n.length) newsByStock[m.sym] = n.map(x=>x.title); }
+        if (!newsByStock[m.sym]) { const n = await benzingaNews(m.sym, daysAgoUAE(7)); if(n.length) newsByStock[m.sym] = n.map(x=>x.title); }
       }));
 
       const G = s => scored[s] ? scored[s].grades : {};
       const payload = { posture: { strongest: strongest.map(s=>({sym:s, long:scored[s].long.score, grades:G(s)})), weakest: weakest.map(s=>({sym:s, long:scored[s].long.score, grades:G(s)})), owned_count: ownedSet.size }, changes: changes.slice(0,8), big_moves: bigMoves, news: newsByStock };
-      const prompt = `أنت تكتب «موجز المحفظة» اليومي لمستثمر إماراتي (لا ضريبة) بالخليجية الودّية — صديق ذكي، مو تقرير بنكي. ممنوع الفصحى المتكلّفة.\n\nقواعد صارمة:\n- اشرح، لا توصِ. ممنوع «اشترِ/بِع». ممنوع تخترع أرقاماً أو أهدافاً أو نسباً.\n- الدرجات والنقاط (٠–١٠٠) قراءات ترتيبية — مو نسب ولا عوائد. أعد ذكرها لا تعِد تفسيرها.\n- استخدم الأخبار لتفسير «لماذا» حدث محفّز أو حركة سعرية كبيرة. لا تكرّر أي توقّع ورد في الخبر.\n- في حقل big_moves أسهم تحرّكت بقوة (±5% أو أكثر) اليوم — اذكر أبرزها وفسّر سبب الحركة من الأخبار إن توفّر، أو قل إن السبب غير واضح.\n- إذا تعارض محفّز مع الدرجات، وضّح التعارض بصراحة.\n- رموز الأسهم بالإنجليزي. الانتقالات بالعربي (من X إلى Y).\n- نص عادي فقط، بدون ماركداون.\n\nأعد JSON صارم فقط:\n{"brief":"٢-٣ جمل: وضع المحفظة العام (الأقوى/الأضعف) ثم أبرز ما تغيّر","detail":"٤-٦ جمل: تفصيل المحفّزات والحركات السعرية الكبيرة (±5%) بأسبابها من الأخبار، والتعارضات إن وُجدت","posture_line":"جملة واحدة تلخّص الوضع"}\n\nالبيانات:\n${JSON.stringify(payload)}`;
+      const prompt = `أنت تكتب «موجز المحفظة» اليومي لمستثمر إماراتي (لا ضريبة) بالخليجية الودّية — صديق ذكي، مو تقرير بنكي. ممنوع الفصحى المتكلّفة.\n\nقواعد صارمة:\n- اشرح، لا توصِ. ممنوع «اشترِ/بِع». ممنوع تخترع أرقاماً أو أهدافاً أو نسباً.\n- الدرجات والنقاط (٠–١٠٠) قراءات ترتيبية — مو نسب ولا عوائد. أعد ذكرها لا تعِد تفسيرها.\n- استخدم الأخبار لتفسير «لماذا» حدث محفّز أو حركة سعرية كبيرة. لا تكرّر أي توقّع ورد في الخبر.\n- في حقل big_moves أسهم تحرّكت بقوة: daily = حركة اليوم، fiveDay = حركة آخر ٥ أيام (±5% أو أكثر). اذكر أبرزها مع التمييز بين حركة يوم واحد وانزلاق تدريجي خلال ٥ أيام، وفسّر السبب من الأخبار إن توفّر، أو قل إن السبب غير واضح.\n- إذا تعارض محفّز مع الدرجات، وضّح التعارض بصراحة.\n- رموز الأسهم بالإنجليزي. الانتقالات بالعربي (من X إلى Y).\n- نص عادي فقط، بدون ماركداون.\n\nأعد JSON صارم فقط:\n{"brief":"٢-٣ جمل: وضع المحفظة العام (الأقوى/الأضعف) ثم أبرز ما تغيّر","detail":"٤-٦ جمل: تفصيل المحفّزات والحركات السعرية الكبيرة (±5%) بأسبابها من الأخبار، والتعارضات إن وُجدت","posture_line":"جملة واحدة تلخّص الوضع"}\n\nالبيانات:\n${JSON.stringify(payload)}`;
       const r = await fetch('https://api.anthropic.com/v1/messages', { method:'POST', headers:{ 'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01' }, body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:1200, messages:[{role:'user',content:prompt}] }) });
       const d = await r.json();
       let txt = (d.content||[]).map(c=>c.type==='text'?c.text:'').join('').trim().replace(/```json|```/g,'').trim();
