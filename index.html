@@ -4213,7 +4213,7 @@ function renderCommandCenter(){
 
   var openingBrief=
     '<div>'+secLabel('\u0627\u0644\u0627\u0641\u062a\u062a\u0627\u062d\u064a\u0629')
-    +(moversSection?'<div style="margin-bottom:12px;display:flex;gap:12px;align-items:stretch;flex-wrap:wrap;"><div style="width:240px;flex:none;min-width:200px;display:flex;">'+(fearGreedCard()||'')+'</div><div style="flex:1;min-width:280px;display:flex;">'+moversSection+'</div></div>':'')
+    +(moversSection?'<div style="margin-bottom:12px;display:flex;gap:12px;align-items:stretch;flex-wrap:wrap;"><div style="flex:1.1;min-width:340px;display:flex;">'+(fearGreedCard()||'')+'</div><div style="flex:1;min-width:280px;display:flex;">'+moversSection+'</div></div>':'')
     +'<div class="cc-brief" style="display:grid;grid-template-columns:1fr 1.2fr 1fr 1fr;gap:12px;align-items:stretch;">'
       +panel(hzInner,{style:'display:flex;flex-direction:column;'})
       +panel(todayInner,{style:'display:flex;flex-direction:column;'})
@@ -4499,67 +4499,83 @@ function renderCommandCenter(){
     }
     return null;
   }
+  function _fgTrendChart(rangeDays){
+    var d=window._fgData; if(!d||!d.trend||d.trend.length<2) return '';
+    rangeDays=rangeDays||window._fgRange||30; window._fgRange=rangeDays;
+    var all=d.trend.slice(); // oldest→newest
+    var tr=all.slice(Math.max(0,all.length-rangeDays));
+    var vals=tr.map(function(p){return p.score;});
+    var W=300, H=120, padL=4, padR=4, padT=6, padB=14;
+    var iw=W-padL-padR, ih=H-padT-padB;
+    function X(i){ return padL+(i/(vals.length-1))*iw; }
+    function Y(v){ return padT+(1-v/100)*ih; }
+    // 5 mood bands as background (0-25-45-55-75-100)
+    var bands=[[0,25,'#e5484d'],[25,45,'#e5764d'],[45,55,'#e5aa00'],[55,75,'#7cc34d'],[75,100,'#19c37d']];
+    var bandRects=bands.map(function(b){ var y1=Y(b[1]), y2=Y(b[0]); return '<rect x="'+padL+'" y="'+y1.toFixed(1)+'" width="'+iw+'" height="'+(y2-y1).toFixed(1)+'" fill="'+b[2]+'" opacity="0.10"/>'; }).join('');
+    var line=vals.map(function(v,i){ return (i===0?'M':'L')+X(i).toFixed(1)+' '+Y(v).toFixed(1); }).join(' ');
+    var area=line+' L '+X(vals.length-1).toFixed(1)+' '+(padT+ih)+' L '+X(0).toFixed(1)+' '+(padT+ih)+' Z';
+    var last=vals[vals.length-1];
+    var lcol=last<25?'#e5484d':last<45?'#e5764d':last<55?'#e5aa00':last<75?'#7cc34d':'#19c37d';
+    var uid='ft'+Math.floor(Math.random()*99999);
+    // date ticks: first + middle + last
+    var fmt=function(ds){ if(!ds) return ''; var p=ds.slice(5); return p; }; // MM-DD
+    var ticks='<text x="'+X(0).toFixed(1)+'" y="'+(H-2)+'" font-size="7.5" fill="var(--text3)" text-anchor="start">'+fmt(tr[0].date)+'</text>'
+      +'<text x="'+X(vals.length-1).toFixed(1)+'" y="'+(H-2)+'" font-size="7.5" fill="var(--text3)" text-anchor="end">'+fmt(tr[tr.length-1].date)+'</text>';
+    var svg='<svg viewBox="0 0 '+W+' '+H+'" dir="ltr" style="width:100%;height:auto;display:block;">'
+      +'<defs><linearGradient id="'+uid+'a" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+lcol+'" stop-opacity="0.28"/><stop offset="100%" stop-color="'+lcol+'" stop-opacity="0"/></linearGradient></defs>'
+      +bandRects
+      +'<path d="'+area+'" fill="url(#'+uid+'a)"/>'
+      +'<path d="'+line+'" fill="none" stroke="'+lcol+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+      +'<circle cx="'+X(vals.length-1).toFixed(1)+'" cy="'+Y(last).toFixed(1)+'" r="3" fill="#fff" stroke="'+lcol+'" stroke-width="1.5"/>'
+      +ticks
+      +'</svg>';
+    var btn=function(n,lbl){ var on=(rangeDays===n); return '<span onclick="event.stopPropagation();_fgSetRange('+n+')" style="cursor:pointer;font-size:10px;font-weight:700;padding:2px 9px;border-radius:6px;'+(on?('background:var(--accent,#FF0A78);color:#fff;'):('color:var(--text3);background:var(--bg3);'))+'">'+lbl+'</span>'; };
+    return '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">'
+      +'<div style="display:flex;gap:5px;">'+btn(30,'30\u064a')+btn(90,'90\u064a')+'</div>'
+      +'<div style="font-size:9px;color:var(--text3);">\u0627\u062a\u062c\u0627\u0647 \u0627\u0644\u0645\u0632\u0627\u062c</div></div>'+svg;
+  }
+  function _fgSetRange(n){ window._fgRange=n; var el=document.getElementById('fgTrendWrap'); if(el) el.innerHTML=_fgTrendChart(n); }
+  window._fgSetRange=_fgSetRange;
+
   function fearGreedCard(){
     var d=window._fgData; if(!d||d.score==null) return null;
     var sc=Math.max(0,Math.min(100,d.score));
     var col=sc<25?'#e5484d':sc<45?'#e5764d':sc<55?'#e5aa00':sc<75?'#7cc34d':'#19c37d';
     var ar=d.label_ar||'';
     var uid='fg'+Math.floor(Math.random()*99999);
-    // compact semicircle, marker only (no needle), gradient arc
-    var W=130, H=74, cx=65, cy=66, r=54, sw=10;
+    var W=120, H=70, cx=60, cy=63, r=50, sw=9;
     function pol(deg,rad){ var a=deg*Math.PI/180; return [cx+rad*Math.cos(a), cy-rad*Math.sin(a)]; }
     var p0=pol(180,r), p1=pol(0,r);
     var track='M '+p0[0].toFixed(1)+' '+p0[1].toFixed(1)+' A '+r+' '+r+' 0 0 1 '+p1[0].toFixed(1)+' '+p1[1].toFixed(1);
     var vdeg=180-(sc/100)*180;
     var vEnd=pol(vdeg,r);
-    var large=(sc>50)?1:0;
-    var valArc='M '+p0[0].toFixed(1)+' '+p0[1].toFixed(1)+' A '+r+' '+r+' 0 '+large+' 1 '+vEnd[0].toFixed(1)+' '+vEnd[1].toFixed(1);
     var arcLen=Math.PI*r;
-    var gauge='<svg viewBox="0 0 '+W+' '+H+'" dir="ltr" style="width:130px;height:74px;flex:none;">'
+    var gauge='<svg viewBox="0 0 '+W+' '+H+'" dir="ltr" style="width:120px;height:70px;flex:none;">'
       +'<defs>'
         +'<linearGradient id="'+uid+'g" x1="0%" y1="0%" x2="100%" y2="0%">'
           +'<stop offset="0%" stop-color="#e5484d"/><stop offset="30%" stop-color="#e5764d"/>'
           +'<stop offset="52%" stop-color="#e5aa00"/><stop offset="74%" stop-color="#7cc34d"/>'
           +'<stop offset="100%" stop-color="#19c37d"/>'
         +'</linearGradient>'
-        +'<filter id="'+uid+'glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
+        +'<filter id="'+uid+'glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
       +'</defs>'
       +'<path d="'+track+'" fill="none" stroke="var(--bg3)" stroke-width="'+sw+'" stroke-linecap="round"/>'
-      +'<path d="'+valArc+'" fill="none" stroke="url(#'+uid+'g)" stroke-width="'+sw+'" stroke-linecap="round" stroke-dasharray="'+arcLen.toFixed(1)+'" stroke-dashoffset="'+(arcLen*(1-sc/100)).toFixed(1)+'" filter="url(#'+uid+'glow)" style="animation:fgsweep 1s ease-out;"/>'
-      +'<circle cx="'+vEnd[0].toFixed(1)+'" cy="'+vEnd[1].toFixed(1)+'" r="6.5" fill="'+col+'" opacity="0.28" filter="url(#'+uid+'glow)"/>'
-      +'<circle cx="'+vEnd[0].toFixed(1)+'" cy="'+vEnd[1].toFixed(1)+'" r="4" fill="#fff"/>'
-      +'<circle cx="'+vEnd[0].toFixed(1)+'" cy="'+vEnd[1].toFixed(1)+'" r="2" fill="'+col+'"/>'
-      +'<text x="6" y="72" font-size="7.5" fill="#e5484d" font-weight="700">\u062e\u0648\u0641</text>'
-      +'<text x="106" y="72" font-size="7.5" fill="#19c37d" font-weight="700">\u062c\u0634\u0639</text>'
+      +'<path d="'+track+'" fill="none" stroke="url(#'+uid+'g)" stroke-width="'+sw+'" stroke-linecap="round" stroke-dasharray="'+arcLen.toFixed(1)+'" stroke-dashoffset="'+(arcLen*(1-sc/100)).toFixed(1)+'" filter="url(#'+uid+'glow)" style="animation:fgsweep 1s ease-out;"/>'
+      +'<circle cx="'+vEnd[0].toFixed(1)+'" cy="'+vEnd[1].toFixed(1)+'" r="6" fill="'+col+'" opacity="0.28" filter="url(#'+uid+'glow)"/>'
+      +'<circle cx="'+vEnd[0].toFixed(1)+'" cy="'+vEnd[1].toFixed(1)+'" r="3.6" fill="#fff"/>'
+      +'<circle cx="'+vEnd[0].toFixed(1)+'" cy="'+vEnd[1].toFixed(1)+'" r="1.8" fill="'+col+'"/>'
+      +'<text x="4" y="68" font-size="7" fill="#e5484d" font-weight="700">\u062e\u0648\u0641</text>'
+      +'<text x="98" y="68" font-size="7" fill="#19c37d" font-weight="700">\u062c\u0634\u0639</text>'
       +'</svg>';
     var I=function(x){return '<span dir="ltr" style="unicode-bidi:isolate;">'+x+'</span>';};
-    // mini trend sparkline (last ~30 days of the fear/greed score)
-    var spark='';
-    var tr=d.trend;
-    if(tr&&tr.length>=2){
-      var vals=tr.map(function(p){return p.score;});
-      var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals);
-      var rng=(mx-mn)||1; var sW=92, sH=26;
-      var pts=vals.map(function(v,i){ var x=(i/(vals.length-1))*sW; var y=sH-((v-mn)/rng)*sH; return x.toFixed(1)+','+y.toFixed(1); });
-      var last=vals[vals.length-1], wk=d.weekAgoScore!=null?d.weekAgoScore:vals[0];
-      var dir=last>wk?1:last<wk?-1:0;
-      var trCol=dir>0?'#7cc34d':dir<0?'#e5764d':'#9aa0a6';
-      var arrow=dir>0?'\u2197':dir<0?'\u2198':'\u2192';
-      var lx=((vals.length-1)/(vals.length-1))*sW, ly=sH-((last-mn)/rng)*sH;
-      spark='<div style="margin-top:7px;">'
-        +'<div style="display:flex;align-items:center;justify-content:center;gap:5px;font-size:8.5px;color:var(--text3);margin-bottom:2px;">\u0622\u062e\u0631 30 \u064a\u0648\u0645 <span style="color:'+trCol+';font-weight:700;">'+arrow+'</span></div>'
-        +'<svg viewBox="0 0 '+sW+' '+(sH+4)+'" dir="ltr" style="width:96px;height:28px;display:block;margin:0 auto;">'
-        +'<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+trCol+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
-        +'<circle cx="'+lx.toFixed(1)+'" cy="'+ly.toFixed(1)+'" r="2.2" fill="'+trCol+'"/>'
-        +'</svg></div>';
-    }
-    var info='<div style="flex:1;text-align:center;min-width:0;">'
-      +'<div style="font-size:34px;font-weight:800;color:'+col+';font-family:'+MONO+';line-height:1;">'+sc+'</div>'
-      +'<div style="font-size:14px;color:'+col+';font-weight:800;margin-top:2px;">'+ar+' <span style="color:var(--text3);font-size:9px;font-weight:400;">\u24d8</span></div>'
-      +'<div style="font-size:9.5px;color:var(--text3);margin-top:5px;line-height:1.5;">'+I('VIX '+d.vix)+' \u00b7 '+I(d.vixPercentile+'%')+' \u0645\u0646 \u0627\u0644\u0633\u0646\u0629</div>'
-      +spark
+    var left='<div onclick="_ccFGPopup()" style="cursor:pointer;flex:none;width:150px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;">'
+      +gauge
+      +'<div style="font-size:30px;font-weight:800;color:'+col+';font-family:'+MONO+';line-height:1;margin-top:4px;">'+sc+'</div>'
+      +'<div style="font-size:13px;color:'+col+';font-weight:800;margin-top:2px;">'+ar+' <span style="color:var(--text3);font-size:9px;font-weight:400;">\u24d8</span></div>'
+      +'<div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.5;">'+I('VIX '+d.vix)+' \u00b7 '+I(d.vixPercentile+'%')+' \u0645\u0646 \u0627\u0644\u0633\u0646\u0629</div>'
       +'</div>';
-    var body='<div onclick="_ccFGPopup()" style="cursor:pointer;display:flex;align-items:center;gap:10px;justify-content:center;height:100%;min-height:74px;">'+gauge+info+'</div>';
+    var right='<div id="fgTrendWrap" style="flex:1;min-width:200px;">'+_fgTrendChart(window._fgRange||30)+'</div>';
+    var body='<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;height:100%;">'+left+right+'</div>';
     return panel(secLabel('\u0645\u0632\u0627\u062c \u0627\u0644\u0633\u0648\u0642')+body,{style:'display:flex;flex-direction:column;justify-content:center;width:100%;'});
   }
   function _ccFGPopup(){
