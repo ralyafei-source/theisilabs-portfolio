@@ -1122,7 +1122,7 @@ if (req.body && req.body.marketRead) {
     const today = new Date().toISOString().slice(0,10);
     const cachePath = `data/market-read.json`;
     const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_KEY || '';
-    const FMP_KEY = process.env.FMP_API_KEY || process.env.FMP_KEY || '';
+    const FMP_KEY = process.env.FMP_API_KEY || process.env.FMP_KEY || 'pSwvmzs4KUzvmePFIbSF0ulu5KnxcrHj';
     const FMP_BASE = 'https://financialmodelingprep.com/stable';
 
     const fmpGet = async (path) => {
