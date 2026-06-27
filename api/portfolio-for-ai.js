@@ -384,47 +384,70 @@ ${JSON.stringify(facts, null, 2)}
 
 
 // ─────────────────────────────────────────────────────────────────────────
-// BLOCK A — mode=sentiment  →  Fear & Greed gauge from VIX
-// Test URL after deploy:  /api/portfolio-for-ai?mode=sentiment
-// Returns: { score, label, label_ar, vix, vixPercentile, asOf }
+// BLOCK A v2 — mode=sentiment  (now returns a 30-day trend too)
+// Replaces your existing Block A. Adds `trend`: array of recent daily scores
+// derived from the SAME VIX history already fetched. No new storage.
+// Test: /api/portfolio-for-ai?mode=sentiment
 // ─────────────────────────────────────────────────────────────────────────
   if (req.query.mode === 'sentiment') {
     try {
       const FMP = process.env.FMP_API_KEY || process.env.FMP_KEY;
       const FMP_BASE = 'https://financialmodelingprep.com/stable';
 
-      // current VIX
       const qr = await fetch(`${FMP_BASE}/quote?symbol=^VIX&apikey=${FMP}`);
       const qj = qr.ok ? await qr.json() : [];
       const vixNow = Array.isArray(qj) && qj[0] ? Number(qj[0].price) : null;
 
-      // ~1y VIX history for percentile context
       const hr = await fetch(`${FMP_BASE}/historical-price-eod/light?symbol=^VIX&apikey=${FMP}`);
       const hj = hr.ok ? await hr.json() : null;
-      // FMP may return {historical:[...]} or a bare array; handle both
       const hist = Array.isArray(hj) ? hj : (hj && Array.isArray(hj.historical) ? hj.historical : []);
-      const closes = hist.map(d => Number(d.price != null ? d.price : d.close)).filter(v => isFinite(v)).slice(0, 252);
+      // newest-first array of {date, price/close}
+      const series = hist.map(d => ({ date: d.date, v: Number(d.price != null ? d.price : d.close) }))
+                         .filter(x => isFinite(x.v));
+      const closes = series.map(x => x.v).slice(0, 252);
 
       if (vixNow == null || !closes.length) {
-        return res.status(200).json({ error: 'VIX data unavailable', vixNow, histCount: closes.length, rawQuote: qj, rawHistType: typeof hj });
+        return res.status(200).json({ error: 'VIX data unavailable', vixNow, histCount: closes.length });
       }
 
-      // percentile of current VIX within the trailing window
+      const scoreFrom = (vix, window) => {
+        const w = window.filter(v => isFinite(v));
+        if (!w.length) return null;
+        const below = w.filter(v => v < vix).length;
+        return Math.round((1 - below / w.length) * 100);
+      };
+
+      // current score vs trailing 252d
       const below = closes.filter(v => v < vixNow).length;
-      const vixPct = below / closes.length; // 0..1, high = VIX elevated = more fear
-      // invert: high VIX -> fear (low score); low VIX -> greed (high score)
+      const vixPct = below / closes.length;
       const score = Math.round((1 - vixPct) * 100);
+
+      // 30-day trend: for each of the last 30 days, score that day's VIX
+      // against the 252 days *ending that day* (rolling window).
+      const trend = [];
+      const N = Math.min(30, series.length);
+      for (let i = N - 1; i >= 0; i--) {
+        // series[i] is the day; window = series[i..i+251] (older days are higher index)
+        const win = series.slice(i, i + 252).map(x => x.v);
+        const s = scoreFrom(series[i].v, win);
+        if (s != null) trend.push({ date: series[i].date, score: s });
+      }
 
       const label = score < 25 ? 'Extreme Fear' : score < 45 ? 'Fear' : score < 55 ? 'Neutral' : score < 75 ? 'Greed' : 'Extreme Greed';
       const label_ar = score < 25 ? 'خوف شديد' : score < 45 ? 'خوف' : score < 55 ? 'محايد' : score < 75 ? 'جشع' : 'جشع شديد';
+
+      // 7-day-ago score for an arrow
+      const wkAgo = trend.length >= 8 ? trend[trend.length - 8].score : (trend.length ? trend[0].score : score);
 
       return res.status(200).json({
         score, label, label_ar,
         vix: +vixNow.toFixed(2),
         vixPercentile: +(vixPct * 100).toFixed(0),
         windowDays: closes.length,
+        trend,                       // [{date, score}] oldest→newest, ~30 pts
+        weekAgoScore: wkAgo,
         asOf: new Date().toISOString().slice(0, 10),
-        method: 'VIX percentile (inverted) over trailing window'
+        method: 'VIX percentile (inverted), rolling 252d window'
       });
     } catch (e) {
       return res.status(200).json({ error: e.message });
