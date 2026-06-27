@@ -4505,7 +4505,7 @@ function renderCommandCenter(){
     var all=d.trend.slice();
     var tr=all.slice(Math.max(0,all.length-rangeDays));
     var vals=tr.map(function(p){return p.score;});
-    var W=300, H=64, padL=4, padR=4, padT=6, padB=12;
+    var W=300, H=64, padL=22, padR=22, padT=6, padB=12;
     var iw=W-padL-padR, ih=H-padT-padB;
     function X(i){ return padL+(i/(vals.length-1))*iw; }
     function Y(v){ return padT+(1-v/100)*ih; }
@@ -4581,7 +4581,7 @@ function renderCommandCenter(){
       +'<div style="font-size:13px;color:'+col+';font-weight:800;margin-top:2px;">'+ar+' <span style="color:var(--text3);font-size:9px;font-weight:400;">\u24d8</span></div>'
       +'<div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.5;">'+I('VIX '+d.vix)+' \u00b7 '+I(d.vixPercentile+'%')+' \u0645\u0646 \u0627\u0644\u0633\u0646\u0629</div>'
       +'</div>';
-    var right='<div id="fgTrendWrap" style="flex:1;min-width:200px;">'+_fgTrendChart(window._fgRange||30)+'</div>';
+    var right='<div id="fgTrendWrap" style="flex:1;min-width:200px;max-width:80%;">'+_fgTrendChart(window._fgRange||30)+'</div>';
     var body='<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;height:100%;">'+left+right+'</div>';
     return panel(secLabel('\u0645\u0632\u0627\u062c \u0627\u0644\u0633\u0648\u0642')+body,{style:'display:flex;flex-direction:column;justify-content:center;width:100%;'});
   }
@@ -14768,4 +14768,4 @@ ${dataBlock}
 </div>
 
 </body>
-</html>+
+</html>
