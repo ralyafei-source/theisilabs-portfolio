@@ -4513,11 +4513,11 @@ function renderCommandCenter(){
     var lcol=last<25?'#e5484d':last<45?'#e5764d':last<55?'#e5aa00':last<75?'#7cc34d':'#19c37d';
     var uid='ft'+Math.floor(Math.random()*99999);
     // reference threshold lines: greed 75, mid 50, fear 25
-    var refs='<line x1="'+padL+'" y1="'+Y(75).toFixed(1)+'" x2="'+(padL+iw)+'" y2="'+Y(75).toFixed(1)+'" stroke="#19c37d" stroke-width="0.6" stroke-dasharray="3 3" opacity="0.45"/>'
-      +'<line x1="'+padL+'" y1="'+Y(50).toFixed(1)+'" x2="'+(padL+iw)+'" y2="'+Y(50).toFixed(1)+'" stroke="var(--text3)" stroke-width="0.6" stroke-dasharray="3 3" opacity="0.35"/>'
-      +'<line x1="'+padL+'" y1="'+Y(25).toFixed(1)+'" x2="'+(padL+iw)+'" y2="'+Y(25).toFixed(1)+'" stroke="#e5484d" stroke-width="0.6" stroke-dasharray="3 3" opacity="0.45"/>'
-      +'<text x="'+(padL+2)+'" y="'+(Y(75)-2).toFixed(1)+'" font-size="6.5" fill="#19c37d">\u062c\u0634\u0639</text>'
-      +'<text x="'+(padL+2)+'" y="'+(Y(25)+7).toFixed(1)+'" font-size="6.5" fill="#e5484d">\u062e\u0648\u0641</text>';
+    var refs='<line x1="'+padL+'" y1="'+Y(75).toFixed(1)+'" x2="'+(padL+iw)+'" y2="'+Y(75).toFixed(1)+'" stroke="#19c37d" stroke-width="0.6" stroke-dasharray="3 3" opacity="0.4"/>'
+      +'<line x1="'+padL+'" y1="'+Y(50).toFixed(1)+'" x2="'+(padL+iw)+'" y2="'+Y(50).toFixed(1)+'" stroke="var(--text3)" stroke-width="0.6" stroke-dasharray="3 3" opacity="0.3"/>'
+      +'<line x1="'+padL+'" y1="'+Y(25).toFixed(1)+'" x2="'+(padL+iw)+'" y2="'+Y(25).toFixed(1)+'" stroke="#e5484d" stroke-width="0.6" stroke-dasharray="3 3" opacity="0.4"/>'
+      +'<text x="'+(padL+iw-2)+'" y="'+(Y(75)-2.5).toFixed(1)+'" font-size="7" fill="#19c37d" text-anchor="end">\u062c\u0634\u0639</text>'
+      +'<text x="'+(padL+iw-2)+'" y="'+(Y(25)+8).toFixed(1)+'" font-size="7" fill="#e5484d" text-anchor="end">\u062e\u0648\u0641</text>';
     var line=vals.map(function(v,i){ return (i===0?'M':'L')+X(i).toFixed(1)+' '+Y(v).toFixed(1); }).join(' ');
     var fmt=function(ds){ if(!ds) return ''; return ds.slice(5); };
     var ticks='<text x="'+X(0).toFixed(1)+'" y="'+(H-1)+'" font-size="7" fill="var(--text3)" text-anchor="start">'+fmt(tr[0].date)+'</text>'
@@ -14768,4 +14768,4 @@ ${dataBlock}
 </div>
 
 </body>
-</html>
+</html>+
