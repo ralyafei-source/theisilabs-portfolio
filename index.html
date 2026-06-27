@@ -4188,7 +4188,7 @@ function renderCommandCenter(){
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px;">'
         +secLabel('\u062d\u0631\u0643\u0629 \u0627\u0644\u0645\u0631\u0627\u0643\u0632')
         +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'+worst+best+'</div></div>'
-      +track+legend);
+      +track+legend, {style:'width:100%;display:flex;flex-direction:column;justify-content:center;'});
   })();
 
   // ============ PORTFOLIO MAP ============
@@ -4213,7 +4213,7 @@ function renderCommandCenter(){
 
   var openingBrief=
     '<div>'+secLabel('\u0627\u0644\u0627\u0641\u062a\u062a\u0627\u062d\u064a\u0629')
-    +(moversSection?'<div style="margin-bottom:12px;display:flex;gap:12px;align-items:stretch;flex-wrap:wrap;"><div style="width:240px;flex:none;min-width:200px;">'+(fearGreedCard()||'')+'</div><div style="flex:1;min-width:280px;">'+moversSection+'</div></div>':'')
+    +(moversSection?'<div style="margin-bottom:12px;display:flex;gap:12px;align-items:stretch;flex-wrap:wrap;"><div style="width:240px;flex:none;min-width:200px;display:flex;">'+(fearGreedCard()||'')+'</div><div style="flex:1;min-width:280px;display:flex;">'+moversSection+'</div></div>':'')
     +'<div class="cc-brief" style="display:grid;grid-template-columns:1fr 1.2fr 1fr 1fr;gap:12px;align-items:stretch;">'
       +panel(hzInner,{style:'display:flex;flex-direction:column;'})
       +panel(todayInner,{style:'display:flex;flex-direction:column;'})
@@ -4533,13 +4533,34 @@ function renderCommandCenter(){
       +'<text x="106" y="72" font-size="7.5" fill="#19c37d" font-weight="700">\u062c\u0634\u0639</text>'
       +'</svg>';
     var I=function(x){return '<span dir="ltr" style="unicode-bidi:isolate;">'+x+'</span>';};
+    // mini trend sparkline (last ~30 days of the fear/greed score)
+    var spark='';
+    var tr=d.trend;
+    if(tr&&tr.length>=2){
+      var vals=tr.map(function(p){return p.score;});
+      var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals);
+      var rng=(mx-mn)||1; var sW=92, sH=26;
+      var pts=vals.map(function(v,i){ var x=(i/(vals.length-1))*sW; var y=sH-((v-mn)/rng)*sH; return x.toFixed(1)+','+y.toFixed(1); });
+      var last=vals[vals.length-1], wk=d.weekAgoScore!=null?d.weekAgoScore:vals[0];
+      var dir=last>wk?1:last<wk?-1:0;
+      var trCol=dir>0?'#7cc34d':dir<0?'#e5764d':'#9aa0a6';
+      var arrow=dir>0?'\u2197':dir<0?'\u2198':'\u2192';
+      var lx=((vals.length-1)/(vals.length-1))*sW, ly=sH-((last-mn)/rng)*sH;
+      spark='<div style="margin-top:7px;">'
+        +'<div style="display:flex;align-items:center;justify-content:center;gap:5px;font-size:8.5px;color:var(--text3);margin-bottom:2px;">\u0622\u062e\u0631 30 \u064a\u0648\u0645 <span style="color:'+trCol+';font-weight:700;">'+arrow+'</span></div>'
+        +'<svg viewBox="0 0 '+sW+' '+(sH+4)+'" dir="ltr" style="width:96px;height:28px;display:block;margin:0 auto;">'
+        +'<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+trCol+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+        +'<circle cx="'+lx.toFixed(1)+'" cy="'+ly.toFixed(1)+'" r="2.2" fill="'+trCol+'"/>'
+        +'</svg></div>';
+    }
     var info='<div style="flex:1;text-align:center;min-width:0;">'
       +'<div style="font-size:34px;font-weight:800;color:'+col+';font-family:'+MONO+';line-height:1;">'+sc+'</div>'
       +'<div style="font-size:14px;color:'+col+';font-weight:800;margin-top:2px;">'+ar+' <span style="color:var(--text3);font-size:9px;font-weight:400;">\u24d8</span></div>'
       +'<div style="font-size:9.5px;color:var(--text3);margin-top:5px;line-height:1.5;">'+I('VIX '+d.vix)+' \u00b7 '+I(d.vixPercentile+'%')+' \u0645\u0646 \u0627\u0644\u0633\u0646\u0629</div>'
+      +spark
       +'</div>';
     var body='<div onclick="_ccFGPopup()" style="cursor:pointer;display:flex;align-items:center;gap:10px;justify-content:center;height:100%;min-height:74px;">'+gauge+info+'</div>';
-    return panel(secLabel('\u0645\u0632\u0627\u062c \u0627\u0644\u0633\u0648\u0642')+body,{style:'display:flex;flex-direction:column;'});
+    return panel(secLabel('\u0645\u0632\u0627\u062c \u0627\u0644\u0633\u0648\u0642')+body,{style:'display:flex;flex-direction:column;justify-content:center;width:100%;'});
   }
   function _ccFGPopup(){
     var d=window._fgData; if(!d||d.score==null) return;
