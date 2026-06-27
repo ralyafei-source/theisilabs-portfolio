@@ -1114,24 +1114,37 @@ ${JSON.stringify(payloadIdx)}`;
     } catch(e){ return res.status(500).json({ error:e.message }); }
   }
 
-  // ── marketRead: daily US market update formatted in Arabic ─────────────────
+// ── marketRead: daily US market update formatted in Arabic ─────────────────
 // Body: { marketRead:true, forceRefresh?:bool }
-// Returns: { date, brief, detail, generated_at, cached }
+// Uses SPY/QQQ/DIA as index proxies (same FMP stable endpoint as portfolio stocks)
 if (req.body && req.body.marketRead) {
   try {
     const today = new Date().toISOString().slice(0,10);
     const cachePath = `data/market-read.json`;
     const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_KEY || '';
     const FMP_KEY = process.env.FMP_API_KEY || process.env.FMP_KEY || '';
+    const FMP_BASE = 'https://financialmodelingprep.com/stable';
+
+    const fmpGet = async (path) => {
+      try {
+        const sep = path.includes('?') ? '&' : '?';
+        const r = await fetch(`${FMP_BASE}${path}${sep}apikey=${FMP_KEY}`, { headers:{ 'User-Agent':'theisi' } });
+        if(!r.ok) return null;
+        const d = await r.json();
+        return Array.isArray(d) ? d : (d?.Error ? null : d);
+      } catch { return null; }
+    };
 
     const readJson = async (fp) => {
       if (!GITHUB_TOKEN) return null;
-      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
-        headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' }
-      });
-      if(!ex.ok) return null;
-      const f = await ex.json();
-      return { data: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), sha: f.sha };
+      try {
+        const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, {
+          headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' }
+        });
+        if(!ex.ok) return null;
+        const f = await ex.json();
+        return { data: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), sha: f.sha };
+      } catch { return null; }
     };
 
     // serve cache unless forced
@@ -1141,192 +1154,135 @@ if (req.body && req.body.marketRead) {
         return res.status(200).json({ ...cachedWrap.data, cached:true });
       }
     }
-    const cachedWrap = await readJson(cachePath); // still need sha for PUT
+    const cachedWrap = await readJson(cachePath);
 
-    // ── 1. Fetch index quotes via Yahoo Finance (same as main API) ──────────
-    const yahooQuote = async (symbol) => {
-      try {
-        const r = await fetch(
-          `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`,
-          { headers:{ 'User-Agent':'Mozilla/5.0' } }
-        );
-        if(!r.ok) return null;
-        const d = await r.json();
-        const meta = d?.chart?.result?.[0]?.meta;
-        if(!meta) return null;
-        const close = d?.chart?.result?.[0]?.indicators?.quote?.[0]?.close || [];
-        const prevClose = close.filter(Boolean).slice(-2)[0] || meta.chartPreviousClose || meta.previousClose;
-        const price = meta.regularMarketPrice || meta.price;
-        const dailyChg = prevClose ? ((price - prevClose) / prevClose * 100) : null;
-        // weekly: compare first close of the 5d window
-        const weekStart = close.filter(Boolean)[0];
-        const weeklyChg = weekStart ? ((price - weekStart) / weekStart * 100) : null;
-        return {
-          price: price ? +price.toFixed(2) : null,
-          dailyChg: dailyChg ? +dailyChg.toFixed(2) : null,
-          weeklyChg: weeklyChg ? +weeklyChg.toFixed(2) : null,
-          prevClose: prevClose ? +prevClose.toFixed(2) : null
-        };
-      } catch { return null; }
-    };
-
-    const [sp, ndx, dji] = await Promise.all([
-      yahooQuote('^GSPC'),
-      yahooQuote('^IXIC'),
-      yahooQuote('^DJI')
+    // ── 1. Quotes via FMP stable /quote — SPY=S&P500, QQQ=Nasdaq, DIA=Dow ──
+    const [spyQ, qqqQ, diaQ] = await Promise.all([
+      fmpGet('/quote?symbol=SPY'),
+      fmpGet('/quote?symbol=QQQ'),
+      fmpGet('/quote?symbol=DIA')
     ]);
 
-    // ── 2. Sector performance from FMP stable ──────────────────────────────
-    let sectors = [];
-    if (FMP_KEY) {
-      try {
-        const sr = await fetch(
-          `https://financialmodelingprep.com/stable/sector-performance?apikey=${FMP_KEY}`,
-          { headers:{ 'User-Agent':'theisi' } }
-        );
-        if(sr.ok) {
-          const sd = await sr.json();
-          const arr = Array.isArray(sd) ? sd : (sd.sectorPerformance || []);
-          sectors = arr
-            .sort((a,b) => parseFloat(b.changesPercentage||b.changePercentage||0) - parseFloat(a.changesPercentage||a.changePercentage||0))
-            .slice(0,4)
-            .map(s => `${s.sector}: ${parseFloat(s.changesPercentage||s.changePercentage||0).toFixed(2)}%`);
-        }
-      } catch {}
-    }
+    const q = (d) => {
+      const r = Array.isArray(d) ? d[0] : d;
+      if (!r || !r.price) return null;
+      return {
+        price:      +r.price.toFixed(2),
+        dailyChg:   r.changesPercentage != null ? +parseFloat(r.changesPercentage).toFixed(2) : null,
+        change:     r.change != null ? +parseFloat(r.change).toFixed(2) : null,
+        prevClose:  r.previousClose != null ? +parseFloat(r.previousClose).toFixed(2) : null,
+        yearHigh:   r.yearHigh  || null,
+        yearLow:    r.yearLow   || null,
+        volume:     r.volume    || null
+      };
+    };
 
-    // ── 3. Market news from FMP ────────────────────────────────────────────
-    let headlines = [];
-    if (FMP_KEY) {
-      try {
-        const nr = await fetch(
-          `https://financialmodelingprep.com/stable/fmp/articles?page=0&size=8&apikey=${FMP_KEY}`,
-          { headers:{ 'User-Agent':'theisi' } }
-        );
-        if(nr.ok) {
-          const nd = await nr.json();
-          const items = nd.content || nd || [];
-          headlines = Array.isArray(items) ? items.slice(0,6).map(n=>n.title||n.headline||'').filter(Boolean) : [];
-        }
-      } catch {}
-    }
+    const spy = q(spyQ);
+    const qqq = q(qqqQ);
+    const dia = q(diaQ);
 
-    // ── 4. Validate we have at least index data ────────────────────────────
-    if (!sp || !sp.price) {
+    if (!spy) {
       return res.status(200).json({
-        date: today,
-        brief: 'تعذّر جلب بيانات السوق الآن. يرجى المحاولة بعد افتتاح الجلسة الأمريكية.',
-        detail: '',
-        generated_at: new Date().toISOString(),
-        error: 'no_market_data'
+        date: today, brief: 'السوق مغلق أو البيانات غير متاحة حالياً.',
+        detail: '', generated_at: new Date().toISOString(), error: 'no_data'
       });
     }
 
-    // ── 5. Build raw data string for Claude ───────────────────────────────
-    const fmt = (v, suffix='') => v != null ? `${v}${suffix}` : 'غير متاح';
-    const fmtPct = (v) => v != null ? `${v > 0 ? '+' : ''}${v}%` : 'غير متاح';
+    // ── 2. Sector ETFs for sector performance ─────────────────────────────
+    const sectorEtfs = ['XLK','XLF','XLV','XLE','XLI','XLY','XLP','XLB','XLC','XLRE','XLU'];
+    const sectorNames = { XLK:'التقنية', XLF:'المالية', XLV:'الرعاية الصحية', XLE:'الطاقة',
+      XLI:'الصناعات', XLY:'الاستهلاك التقديري', XLP:'الاستهلاك الأساسي',
+      XLB:'المواد', XLC:'الاتصالات', XLRE:'العقارات', XLU:'المرافق' };
+    const sectorData = await fmpGet(`/quote?symbol=${sectorEtfs.join(',')}`);
+    let sectors = [];
+    if (Array.isArray(sectorData)) {
+      sectors = sectorData
+        .filter(s => s && s.changesPercentage != null)
+        .map(s => ({ name: sectorNames[s.symbol]||s.symbol, chg: +parseFloat(s.changesPercentage).toFixed(2) }))
+        .sort((a,b) => b.chg - a.chg);
+    }
+    const topSectors    = sectors.slice(0,3).map(s=>`${s.name} ${s.chg>0?'+':''}${s.chg}%`);
+    const bottomSectors = sectors.slice(-2).map(s=>`${s.name} ${s.chg}%`);
 
+    // ── 3. Market news ─────────────────────────────────────────────────────
+    let headlines = [];
+    try {
+      const nr = await fmpGet('/fmp/articles?page=0&size=6');
+      const items = nr?.content || (Array.isArray(nr) ? nr : []);
+      headlines = items.slice(0,5).map(n => n.title||n.headline||'').filter(Boolean);
+    } catch {}
+
+    // ── 4. Build raw text payload ──────────────────────────────────────────
+    const fmtPct = v => v != null ? `${v>0?'+':''}${v}%` : '—';
     const rawText = `
 تاريخ التقرير: ${today}
 
-المؤشرات الأمريكية:
-- S&P 500: السعر ${fmt(sp?.price)} | التغيير اليومي ${fmtPct(sp?.dailyChg)} | التغيير الأسبوعي ${fmtPct(sp?.weeklyChg)}
-- Nasdaq Composite: السعر ${fmt(ndx?.price)} | التغيير اليومي ${fmtPct(ndx?.dailyChg)} | التغيير الأسبوعي ${fmtPct(ndx?.weeklyChg)}
-- Dow Jones Industrial Average: السعر ${fmt(dji?.price)} | التغيير اليومي ${fmtPct(dji?.dailyChg)} | التغيير الأسبوعي ${fmtPct(dji?.weeklyChg)}
+أسعار المؤشرات (عبر ETFs):
+- S&P 500 (SPY): ${spy.price} | اليومي: ${fmtPct(spy.dailyChg)} | التغيير: ${spy.change}
+- Nasdaq 100 (QQQ): ${qqq?.price||'—'} | اليومي: ${fmtPct(qqq?.dailyChg)} | التغيير: ${qqq?.change||'—'}
+- Dow Jones (DIA): ${dia?.price||'—'} | اليومي: ${fmtPct(dia?.dailyChg)} | التغيير: ${dia?.change||'—'}
 
-أداء القطاعات اليوم (الأعلى أداءً):
-${sectors.length ? sectors.join('\n') : 'غير متاح'}
+أداء القطاعات اليوم:
+- الأفضل أداءً: ${topSectors.join(' | ')||'—'}
+- الأضعف أداءً: ${bottomSectors.join(' | ')||'—'}
 
-أبرز عناوين الأخبار:
+عناوين السوق:
 ${headlines.length ? headlines.map((h,i)=>`${i+1}. ${h}`).join('\n') : 'غير متاح'}
 `.trim();
 
-    // ── 6. Claude call with the exact system prompt ───────────────────────
-    const systemPrompt = `أنت محرر بيانات مالية دقيق. مهمتك تحويل البيانات الخام المقدّمة إلى تقرير سوقي يومي باللغة العربية بتنسيق ثلاثي صارم.
+    // ── 5. Claude call ─────────────────────────────────────────────────────
+    const systemPrompt = `أنت محرر بيانات مالية دقيق. حوّل البيانات الخام إلى تقرير سوقي يومي بالعربية.
 
 قواعد صارمة:
-- اكتب كل شيء بالعربية الفصحى الواضحة.
-- رموز المؤشرات والأسهم والشركات والأرقام والنسب المئوية تُكتب بالإنجليزية كما هي داخل النص العربي.
-- لا تختصر أي رقم أو نسبة أو اسم وردا في البيانات.
-- لا تضف معلومات لم ترد في البيانات المقدّمة.
-- حذار: لا تكتب أبداً "البيانات غير كافية" أو ما شابهها — استخدم ما لديك.
+- اكتب بالعربية الفصحى. رموز الأسهم والمؤشرات والأرقام والنسب بالإنجليزية كما هي.
+- استخدم الأرقام الواردة بالضبط. لا تخترع أرقاماً.
+- لا تقل أبداً "البيانات غير كافية" — استخدم ما هو موجود.
 
-أعد JSON صارم فقط بهذا الشكل بدون أي نص خارجه:
+أعد JSON فقط بدون أي نص خارجه:
 {
-  "brief": "جملتان بالعربية: الأولى تصف حالة السوق العامة بالأرقام الدقيقة، الثانية تذكر أبرز محرّك أو قطاع اليوم",
-  "detail": "📊 الصورة الكلية\\n[4 جمل تحلّل: الزخم الحالي بالأرقام، المحرّكات الكبرى من الأخبار، الوضع التقييمي للقطاعات، والمخاطر أو الفرص الهيكلية]\\n\\n📉 الأرقام\\n• S&P 500 — [السعر بالضبط] | [% اليومي] (يومي) | [% الأسبوعي] (أسبوعي)\\n• Nasdaq Composite — [السعر بالضبط] | [% اليومي] (يومي) | [% الأسبوعي] (أسبوعي)\\n• Dow Jones Industrial Average — [السعر بالضبط] | [% اليومي] (يومي) | [% الأسبوعي] (أسبوعي)\\n\\n⚡ المحفزات والتباين القطاعي\\n[3 جمل: المحفز الرئيسي للجلسة، التباين بين القطاعات، وأبرز حركة في الأخبار]"
+  "brief": "جملتان: الأولى تصف حالة السوق بالأرقام الدقيقة، الثانية أبرز محرّك أو قطاع اليوم",
+  "detail": "📊 الصورة الكلية\\n[4 جمل: الزخم بالأرقام، المحرّكات، أداء القطاعات، والمخاطر أو الفرص]\\n\\n📉 الأرقام\\n• S&P 500 (SPY) — [السعر] | [% اليومي] (يومي)\\n• Nasdaq 100 (QQQ) — [السعر] | [% اليومي] (يومي)\\n• Dow Jones (DIA) — [السعر] | [% اليومي] (يومي)\\n\\n⚡ المحفزات والتباين القطاعي\\n[3 جمل: المحفز الرئيسي، التباين بين القطاعات، أبرز حركة في الأخبار]"
 }`;
 
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01'
-      },
+      headers: { 'Content-Type':'application/json', 'x-api-key':ANTHROPIC_KEY, 'anthropic-version':'2023-06-01' },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 2000,
         system: systemPrompt,
-        messages: [{ role: 'user', content: `البيانات الخام:\n${rawText}` }]
+        messages: [{ role:'user', content:`البيانات:\n${rawText}` }]
       })
     });
 
-    const claudeData = await claudeRes.json();
-    let txt = (claudeData.content||[]).map(c=>c.type==='text'?c.text:'').join('').trim()
+    const cd = await claudeRes.json();
+    let txt = (cd.content||[]).map(c=>c.type==='text'?c.text:'').join('').trim()
       .replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
 
     let parsed;
     try { parsed = JSON.parse(txt); }
     catch { parsed = { brief: txt.slice(0,300), detail: txt }; }
 
-    const out = {
-      date: today,
-      brief:  parsed.brief  || '',
-      detail: parsed.detail || '',
-      generated_at: new Date().toISOString()
-    };
+    const out = { date:today, brief:parsed.brief||'', detail:parsed.detail||'', generated_at:new Date().toISOString() };
 
-    // save cache to GitHub
+    // save cache
     try {
       if (GITHUB_TOKEN) {
         await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `token ${GITHUB_TOKEN}`,
-            'Content-Type': 'application/json',
-            'User-Agent': 'theisi'
-          },
+          method:'PUT',
+          headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','User-Agent':'theisi' },
           body: JSON.stringify({
-            message: `market read ${out.generated_at}`,
-            content: Buffer.from(JSON.stringify(out, null, 2)).toString('base64'),
-            ...(cachedWrap ? { sha: cachedWrap.sha } : {})
+            message:`market read ${out.generated_at}`,
+            content: Buffer.from(JSON.stringify(out,null,2)).toString('base64'),
+            ...(cachedWrap ? { sha:cachedWrap.sha } : {})
           })
         });
       }
     } catch {}
 
-    return res.status(200).json({ ...out, cached: false });
-  } catch(e) { return res.status(500).json({ error: e.message }); }
+    return res.status(200).json({ ...out, cached:false });
+  } catch(e){ return res.status(500).json({ error:e.message }); }
 }
-  
-  // ── listAnalyses: return dates that have a saved analysis ────────
-  if (req.body && req.body.listAnalyses && GITHUB_TOKEN) {
-    try {
-      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, {
-        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' }
-      });
-      if (!ex.ok) return res.status(200).json({ dates: [] });
-      const files = await ex.json();
-      const dates = (Array.isArray(files) ? files : [])
-        .map(f => (f.name || '').match(/^sa-analysis-(\d{4}-\d{2}-\d{2})\.json$/))
-        .filter(Boolean).map(m => m[1])
-        .sort().reverse();
-      return res.status(200).json({ dates });
-    } catch(e) {
-      return res.status(200).json({ dates: [], error: e.message });
-    }
-  }
 
   // ── Analysis: build prompt + call Claude (NO GitHub save here) ────────────
   // Always hydrate the real portfolio from the store (don't trust the client to send it)
