@@ -563,7 +563,7 @@ module.exports = async (req, res) => {
 
       // Use Claude with web_search to fetch live market data + generate report in one call
       const systemPrompt = `أنت محرر بيانات مالية دقيق ومحلل سوق خبير. مهمتك:
-1. ابحث في الويب عن أحدث بيانات إغلاق الأسواق الأمريكية ليوم ${today}.
+1. ابحث في الويب عن أحدث بيانات إغلاق الأسواق الأمريكية. إذا كان اليوم عطلة نهاية أسبوع أو عطلة رسمية، استخدم آخر يوم تداول متاح تلقائياً دون اعتذار أو تنبيه.
 2. اجمع: أسعار S&P 500 و Nasdaq Composite و Dow Jones مع نسب التغير اليومي والأسبوعي، وأداء القطاعات، وأبرز الأخبار والمحفزات.
 3. حوّل هذه البيانات إلى تقرير سوقي يومي بالعربية الفصحى.
 
@@ -571,8 +571,11 @@ module.exports = async (req, res) => {
 - رموز المؤشرات والأسهم والأرقام والنسب المئوية تُكتب بالإنجليزية كما هي داخل النص العربي.
 - استخدم الأرقام الفعلية من البحث بالضبط.
 - لا تخترع أرقاماً.
+- ممنوع منعاً باتاً كتابة أي اعتذار أو تمهيد أو ملاحظة خارج JSON.
+- ممنوع استخدام علامات الاقتباس المرجعية أو أرقام المصادر داخل النص.
+- أعد JSON خام فقط — لا تضعه داخل علامات code fence ولا تكتب أي شيء قبله أو بعده.
 
-أعد JSON فقط بدون أي نص خارجه:
+أعد هذا الـ JSON فقط:
 {
   "brief": "جملتان: الأولى تصف حالة السوق بالأرقام الدقيقة، الثانية أبرز محرّك أو قطاع اليوم",
   "detail": "📊 الصورة الكلية\n[4 جمل: الزخم بالأرقام، المحرّكات، أداء القطاعات، والمخاطر أو الفرص]\n\n📉 الأرقام\n• S&P 500 — [السعر الدقيق] | [% اليومي] (يومي) | [% الأسبوعي] (أسبوعي)\n• Nasdaq Composite — [السعر الدقيق] | [% اليومي] (يومي) | [% الأسبوعي] (أسبوعي)\n• Dow Jones Industrial Average — [السعر الدقيق] | [% اليومي] (يومي) | [% الأسبوعي] (أسبوعي)\n\n⚡ المحفزات والتباين القطاعي\n[3 جمل: المحفز الرئيسي، التباين بين القطاعات، أبرز حركة في الأخبار]"
@@ -619,8 +622,20 @@ module.exports = async (req, res) => {
           .replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
       }
 
-      let parsed; try { parsed = JSON.parse(txt); } catch { parsed = { brief: txt.slice(0,300), detail: txt }; }
-      const out = { date:today, brief:parsed.brief||'', detail:parsed.detail||'', generated_at:new Date().toISOString() };
+      // Strip cite tags, extract JSON even if wrapped in preamble/code-fence
+      const stripCites = s => String(s||'').replace(/<\/?cite[^>]*>/g,'').replace(/\[\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*\]/g,'').trim();
+      const extractJson = (s) => {
+        if (!s) return null;
+        // prefer a ```json ... ``` block if present
+        const fence = s.match(/```json\s*([\s\S]*?)```/);
+        let candidate = fence ? fence[1] : s;
+        const a = candidate.indexOf('{'), b = candidate.lastIndexOf('}');
+        if (a === -1 || b <= a) return null;
+        try { return JSON.parse(candidate.slice(a, b+1)); } catch { return null; }
+      };
+      let parsed = extractJson(txt);
+      if (!parsed) { try { parsed = JSON.parse(txt); } catch { parsed = { brief: stripCites(txt).slice(0,300), detail: stripCites(txt) }; } }
+      const out = { date:today, brief:stripCites(parsed.brief)||'', detail:stripCites(parsed.detail)||'', generated_at:new Date().toISOString() };
 
       // save cache
       try { if (GITHUB_TOKEN) { await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, { method:'PUT', headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','User-Agent':'theisi' }, body: JSON.stringify({ message:`market read ${out.generated_at}`, content: Buffer.from(JSON.stringify(out,null,2)).toString('base64'), ...(cachedWrap ? { sha:cachedWrap.sha } : {}) }) }); } } catch {}
