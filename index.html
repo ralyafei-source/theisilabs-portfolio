@@ -2021,7 +2021,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
     </div>
     <button onclick="ccRefresh()" style="font-size:10px;padding:5px 11px;border-radius:7px;background:var(--bg2);color:var(--text2);border:0.5px solid var(--border);cursor:pointer;">↻ تحديث</button>
   </div>
-  <div id="cc-grid" dir="rtl" style="display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:10px;text-align:right;">
+  <div id="cc-grid" dir="rtl" style="display:grid;grid-template-columns:1fr;gap:10px;text-align:right;">
     <div style="padding:40px;text-align:center;color:var(--text3);grid-column:1/-1;">جارٍ التحميل…</div>
   </div>
   <div style="font-size:8.5px;color:var(--text3);text-align:center;margin-top:12px;">معلومات للاطلاع لا توصية مالية · كل رقم اتجاه بهامش خطأ واسع · القرار قرارك</div>
@@ -4315,7 +4315,7 @@ function renderCommandCenter(){
   var tickerHtml='';
   if(tickerItems.length){
     var oneRun=tickerItems.map(function(it){
-      return '<span class="cc-ticker-item">'+(it.sym?'<span class="tk-sym">'+it.sym+'</span>':'')+'<span>'+it.txt+'</span></span>';
+      return '<span class="cc-ticker-item">'+(it.sym?'<span class="tk-sym">'+it.sym+'</span>':'')+'<span style="white-space:nowrap;">'+it.txt+'</span></span>';
     }).join('');
     // duplicate the run so the loop is seamless (animation translates -50%)
     tickerHtml='<div class="cc-ticker-wrap"><div class="cc-ticker-tag">\ud83d\udcf0 \u0623\u062e\u0628\u0627\u0631</div>'
