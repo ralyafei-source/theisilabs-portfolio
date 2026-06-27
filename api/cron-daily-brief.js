@@ -1,4 +1,3 @@
-// api/cron-daily-brief.js — Vercel cron → forces a fresh daily brief
 module.exports = async (req, res) => {
   try {
     const base = `https://${req.headers.host}`;
