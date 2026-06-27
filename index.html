@@ -278,14 +278,14 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
   #cc-grid .cc-hero-val{font-size:36px !important;}
   .cc-analysis-scroll::-webkit-scrollbar{display:none;width:0;height:0;}
 }
-  .cc-ticker-wrap{position:relative;display:flex;align-items:center;overflow:hidden;background:var(--bg2);border:1px solid var(--border);border-radius:10px;height:38px;margin-bottom:12px;user-select:none;}
+  .cc-ticker-wrap{position:relative;display:flex;align-items:center;overflow:hidden;width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:10px;height:38px;margin-bottom:12px;user-select:none;}
   .cc-ticker-tag{flex-shrink:0;display:flex;align-items:center;gap:6px;background:var(--rose,#FF0A78);color:#fff;font-size:11px;font-weight:700;padding:0 12px;height:100%;z-index:2;}
-  .cc-ticker-view{flex:1;display:flex;overflow:hidden;}
-  .cc-ticker-track{flex-shrink:0;display:flex;align-items:center;justify-content:space-around;min-width:100%;animation:cc-ticker-scroll 80s linear infinite;}
+  .cc-ticker-view{flex:1;min-width:0;display:flex;overflow:hidden;}
+  .cc-ticker-track{flex-shrink:0;display:flex;align-items:center;animation:cc-ticker-scroll 80s linear infinite;}
   .cc-ticker-wrap:hover .cc-ticker-track{animation-play-state:paused;}
   .cc-ticker-item{flex-shrink:0;padding:0 22px;font-size:12.5px;color:var(--text2);white-space:nowrap;}
   .cc-ticker-item .tk-sym{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--rose,#FF0A78);font-weight:700;margin-left:6px;}
-  @keyframes cc-ticker-scroll{from{transform:translateX(0);}to{transform:translateX(-100%);}}
+  @keyframes cc-ticker-scroll{from{transform:translateX(-100%);}to{transform:translateX(0);}}
   .cc-earn-scroll::-webkit-scrollbar{display:none;width:0;height:0;}
 
 /* EXPAND BUTTON ON CARD */
