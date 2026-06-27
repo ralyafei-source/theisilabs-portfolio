@@ -557,41 +557,78 @@ module.exports = async (req, res) => {
       const today = new Date().toISOString().slice(0,10);
       const cachePath = `data/market-read.json`;
       const MR_ANTHROPIC = process.env.ANTHROPIC_API_KEY || '';
-      const FMP_KEY = process.env.FMP_API_KEY || process.env.FMP_KEY || 'pSwvmzs4KUzvmePFIbSF0ulu5KnxcrHj';
-      const FMP_BASE = 'https://financialmodelingprep.com/stable';
-      const fmpGet = async (path) => { try { const sep = path.includes('?') ? '&' : '?'; const r = await fetch(`${FMP_BASE}${path}${sep}apikey=${FMP_KEY}`, { headers:{ 'User-Agent':'theisi' } }); if(!r.ok) return null; const d = await r.json(); return Array.isArray(d) ? d : (d?.Error ? null : d); } catch { return null; } };
       const readJson = async (fp) => { if (!GITHUB_TOKEN) return null; try { const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } }); if(!ex.ok) return null; const f = await ex.json(); return { data: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), sha: f.sha }; } catch { return null; } };
       const cachedWrap = await readJson(cachePath);
-      if (!req.body.forceRefresh && !req.body.debug && cachedWrap && cachedWrap.data && cachedWrap.data.date === today) return res.status(200).json({ ...cachedWrap.data, cached:true });
-      const [spyQ, qqqQ, diaQ] = await Promise.all([ fmpGet('/quote?symbol=SPY'), fmpGet('/quote?symbol=QQQ'), fmpGet('/quote?symbol=DIA') ]);
-      // Debug: return raw FMP before any parsing
-      if (req.body.debug) return res.status(200).json({ raw_fmp: { spyQ, qqqQ, diaQ } });
-      const q = (d) => { const r = Array.isArray(d) ? d[0] : d; if (!r || !r.price) return null; return { price: +r.price.toFixed(2), dailyChg: r.changesPercentage != null ? +parseFloat(r.changesPercentage).toFixed(2) : null, change: r.change != null ? +parseFloat(r.change).toFixed(2) : null }; };
-      const spy = q(spyQ), qqq = q(qqqQ), dia = q(diaQ);
-      if (!spy) return res.status(200).json({ date: today, brief: 'السوق مغلق أو البيانات غير متاحة حالياً.', detail: '', generated_at: new Date().toISOString(), error: 'no_data' });
-      const sectorEtfs = ['XLK','XLF','XLV','XLE','XLI','XLY','XLP','XLB','XLC','XLRE','XLU'];
-      const sectorNames = { XLK:'التقنية', XLF:'المالية', XLV:'الرعاية الصحية', XLE:'الطاقة', XLI:'الصناعات', XLY:'الاستهلاك التقديري', XLP:'الاستهلاك الأساسي', XLB:'المواد', XLC:'الاتصالات', XLRE:'العقارات', XLU:'المرافق' };
-      const sectorData = await fmpGet(`/quote?symbol=${sectorEtfs.join(',')}`);
-      let sectors = [];
-      if (Array.isArray(sectorData)) { sectors = sectorData.filter(s => s && s.changesPercentage != null).map(s => ({ name: sectorNames[s.symbol]||s.symbol, chg: +parseFloat(s.changesPercentage).toFixed(2) })).sort((a,b) => b.chg - a.chg); }
-      const topSectors = sectors.slice(0,3).map(s=>`${s.name} ${s.chg>0?'+':''}${s.chg}%`);
-      const bottomSectors = sectors.slice(-2).map(s=>`${s.name} ${s.chg}%`);
-      let headlines = [];
-      try { const nr = await fmpGet('/fmp/articles?page=0&size=6'); const items = nr?.content || (Array.isArray(nr) ? nr : []); headlines = items.slice(0,5).map(n => n.title||n.headline||'').filter(Boolean); } catch {}
-      const fmtPct = v => v != null ? `${v>0?'+':''}${v}%` : '—';
-      const rawText = `تاريخ التقرير: ${today}\n\nأسعار المؤشرات (عبر ETFs):\n- S&P 500 (SPY): ${spy.price} | اليومي: ${fmtPct(spy.dailyChg)} | التغيير: ${spy.change}\n- Nasdaq 100 (QQQ): ${qqq?.price||'—'} | اليومي: ${fmtPct(qqq?.dailyChg)} | التغيير: ${qqq?.change||'—'}\n- Dow Jones (DIA): ${dia?.price||'—'} | اليومي: ${fmtPct(dia?.dailyChg)} | التغيير: ${dia?.change||'—'}\n\nأداء القطاعات اليوم:\n- الأفضل أداءً: ${topSectors.join(' | ')||'—'}\n- الأضعف أداءً: ${bottomSectors.join(' | ')||'—'}\n\nعناوين السوق:\n${headlines.length ? headlines.map((h,i)=>`${i+1}. ${h}`).join('\n') : 'غير متاح'}`.trim();
-      const systemPrompt = `أنت محرر بيانات مالية دقيق. حوّل البيانات الخام إلى تقرير سوقي يومي بالعربية.\n\nقواعد صارمة:\n- اكتب بالعربية الفصحى. رموز المؤشرات والأسهم والأرقام والنسب بالإنجليزية كما هي.\n- استخدم الأرقام الواردة بالضبط. لا تخترع أرقاماً.\n- لا تقل أبداً "البيانات غير كافية" — استخدم ما هو موجود.\n\nأعد JSON فقط بدون أي نص خارجه:\n{\n  "brief": "جملتان: الأولى تصف حالة السوق بالأرقام الدقيقة، الثانية أبرز محرّك أو قطاع اليوم",\n  "detail": "📊 الصورة الكلية\\n[4 جمل: الزخم بالأرقام، المحرّكات، أداء القطاعات، والمخاطر أو الفرص]\\n\\n📉 الأرقام\\n• S&P 500 (SPY) — [السعر] | [% اليومي] (يومي)\\n• Nasdaq 100 (QQQ) — [السعر] | [% اليومي] (يومي)\\n• Dow Jones (DIA) — [السعر] | [% اليومي] (يومي)\\n\\n⚡ المحفزات والتباين القطاعي\\n[3 جمل: المحفز الرئيسي، التباين بين القطاعات، أبرز حركة في الأخبار]"\n}`;
-      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type':'application/json', 'x-api-key': MR_ANTHROPIC, 'anthropic-version':'2023-06-01' }, body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 2000, system: systemPrompt, messages: [{ role:'user', content:`البيانات:\n${rawText}` }] }) });
+      if (!req.body.forceRefresh && cachedWrap && cachedWrap.data && cachedWrap.data.date === today) return res.status(200).json({ ...cachedWrap.data, cached:true });
+
+      // Use Claude with web_search to fetch live market data + generate report in one call
+      const systemPrompt = `أنت محرر بيانات مالية دقيق ومحلل سوق خبير. مهمتك:
+1. ابحث في الويب عن أحدث بيانات إغلاق الأسواق الأمريكية ليوم ${today}.
+2. اجمع: أسعار S&P 500 و Nasdaq Composite و Dow Jones مع نسب التغير اليومي والأسبوعي، وأداء القطاعات، وأبرز الأخبار والمحفزات.
+3. حوّل هذه البيانات إلى تقرير سوقي يومي بالعربية الفصحى.
+
+قواعد صارمة:
+- رموز المؤشرات والأسهم والأرقام والنسب المئوية تُكتب بالإنجليزية كما هي داخل النص العربي.
+- استخدم الأرقام الفعلية من البحث بالضبط.
+- لا تخترع أرقاماً.
+
+أعد JSON فقط بدون أي نص خارجه:
+{
+  "brief": "جملتان: الأولى تصف حالة السوق بالأرقام الدقيقة، الثانية أبرز محرّك أو قطاع اليوم",
+  "detail": "📊 الصورة الكلية\n[4 جمل: الزخم بالأرقام، المحرّكات، أداء القطاعات، والمخاطر أو الفرص]\n\n📉 الأرقام\n• S&P 500 — [السعر الدقيق] | [% اليومي] (يومي) | [% الأسبوعي] (أسبوعي)\n• Nasdaq Composite — [السعر الدقيق] | [% اليومي] (يومي) | [% الأسبوعي] (أسبوعي)\n• Dow Jones Industrial Average — [السعر الدقيق] | [% اليومي] (يومي) | [% الأسبوعي] (أسبوعي)\n\n⚡ المحفزات والتباين القطاعي\n[3 جمل: المحفز الرئيسي، التباين بين القطاعات، أبرز حركة في الأخبار]"
+}`;
+
+      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'x-api-key': MR_ANTHROPIC, 'anthropic-version':'2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 3000,
+          system: systemPrompt,
+          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          messages: [{ role:'user', content:`ابحث عن بيانات إغلاق الأسواق الأمريكية ليوم ${today} وأعد التقرير بالتنسيق المطلوب.` }]
+        })
+      });
+
       const cd = await claudeRes.json();
-      let txt = (cd.content||[]).map(c=>c.type==='text'?c.text:'').join('').trim().replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
+      // extract text from content blocks (skip tool_use blocks)
+      let txt = (cd.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('').trim()
+        .replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
+
+      // if response has tool_use but no final text, do a follow-up turn
+      if (!txt && (cd.content||[]).some(c=>c.type==='tool_use')) {
+        const toolResults = (cd.content||[]).filter(c=>c.type==='tool_result'||(c.type==='tool_use')).map(c=>({
+          type:'tool_result', tool_use_id: c.id, content: c.content||''
+        }));
+        const followUp = await fetch('https://api.anthropic.com/v1/messages', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json','x-api-key':MR_ANTHROPIC,'anthropic-version':'2023-06-01' },
+          body: JSON.stringify({
+            model:'claude-haiku-4-5-20251001', max_tokens:2000,
+            system: systemPrompt,
+            tools:[{type:'web_search_20250305',name:'web_search'}],
+            messages:[
+              {role:'user',content:`ابحث عن بيانات إغلاق الأسواق الأمريكية ليوم ${today} وأعد التقرير بالتنسيق المطلوب.`},
+              {role:'assistant',content:cd.content},
+              {role:'user',content:'الآن أعد JSON النهائي فقط بناءً على نتائج البحث.'}
+            ]
+          })
+        });
+        const fd = await followUp.json();
+        txt = (fd.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('').trim()
+          .replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
+      }
+
       let parsed; try { parsed = JSON.parse(txt); } catch { parsed = { brief: txt.slice(0,300), detail: txt }; }
       const out = { date:today, brief:parsed.brief||'', detail:parsed.detail||'', generated_at:new Date().toISOString() };
+
+      // save cache
       try { if (GITHUB_TOKEN) { await fetch(`https://api.github.com/repos/${REPO}/contents/${cachePath}`, { method:'PUT', headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','User-Agent':'theisi' }, body: JSON.stringify({ message:`market read ${out.generated_at}`, content: Buffer.from(JSON.stringify(out,null,2)).toString('base64'), ...(cachedWrap ? { sha:cachedWrap.sha } : {}) }) }); } } catch {}
       return res.status(200).json({ ...out, cached:false });
     } catch(e){ return res.status(500).json({ error:e.message }); }
   }
 
-  // ── Main Analysis ───────────────────────────────────────────────────────────
+    // ── Main Analysis ───────────────────────────────────────────────────────────
   if (inputs && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
