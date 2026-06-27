@@ -277,6 +277,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
   #cc-grid .cc-brief,#cc-grid .cc-2col,#cc-grid .cc-analysis{grid-template-columns:1fr !important;}
   #cc-grid .cc-hero-val{font-size:36px !important;}
   .cc-analysis-scroll::-webkit-scrollbar{display:none;width:0;height:0;}
+  .cc-earn-scroll::-webkit-scrollbar{display:none;width:0;height:0;}
 }
 
 /* EXPAND BUTTON ON CARD */
@@ -4131,10 +4132,10 @@ function renderCommandCenter(){
       ? '<span style="font-size:9.5px;color:var(--text3);border:1px solid var(--border);border-radius:6px;padding:1px 7px;">\u0645\u0645\u0644\u0648\u0643</span>'
       : '<span style="font-size:9.5px;color:#85b7eb;background:rgba(133,183,235,.15);border-radius:6px;padding:1px 7px;">\u062c\u062f\u064a\u062f</span>';
     return '<div onclick="ccOpenDeep(\''+sym+'\')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">'
-      +'<span style="font-size:9.5px;color:var(--text3);width:64px;flex:none;">'+hzLabels[key]+'</span>'
-      +'<span style="font-size:13px;font-weight:700;color:var(--text);flex:1;">'+ccShariaMark(sym)+sym+(arch?' <span style="font-size:9px;color:var(--text3);font-weight:400;">'+arch+'</span>':'')+'</span>'
+      +'<span style="font-size:9px;color:var(--text3);width:46px;flex:none;">'+hzLabels[key]+'</span>'
+      +'<span style="font-size:12px;font-weight:700;color:var(--text);flex:1;">'+ccShariaMark(sym)+sym+(arch?' <span style="font-size:9px;color:var(--text3);font-weight:400;">'+arch+'</span>':'')+'</span>'
       +badge
-      +'<span style="font-size:18px;font-weight:800;color:'+c+';font-family:'+MONO+';">'+sc+'<span style="font-size:9px;color:var(--text3);font-weight:400;">/100</span></span>'
+      +'<span style="font-size:15px;font-weight:800;color:'+c+';font-family:'+MONO+';">'+sc+'<span style="font-size:9px;color:var(--text3);font-weight:400;">/100</span></span>'
       +'</div>';
   }
   var hzInner=
@@ -4258,10 +4259,10 @@ function renderCommandCenter(){
   }
 
 
-  var posHead='<div style="display:grid;grid-template-columns:1fr 60px 70px 64px;gap:0;font-size:10px;color:var(--text3);padding-bottom:7px;border-bottom:1px solid var(--border);">'
+  var posHead='<div style="display:grid;grid-template-columns:1fr 36px 52px 52px;gap:0;font-size:9px;color:var(--text3);padding-bottom:6px;border-bottom:1px solid var(--border);">'
     +'<span>\u0627\u0644\u0633\u0647\u0645</span><span style="text-align:left;">\u0627\u0644\u0648\u0632\u0646</span><span style="text-align:left;">\u0627\u0644\u0642\u064a\u0645\u0629</span><span style="text-align:left;">\u0627\u0644\u0623\u062f\u0627\u0621</span></div>';
   var posRows=sorted.slice(0,5).map(function(s){var g=s.gl||0,gc=g>=0?'var(--text2)':'var(--text2)',w=s.mv/total*100;
-    return '<div style="display:grid;grid-template-columns:1fr 60px 70px 64px;gap:0;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:11.5px;">'
+    return '<div style="display:grid;grid-template-columns:1fr 36px 52px 52px;gap:0;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:10.5px;">'
       +'<span style="color:var(--text);font-weight:700;">'+ccShariaMark(s.sym)+ccSentTag(s.sym)+s.sym+'</span>'
       +'<span style="text-align:left;color:var(--text3);font-family:'+MONO+';">'+w.toFixed(1)+'%</span>'
       +'<span style="text-align:left;color:var(--text2);font-family:'+MONO+';">'+money(s.mv||0)+'</span>'
@@ -4476,7 +4477,7 @@ function renderCommandCenter(){
       +'<span>'+bmiChip('I')+' \u0645\u0637\u0627\u0628\u0642</span>'
       +'<span style="color:var(--text3);">| \u0627\u0644\u062e\u0637 = \u0627\u0642\u062a\u0631\u0627\u0628 \u0627\u0644\u0645\u0648\u0639\u062f \u00b7 \u0644\u0648\u0646\u0647 = \u0627\u062a\u062c\u0627\u0647 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0627\u062a</span>'
       +'</div>';
-    return panel(secLabel('\u0627\u0644\u0623\u0631\u0628\u0627\u062d \u0627\u0644\u0642\u0627\u062f\u0645\u0629')+'<div class="cc-scroll" style="max-height:232px;overflow-y:auto;overscroll-behavior:contain;padding-right:4px;">'+list+'</div>'+legend+door('\u0641\u062a\u062d \u0627\u0644\u062a\u062d\u0644\u064a\u0644','portfolio'));
+    return panel(secLabel('\u0627\u0644\u0623\u0631\u0628\u0627\u062d \u0627\u0644\u0642\u0627\u062f\u0645\u0629')+'<div style="max-height:232px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none;">'+list+'</div>'+legend+door('\u0641\u062a\u062d \u0627\u0644\u062a\u062d\u0644\u064a\u0644','portfolio'));
   }
 
   // ---- NEW: News affecting portfolio card (from briefing d.news) ----
