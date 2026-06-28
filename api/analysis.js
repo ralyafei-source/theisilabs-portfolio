@@ -2,6 +2,9 @@
 // Supports 3 analysis types: daily, weekly, monthly
 // Supports per-user analysis via optional nickname param
 // GET: reads appropriate file based on type + date + nickname params
+//      AUTH (added): requires a valid session token OR the machine API_KEY.
+//      A regular user may only read their OWN nickname. Admins and the
+//      machine key (Make.com) may read any nickname.
 // POST: writes to appropriate file (with nickname prefix if provided)
 
 const REPO  = 'ralyafei-source/theisilabs-portfolio';
@@ -48,6 +51,30 @@ async function writeFile(path, data) {
   );
   return r.ok;
 }
+
+// ───────────────────────── AUTH helper (added) ─────────────────────────
+// Mirrors verifySession() in user-portfolio.js / handleMe() in auth.js so the
+// session check behaves identically across the backend. Returns the user object
+// for a valid, unexpired session token, else null.
+async function verifySession(sessionToken) {
+  if (!sessionToken) return null;
+  try {
+    const r = await fetch(
+      `https://api.github.com/repos/${REPO}/contents/data/users.json`,
+      { headers: { Authorization: `token ${TOKEN}`, 'User-Agent': 'theisilabs-app' } }
+    );
+    if (!r.ok) return null;
+    const file = await r.json();
+    const users = JSON.parse(Buffer.from(file.content, 'base64').toString());
+    const user = users.find(u => u.sessionToken === sessionToken);
+    if (!user) return null;
+    if (new Date(user.sessionExpiry) < new Date()) return null;
+    return user;
+  } catch (e) {
+    return null;
+  }
+}
+// ──────────────────────── end AUTH helper ────────────────────────
 
 // ───────────────────────── CP6: Health check helpers ─────────────────────────
 
@@ -157,7 +184,31 @@ module.exports = async (req, res) => {
   // ── GET: read analysis ──
   if (req.method === 'GET') {
     const { date, type, week, month, nickname } = req.query;
-    const nick = nickname || null;
+
+    // ───── AUTH GATE (added) ─────
+    // Accept EITHER a machine API_KEY (Make.com automation / admin tooling)
+    // OR a valid user session token. A regular user is locked to their own
+    // nickname; admins and the machine key may request any nickname.
+    const bearer = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
+    const isMachine = !!API_KEY && bearer === API_KEY;
+
+    let requestedNick = nickname || null;
+
+    if (!isMachine) {
+      const user = await verifySession(bearer);
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      if (user.isAdmin) {
+        // admin: may read any nickname; if none specified, default to own
+        requestedNick = nickname || user.nickname;
+      } else {
+        // regular user: force own nickname, ignore any nickname in the URL
+        requestedNick = user.nickname;
+      }
+    }
+    const nick = requestedNick;
+    // ───── end AUTH GATE ─────
 
     // Specific type requested
     if (type) {
@@ -169,6 +220,7 @@ module.exports = async (req, res) => {
         for (let i = 0; i < days; i++) {
           const d = new Date(baseDate.getTime() - i * 86400000);
           const dateStr = d.toISOString().slice(0, 10);
+          // Scope strictly to the resolved nick. No cross-user fallback.
           const p = nick
             ? `data/analysis-daily-${nick}-${dateStr}.json`
             : `data/analysis-daily-rashed-${dateStr}.json`;
@@ -186,7 +238,9 @@ module.exports = async (req, res) => {
       const path = getFilePath(type, date, week, month, nick);
       const data = await readFile(path);
       if (data) return res.json(data);
-      if (nick) {
+      // Legacy fallback ONLY for admin/machine (the old no-nickname rashed files).
+      // Regular users must never fall back to another user's data.
+      if (nick && (isMachine || nick === 'rashed')) {
         const fallbackPath = getFilePath(type, date, week, month, null);
         const fallback = await readFile(fallbackPath);
         if (fallback) return res.json(fallback);
