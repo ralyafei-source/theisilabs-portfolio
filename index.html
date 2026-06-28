@@ -4890,7 +4890,7 @@ function loadBriefData(){
       for(var o=0;o<3;o++){
         try{ var r=await fetch('https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/market/brief-'+nick+'-'+dstr(o)+'.json?t='+Date.now()); if(r.ok){ d=await r.json(); break; } }catch(e){}
       }
-      if(!d){ try{ var r2=await fetch('/api/briefing?nickname='+nick); if(r2.ok){ d=await r2.json(); } }catch(e){} }
+      if(!d){ try{ var r2=await fetch('/api/briefing?nickname='+nick,{headers:{'Authorization':'Bearer '+(localStorage.getItem('theisilabs_session')||'')}}); if(r2.ok){ d=await r2.json(); } }catch(e){} }
       // inline unwrap (the portfolio-tab _unwrapBrief is nested/out of scope here)
       function _unwrap(x){
         for(var i=0;i<4;i++){
@@ -5243,7 +5243,7 @@ async function loadBriefing(){
   // Fallback: try the old /api/briefing endpoint
   if(!d){
     try{
-      const r=await fetch('/api/briefing?nickname='+nick);
+      const r=await fetch('/api/briefing?nickname='+nick,{headers:{'Authorization':'Bearer '+(localStorage.getItem('theisilabs_session')||'')}});
       if(r.ok){
         const legacy=await r.json();
         const du=_unwrapBrief(legacy);
@@ -7594,7 +7594,7 @@ async function loadAnalysis(){
   }
   const nickParam = `&nickname=${encodeURIComponent(nickname)}`;
   try{
-    const r=await fetch(`/api/analysis?date=${advisorDate}${nickParam}`);
+    const r=await fetch(`/api/analysis?date=${advisorDate}${nickParam}`,{headers:{'Authorization':'Bearer '+(localStorage.getItem('theisilabs_session')||'')}});
     const d=await r.json();
     let normalized=d;
     if(d.content&&!d.daily&&!d.weekly&&!d.monthly){
@@ -13546,7 +13546,7 @@ async function initLiveData(){ await loadLiveNews();
   }catch(e){}
   try{
     const nick=(localStorage.getItem('theisilabs_nick')||'').toLowerCase().trim(); if(!nick){ return; }
-const r=await fetch('/api/briefing?nickname='+nick);
+const r=await fetch('/api/briefing?nickname='+nick,{headers:{'Authorization':'Bearer '+(localStorage.getItem('theisilabs_session')||'')}});
     if(r.ok){
       const d=await r.json();
       let text='';
@@ -13568,7 +13568,7 @@ const r=await fetch('/api/briefing?nickname='+nick);
   try{
     const nick=localStorage.getItem('theisilabs_nick')||'';
     const date=new Date().toISOString().split('T')[0];
-    const r=await fetch(`/api/analysis?date=${date}&nickname=${encodeURIComponent(nick)}`);
+    const r=await fetch(`/api/analysis?date=${date}&nickname=${encodeURIComponent(nick)}`,{headers:{'Authorization':'Bearer '+(localStorage.getItem('theisilabs_session')||'')}});
     const g=document.getElementById('cmd-decisions');
     if(r.ok){
       const d=await r.json();
