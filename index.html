@@ -4804,7 +4804,7 @@ function loadEarningsData(){
   if(window._earnData || window._earnTried){ return; }
   window._earnTried=true;
   try{
-    var _nick='rashed'; try{ _nick=(localStorage.getItem('theisilabs_nick')||'rashed').toLowerCase().trim()||'rashed'; }catch(e){}
+    var _nick=''; try{ _nick=(localStorage.getItem('theisilabs_nick')||'').toLowerCase().trim(); }catch(e){} if(!_nick){ return; }
     fetch('/api/portfolio-for-ai?format=earnings&nickname='+encodeURIComponent(_nick)+'&t='+Date.now())
       .then(function(r){return r.json();})
       .then(function(d){ if(d&&d.earnings){ window._earnData=d; renderCommandCenter(); } })
@@ -4827,7 +4827,7 @@ function loadStockSentiment(){
   if(window._sentData || window._sentTried){ return; }
   window._sentTried=true;
   try{
-    var _nick='rashed'; try{ _nick=(localStorage.getItem('theisilabs_nick')||'rashed').toLowerCase().trim()||'rashed'; }catch(e){}
+    var _nick=''; try{ _nick=(localStorage.getItem('theisilabs_nick')||'').toLowerCase().trim(); }catch(e){} if(!_nick){ return; }
     fetch('/api/portfolio-for-ai?mode=stock-sentiment&nickname='+encodeURIComponent(_nick)+'&t='+Date.now())
       .then(function(r){return r.json();})
       .then(function(d){ if(d&&d.data){ var m={}; d.data.forEach(function(x){ m[x.sym]=x; }); window._sentData=m; renderCommandCenter(); } })
@@ -4883,7 +4883,7 @@ function loadBriefData(){
   if(window._briefData || window._briefTried){ return; }
   window._briefTried=true;
   try{
-    var nick='rashed'; try{ nick=(localStorage.getItem('theisilabs_nick')||'rashed').toLowerCase(); }catch(e){}
+    var nick=''; try{ nick=(localStorage.getItem('theisilabs_nick')||'').toLowerCase().trim(); }catch(e){} if(!nick){ return; }
     var dstr=function(o){ return new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10); };
     (async function(){
       var d=null;
@@ -5209,8 +5209,9 @@ async function loadBriefing(){
 
   // Build the UAE date string for the file path (today → fallback 1-2 days)
   const dstr=o=>new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10);
-  let nick='rashed';
-  try{ nick=(localStorage.getItem('theisilabs_nick')||'rashed').toLowerCase(); }catch(e){}
+  let nick='';
+  try{ nick=(localStorage.getItem('theisilabs_nick')||'').toLowerCase().trim(); }catch(e){}
+  if(!nick){ box.innerHTML=''; return; }
 
   // Try to load the structured brief JSON from GitHub
   let d=null;
@@ -8404,7 +8405,9 @@ async function runBacktest(){
     });
     // Fill any missing with a second pass via portfolio-for-ai text
     if(Object.keys(actualPrices).length < 10){
-      const priceResp = await fetch(`/api/portfolio-for-ai?nickname=rashed`);
+      const _bnick=(localStorage.getItem('theisilabs_nick')||'').toLowerCase().trim();
+      if(!_bnick) throw new Error('not authenticated');
+      const priceResp = await fetch(`/api/portfolio-for-ai?nickname=${encodeURIComponent(_bnick)}`);
       const priceText = await priceResp.text();
       (snap.holdings||[]).forEach(h=>{
         if(!actualPrices[h.sym]){
@@ -13542,7 +13545,7 @@ async function initLiveData(){ await loadLiveNews();
     }
   }catch(e){}
   try{
-    const nick=localStorage.getItem('theisilabs_nick')||'rashed';
+    const nick=(localStorage.getItem('theisilabs_nick')||'').toLowerCase().trim(); if(!nick){ return; }
 const r=await fetch('/api/briefing?nickname='+nick);
     if(r.ok){
       const d=await r.json();
