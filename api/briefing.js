@@ -24,6 +24,30 @@ async function fetchFromGitHub(path) {
   return await r.json();
 }
 
+// ───────────────────────── AUTH helper (added) ─────────────────────────
+// Mirrors verifySession() in user-portfolio.js / handleMe() in auth.js so the
+// session check behaves identically across the backend. Returns the user object
+// for a valid, unexpired session token, else null.
+async function verifySession(sessionToken) {
+  if (!sessionToken) return null;
+  try {
+    const r = await fetch(
+      `https://api.github.com/repos/${REPO}/contents/data/users.json`,
+      { headers: { Authorization: `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisilabs-app' } }
+    );
+    if (!r.ok) return null;
+    const file = await r.json();
+    const users = JSON.parse(Buffer.from(file.content, 'base64').toString());
+    const user = users.find(u => u.sessionToken === sessionToken);
+    if (!user) return null;
+    if (new Date(user.sessionExpiry) < new Date()) return null;
+    return user;
+  } catch (e) {
+    return null;
+  }
+}
+// ──────────────────────── end AUTH helper ────────────────────────
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Authorization');
@@ -33,8 +57,32 @@ module.exports = async function handler(req, res) {
 
   // ── GET — load brief for a user, fall back up to 7 days ─────────────────
   if (req.method === 'GET') {
-    const nickname = req.query.nickname || '';
+    // ───── AUTH GATE (added) ─────
+    // Accept EITHER the machine API key (Make.com / admin tooling) via x-api-key
+    // or Authorization, OR a valid user session token. A regular user is locked
+    // to their OWN nickname; admins and the machine key may request any nickname.
+    const bearer =
+      req.headers['x-api-key'] ||
+      (req.headers['authorization'] || '').replace('Bearer ', '').trim();
+    const isMachine = !!BRIEFING_API_KEY && bearer === BRIEFING_API_KEY;
+
+    let nickname = req.query.nickname || '';
     const date = req.query.date || getTodayUAE();
+
+    if (!isMachine) {
+      const user = await verifySession(bearer);
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      if (user.isAdmin) {
+        // admin: may read any nickname; if none specified, default to own
+        nickname = req.query.nickname || user.nickname;
+      } else {
+        // regular user: force own nickname, ignore any nickname in the URL
+        nickname = user.nickname;
+      }
+    }
+    // ───── end AUTH GATE ─────
 
     try {
       // Try today first, then look back up to 7 days
@@ -46,8 +94,9 @@ module.exports = async function handler(req, res) {
         if (data && data.content) return res.status(200).json(data);
       }
 
-      // Final fallback — legacy briefing.json (for rashed or empty nickname)
-      if (nickname === 'rashed' || nickname === '') {
+      // Final fallback — legacy briefing.json. ONLY for admin/machine or rashed,
+      // never for a regular user (would leak the admin's brief).
+      if ((isMachine || nickname === 'rashed' || nickname === '')) {
         const legacy = await fetchFromGitHub('data/briefing.json');
         if (legacy) return res.status(200).json(legacy);
       }
