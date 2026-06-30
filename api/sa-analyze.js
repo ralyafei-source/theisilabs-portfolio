@@ -88,11 +88,26 @@ module.exports = async (req, res) => {
   const _esc = x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const _scanRe = (fam) => new RegExp('^' + _esc(fam + TAG) + '-(\\d{4}-\\d{2}-\\d{2})\\.json$');
 
+  // Load THIS user's actual holdings (the stocks they entered).
+  // Admin → data/portfolio.json ; user → data/portfolio-{nickname}.json.
+  // Returns array of holding rows: { sym, shares, cost, mv, ... } or [].
+  const _loadUserHoldings = async () => {
+    const pf = _saUser.portfolioFile || (_isAdmin ? 'portfolio.json' : `portfolio-${String(_saUser.nickname||'').toLowerCase().trim()}.json`);
+    try {
+      const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/data/${pf}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
+      if (!ex.ok) return [];
+      const f = await ex.json();
+      const data = JSON.parse(Buffer.from(f.content,'base64').toString('utf8'));
+      const rows = [].concat(data.holdings||[], data.stocks||[], data.etfs||[]);
+      return rows.filter(r => r && (r.sym || r.symbol));
+    } catch { return []; }
+  };
+
   // ── saveOnly ────────────────────────────────────────────────────────────────
   if (saveOnly && inputs && GITHUB_TOKEN) {
     try {
       const date = new Date().toISOString().slice(0,10);
-      const fp = `data/sa-inputs${TAG}-${date}.json`;
+      const fp = `data/sa-inputs-${date}.json`;
       const fc = JSON.stringify({ date, inputs, savedAt: new Date().toISOString() }, null, 2);
       let sha = null;
       try { const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (ex.ok) sha = (await ex.json()).sha; } catch {}
@@ -106,7 +121,7 @@ module.exports = async (req, res) => {
     try {
       const today = new Date().toISOString().slice(0,10);
       const readDay = async (date) => {
-        const fp = `data/sa-inputs${TAG}-${date}.json`;
+        const fp = `data/sa-inputs-${date}.json`;
         const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
         if (!ex.ok) return null;
         const f = await ex.json();
@@ -118,7 +133,7 @@ module.exports = async (req, res) => {
       const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
       if (!dir.ok) return res.status(200).json({ inputs: null });
       const files = await dir.json();
-      const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(_scanRe('sa-inputs'))).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
+      const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(/^sa-inputs-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
       if (!dates.length) return res.status(200).json({ inputs: null });
       const prior = await readDay(dates[0]);
       if (prior && prior.inputs) return res.status(200).json({ ...prior, isCarryForward: true });
@@ -130,7 +145,7 @@ module.exports = async (req, res) => {
   if (req.body && req.body.saveResult && req.body.result && GITHUB_TOKEN) {
     try {
       const date = new Date().toISOString().slice(0,10);
-      const fp = `data/sa-analysis${TAG}-${date}.json`;
+      const fp = `data/sa-analysis-${date}.json`;
       let runs = [], sha = null;
       try { const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (ex.ok) { const f = await ex.json(); sha = f.sha; const prev = JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); runs = Array.isArray(prev.runs) ? prev.runs : []; } } catch {}
       const version = (runs.length ? (runs[runs.length-1].version || runs.length) : 0) + 1;
@@ -146,7 +161,7 @@ module.exports = async (req, res) => {
   if (req.body && req.body.loadResult && GITHUB_TOKEN) {
     try {
       const date = (req.body.date && /^\d{4}-\d{2}-\d{2}$/.test(req.body.date)) ? req.body.date : new Date().toISOString().slice(0,10);
-      const fp = `data/sa-analysis${TAG}-${date}.json`;
+      const fp = `data/sa-analysis-${date}.json`;
       const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
       if (!ex.ok) return res.status(200).json({ result: null });
       const f = await ex.json();
@@ -165,7 +180,7 @@ module.exports = async (req, res) => {
       const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
       if (!dir.ok) return res.status(200).json({ dates: [] });
       const files = await dir.json();
-      const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(_scanRe('sa-analysis'))).filter(Boolean).map(m => m[1]).sort().reverse();
+      const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(/^sa-analysis-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).sort().reverse();
       return res.status(200).json({ dates });
     } catch(e) { return res.status(200).json({ dates: [], error: e.message }); }
   }
@@ -174,7 +189,7 @@ module.exports = async (req, res) => {
   if (req.body && req.body.savePortfolio && req.body.rows && GITHUB_TOKEN) {
     try {
       const date = new Date().toISOString().slice(0,10);
-      const fp = `data/sa-portfolio${TAG}-${date}.json`;
+      const fp = `data/sa-portfolio-${date}.json`;
       const raw = req.body.rows;
       const stocks = [], etfs = [];
       const numOrNull = v => (v===undefined||v===null||v==='') ? null : (isNaN(Number(v))?v:Number(v));
@@ -237,13 +252,13 @@ module.exports = async (req, res) => {
   if (req.body && req.body.loadPortfolio && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
-      const readDay = async (date) => { const fp = `data/sa-portfolio${TAG}-${date}.json`; const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ex.ok) return null; const f = await ex.json(); return JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); };
+      const readDay = async (date) => { const fp = `data/sa-portfolio-${date}.json`; const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ex.ok) return null; const f = await ex.json(); return JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); };
       let result = await readDay(today);
       if (result) return res.status(200).json({ ...result, isCarryForward: false });
       const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
       if (!dir.ok) return res.status(200).json({ stocks: [], etfs: [] });
       const files = await dir.json();
-      const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(_scanRe('sa-portfolio'))).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
+      const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(/^sa-portfolio-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
       if (!dates.length) return res.status(200).json({ stocks: [], etfs: [] });
       const prior = await readDay(dates[0]);
       if (prior) return res.status(200).json({ ...prior, isCarryForward: true });
@@ -255,7 +270,7 @@ module.exports = async (req, res) => {
   if (req.body && req.body.saveRisk && req.body.rows && GITHUB_TOKEN) {
     try {
       const date = new Date().toISOString().slice(0,10);
-      const fp = `data/sa-risk${TAG}-${date}.json`;
+      const fp = `data/sa-risk-${date}.json`;
       const raw = req.body.rows;
       const num = v => { if(v===undefined||v===null) return null; const s=String(v).trim(); if(s===''||s==='-'||s==='—'||s.toLowerCase()==='n/a') return null; const n=Number(s.replace(/[$,%\s]/g,'')); return isNaN(n)?null:n; };
       const pick = (r, ...keys) => { for(const k of keys){ if(r[k]!==undefined&&r[k]!==null&&r[k]!=='') return r[k]; } return null; };
@@ -277,13 +292,13 @@ module.exports = async (req, res) => {
   if (req.body && req.body.loadRisk && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
-      const readDay = async (date) => { const fp = `data/sa-risk${TAG}-${date}.json`; const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ex.ok) return null; const f = await ex.json(); return JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); };
+      const readDay = async (date) => { const fp = `data/sa-risk-${date}.json`; const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ex.ok) return null; const f = await ex.json(); return JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); };
       let result = await readDay(today);
       if (result) return res.status(200).json({ ...result, isCarryForward: false });
       const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
       if (!dir.ok) return res.status(200).json({ symbols: {} });
       const files = await dir.json();
-      const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(_scanRe('sa-risk'))).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
+      const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(/^sa-risk-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
       if (!dates.length) return res.status(200).json({ symbols: {} });
       const prior = await readDay(dates[0]);
       if (prior) return res.status(200).json({ ...prior, isCarryForward: true });
@@ -295,7 +310,7 @@ module.exports = async (req, res) => {
   if (req.body && req.body.saveDividends && req.body.rows && GITHUB_TOKEN) {
     try {
       const date = new Date().toISOString().slice(0,10);
-      const fp = `data/sa-div${TAG}-${date}.json`;
+      const fp = `data/sa-div-${date}.json`;
       const raw = req.body.rows;
       const num = v => { if(v===undefined||v===null) return null; const s=String(v).trim(); if(s===''||s==='-'||s==='—'||s.toLowerCase()==='n/a') return null; const n=Number(s.replace(/[$,%\s]/g,'')); return isNaN(n)?null:n; };
       const str = v => { if(v===undefined||v===null) return null; const s=String(v).trim(); return (s===''||s==='-'||s==='—')?null:s; };
@@ -318,13 +333,13 @@ module.exports = async (req, res) => {
   if (req.body && req.body.loadDividends && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
-      const readDay = async (date) => { const fp = `data/sa-div${TAG}-${date}.json`; const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ex.ok) return null; const f = await ex.json(); return JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); };
+      const readDay = async (date) => { const fp = `data/sa-div-${date}.json`; const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ex.ok) return null; const f = await ex.json(); return JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); };
       let result = await readDay(today);
       if (result) return res.status(200).json({ ...result, isCarryForward: false });
       const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
       if (!dir.ok) return res.status(200).json({ symbols: {} });
       const files = await dir.json();
-      const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(_scanRe('sa-div'))).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
+      const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(/^sa-div-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
       if (!dates.length) return res.status(200).json({ symbols: {} });
       const prior = await readDay(dates[0]);
       if (prior) return res.status(200).json({ ...prior, isCarryForward: true });
@@ -370,37 +385,48 @@ module.exports = async (req, res) => {
   if (req.body && req.body.bucketScore && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
-      const readDay = async (date) => { const fp = `data/sa-portfolio${TAG}-${date}.json`; const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ex.ok) return null; const f = await ex.json(); return { store: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), date }; };
-      let picked = await readDay(today);
+      // ── Base = THIS user's own holdings (the stocks they entered) ──
+      const holdings = await _loadUserHoldings();
+      if (!holdings.length) return res.status(200).json({ saved: false, error: 'no holdings', reason: 'no_holdings' });
       let sourceDate = today, isCarryForward = false;
-      if (!picked) {
-        const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
-        if (!dir.ok) return res.status(200).json({ saved: false, error: 'no portfolio store found' });
-        const files = await dir.json();
-        const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(_scanRe('sa-portfolio'))).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
-        if (!dates.length) return res.status(200).json({ saved: false, error: 'no portfolio store found' });
-        picked = await readDay(dates[0]); sourceDate = dates[0]; isCarryForward = true;
-        if (!picked) return res.status(200).json({ saved: false, error: 'portfolio store unreadable' });
-      }
+      // ── Overlay = the SHARED SA research library (admin's uploaded workbook) ──
       const readUniverse = async (date) => { const ufp = `data/sa-universe-${date}.json`; const ux = await fetch(`https://api.github.com/repos/${REPO}/contents/${ufp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ux.ok) return null; const uf = await ux.json(); return JSON.parse(Buffer.from(uf.content,'base64').toString('utf8')); };
       let universeStore = await readUniverse(today);
+      let universeDate = today;
       if (!universeStore) {
-        try { const udir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (udir.ok) { const ufiles = await udir.json(); const udates = (Array.isArray(ufiles) ? ufiles : []).map(f => (f.name||'').match(/^sa-universe-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse(); if (udates.length) universeStore = await readUniverse(udates[0]); } } catch {}
+        try { const udir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (udir.ok) { const ufiles = await udir.json(); const udates = (Array.isArray(ufiles) ? ufiles : []).map(f => (f.name||'').match(/^sa-universe-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt <= today).sort().reverse(); if (udates.length) { universeStore = await readUniverse(udates[0]); universeDate = udates[0]; } } } catch {}
       }
+      sourceDate = universeDate; isCarryForward = (universeDate !== today);
       const symOf = r => String((r && (r.sym || r.symbol)) || '').toUpperCase();
       const hasGrades = r => !!(r && r.grades && r.grades.V != null);
-      const portfolioRows = [].concat(picked.store.stocks||[], picked.store.etfs||[]);
-      const byTicker = {};
-      portfolioRows.forEach(r => { const s = symOf(r); if (s) byTicker[s] = r; });
+      // index the shared SA research by ticker
+      const uniByTicker = {};
       const universeRows = universeStore ? [].concat(universeStore.stocks||[], universeStore.etfs||[]) : [];
-      universeRows.forEach(u => {
-        const s = symOf(u); if (!s) return;
-        const p = byTicker[s];
-        if (!p) { byTicker[s] = u; }
-        else if (!hasGrades(p) && hasGrades(u)) { byTicker[s] = Object.assign({}, u, { shares: (p.shares != null ? p.shares : u.shares), cost: (p.cost != null ? p.cost : u.cost), value: (p.value != null ? p.value : u.value), weight: (p.weight != null ? p.weight : u.weight) }); }
+      universeRows.forEach(u => { const s = symOf(u); if (s) uniByTicker[s] = u; });
+      // build the scored set FROM THE USER'S HOLDINGS ONLY
+      const byTicker = {};
+      holdings.forEach(h => {
+        const s = symOf(h); if (!s) return;
+        const research = uniByTicker[s];
+        if (research && hasGrades(research)) {
+          // merge: SA research as the base, user's own position fields on top
+          byTicker[s] = Object.assign({}, research, {
+            shares: (h.shares != null ? h.shares : research.shares),
+            cost:   (h.cost   != null ? h.cost   : research.cost),
+            value:  (h.value  != null ? h.value  : (h.mv != null ? h.mv : research.value)),
+            weight: (h.weight != null ? h.weight : research.weight),
+            owned:  true,
+            no_sa_data: false
+          });
+        } else {
+          // user holds this stock but it's NOT in the shared SA workbook → flag it
+          byTicker[s] = Object.assign({}, h, { sym: s, owned: true, no_sa_data: true, grades: (h.grades||{}) });
+        }
       });
       const all = Object.keys(byTicker).map(k => byTicker[k]);
       const { scored, excluded_etfs } = computeBuckets(all);
+      // ensure the no_sa_data flag survives scoring so the UI can show the note
+      Object.keys(byTicker).forEach(s => { if (byTicker[s].no_sa_data && scored[s]) scored[s].no_sa_data = true; });
       const fp = `data/sa-buckets${TAG}-${today}.json`;
       const payload = JSON.stringify({ date: today, source_portfolio_date: sourceDate, isCarryForward, scored, excluded_etfs, count: { scored: Object.keys(scored).length, excluded: excluded_etfs.length }, generated_at: new Date().toISOString() }, null, 2);
       let sha = null;
@@ -445,7 +471,7 @@ module.exports = async (req, res) => {
       const o = buckets.scored[sym];
       const snapshot = { grades: o.grades || {}, archetype: (o.long && o.long.archetype) || null, short: o.short ? o.short.score : null, mid: o.mid ? o.mid.score : null, long: o.long ? o.long.score : null, conviction: (o.long && o.long.conviction) ? o.long.conviction.tier : null, quant: o.quant != null ? o.quant : null };
       const fingerprint = JSON.stringify(snapshot);
-      const cachePath = `data/deep-reads${TAG}-${sym}.json`;
+      const cachePath = `data/deep-reads-${sym}.json`;
       const cachedWrap = await readJson(cachePath);
       const cached = cachedWrap ? cachedWrap.data : null;
       const GLABEL = { V:'التقييم', G:'النمو', P:'الربحية', M:'الزخم', R:'مراجعات الأرباح' };
@@ -460,9 +486,9 @@ module.exports = async (req, res) => {
       const mustGenerate = !cached;
       const wantGenerate = forceRefresh && refreshAllowed;
       if (!mustGenerate && !wantGenerate) return res.status(200).json({ symbol: sym, result: cached.text, cached: true, generated_at: cached.generated_at, factsChanged, changes, refreshAllowed, hoursSinceRead: Math.floor(hoursSince), nextRefreshInHours: cooldownPassed ? 0 : Math.ceil(24 - hoursSince), usage: cached.usage || undefined });
-      let storeWrap = await readJson(`data/sa-portfolio${TAG}-${today}.json`);
+      let storeWrap = await readJson(`data/sa-portfolio-${today}.json`);
       let store = storeWrap ? storeWrap.data : null;
-      if (!store) { const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (dir.ok) { const files = await dir.json(); const dates = (Array.isArray(files)?files:[]).map(f => (f.name||'').match(_scanRe('sa-portfolio'))).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse(); if (dates.length){ const w = await readJson(`data/sa-portfolio${TAG}-${dates[0]}.json`); store = w?w.data:null; } } }
+      if (!store) { const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (dir.ok) { const files = await dir.json(); const dates = (Array.isArray(files)?files:[]).map(f => (f.name||'').match(/^sa-portfolio-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse(); if (dates.length){ const w = await readJson(`data/sa-portfolio-${dates[0]}.json`); store = w?w.data:null; } } }
       const allRecs = store ? [].concat(store.stocks||[], store.etfs||[]) : [];
       const trackedSet = new Set(allRecs.map(r => (r.symbol||r.sym)).filter(Boolean));
       const ownedSet = new Set(allRecs.filter(r => { const sh = r.shares ?? ((r.sheets&&r.sheets.holdings)||{})['Shares']; return Number(sh) > 0; }).map(r => (r.symbol||r.sym)));
@@ -509,7 +535,7 @@ module.exports = async (req, res) => {
       let buckets = await readBuckets(today);
       if(!buckets){ const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } }); if(dir.ok){ const files=await dir.json(); const dates=(Array.isArray(files)?files:[]).map(f=>(f.name||'').match(_scanRe('sa-buckets'))).filter(Boolean).map(m=>m[1]).filter(d=>d<today).sort().reverse(); if(dates.length) buckets=await readBuckets(dates[0]); } }
       const scored = (buckets && buckets.scored) || {};
-      if (!Object.keys(scored).length) return res.status(200).json({ date:today, brief:'لا توجد بيانات محفظة بعد.', detail:'', generated_at:new Date().toISOString() });
+      if (!Object.keys(scored).length) return res.status(200).json({ date:today, brief:'أضف أسهم محفظتك من تبويب المحفظة لتظهر قراءة اليوم الخاصة بك.', detail:'', generated_at:new Date().toISOString() });
       const ownedSet = new Set(Object.keys(scored).filter(s => scored[s].owned));
       const trackedSet = new Set(Object.keys(scored));
       const ownedByLong = Object.keys(scored).filter(s => scored[s].owned && scored[s].long && scored[s].long.score!=null).sort((a,b)=>scored[b].long.score-scored[a].long.score);
@@ -713,7 +739,7 @@ module.exports = async (req, res) => {
   if (inputs && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
-      const fp = `data/sa-portfolio${TAG}-${today}.json`;
+      const fp = `data/sa-portfolio-${today}.json`;
       const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } });
       if (ex.ok) { const f = await ex.json(); const store = JSON.parse(Buffer.from(f.content,'base64').toString('utf8')); const all = [].concat(store.stocks||[], store.etfs||[]); if (all.length) inputs.excelRows = all; }
     } catch (_) {}
