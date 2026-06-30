@@ -528,6 +528,7 @@ module.exports = async (req, res) => {
       const readDay = async (date) => { const fp = `data/sa-buckets${TAG}-${date}.json`; const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } }); if(!ex.ok) return null; return JSON.parse(Buffer.from((await ex.json()).content,'base64').toString('utf8')); };
       let b = await readDay(today);
       if(!b){ const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } }); if(dir.ok){ const files=await dir.json(); const dates=(Array.isArray(files)?files:[]).map(f=>(f.name||'').match(_scanRe('sa-buckets'))).filter(Boolean).map(m=>m[1]).filter(d=>d<today).sort().reverse(); if(dates.length) b=await readDay(dates[0]); } }
+      if(!b){ const built = await _buildBuckets(today); if (built) b = { date: today, scored: built.scored, excluded_etfs: built.excluded_etfs }; }
       const scored = (b && b.scored) || {};
       const syms = Object.keys(scored).slice(0, 30);
       const from = daysAgoUAE(7);
@@ -640,6 +641,7 @@ module.exports = async (req, res) => {
       const readBuckets = async (date) => { const w = await readJson(`data/sa-buckets${TAG}-${date}.json`); return w?w.data:null; };
       let buckets = await readBuckets(today);
       if(!buckets){ const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } }); if(dir.ok){ const files=await dir.json(); const dates=(Array.isArray(files)?files:[]).map(f=>(f.name||'').match(_scanRe('sa-buckets'))).filter(Boolean).map(m=>m[1]).filter(d=>d<today).sort().reverse(); if(dates.length) buckets=await readBuckets(dates[0]); } }
+      if(!buckets){ const built = await _buildBuckets(today); if (built) buckets = { date: today, scored: built.scored, excluded_etfs: built.excluded_etfs }; }
       const symbols = buckets && buckets.scored ? Object.keys(buckets.scored) : [];
       if (!symbols.length) return res.status(200).json({ date:today, themes:[], note:'no symbols' });
       const news = await fmpNews(symbols, 60);
