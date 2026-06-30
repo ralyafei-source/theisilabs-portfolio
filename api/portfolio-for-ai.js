@@ -282,6 +282,170 @@ module.exports = async (req, res) => {
       });
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+// THEISI — mode=macro  (US MACRO EVENTS: Fed / CPI / PCE / Jobs / GDP …)
+// Drop-in block for portfolio-for-ai.js. Paste alongside the other
+// `if (req.query.mode === '...')` branches (after the auth check).
+//
+// Returns upcoming high-impact US economic events, each with:
+//   • date (+ days away)            — from FMP economic calendar
+//   • consensus / previous          — from FMP (current analyst expectation)
+//   • what_ar                       — what the announcement is (Arabic)
+//   • impact_ar                     — how hot/cold prints typically move markets
+//
+// Source: FMP /economic-calendar (same FMP_API_KEY you already use).
+// The explainer/playbook text is a curated Arabic lookup (not from the API).
+// Test: /api/portfolio-for-ai?mode=macro
+//       /api/portfolio-for-ai?mode=macro&days=45
+// ═══════════════════════════════════════════════════════════════════════════
+  if (req.query.mode === 'macro') {
+    try {
+      const FMP = process.env.FMP_API_KEY || process.env.FMP_KEY;
+      const FMP_BASE = 'https://financialmodelingprep.com/stable';
+
+      const horizon = Math.min(120, Math.max(7, parseInt(req.query.days || '40', 10)));
+      const today = new Date(Date.now() + 4*3600*1000).toISOString().slice(0,10);     // UAE
+      const to    = new Date(Date.now() + 4*3600*1000 + horizon*86400000).toISOString().slice(0,10);
+
+      // ── pull FMP economic calendar for the window ─────────────────────────
+      let rows = [];
+      try {
+        const r = await fetch(`${FMP_BASE}/economic-calendar?from=${today}&to=${to}&apikey=${FMP}`);
+        if (r.ok) { const j = await r.json(); rows = Array.isArray(j) ? j : []; }
+      } catch {}
+
+      // US only
+      rows = rows.filter(e => (e.country === 'US' || e.country === 'USD' || e.currency === 'USD'));
+
+      // ── event catalog: which events we care about + Arabic playbook ───────
+      // match[]  = lowercase substrings to detect this event in FMP's `event` name
+      // tier     = 1 (top market-mover) … 2 (important)
+      // unit     = how to format the numbers
+      const CATALOG = [
+        {
+          key:'fomc', tier:1, unit:'%',
+          match:['fomc','fed interest rate','federal funds','interest rate decision','fed rate'],
+          name_ar:'قرار الفائدة — الاحتياطي الفيدرالي (FOMC)',
+          what_ar:'الاجتماع اللي يحدد فيه الفيدرالي سعر الفائدة. أهم حدث اقتصادي للسوق كله — يأثر على كل الأسهم، خصوصاً النمو والتقنية.',
+          hot_ar:'لو رفعوا الفائدة أو لمّحوا لتشديد أطول: ضغط على أسهم النمو والتقنية، وعادة هبوط بالسوق.',
+          cold_ar:'لو خفّضوا أو لمّحوا لتيسير: دعم قوي للأسهم، خصوصاً النمو — وغالباً صعود.',
+        },
+        {
+          key:'cpi', tier:1, unit:'%',
+          match:['cpi','consumer price index','inflation rate'],
+          name_ar:'مؤشر أسعار المستهلك (CPI) — التضخم',
+          what_ar:'يقيس تضخم الأسعار للمستهلك. الرقم الأهم اللي يحدد توقعات السوق لقرارات الفيدرالي القادمة.',
+          hot_ar:'تضخم أعلى من المتوقع: السوق يخاف من فائدة أعلى لمدة أطول → ضغط على الأسهم.',
+          cold_ar:'تضخم أقل من المتوقع: يفتح الباب لخفض الفائدة → دعم للأسهم، خصوصاً النمو.',
+        },
+        {
+          key:'pce', tier:1, unit:'%',
+          match:['pce','personal consumption expenditure','core pce'],
+          name_ar:'مؤشر نفقات الاستهلاك (PCE)',
+          what_ar:'مقياس التضخم المفضّل لدى الفيدرالي نفسه. وزنه ثقيل في قرارات الفائدة.',
+          hot_ar:'PCE أعلى من المتوقع: يقلّل احتمال خفض الفائدة → سلبي للأسهم.',
+          cold_ar:'PCE أقل من المتوقع: يدعم خفض الفائدة → إيجابي للأسهم.',
+        },
+        {
+          key:'nfp', tier:1, unit:'K',
+          match:['nonfarm payroll','non-farm payroll','employment change','payrolls'],
+          name_ar:'تقرير الوظائف (Nonfarm Payrolls)',
+          what_ar:'عدد الوظائف الجديدة خارج القطاع الزراعي. مؤشر قوة الاقتصاد وسوق العمل.',
+          hot_ar:'وظائف أقوى بكثير: اقتصاد قوي لكن قد يعني فائدة أعلى لمدة أطول → ردة فعل مختلطة.',
+          cold_ar:'وظائف أضعف: قد يسرّع خفض الفائدة، لكن الضعف الشديد يقلق من ركود.',
+        },
+        {
+          key:'unemp', tier:2, unit:'%',
+          match:['unemployment rate'],
+          name_ar:'معدل البطالة',
+          what_ar:'نسبة العاطلين عن العمل. يُقرأ مع تقرير الوظائف لقياس صحة سوق العمل.',
+          hot_ar:'بطالة أعلى من المتوقع: ضعف بسوق العمل — قد يدفع الفيدرالي للتيسير.',
+          cold_ar:'بطالة أقل: سوق عمل قوي — قد يبقي الفائدة مرتفعة أطول.',
+        },
+        {
+          key:'gdp', tier:2, unit:'%',
+          match:['gdp','gross domestic product'],
+          name_ar:'الناتج المحلي الإجمالي (GDP)',
+          what_ar:'نمو الاقتصاد الكلي. يقيس هل الاقتصاد يتوسّع أو ينكمش.',
+          hot_ar:'نمو أقوى: إيجابي للأسهم الدورية والصناعية.',
+          cold_ar:'نمو أضعف: قلق من تباطؤ — ضغط على الأسهم الدورية.',
+        },
+        {
+          key:'retail', tier:2, unit:'%',
+          match:['retail sales'],
+          name_ar:'مبيعات التجزئة',
+          what_ar:'إنفاق المستهلك الأمريكي. مؤشر مبكر على قوة الطلب في الاقتصاد.',
+          hot_ar:'مبيعات أقوى: إنفاق صحي — إيجابي للاستهلاكي والدوري.',
+          cold_ar:'مبيعات أضعف: ضعف الطلب — سلبي للأسهم الاستهلاكية.',
+        },
+      ];
+
+      function classify(name){
+        const l = String(name||'').toLowerCase();
+        return CATALOG.find(c => c.match.some(m => l.includes(m))) || null;
+      }
+      function daysAway(dateStr){
+        const d = (dateStr||'').slice(0,10);
+        return Math.round((new Date(d+'T00:00:00Z') - new Date(today+'T00:00:00Z'))/86400000);
+      }
+      function fmtNum(v, unit){
+        if (v == null || v === '' || isNaN(Number(v))) return null;
+        const n = Number(v);
+        if (unit === 'K') return (n>=1000? (n/1000).toFixed(1)+'M' : n+'K');
+        if (unit === '%') return n + '%';
+        return String(n);
+      }
+
+      // ── build output: keep only catalog events, soonest first, de-dupe ────
+      const seen = new Set();
+      const out = [];
+      rows.forEach(e => {
+        const cat = classify(e.event);
+        if (!cat) return;
+        const date = (e.date || '').slice(0,10);
+        if (!date || date < today) return;
+        const dkey = cat.key + '|' + date;
+        if (seen.has(dkey)) return;
+        seen.add(dkey);
+
+        const consensus = e.estimate ?? e.consensus ?? null;
+        const previous  = e.previous ?? null;
+
+        out.push({
+          key: cat.key,
+          tier: cat.tier,
+          name_ar: cat.name_ar,
+          date,
+          time: (e.date || '').slice(11,16) || null,   // UTC time if present
+          daysAway: daysAway(date),
+          consensus: fmtNum(consensus, cat.unit),
+          previous:  fmtNum(previous,  cat.unit),
+          rawConsensus: consensus,
+          rawPrevious: previous,
+          what_ar: cat.what_ar,
+          impact_ar: { higher: cat.hot_ar, lower: cat.cold_ar },
+        });
+      });
+
+      out.sort((a,b) => a.date.localeCompare(b.date) || a.tier - b.tier);
+
+      // next single most-important event (tier 1, soonest) for a headline
+      const next = out.find(e => e.tier === 1) || out[0] || null;
+
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      return res.status(200).json({
+        asOf: today,
+        horizonDays: horizon,
+        count: out.length,
+        next,             // soonest top-tier event, for a "next Fed decision in X days" headline
+        events: out,
+        note_ar: 'التوقعات (consensus) من إجماع المحللين قبل الإعلان. الأرقام الفعلية تظهر بعد صدورها.',
+      });
+    } catch (e) {
+      return res.status(200).json({ error: e.message });
+    }
+  }
+    
     // ── AI analysis phase-2 (?mode=lookup-analysis&sym=XXX) ──────────────────
     // Returns { analysis: "<arabic markdown>" } for the lookup card's AI section.
     // The dashboard parser expects: a "## ...الاستثمارية..." thesis paragraph,
