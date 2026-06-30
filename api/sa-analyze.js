@@ -103,6 +103,46 @@ module.exports = async (req, res) => {
     } catch { return []; }
   };
 
+  // Build buckets for THIS user: base = their holdings, overlay = shared SA research
+  // (admin's sa-universe). Returns { scored, excluded_etfs, sourceDate, isCarryForward }
+  // or null when the user has no holdings. Used by bucketScore AND loadBuckets
+  // (auto-build) so a user never needs to upload an SA workbook themselves.
+  const _buildBuckets = async (today) => {
+    const holdings = await _loadUserHoldings();
+    if (!holdings.length) return null;
+    const readUniverse = async (date) => { const ufp = `data/sa-universe-${date}.json`; const ux = await fetch(`https://api.github.com/repos/${REPO}/contents/${ufp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ux.ok) return null; const uf = await ux.json(); return JSON.parse(Buffer.from(uf.content,'base64').toString('utf8')); };
+    let universeStore = await readUniverse(today);
+    let universeDate = today;
+    if (!universeStore) {
+      try { const udir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (udir.ok) { const ufiles = await udir.json(); const udates = (Array.isArray(ufiles) ? ufiles : []).map(f => (f.name||'').match(/^sa-universe-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt <= today).sort().reverse(); if (udates.length) { universeStore = await readUniverse(udates[0]); universeDate = udates[0]; } } } catch {}
+    }
+    const symOf = r => String((r && (r.sym || r.symbol)) || '').toUpperCase();
+    const hasGrades = r => !!(r && r.grades && r.grades.V != null);
+    const uniByTicker = {};
+    const universeRows = universeStore ? [].concat(universeStore.stocks||[], universeStore.etfs||[]) : [];
+    universeRows.forEach(u => { const s = symOf(u); if (s) uniByTicker[s] = u; });
+    const byTicker = {};
+    holdings.forEach(h => {
+      const s = symOf(h); if (!s) return;
+      const research = uniByTicker[s];
+      if (research && hasGrades(research)) {
+        byTicker[s] = Object.assign({}, research, {
+          shares: (h.shares != null ? h.shares : research.shares),
+          cost:   (h.cost   != null ? h.cost   : research.cost),
+          value:  (h.value  != null ? h.value  : (h.mv != null ? h.mv : research.value)),
+          weight: (h.weight != null ? h.weight : research.weight),
+          owned: true, no_sa_data: false
+        });
+      } else {
+        byTicker[s] = Object.assign({}, h, { sym: s, owned: true, no_sa_data: true, grades: (h.grades||{}) });
+      }
+    });
+    const all = Object.keys(byTicker).map(k => byTicker[k]);
+    const { scored, excluded_etfs } = computeBuckets(all);
+    Object.keys(byTicker).forEach(s => { if (byTicker[s].no_sa_data && scored[s]) scored[s].no_sa_data = true; });
+    return { scored, excluded_etfs, sourceDate: universeDate, isCarryForward: (universeDate !== today) };
+  };
+
   // ── saveOnly ────────────────────────────────────────────────────────────────
   if (saveOnly && inputs && GITHUB_TOKEN) {
     try {
@@ -385,48 +425,9 @@ module.exports = async (req, res) => {
   if (req.body && req.body.bucketScore && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
-      // ── Base = THIS user's own holdings (the stocks they entered) ──
-      const holdings = await _loadUserHoldings();
-      if (!holdings.length) return res.status(200).json({ saved: false, error: 'no holdings', reason: 'no_holdings' });
-      let sourceDate = today, isCarryForward = false;
-      // ── Overlay = the SHARED SA research library (admin's uploaded workbook) ──
-      const readUniverse = async (date) => { const ufp = `data/sa-universe-${date}.json`; const ux = await fetch(`https://api.github.com/repos/${REPO}/contents/${ufp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (!ux.ok) return null; const uf = await ux.json(); return JSON.parse(Buffer.from(uf.content,'base64').toString('utf8')); };
-      let universeStore = await readUniverse(today);
-      let universeDate = today;
-      if (!universeStore) {
-        try { const udir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (udir.ok) { const ufiles = await udir.json(); const udates = (Array.isArray(ufiles) ? ufiles : []).map(f => (f.name||'').match(/^sa-universe-(\d{4}-\d{2}-\d{2})\.json$/)).filter(Boolean).map(m => m[1]).filter(dt => dt <= today).sort().reverse(); if (udates.length) { universeStore = await readUniverse(udates[0]); universeDate = udates[0]; } } } catch {}
-      }
-      sourceDate = universeDate; isCarryForward = (universeDate !== today);
-      const symOf = r => String((r && (r.sym || r.symbol)) || '').toUpperCase();
-      const hasGrades = r => !!(r && r.grades && r.grades.V != null);
-      // index the shared SA research by ticker
-      const uniByTicker = {};
-      const universeRows = universeStore ? [].concat(universeStore.stocks||[], universeStore.etfs||[]) : [];
-      universeRows.forEach(u => { const s = symOf(u); if (s) uniByTicker[s] = u; });
-      // build the scored set FROM THE USER'S HOLDINGS ONLY
-      const byTicker = {};
-      holdings.forEach(h => {
-        const s = symOf(h); if (!s) return;
-        const research = uniByTicker[s];
-        if (research && hasGrades(research)) {
-          // merge: SA research as the base, user's own position fields on top
-          byTicker[s] = Object.assign({}, research, {
-            shares: (h.shares != null ? h.shares : research.shares),
-            cost:   (h.cost   != null ? h.cost   : research.cost),
-            value:  (h.value  != null ? h.value  : (h.mv != null ? h.mv : research.value)),
-            weight: (h.weight != null ? h.weight : research.weight),
-            owned:  true,
-            no_sa_data: false
-          });
-        } else {
-          // user holds this stock but it's NOT in the shared SA workbook → flag it
-          byTicker[s] = Object.assign({}, h, { sym: s, owned: true, no_sa_data: true, grades: (h.grades||{}) });
-        }
-      });
-      const all = Object.keys(byTicker).map(k => byTicker[k]);
-      const { scored, excluded_etfs } = computeBuckets(all);
-      // ensure the no_sa_data flag survives scoring so the UI can show the note
-      Object.keys(byTicker).forEach(s => { if (byTicker[s].no_sa_data && scored[s]) scored[s].no_sa_data = true; });
+      const built = await _buildBuckets(today);
+      if (!built) return res.status(200).json({ saved: false, error: 'no holdings', reason: 'no_holdings' });
+      const { scored, excluded_etfs, sourceDate, isCarryForward } = built;
       const fp = `data/sa-buckets${TAG}-${today}.json`;
       const payload = JSON.stringify({ date: today, source_portfolio_date: sourceDate, isCarryForward, scored, excluded_etfs, count: { scored: Object.keys(scored).length, excluded: excluded_etfs.length }, generated_at: new Date().toISOString() }, null, 2);
       let sha = null;
@@ -449,10 +450,23 @@ module.exports = async (req, res) => {
       if (!dir.ok) return res.status(200).json({ scored: {}, excluded_etfs: [] });
       const files = await dir.json();
       const dates = (Array.isArray(files) ? files : []).map(f => (f.name||'').match(_scanRe('sa-buckets'))).filter(Boolean).map(m => m[1]).filter(dt => dt < today).sort().reverse();
-      if (!dates.length) return res.status(200).json({ scored: {}, excluded_etfs: [] });
+      if (!dates.length) {
+        // No buckets file for this user yet → auto-build from their holdings + shared SA.
+        const built = await _buildBuckets(today);
+        if (!built) return res.status(200).json({ scored: {}, excluded_etfs: [] });
+        const fp = `data/sa-buckets${TAG}-${today}.json`;
+        const payload = JSON.stringify({ date: today, source_portfolio_date: built.sourceDate, isCarryForward: built.isCarryForward, scored: built.scored, excluded_etfs: built.excluded_etfs, count: { scored: Object.keys(built.scored).length, excluded: built.excluded_etfs.length }, generated_at: new Date().toISOString() }, null, 2);
+        try { let bsha=null; const bex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'User-Agent': 'theisi' } }); if (bex.ok) bsha=(await bex.json()).sha; await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { method:'PUT', headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','User-Agent':'theisi' }, body: JSON.stringify({ message:`SA buckets ${today} (auto)`, content: Buffer.from(payload).toString('base64'), ...(bsha?{sha:bsha}:{}) }) }); } catch {}
+        return res.status(200).json({ date: today, source_portfolio_date: built.sourceDate, isCarryForward: built.isCarryForward, scored: built.scored, excluded_etfs: built.excluded_etfs });
+      }
       const prior = await readDay(dates[0]);
       if (prior) return res.status(200).json({ ...prior, isCarryForward: true });
-      return res.status(200).json({ scored: {}, excluded_etfs: [] });
+      // prior file missing → build fresh
+      {
+        const built = await _buildBuckets(today);
+        if (!built) return res.status(200).json({ scored: {}, excluded_etfs: [] });
+        return res.status(200).json({ date: today, source_portfolio_date: built.sourceDate, isCarryForward: built.isCarryForward, scored: built.scored, excluded_etfs: built.excluded_etfs });
+      }
     } catch(e) { return res.status(200).json({ scored: {}, excluded_etfs: [], error: e.message }); }
   }
 
@@ -534,6 +548,7 @@ module.exports = async (req, res) => {
       const readBuckets = async (date) => { const w = await readJson(`data/sa-buckets${TAG}-${date}.json`); return w ? w.data : null; };
       let buckets = await readBuckets(today);
       if(!buckets){ const dir = await fetch(`https://api.github.com/repos/${REPO}/contents/data`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } }); if(dir.ok){ const files=await dir.json(); const dates=(Array.isArray(files)?files:[]).map(f=>(f.name||'').match(_scanRe('sa-buckets'))).filter(Boolean).map(m=>m[1]).filter(d=>d<today).sort().reverse(); if(dates.length) buckets=await readBuckets(dates[0]); } }
+      if(!buckets){ const built = await _buildBuckets(today); if (built) buckets = { date: today, scored: built.scored, excluded_etfs: built.excluded_etfs }; }
       const scored = (buckets && buckets.scored) || {};
       if (!Object.keys(scored).length) return res.status(200).json({ date:today, brief:'أضف أسهم محفظتك من تبويب المحفظة لتظهر قراءة اليوم الخاصة بك.', detail:'', generated_at:new Date().toISOString() });
       const ownedSet = new Set(Object.keys(scored).filter(s => scored[s].owned));
