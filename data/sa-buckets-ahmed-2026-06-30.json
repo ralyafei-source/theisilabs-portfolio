@@ -1,0 +1,1022 @@
+{
+  "date": "2026-06-30",
+  "source_portfolio_date": "2026-06-26",
+  "isCarryForward": true,
+  "scored": {
+    "BMRN": {
+      "owned": true,
+      "quant": 2.99,
+      "grades": {
+        "V": "A-",
+        "G": "A",
+        "P": "A-",
+        "M": "C+",
+        "R": "D+"
+      },
+      "short": {
+        "score": 71,
+        "coverage": 100
+      },
+      "mid": {
+        "score": 32,
+        "coverage": 100,
+        "grades": {
+          "V": "A-",
+          "G": "A",
+          "P": "A-",
+          "M": "C+",
+          "R": "D+"
+        },
+        "archetype": "value_trap",
+        "conviction": {
+          "tier": "provisional",
+          "mult": 0.8,
+          "days": 53,
+          "analysts": 2
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "EPS Revisions"
+            ]
+          },
+          {
+            "type": "provisional"
+          },
+          {
+            "type": "value_trap"
+          }
+        ]
+      },
+      "long": {
+        "score": 36,
+        "coverage": 100,
+        "grades": {
+          "V": "A-",
+          "G": "A",
+          "P": "A-",
+          "M": "C+",
+          "R": "D+"
+        },
+        "archetype": "value_trap",
+        "conviction": {
+          "tier": "provisional",
+          "mult": 0.8,
+          "days": 53,
+          "analysts": 2
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "EPS Revisions"
+            ]
+          },
+          {
+            "type": "provisional"
+          }
+        ],
+        "bindingConstraint": {
+          "grade": "EPS Revisions",
+          "label": "D+",
+          "watch": "Held back by EPS Revisions (D+). The read improves if EPS Revisions lifts."
+        }
+      }
+    },
+    "CPRT": {
+      "owned": true,
+      "quant": 2.94,
+      "grades": {
+        "V": "C+",
+        "G": "D+",
+        "P": "A",
+        "M": "D",
+        "R": "B"
+      },
+      "short": {
+        "score": 71,
+        "coverage": 100
+      },
+      "mid": {
+        "score": 32,
+        "coverage": 100,
+        "grades": {
+          "V": "C+",
+          "G": "D+",
+          "P": "A",
+          "M": "D",
+          "R": "B"
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "provisional",
+          "mult": 0.8,
+          "days": 31,
+          "analysts": 3
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Growth",
+              "Momentum"
+            ]
+          },
+          {
+            "type": "provisional"
+          }
+        ]
+      },
+      "long": {
+        "score": 36,
+        "coverage": 100,
+        "grades": {
+          "V": "C+",
+          "G": "D+",
+          "P": "A",
+          "M": "D",
+          "R": "B"
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "provisional",
+          "mult": 0.8,
+          "days": 31,
+          "analysts": 3
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Growth",
+              "Momentum"
+            ]
+          },
+          {
+            "type": "provisional"
+          }
+        ],
+        "bindingConstraint": {
+          "grade": "Momentum",
+          "label": "D",
+          "watch": "Held back by Momentum (D). The read improves if Momentum lifts."
+        }
+      }
+    },
+    "NVO": {
+      "owned": true,
+      "quant": 3.14,
+      "grades": {
+        "V": "B-",
+        "G": "F",
+        "P": "A+",
+        "M": "C+",
+        "R": "C"
+      },
+      "short": {
+        "score": 32,
+        "coverage": 100
+      },
+      "mid": {
+        "score": 40,
+        "coverage": 100,
+        "grades": {
+          "V": "B-",
+          "G": "F",
+          "P": "A+",
+          "M": "C+",
+          "R": "C"
+        },
+        "archetype": "value_trap",
+        "conviction": {
+          "tier": "high",
+          "mult": 1,
+          "days": 1877,
+          "analysts": 10
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Growth"
+            ]
+          },
+          {
+            "type": "value_trap"
+          }
+        ]
+      },
+      "long": {
+        "score": 45,
+        "coverage": 100,
+        "grades": {
+          "V": "B-",
+          "G": "F",
+          "P": "A+",
+          "M": "C+",
+          "R": "C"
+        },
+        "archetype": "value_trap",
+        "conviction": {
+          "tier": "high",
+          "mult": 1,
+          "days": 1877,
+          "analysts": 10
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Growth"
+            ]
+          }
+        ],
+        "bindingConstraint": {
+          "grade": "Growth",
+          "label": "F",
+          "watch": "Held back by Growth (F). The read improves if Growth lifts."
+        }
+      }
+    },
+    "CRM": {
+      "owned": true,
+      "quant": 3.32,
+      "grades": {
+        "V": "C-",
+        "G": "D+",
+        "P": "A+",
+        "M": "D",
+        "R": "B+"
+      },
+      "short": {
+        "score": 46,
+        "coverage": 100
+      },
+      "mid": {
+        "score": 40,
+        "coverage": 100,
+        "grades": {
+          "V": "C-",
+          "G": "D+",
+          "P": "A+",
+          "M": "D",
+          "R": "B+"
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "high",
+          "mult": 1,
+          "days": 192,
+          "analysts": 12
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Growth",
+              "Momentum"
+            ]
+          }
+        ]
+      },
+      "long": {
+        "score": 45,
+        "coverage": 100,
+        "grades": {
+          "V": "C-",
+          "G": "D+",
+          "P": "A+",
+          "M": "D",
+          "R": "B+"
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "high",
+          "mult": 1,
+          "days": 192,
+          "analysts": 12
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Growth",
+              "Momentum"
+            ]
+          }
+        ],
+        "bindingConstraint": {
+          "grade": "Momentum",
+          "label": "D",
+          "watch": "Held back by Momentum (D). The read improves if Momentum lifts."
+        }
+      }
+    },
+    "GRAB": {
+      "owned": true,
+      "quant": 3.04,
+      "grades": {
+        "V": "B",
+        "G": "A+",
+        "P": "C",
+        "M": "D-",
+        "R": "B-"
+      },
+      "short": {
+        "score": 69,
+        "coverage": 100
+      },
+      "mid": {
+        "score": 40,
+        "coverage": 100,
+        "grades": {
+          "V": "B",
+          "G": "A+",
+          "P": "C",
+          "M": "D-",
+          "R": "B-"
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "medium",
+          "mult": 1,
+          "days": 190,
+          "analysts": 7
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Momentum"
+            ]
+          }
+        ]
+      },
+      "long": {
+        "score": 45,
+        "coverage": 100,
+        "grades": {
+          "V": "B",
+          "G": "A+",
+          "P": "C",
+          "M": "D-",
+          "R": "B-"
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "medium",
+          "mult": 1,
+          "days": 190,
+          "analysts": 7
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Momentum"
+            ]
+          }
+        ],
+        "bindingConstraint": {
+          "grade": "Momentum",
+          "label": "D-",
+          "watch": "Held back by Momentum (D-). The read improves if Momentum lifts."
+        }
+      }
+    },
+    "ADBE": {
+      "owned": true,
+      "quant": 3.29,
+      "grades": {
+        "V": "A-",
+        "G": "D",
+        "P": "A+",
+        "M": "D-",
+        "R": "A-"
+      },
+      "short": {
+        "score": 37,
+        "coverage": 100
+      },
+      "mid": {
+        "score": 40,
+        "coverage": 100,
+        "grades": {
+          "V": "A-",
+          "G": "D",
+          "P": "A+",
+          "M": "D-",
+          "R": "A-"
+        },
+        "archetype": "value_trap",
+        "conviction": {
+          "tier": "high",
+          "mult": 1,
+          "days": 374,
+          "analysts": 18
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Growth",
+              "Momentum"
+            ]
+          },
+          {
+            "type": "value_trap"
+          }
+        ]
+      },
+      "long": {
+        "score": 45,
+        "coverage": 100,
+        "grades": {
+          "V": "A-",
+          "G": "D",
+          "P": "A+",
+          "M": "D-",
+          "R": "A-"
+        },
+        "archetype": "value_trap",
+        "conviction": {
+          "tier": "high",
+          "mult": 1,
+          "days": 374,
+          "analysts": 18
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Growth",
+              "Momentum"
+            ]
+          }
+        ],
+        "bindingConstraint": {
+          "grade": "Momentum",
+          "label": "D-",
+          "watch": "Held back by Momentum (D-). The read improves if Momentum lifts."
+        }
+      }
+    },
+    "BABA": {
+      "owned": true,
+      "quant": 3,
+      "grades": {
+        "V": "C",
+        "G": "B",
+        "P": "A+",
+        "M": "D-",
+        "R": "D+"
+      },
+      "short": {
+        "score": 18,
+        "coverage": 100
+      },
+      "mid": {
+        "score": 40,
+        "coverage": 100,
+        "grades": {
+          "V": "C",
+          "G": "B",
+          "P": "A+",
+          "M": "D-",
+          "R": "D+"
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "high",
+          "mult": 1,
+          "days": 359,
+          "analysts": 18
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Momentum",
+              "EPS Revisions"
+            ]
+          }
+        ]
+      },
+      "long": {
+        "score": 45,
+        "coverage": 100,
+        "grades": {
+          "V": "C",
+          "G": "B",
+          "P": "A+",
+          "M": "D-",
+          "R": "D+"
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "high",
+          "mult": 1,
+          "days": 359,
+          "analysts": 18
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Momentum",
+              "EPS Revisions"
+            ]
+          }
+        ],
+        "bindingConstraint": {
+          "grade": "Momentum",
+          "label": "D-",
+          "watch": "Held back by Momentum (D-). The read improves if Momentum lifts."
+        }
+      }
+    },
+    "TTD": {
+      "owned": true,
+      "quant": 1.38,
+      "grades": {
+        "V": "C",
+        "G": "C",
+        "P": "B+",
+        "M": "D-",
+        "R": "D+"
+      },
+      "short": {
+        "score": 36,
+        "coverage": 100
+      },
+      "mid": {
+        "score": 40,
+        "coverage": 100,
+        "grades": {
+          "V": "C",
+          "G": "C",
+          "P": "B+",
+          "M": "D-",
+          "R": "D+"
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "medium",
+          "mult": 1,
+          "days": 18,
+          "analysts": 11
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Momentum",
+              "EPS Revisions"
+            ]
+          }
+        ]
+      },
+      "long": {
+        "score": 45,
+        "coverage": 100,
+        "grades": {
+          "V": "C",
+          "G": "C",
+          "P": "B+",
+          "M": "D-",
+          "R": "D+"
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "medium",
+          "mult": 1,
+          "days": 18,
+          "analysts": 11
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Momentum",
+              "EPS Revisions"
+            ]
+          }
+        ],
+        "bindingConstraint": {
+          "grade": "Momentum",
+          "label": "D-",
+          "watch": "Held back by Momentum (D-). The read improves if Momentum lifts."
+        }
+      }
+    },
+    "ELF": {
+      "owned": true,
+      "quant": 1.29,
+      "grades": {
+        "V": "D",
+        "G": "C",
+        "P": "B-",
+        "M": "D",
+        "R": "D+"
+      },
+      "short": {
+        "score": 42,
+        "coverage": 100
+      },
+      "mid": {
+        "score": 32,
+        "coverage": 100,
+        "grades": {
+          "V": "D",
+          "G": "C",
+          "P": "B-",
+          "M": "D",
+          "R": "D+"
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "provisional",
+          "mult": 0.8,
+          "days": 38,
+          "analysts": 2
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Momentum",
+              "EPS Revisions"
+            ]
+          },
+          {
+            "type": "provisional"
+          }
+        ]
+      },
+      "long": {
+        "score": 36,
+        "coverage": 100,
+        "grades": {
+          "V": "D",
+          "G": "C",
+          "P": "B-",
+          "M": "D",
+          "R": "D+"
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "provisional",
+          "mult": 0.8,
+          "days": 38,
+          "analysts": 2
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Momentum",
+              "EPS Revisions"
+            ]
+          },
+          {
+            "type": "provisional"
+          }
+        ],
+        "bindingConstraint": {
+          "grade": "Valuation",
+          "label": "D",
+          "watch": "Held back by Valuation (D). The read improves if Valuation lifts."
+        }
+      }
+    },
+    "SHOP": {
+      "owned": true,
+      "quant": 2.92,
+      "grades": {
+        "V": "D",
+        "G": "B",
+        "P": "B+",
+        "M": "C-",
+        "R": "C"
+      },
+      "short": {
+        "score": 57,
+        "coverage": 100
+      },
+      "mid": {
+        "score": 53,
+        "coverage": 100,
+        "grades": {
+          "V": "D",
+          "G": "B",
+          "P": "B+",
+          "M": "C-",
+          "R": "C"
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "high",
+          "mult": 1,
+          "days": 186,
+          "analysts": 10
+        },
+        "flags": []
+      },
+      "long": {
+        "score": 62,
+        "coverage": 100,
+        "grades": {
+          "V": "D",
+          "G": "B",
+          "P": "B+",
+          "M": "C-",
+          "R": "C"
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "high",
+          "mult": 1,
+          "days": 186,
+          "analysts": 10
+        },
+        "flags": [],
+        "bindingConstraint": {
+          "grade": "Valuation",
+          "label": "D",
+          "watch": "Held back by Valuation (D). The read improves if Valuation lifts."
+        }
+      }
+    },
+    "SE": {
+      "owned": true,
+      "quant": 2.71,
+      "grades": {
+        "V": "C-",
+        "G": "A",
+        "P": "A",
+        "M": "D",
+        "R": "C"
+      },
+      "short": {
+        "score": 59,
+        "coverage": 100
+      },
+      "mid": {
+        "score": 32,
+        "coverage": 100,
+        "grades": {
+          "V": "C-",
+          "G": "A",
+          "P": "A",
+          "M": "D",
+          "R": "C"
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "provisional",
+          "mult": 0.8,
+          "days": 9,
+          "analysts": 8
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Momentum"
+            ]
+          },
+          {
+            "type": "provisional"
+          }
+        ]
+      },
+      "long": {
+        "score": 36,
+        "coverage": 100,
+        "grades": {
+          "V": "C-",
+          "G": "A",
+          "P": "A",
+          "M": "D",
+          "R": "C"
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "provisional",
+          "mult": 0.8,
+          "days": 9,
+          "analysts": 8
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Momentum"
+            ]
+          },
+          {
+            "type": "provisional"
+          }
+        ],
+        "bindingConstraint": {
+          "grade": "Momentum",
+          "label": "D",
+          "watch": "Held back by Momentum (D). The read improves if Momentum lifts."
+        }
+      }
+    },
+    "SMCI": {
+      "owned": true,
+      "quant": 3.39,
+      "grades": {
+        "V": "A",
+        "G": "B-",
+        "P": "D-",
+        "M": "C+",
+        "R": "A"
+      },
+      "short": {
+        "score": 63,
+        "coverage": 100
+      },
+      "mid": {
+        "score": 40,
+        "coverage": 100,
+        "grades": {
+          "V": "A",
+          "G": "B-",
+          "P": "D-",
+          "M": "C+",
+          "R": "A"
+        },
+        "archetype": "momentum_trap",
+        "conviction": {
+          "tier": "medium",
+          "mult": 1,
+          "days": 95,
+          "analysts": 15
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Profitability"
+            ]
+          }
+        ]
+      },
+      "long": {
+        "score": 45,
+        "coverage": 100,
+        "grades": {
+          "V": "A",
+          "G": "B-",
+          "P": "D-",
+          "M": "C+",
+          "R": "A"
+        },
+        "archetype": "momentum_trap",
+        "conviction": {
+          "tier": "medium",
+          "mult": 1,
+          "days": 95,
+          "analysts": 15
+        },
+        "flags": [
+          {
+            "type": "capped",
+            "by": [
+              "Profitability"
+            ]
+          },
+          {
+            "type": "momentum_trap",
+            "branch": "decay"
+          }
+        ],
+        "bindingConstraint": {
+          "grade": "Profitability",
+          "label": "D-",
+          "watch": "Held back by Profitability (D-). The read improves if Profitability lifts."
+        }
+      }
+    },
+    "NICE": {
+      "owned": true,
+      "quant": null,
+      "grades": {
+        "V": null,
+        "G": null,
+        "P": null,
+        "M": null,
+        "R": null
+      },
+      "short": {
+        "score": null,
+        "coverage": 0
+      },
+      "mid": {
+        "score": null,
+        "coverage": 0,
+        "grades": {
+          "V": null,
+          "G": null,
+          "P": null,
+          "M": null,
+          "R": null
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "medium",
+          "mult": 1,
+          "days": null,
+          "analysts": null
+        },
+        "flags": []
+      },
+      "long": {
+        "score": null,
+        "coverage": 0,
+        "grades": {
+          "V": null,
+          "G": null,
+          "P": null,
+          "M": null,
+          "R": null
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "medium",
+          "mult": 1,
+          "days": null,
+          "analysts": null
+        },
+        "flags": [],
+        "bindingConstraint": null
+      },
+      "no_sa_data": true
+    },
+    "TMDX": {
+      "owned": true,
+      "quant": null,
+      "grades": {
+        "V": null,
+        "G": null,
+        "P": null,
+        "M": null,
+        "R": null
+      },
+      "short": {
+        "score": null,
+        "coverage": 0
+      },
+      "mid": {
+        "score": null,
+        "coverage": 0,
+        "grades": {
+          "V": null,
+          "G": null,
+          "P": null,
+          "M": null,
+          "R": null
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "medium",
+          "mult": 1,
+          "days": null,
+          "analysts": null
+        },
+        "flags": []
+      },
+      "long": {
+        "score": null,
+        "coverage": 0,
+        "grades": {
+          "V": null,
+          "G": null,
+          "P": null,
+          "M": null,
+          "R": null
+        },
+        "archetype": null,
+        "conviction": {
+          "tier": "medium",
+          "mult": 1,
+          "days": null,
+          "analysts": null
+        },
+        "flags": [],
+        "bindingConstraint": null
+      },
+      "no_sa_data": true
+    }
+  },
+  "excluded_etfs": [],
+  "count": {
+    "scored": 14,
+    "excluded": 0
+  },
+  "generated_at": "2026-06-30T18:19:01.476Z"
+}
