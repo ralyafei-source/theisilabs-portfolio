@@ -389,7 +389,7 @@ ${JSON.stringify(facts, null, 2)}
 // derived from the SAME VIX history already fetched. No new storage.
 // Test: /api/portfolio-for-ai?mode=sentiment
 // ─────────────────────────────────────────────────────────────────────────
-  // ═══════════════════════════════════════════════════════════════════════════
+ // ═══════════════════════════════════════════════════════════════════════════
 // THEISI — mode=sentiment  v3  (4-FACTOR FEAR & GREED)
 // Drop-in REPLACEMENT for your existing `if (req.query.mode === 'sentiment')`
 // block. Same response shape (score, label, label_ar, vix, vixPercentile,
@@ -471,9 +471,17 @@ ${JSON.stringify(facts, null, 2)}
         const px = spxSeries[0].v;
         const avg125 = sma(spxSeries.map(x => x.v), 125);
         if (avg125) {
-          momGapPct = (px - avg125) / avg125 * 100;            // e.g. +3.2%
-          // +5% gap → 100 (greed), -5% gap → 0 (fear), linear, clamped
-          fMom = clamp(Math.round(50 + momGapPct * 10), 0, 100);
+          momGapPct = (px - avg125) / avg125 * 100;            // e.g. +6.4%
+          // The S&P's gap-to-125d-avg historically swings ~±12%, so a +6% gap is
+          // "moderately above trend", NOT maximum greed. Scale ±12% → 0..100.
+          // Also subtract a short-term decay: if price fell over the last 10d,
+          // bleed the score down so a selloff registers even when still above trend.
+          let recentDrop = 0;
+          if (spxSeries.length > 10) {
+            const r10 = (px - spxSeries[10].v) / spxSeries[10].v * 100; // 10d return
+            if (r10 < 0) recentDrop = Math.min(20, -r10 * 4);   // up to -20 pts
+          }
+          fMom = clamp(Math.round(50 + momGapPct * 4.1 - recentDrop), 0, 100);
         }
       }
 
@@ -491,16 +499,22 @@ ${JSON.stringify(facts, null, 2)}
       }
 
       // ════════════════════════════════════════════════════════════════════════
-      // FACTOR 4 — MARKET STRENGTH  (where SPY sits in its 52-week range)
-      // near highs = greed, near lows = fear.  Direct 0..100.
+      // FACTOR 4 — MARKET STRENGTH  (recency-sensitive short-term trend proxy)
+      // The old "position in 52-week range" pinned ~90 in any bull year and could
+      // not fall on a bad week. CNN uses breadth (advancers vs decliners), which
+      // drops in selloffs. We approximate that responsiveness with SPY's OWN
+      // short-term trend: distance from its 20-day average + 5-day momentum.
+      // Above 20d avg & rising = strength (greed); below & falling = weak (fear).
       // ════════════════════════════════════════════════════════════════════════
-      let fStrength = null, range52Pos = null;
-      if (spySeries.length > 30) {
-        const yr = spySeries.slice(0, 252).map(x => x.v);
-        const hi = Math.max(...yr), lo = Math.min(...yr), px = spySeries[0].v;
-        if (hi > lo) {
-          range52Pos = (px - lo) / (hi - lo) * 100;           // 0..100
-          fStrength = clamp(Math.round(range52Pos), 0, 100);
+      let fStrength = null, strGapPct = null, str5dRet = null;
+      if (spySeries.length > 21) {
+        const px = spySeries[0].v;
+        const avg20 = sma(spySeries.map(x => x.v), 20);
+        str5dRet = (px - spySeries[5].v) / spySeries[5].v * 100;   // 5-day return
+        if (avg20) {
+          strGapPct = (px - avg20) / avg20 * 100;                 // dist from 20d avg
+          // 20d gap swings ~±5%; 5d return ~±5%. Blend both, centered at 50.
+          fStrength = clamp(Math.round(50 + strGapPct * 6 + str5dRet * 4), 0, 100);
         }
       }
 
@@ -542,11 +556,19 @@ ${JSON.stringify(facts, null, 2)}
           const below = vWin.filter(v => v < vixSeries[i].v).length;
           s1 = clamp(Math.round((1 - below / vWin.length) * 100), 0, 100);
         }
-        // factor 2: SPX vs trailing 125d avg that day
+        // factor 2: SPX vs trailing 125d avg that day (rescaled + 10d decay)
         let s2 = null;
         if (spxSeries.length > i + 125) {
           const a = sma(spxSeries.slice(i).map(x => x.v), 125);
-          if (a) s2 = clamp(Math.round(50 + ((spxSeries[i].v - a) / a * 100) * 10), 0, 100);
+          if (a) {
+            const gap = (spxSeries[i].v - a) / a * 100;
+            let drop = 0;
+            if (spxSeries.length > i + 10) {
+              const r10 = (spxSeries[i].v - spxSeries[i + 10].v) / spxSeries[i + 10].v * 100;
+              if (r10 < 0) drop = Math.min(20, -r10 * 4);
+            }
+            s2 = clamp(Math.round(50 + gap * 4.1 - drop), 0, 100);
+          }
         }
         // factor 3: 20d SPY-TLT spread ending that day
         let s3 = null;
@@ -555,12 +577,15 @@ ${JSON.stringify(facts, null, 2)}
           const tr = (tltSeries[i].v - tltSeries[i + 20].v) / tltSeries[i + 20].v * 100;
           s3 = clamp(Math.round(50 + (sr - tr) * 6.25), 0, 100);
         }
-        // factor 4: SPY position in trailing 252d range ending that day
+        // factor 4: SPY short-term trend that day (20d gap + 5d return)
         let s4 = null;
-        if (spySeries.length > i + 30) {
-          const win = spySeries.slice(i, i + 252).map(x => x.v);
-          const hi = Math.max(...win), lo = Math.min(...win);
-          if (hi > lo) s4 = clamp(Math.round((spySeries[i].v - lo) / (hi - lo) * 100), 0, 100);
+        if (spySeries.length > i + 21) {
+          const a20 = sma(spySeries.slice(i).map(x => x.v), 20);
+          if (a20) {
+            const gap = (spySeries[i].v - a20) / a20 * 100;
+            const r5 = (spySeries[i].v - spySeries[i + 5].v) / spySeries[i + 5].v * 100;
+            s4 = clamp(Math.round(50 + gap * 6 + r5 * 4), 0, 100);
+          }
         }
 
         const dayFactors = [
@@ -575,7 +600,30 @@ ${JSON.stringify(facts, null, 2)}
 
       const weekAgoScore = trend.length >= 8 ? trend[trend.length - 8].score : (trend.length ? trend[0].score : score);
 
-      // ── response (same fields the card reads + a breakdown for transparency)─
+      // ── CNN Fear & Greed (live) — fetched always now, for side-by-side ──────
+      // CNN's index is a 7-factor sentiment gauge; we surface it as a reference.
+      // Wrapped so a CNN outage never breaks our own score.
+      let cnn = null;
+      try {
+        const cr = await fetch('https://production.dataviz.cnn.io/index/fearandgreed/graphdata', {
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Accept': 'application/json' }
+        });
+        if (cr.ok) {
+          const cj = await cr.json();
+          const fg = cj && cj.fear_and_greed ? cj.fear_and_greed : null;
+          if (fg && fg.score != null) {
+            const cs = Math.round(Number(fg.score));
+            cnn = {
+              score: cs,
+              rating: fg.rating || null,
+              // Arabic label on OUR thresholds so the card stays bilingual-consistent
+              label_ar: cs < 25 ? 'خوف شديد' : cs < 45 ? 'خوف' : cs < 55 ? 'محايد' : cs < 75 ? 'جشع' : 'جشع شديد',
+            };
+          }
+        }
+      } catch {}
+
+      // ── response (same fields the card reads + breakdown + CNN reference) ───
       const resp = {
         score, label, label_ar,
         vix: vixNow != null ? +vixNow.toFixed(2) : null,
@@ -590,13 +638,16 @@ ${JSON.stringify(facts, null, 2)}
           safeHaven:  fSafe,
           strength:   fStrength,
         },
+        cnn,                         // {score, rating, label_ar} or null
+        vsCNN: cnn ? (score - cnn.score) : null,
       };
       if (debug) {
         resp.debug = {
           vixNow, vixPct252,
           momGapPct: momGapPct != null ? +momGapPct.toFixed(2) : null,
           safeSpread: safeSpread != null ? +safeSpread.toFixed(2) : null,
-          range52Pos: range52Pos != null ? +range52Pos.toFixed(1) : null,
+          strGapPct: strGapPct != null ? +strGapPct.toFixed(2) : null,
+          str5dRet: str5dRet != null ? +str5dRet.toFixed(2) : null,
           weights: W,
           seriesLengths: { vix: vixSeries.length, spx: spxSeries.length, spy: spySeries.length, tlt: tltSeries.length },
         };
