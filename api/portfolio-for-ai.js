@@ -282,7 +282,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
 // THEISI — mode=macro  (US MACRO EVENTS: Fed / CPI / PCE / Jobs / GDP …)
 // Drop-in block for portfolio-for-ai.js. Paste alongside the other
 // `if (req.query.mode === '...')` branches (after the auth check).
@@ -314,8 +314,13 @@ module.exports = async (req, res) => {
         if (r.ok) { const j = await r.json(); rows = Array.isArray(j) ? j : []; }
       } catch {}
 
-      // US only
-      rows = rows.filter(e => (e.country === 'US' || e.country === 'USD' || e.currency === 'USD'));
+      // US only — strict. FMP tags US events with country 'US'. Some feeds also
+      // carry 'United States'. Currency/USD is too loose (catches FX pairs), so
+      // we require an explicit US country tag.
+      rows = rows.filter(e => {
+        const c = String(e.country || '').trim().toUpperCase();
+        return c === 'US' || c === 'USA' || c === 'UNITED STATES';
+      });
 
       // ── event catalog: which events we care about + Arabic playbook ───────
       // match[]  = lowercase substrings to detect this event in FMP's `event` name
@@ -396,27 +401,53 @@ module.exports = async (req, res) => {
         return String(n);
       }
 
-      // ── build output: keep only catalog events, soonest first, de-dupe ────
-      const seen = new Set();
+      // ── build output ──────────────────────────────────────────────────────
+      // Rules to avoid the duplicate/stale mess:
+      //  1. Drop events whose date+time has already passed (event already released).
+      //  2. For each event TYPE, keep only the SOONEST upcoming occurrence
+      //     (so we don't list July + August NFP at the same time).
+      //  3. A type can still appear twice only if both are genuinely upcoming AND
+      //     more than 20 days apart (e.g. two FOMC meetings) — handled by cap=1
+      //     per type by default; raise perTypeCap via &all=1 if you want the full list.
+      const nowMs = Date.now();
+      const perTypeCap = req.query.all === '1' ? 5 : 1;
+      const byType = {};   // key -> count kept
       const out = [];
-      rows.forEach(e => {
-        const cat = classify(e.event);
-        if (!cat) return;
-        const date = (e.date || '').slice(0,10);
-        if (!date || date < today) return;
+
+      // sort raw rows by datetime ascending first, so "soonest per type" works
+      const dated = rows
+        .map(e => ({ e, cat: classify(e.event), iso: (e.date || '') }))
+        .filter(x => x.cat && x.iso)
+        // parse the event datetime (FMP gives 'YYYY-MM-DD HH:MM:SS' in UTC)
+        .map(x => ({ ...x, ms: Date.parse(x.iso.replace(' ', 'T') + 'Z') }))
+        .filter(x => isFinite(x.ms) && x.ms >= nowMs - 3600*1000)  // allow 1h grace
+        .sort((a, b) => a.ms - b.ms);
+
+      const seen = new Set();
+      dated.forEach(({ e, cat, iso }) => {
+        const date = iso.slice(0, 10);
         const dkey = cat.key + '|' + date;
-        if (seen.has(dkey)) return;
+        if (seen.has(dkey)) return;                 // same type same day
+        if ((byType[cat.key] || 0) >= perTypeCap) return;  // already have soonest
         seen.add(dkey);
+        byType[cat.key] = (byType[cat.key] || 0) + 1;
 
         const consensus = e.estimate ?? e.consensus ?? null;
-        const previous  = e.previous ?? null;
+        let previous  = e.previous ?? null;
+        // Guard against unit mismatch (e.g. CPI consensus 3.8% YoY vs previous
+        // 0.92% MoM). If both exist as % and differ by >3x in magnitude, the feed
+        // is mixing YoY and MoM — drop `previous` rather than show a false compare.
+        if (cat.unit === '%' && consensus != null && previous != null) {
+          const a = Math.abs(Number(consensus)), b = Math.abs(Number(previous));
+          if (a > 0 && b > 0 && (a / b > 3 || b / a > 3)) previous = null;
+        }
 
         out.push({
           key: cat.key,
           tier: cat.tier,
           name_ar: cat.name_ar,
           date,
-          time: (e.date || '').slice(11,16) || null,   // UTC time if present
+          time: iso.slice(11, 16) || null,          // UTC time
           daysAway: daysAway(date),
           consensus: fmtNum(consensus, cat.unit),
           previous:  fmtNum(previous,  cat.unit),
