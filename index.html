@@ -7912,10 +7912,18 @@ function renderAnalysis(data){
     if(f==='signals'){
       const flexRow=body.querySelector('[data-signals-row]');
       if(flexRow){
-        flexRow.style.cssText='display:flex!important;flex-direction:row!important;gap:14px;width:100%;white-space:normal;margin-bottom:20px;';
-        flexRow.querySelectorAll('[data-signals-col]').forEach(col=>{
-          col.style.cssText=col.style.cssText+'flex:1!important;min-width:0!important;white-space:normal!important;';
-        });
+        const isMobile=window.matchMedia('(max-width:760px)').matches;
+        if(isMobile){
+          flexRow.style.cssText='display:flex!important;flex-direction:column!important;gap:16px;width:100%;white-space:normal;margin-bottom:20px;';
+          flexRow.querySelectorAll('[data-signals-col]').forEach(col=>{
+            col.style.cssText=col.style.cssText+'width:100%!important;flex:1 1 100%!important;min-width:0!important;white-space:normal!important;';
+          });
+        }else{
+          flexRow.style.cssText='display:flex!important;flex-direction:row!important;gap:14px;width:100%;white-space:normal;margin-bottom:20px;';
+          flexRow.querySelectorAll('[data-signals-col]').forEach(col=>{
+            col.style.cssText=col.style.cssText+'flex:1!important;min-width:0!important;white-space:normal!important;';
+          });
+        }
       }
     }
 body.style.direction = isAr ? 'rtl' : 'ltr';
