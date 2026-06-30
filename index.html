@@ -9424,7 +9424,7 @@ function renderSignals(text, weeklyData){
   // Sections 2 + 3 — two-column row at top using dedicated parsers
   // Sections 2 + 3 — two-column row at top using dedicated parsers
   if(sec2 || sec3){
-    html += `<div data-signals-row style="display:flex;gap:14px;width:100%;white-space:normal;margin-bottom:20px;">`;
+    html += `<div data-signals-row style="display:flex;flex-wrap:wrap;gap:14px;width:100%;white-space:normal;margin-bottom:20px;">`;
     if(sec3){
       // Build scoring cards from weekly data — sorted by score descending
       const scoreCards = weeklyData ? _parseWeeklyScoreCards(weeklyData.scoring||'') : [];
@@ -14888,7 +14888,7 @@ img,svg,video,canvas,table{max-width:100%;}
 /* stack signals row (review + news) on mobile — review first, news second */
 @media(max-width:760px){
   [data-signals-row]{flex-direction:column!important;gap:16px!important;}
-  [data-signals-row]>*{width:100%!important;flex:1 1 100%!important;min-width:0!important;}
+  [data-signals-row]>*,[data-signals-col]{width:100%!important;flex:1 1 100%!important;min-width:0!important;}
 }
 /* respect iPhone notch/safe areas */
 body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}
