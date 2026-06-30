@@ -3451,7 +3451,7 @@ function renderExcl(){
 // ---- load live, fall back to embedded validated data ----
 async function boot(){
   try{
-    const r=await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadBuckets:true})});
+    const r=await saFetch({loadBuckets:true});
     if(r.ok){ const d=await r.json(); if(d && d.scored && Object.keys(d.scored).length){ DATA=d; } }
   }catch(_){}
   if(!DATA) DATA=FALLBACK;   // standalone preview / fetch failure
@@ -3606,6 +3606,17 @@ async function boot(){
 <script>
 // ── Portfolio data — loaded dynamically per logged-in user ──
 // Admin portfolio loads live from data/portfolio.json on GitHub
+
+// Auth-aware fetch for /api/sa-analyze — attaches the logged-in user's
+// Bearer token so the server scopes analysis (قراءة اليوم etc.) to THAT user.
+// Without this the server returns the shared/global analysis.
+function saFetch(body){
+  var tok='';
+  try{ tok=localStorage.getItem('theisilabs_session')||''; }catch(e){}
+  var headers={'Content-Type':'application/json'};
+  if(tok) headers['Authorization']='Bearer '+tok;
+  return fetch('/api/sa-analyze',{method:'POST',headers:headers,body:JSON.stringify(body)});
+}
 
 // Active stocks array — populated after login
 let stocks = [];
@@ -3949,7 +3960,7 @@ async function ccRenderTopHorizons(){
   try{
     if(window._hzData && window._hzData.scored){ data=window._hzData; }
     else{
-      var r=await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadBuckets:true})});
+      var r=await saFetch({loadBuckets:true});
       if(r.ok){ var d=await r.json(); if(d&&d.scored&&Object.keys(d.scored).length){ data=d; window._hzData=d; } }
     }
   }catch(e){}
@@ -4779,18 +4790,18 @@ function ccRefresh(){
   // force a full re-fetch (clear caches + guards)
   window._hzData=null; window._riskData=null; window._riskTried=false; window._divData=null; window._divTried=false; window._histData=null; window._histTried=false; window._briefData=null; window._briefTried=false; window._earnData=null; window._earnTried=false; window._shariaSetCC=null; window._shariaTried=false;
   renderCommandCenter();
-  fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadBuckets:true})})
+  saFetch({loadBuckets:true})
     .then(function(r){return r.json();})
     .then(function(d){ if(d&&d.scored&&Object.keys(d.scored).length){ window._hzData=d; renderCommandCenter(); } }).catch(function(){});
-  fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dailyRead:true})})
+  saFetch({dailyRead:true})
     .then(function(r){return r.json();})
     .then(function(d){ window._dailyBrief=d; renderCommandCenter(); }).catch(function(){});
-  fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({marketRead:true})})
+  saFetch({marketRead:true})
     .then(function(r){return r.json();}).then(function(d){ window._marketRead=d; renderCommandCenter(); }).catch(function(){});
-  fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({themedNews:true})})
+  saFetch({themedNews:true})
     .then(function(r){return r.json();})
     .then(function(d){ window._themedNews=d; renderCommandCenter(); }).catch(function(){});
-  fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({newsFeed:true})})
+  saFetch({newsFeed:true})
     .then(function(r){return r.json();})
     .then(function(d){ window._newsFeed=d; renderCommandCenter(); }).catch(function(){});
   
@@ -4924,7 +4935,7 @@ function loadHistoryData(){
   window._histTried=true;
   try{
     var _hnick=''; try{ _hnick=(localStorage.getItem('theisilabs_nick')||'').toLowerCase().trim(); }catch(e){}
-    fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadHistory:true, nickname:_hnick})})
+    saFetch({loadHistory:true, nickname:_hnick})
       .then(function(r){return r.json();})
       .then(function(d){ if(d&&d.points){ window._histData=d.points; renderCommandCenter(); } })
       .catch(function(){});
@@ -4953,7 +4964,7 @@ function loadDivData(){
   if(window._divData || window._divTried){ return; }
   window._divTried=true;
   try{
-    fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadDividends:true})})
+    saFetch({loadDividends:true})
       .then(function(r){return r.json();})
       .then(function(d){ if(d&&d.symbols&&Object.keys(d.symbols).length){ window._divData=d.symbols; renderCommandCenter(); } })
       .catch(function(){});
@@ -4964,7 +4975,7 @@ function loadRiskData(){
   if(window._riskData || window._riskTried) { return; }
   window._riskTried=true;
   try{
-    fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadRisk:true})})
+    saFetch({loadRisk:true})
       .then(function(r){return r.json();})
       .then(function(d){ if(d&&d.symbols&&Object.keys(d.symbols).length){ window._riskData=d.symbols; renderCommandCenter(); } })
       .catch(function(){});
@@ -4991,7 +5002,7 @@ function showTab(name,el){
       renderCommandCenter();
       // fetch horizon buckets if not loaded, then re-render
       if(!(window._hzData && window._hzData.scored)){
-        fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadBuckets:true})})
+        saFetch({loadBuckets:true})
           .then(function(r){return r.json();})
           .then(function(d){ if(d&&d.scored&&Object.keys(d.scored).length){ window._hzData=d; renderCommandCenter(); } }).catch(function(){});
       }
@@ -7637,12 +7648,12 @@ async function loadAnalysis(){
 // until a fresh one is generated. Returns true if it loaded something.
 async function loadLatestAnalysisFallback(){
   try{
-    var lr=await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listAnalyses:true})});
+    var lr=await saFetch({listAnalyses:true});
     var ld=await lr.json();
     var dates=(ld&&ld.dates)?ld.dates:[];
     if(!dates.length) return false;
     for(var i=0;i<dates.length;i++){
-      var rr=await fetch('/api/sa-analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loadResult:true,date:dates[i]})});
+      var rr=await saFetch({loadResult:true,date:dates[i]});
       var rd=await rr.json();
       var res=rd&&rd.result;
       if(!res) continue;
