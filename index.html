@@ -14885,6 +14885,11 @@ img,svg,video,canvas,table{max-width:100%;}
   .md-table-wrap,.lk-fin-wrap{max-width:100%;}
   .card,.stat-card{box-sizing:border-box;}
 }
+/* stack signals row (review + news) on mobile — review first, news second */
+@media(max-width:760px){
+  [data-signals-row]{flex-direction:column!important;gap:16px!important;}
+  [data-signals-row]>*{width:100%!important;flex:1 1 100%!important;min-width:0!important;}
+}
 /* respect iPhone notch/safe areas */
 body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}
 </style>
