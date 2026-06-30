@@ -280,8 +280,14 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 @media(max-width:760px){.brief-row,.brief-moves-grid{grid-template-columns:1fr;}}
 @media(max-width:760px){
   #cc-grid .cc-brief,#cc-grid .cc-2col,#cc-grid .cc-analysis{grid-template-columns:1fr !important;}
+  #cc-grid .cc-collapse{grid-template-columns:1fr !important;}
+  #cc-grid .cc-collapse3{grid-template-columns:1fr !important;}
+  #cc-grid .cc-collapse-analysis{grid-template-columns:1fr 1fr !important;}
   #cc-grid .cc-hero-val{font-size:36px !important;}
   .cc-analysis-scroll::-webkit-scrollbar{display:none;width:0;height:0;}
+}
+@media(max-width:440px){
+  #cc-grid .cc-collapse-analysis{grid-template-columns:1fr !important;}
 }
   .cc-ticker-wrap{direction:ltr;position:relative;display:flex;align-items:center;overflow:hidden;width:100%;max-width:100%;box-sizing:border-box;background:var(--bg2);border:1px solid var(--border);border-radius:10px;height:38px;margin-bottom:12px;user-select:none;}
   .cc-ticker-tag{flex-shrink:0;display:flex;align-items:center;gap:6px;background:var(--rose,#FF0A78);color:#fff;font-size:11px;font-weight:700;padding:0 12px;height:100%;z-index:2;}
@@ -4292,7 +4298,7 @@ function renderCommandCenter(){
   var rightSide=
     '<div style="display:flex;flex-direction:column;gap:10px;height:100%;">'
       // top 3 cards
-      +'<div style="display:grid;grid-template-columns:minmax(0,255px) minmax(0,255px) minmax(0,170px);gap:10px;flex:none;">'
+      +'<div class="cc-collapse3" style="display:grid;grid-template-columns:minmax(0,255px) minmax(0,255px) minmax(0,170px);gap:10px;flex:none;">'
         +panel(exposureInner,{style:'display:flex;flex-direction:column;'})
         +panel(pulse,{style:'display:flex;flex-direction:column;background:var(--bg2);border-color:rgba(255,10,120,.25);'})
         +(fgCard||'')
@@ -4335,7 +4341,7 @@ function renderCommandCenter(){
 
   var openingBrief=
     '<div>'+tickerHtml
-    +'<div style="display:grid;grid-template-columns:minmax(0,680px) minmax(0,1fr);gap:10px;align-items:stretch;">'
+    +'<div class="cc-collapse" style="display:grid;grid-template-columns:minmax(0,680px) minmax(0,1fr);gap:10px;align-items:stretch;">'
       +leftStack
       +rightSide
     +'</div></div>';
@@ -4733,7 +4739,7 @@ function renderCommandCenter(){
   if(analysisCards.length){
     var cols=Math.min(6,analysisCards.length);
     analysisSection='<div>'+secLabel('\u0623\u062d\u062f\u062b \u0627\u0644\u062a\u062d\u0644\u064a\u0644\u0627\u062a')
-      +'<div class="cc-analysis" style="display:grid;grid-template-columns:repeat('+cols+',minmax(0,1fr));gap:12px;align-items:start;">'+analysisCards.join('')+'</div></div>';
+      +'<div class="cc-analysis cc-collapse-analysis" style="display:grid;grid-template-columns:repeat('+cols+',minmax(0,1fr));gap:12px;align-items:start;">'+analysisCards.join('')+'</div></div>';
   }
 
   // ============ FOOTER ============
@@ -4742,7 +4748,7 @@ function renderCommandCenter(){
   // ============ NEWS + REVIEW SIDE BY SIDE ============
   var newsCardHtml=newsCard();
   var sideBySide=(newsCardHtml&&reviewSection)
-    ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;margin-top:14px;">'+newsCardHtml+reviewSection+'</div>'
+    ? '<div class="cc-collapse" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;margin-top:14px;">'+newsCardHtml+reviewSection+'</div>'
     : (newsCardHtml?'<div style="margin-top:14px;">'+newsCardHtml+'</div>':reviewSection);
   grid.innerHTML=healthChip+openingBrief+analysisSection+sideBySide+footer;
 
