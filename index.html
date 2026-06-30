@@ -7912,18 +7912,12 @@ function renderAnalysis(data){
     if(f==='signals'){
       const flexRow=body.querySelector('[data-signals-row]');
       if(flexRow){
-        const isMobile=window.matchMedia('(max-width:760px)').matches;
-        if(isMobile){
-          flexRow.style.cssText='display:flex!important;flex-direction:column!important;gap:16px;width:100%;white-space:normal;margin-bottom:20px;';
-          flexRow.querySelectorAll('[data-signals-col]').forEach(col=>{
-            col.style.cssText=col.style.cssText+'width:100%!important;flex:1 1 100%!important;min-width:0!important;white-space:normal!important;';
-          });
-        }else{
-          flexRow.style.cssText='display:flex!important;flex-direction:row!important;gap:14px;width:100%;white-space:normal;margin-bottom:20px;';
-          flexRow.querySelectorAll('[data-signals-col]').forEach(col=>{
-            col.style.cssText=col.style.cssText+'flex:1!important;min-width:0!important;white-space:normal!important;';
-          });
-        }
+        flexRow.style.cssText='gap:14px;width:100%;white-space:normal;margin-bottom:20px;';
+        flexRow.classList.add('signals-row-js');
+        flexRow.querySelectorAll('[data-signals-col]').forEach(col=>{
+          col.style.cssText=col.style.cssText.replace(/flex\s*:[^;]*;?/g,'')+'white-space:normal!important;';
+          col.classList.add('signals-col-js');
+        });
       }
     }
 body.style.direction = isAr ? 'rtl' : 'ltr';
@@ -14893,10 +14887,12 @@ img,svg,video,canvas,table{max-width:100%;}
   .md-table-wrap,.lk-fin-wrap{max-width:100%;}
   .card,.stat-card{box-sizing:border-box;}
 }
-/* stack signals row (review + news) on mobile — review first, news second */
+/* stack signals row (review + news) — desktop row, mobile column */
+.signals-row-js{display:flex!important;flex-direction:row!important;}
+.signals-col-js{flex:1 1 0!important;min-width:0!important;}
 @media(max-width:760px){
-  [data-signals-row]{flex-direction:column!important;gap:16px!important;}
-  [data-signals-row]>*,[data-signals-col]{width:100%!important;flex:1 1 100%!important;min-width:0!important;}
+  .signals-row-js{flex-direction:column!important;gap:16px!important;}
+  .signals-col-js{flex:1 1 100%!important;width:100%!important;min-width:0!important;}
 }
 /* respect iPhone notch/safe areas */
 body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}
