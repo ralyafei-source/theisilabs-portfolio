@@ -389,66 +389,219 @@ ${JSON.stringify(facts, null, 2)}
 // derived from the SAME VIX history already fetched. No new storage.
 // Test: /api/portfolio-for-ai?mode=sentiment
 // ─────────────────────────────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+// THEISI — mode=sentiment  v3  (4-FACTOR FEAR & GREED)
+// Drop-in REPLACEMENT for your existing `if (req.query.mode === 'sentiment')`
+// block. Same response shape (score, label, label_ar, vix, vixPercentile,
+// trend, weekAgoScore, asOf) so the dashboard card needs ZERO redesign.
+//
+// Adds three new factors alongside your VIX gauge for a real market feel:
+//   1. Volatility   (VIX percentile, inverted)        weight 30%
+//   2. Momentum     (S&P500 vs its 125d average)      weight 25%
+//   3. Safe-haven   (stocks SPY vs bonds TLT, 20d)    weight 25%
+//   4. Strength     (SPY position in 52-week range)   weight 20%
+//
+// Sources: FMP only (same FMP_API_KEY you already use). No scraping, no CNN.
+// Test: /api/portfolio-for-ai?mode=sentiment
+//       /api/portfolio-for-ai?mode=sentiment&debug=1   (see each factor)
+// ═══════════════════════════════════════════════════════════════════════════
   if (req.query.mode === 'sentiment') {
     try {
       const FMP = process.env.FMP_API_KEY || process.env.FMP_KEY;
       const FMP_BASE = 'https://financialmodelingprep.com/stable';
+      const debug = req.query.debug === '1';
 
-      const qr = await fetch(`${FMP_BASE}/quote?symbol=^VIX&apikey=${FMP}`);
-      const qj = qr.ok ? await qr.json() : [];
-      const vixNow = Array.isArray(qj) && qj[0] ? Number(qj[0].price) : null;
+      // ── tunable weights (must sum to 1.0) ──────────────────────────────────
+      const W = { vol: 0.30, mom: 0.25, safe: 0.25, strength: 0.20 };
 
-      const hr = await fetch(`${FMP_BASE}/historical-price-eod/light?symbol=^VIX&apikey=${FMP}`);
-      const hj = hr.ok ? await hr.json() : null;
-      const hist = Array.isArray(hj) ? hj : (hj && Array.isArray(hj.historical) ? hj.historical : []);
-      // newest-first array of {date, price/close}
-      const series = hist.map(d => ({ date: d.date, v: Number(d.price != null ? d.price : d.close) }))
-                         .filter(x => isFinite(x.v));
-      const closes = series.map(x => x.v).slice(0, 252);
-
-      if (vixNow == null || !closes.length) {
-        return res.status(200).json({ error: 'VIX data unavailable', vixNow, histCount: closes.length });
-      }
-
-      const scoreFrom = (vix, window) => {
-        const w = window.filter(v => isFinite(v));
+      // ── helpers ────────────────────────────────────────────────────────────
+      const jget = async (url) => { try { const r = await fetch(url); return r.ok ? await r.json() : null; } catch { return null; } };
+      const closesOf = (raw) => {
+        const arr = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.historical) ? raw.historical : []);
+        return arr.map(d => ({ date: d.date, v: Number(d.price != null ? d.price : d.close) }))
+                  .filter(x => isFinite(x.v));   // newest-first
+      };
+      const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+      const pctRank = (val, window) => {           // % of window below val → 0..100
+        const w = window.filter(isFinite);
         if (!w.length) return null;
-        const below = w.filter(v => v < vix).length;
-        return Math.round((1 - below / w.length) * 100);
+        return (w.filter(v => v < val).length / w.length) * 100;
+      };
+      const sma = (arr, n) => {                     // simple moving avg of first n (newest)
+        const s = arr.slice(0, n).filter(isFinite);
+        return s.length ? s.reduce((a, b) => a + b, 0) / s.length : null;
       };
 
-      // current score vs trailing 252d
-      const below = closes.filter(v => v < vixNow).length;
-      const vixPct = below / closes.length;
-      const score = Math.round((1 - vixPct) * 100);
+      // ── fetch all series in parallel ───────────────────────────────────────
+      const Q = (sym) => `${FMP_BASE}/quote?symbol=${encodeURIComponent(sym)}&apikey=${FMP}`;
+      const H = (sym) => `${FMP_BASE}/historical-price-eod/light?symbol=${encodeURIComponent(sym)}&apikey=${FMP}`;
 
-      // 30-day trend: for each of the last 30 days, score that day's VIX
-      // against the 252 days *ending that day* (rolling window).
-      const trend = [];
-      const N = Math.min(90, series.length);
-      for (let i = N - 1; i >= 0; i--) {
-        // series[i] is the day; window = series[i..i+251] (older days are higher index)
-        const win = series.slice(i, i + 252).map(x => x.v);
-        const s = scoreFrom(series[i].v, win);
-        if (s != null) trend.push({ date: series[i].date, score: s });
+      const [vixQ, vixH, spxH, spyH, tltH] = await Promise.all([
+        jget(Q('^VIX')),
+        jget(H('^VIX')),
+        jget(H('^GSPC')),   // S&P 500 index for momentum
+        jget(H('SPY')),     // S&P ETF for safe-haven + strength
+        jget(H('TLT')),     // 20yr treasuries for safe-haven
+      ]);
+
+      const vixNow = Array.isArray(vixQ) && vixQ[0] ? Number(vixQ[0].price) : null;
+      const vixSeries = closesOf(vixH);
+      const spxSeries = closesOf(spxH);
+      const spySeries = closesOf(spyH);
+      const tltSeries = closesOf(tltH);
+
+      // ════════════════════════════════════════════════════════════════════════
+      // FACTOR 1 — VOLATILITY  (VIX percentile, inverted)  — same as your v2
+      // low VIX vs its year = calm = greed = high score
+      // ════════════════════════════════════════════════════════════════════════
+      let fVol = null, vixPct252 = null;
+      if (vixNow != null && vixSeries.length) {
+        const closes = vixSeries.map(x => x.v).slice(0, 252);
+        const below = closes.filter(v => v < vixNow).length;
+        vixPct252 = below / closes.length;                    // 0..1
+        fVol = clamp(Math.round((1 - vixPct252) * 100), 0, 100);
       }
 
-      const label = score < 25 ? 'Extreme Fear' : score < 45 ? 'Fear' : score < 55 ? 'Neutral' : score < 75 ? 'Greed' : 'Extreme Greed';
-      const label_ar = score < 25 ? 'خوف شديد' : score < 45 ? 'خوف' : score < 55 ? 'محايد' : score < 75 ? 'جشع' : 'جشع شديد';
+      // ════════════════════════════════════════════════════════════════════════
+      // FACTOR 2 — MOMENTUM  (S&P500 vs its own 125-day average)
+      // above average = uptrend = greed.  Map ±5% gap → 0..100.
+      // ════════════════════════════════════════════════════════════════════════
+      let fMom = null, momGapPct = null;
+      if (spxSeries.length > 125) {
+        const px = spxSeries[0].v;
+        const avg125 = sma(spxSeries.map(x => x.v), 125);
+        if (avg125) {
+          momGapPct = (px - avg125) / avg125 * 100;            // e.g. +3.2%
+          // +5% gap → 100 (greed), -5% gap → 0 (fear), linear, clamped
+          fMom = clamp(Math.round(50 + momGapPct * 10), 0, 100);
+        }
+      }
 
-      // 7-day-ago score for an arrow
-      const wkAgo = trend.length >= 8 ? trend[trend.length - 8].score : (trend.length ? trend[0].score : score);
+      // ════════════════════════════════════════════════════════════════════════
+      // FACTOR 3 — SAFE-HAVEN DEMAND  (stocks vs bonds, 20-day return spread)
+      // SPY outperforming TLT = risk-on = greed.  Map ±8% spread → 0..100.
+      // ════════════════════════════════════════════════════════════════════════
+      let fSafe = null, safeSpread = null;
+      if (spySeries.length > 21 && tltSeries.length > 21) {
+        const spyRet = (spySeries[0].v - spySeries[20].v) / spySeries[20].v * 100;
+        const tltRet = (tltSeries[0].v - tltSeries[20].v) / tltSeries[20].v * 100;
+        safeSpread = spyRet - tltRet;                         // stocks minus bonds
+        // +8% spread → 100 (greed), -8% → 0 (fear)
+        fSafe = clamp(Math.round(50 + safeSpread * 6.25), 0, 100);
+      }
 
-      return res.status(200).json({
+      // ════════════════════════════════════════════════════════════════════════
+      // FACTOR 4 — MARKET STRENGTH  (where SPY sits in its 52-week range)
+      // near highs = greed, near lows = fear.  Direct 0..100.
+      // ════════════════════════════════════════════════════════════════════════
+      let fStrength = null, range52Pos = null;
+      if (spySeries.length > 30) {
+        const yr = spySeries.slice(0, 252).map(x => x.v);
+        const hi = Math.max(...yr), lo = Math.min(...yr), px = spySeries[0].v;
+        if (hi > lo) {
+          range52Pos = (px - lo) / (hi - lo) * 100;           // 0..100
+          fStrength = clamp(Math.round(range52Pos), 0, 100);
+        }
+      }
+
+      // ════════════════════════════════════════════════════════════════════════
+      // COMPOSITE — weighted average of available factors (re-normalise weights
+      // if any factor is missing, so a single FMP gap doesn't break the score)
+      // ════════════════════════════════════════════════════════════════════════
+      const factors = [
+        { key: 'vol',      score: fVol,      w: W.vol },
+        { key: 'mom',      score: fMom,      w: W.mom },
+        { key: 'safe',     score: fSafe,     w: W.safe },
+        { key: 'strength', score: fStrength, w: W.strength },
+      ];
+      const present = factors.filter(f => f.score != null);
+      if (!present.length) {
+        return res.status(200).json({ error: 'sentiment data unavailable', vixNow });
+      }
+      const wSum = present.reduce((a, f) => a + f.w, 0);
+      const score = Math.round(present.reduce((a, f) => a + f.score * f.w, 0) / wSum);
+
+      // ── labels (same thresholds + Arabic as your card expects) ─────────────
+      const label    = score < 25 ? 'Extreme Fear' : score < 45 ? 'Fear' : score < 55 ? 'Neutral' : score < 75 ? 'Greed' : 'Extreme Greed';
+      const label_ar = score < 25 ? 'خوف شديد'     : score < 45 ? 'خوف'  : score < 55 ? 'محايد'   : score < 75 ? 'جشع'  : 'جشع شديد';
+
+      // ════════════════════════════════════════════════════════════════════════
+      // 30/90-DAY TREND — recompute the COMPOSITE for each recent day, using the
+      // same rolling logic per factor against the day's trailing windows.
+      // Keeps the dashboard trend line, now multi-factor instead of VIX-only.
+      // ════════════════════════════════════════════════════════════════════════
+      const trend = [];
+      const N = Math.min(90, vixSeries.length, spxSeries.length, spySeries.length, tltSeries.length);
+      for (let i = N - 1; i >= 0; i--) {
+        const day = vixSeries[i].date;
+
+        // factor 1: VIX percentile that day vs its trailing 252d
+        let s1 = null;
+        const vWin = vixSeries.slice(i, i + 252).map(x => x.v);
+        if (vWin.length && isFinite(vixSeries[i].v)) {
+          const below = vWin.filter(v => v < vixSeries[i].v).length;
+          s1 = clamp(Math.round((1 - below / vWin.length) * 100), 0, 100);
+        }
+        // factor 2: SPX vs trailing 125d avg that day
+        let s2 = null;
+        if (spxSeries.length > i + 125) {
+          const a = sma(spxSeries.slice(i).map(x => x.v), 125);
+          if (a) s2 = clamp(Math.round(50 + ((spxSeries[i].v - a) / a * 100) * 10), 0, 100);
+        }
+        // factor 3: 20d SPY-TLT spread ending that day
+        let s3 = null;
+        if (spySeries.length > i + 20 && tltSeries.length > i + 20) {
+          const sr = (spySeries[i].v - spySeries[i + 20].v) / spySeries[i + 20].v * 100;
+          const tr = (tltSeries[i].v - tltSeries[i + 20].v) / tltSeries[i + 20].v * 100;
+          s3 = clamp(Math.round(50 + (sr - tr) * 6.25), 0, 100);
+        }
+        // factor 4: SPY position in trailing 252d range ending that day
+        let s4 = null;
+        if (spySeries.length > i + 30) {
+          const win = spySeries.slice(i, i + 252).map(x => x.v);
+          const hi = Math.max(...win), lo = Math.min(...win);
+          if (hi > lo) s4 = clamp(Math.round((spySeries[i].v - lo) / (hi - lo) * 100), 0, 100);
+        }
+
+        const dayFactors = [
+          { score: s1, w: W.vol }, { score: s2, w: W.mom },
+          { score: s3, w: W.safe }, { score: s4, w: W.strength },
+        ].filter(f => f.score != null);
+        if (dayFactors.length) {
+          const dw = dayFactors.reduce((a, f) => a + f.w, 0);
+          trend.push({ date: day, score: Math.round(dayFactors.reduce((a, f) => a + f.score * f.w, 0) / dw) });
+        }
+      }
+
+      const weekAgoScore = trend.length >= 8 ? trend[trend.length - 8].score : (trend.length ? trend[0].score : score);
+
+      // ── response (same fields the card reads + a breakdown for transparency)─
+      const resp = {
         score, label, label_ar,
-        vix: +vixNow.toFixed(2),
-        vixPercentile: +(vixPct * 100).toFixed(0),
-        windowDays: closes.length,
-        trend,                       // [{date, score}] oldest→newest, ~30 pts
-        weekAgoScore: wkAgo,
+        vix: vixNow != null ? +vixNow.toFixed(2) : null,
+        vixPercentile: vixPct252 != null ? +(vixPct252 * 100).toFixed(0) : null,
+        trend,                       // [{date, score}] oldest→newest
+        weekAgoScore,
         asOf: new Date().toISOString().slice(0, 10),
-        method: 'VIX percentile (inverted), rolling 252d window'
-      });
+        method: '4-factor (VIX 30% · momentum 25% · safe-haven 25% · strength 20%)',
+        factors: {
+          volatility: fVol,
+          momentum:   fMom,
+          safeHaven:  fSafe,
+          strength:   fStrength,
+        },
+      };
+      if (debug) {
+        resp.debug = {
+          vixNow, vixPct252,
+          momGapPct: momGapPct != null ? +momGapPct.toFixed(2) : null,
+          safeSpread: safeSpread != null ? +safeSpread.toFixed(2) : null,
+          range52Pos: range52Pos != null ? +range52Pos.toFixed(1) : null,
+          weights: W,
+          seriesLengths: { vix: vixSeries.length, spx: spxSeries.length, spy: spySeries.length, tlt: tltSeries.length },
+        };
+      }
+      return res.status(200).json(resp);
     } catch (e) {
       return res.status(200).json({ error: e.message });
     }
