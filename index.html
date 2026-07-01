@@ -4610,6 +4610,45 @@ function renderCommandCenter(){
     return panel(secLabel('\u0627\u0644\u0623\u0631\u0628\u0627\u062d \u0627\u0644\u0642\u0627\u062f\u0645\u0629')+'<div style="max-height:232px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none;">'+list+'</div>'+legend+door('\u0641\u062a\u062d \u0627\u0644\u062a\u062d\u0644\u064a\u0644','portfolio'));
   }
 
+  // ---- Macro economic events card (Fed / CPI / PCE / Jobs from mode=macro) ----
+  function macroCard(){
+    var M=window._macroData; if(!M||!M.events||!M.events.length) return null;
+    var I=function(x){return '<span dir="ltr" style="unicode-bidi:isolate;">'+x+'</span>';};
+    function fillPct(days){ var d=Math.max(0,Math.min(40,days||0)); return Math.round(10 + (40-d)/40*90); }
+    function accentOf(ev){ return ev.tier===1 ? '#FF0A78' : 'var(--text3)'; }
+    function dayBadge(days){ if(days===0) return '\u0627\u0644\u064a\u0648\u0645'; if(days===1) return '\u063a\u062f\u0627\u064b'; return '\u0628\u0639\u062f '+days+' \u064a\u0648\u0645'; }
+    var rows=M.events.map(function(ev,idx){
+      var acc=accentOf(ev);
+      var fp=fillPct(ev.daysAway);
+      var cons = ev.consensus ? ('\u0627\u0644\u0645\u062a\u0648\u0642\u0639 '+I(ev.consensus)) : '';
+      var prev = ev.previous ? ('\u0627\u0644\u0633\u0627\u0628\u0642 '+I(ev.previous)) : '';
+      var meta = [cons,prev].filter(Boolean).join(' \u00b7 ') || '\u2014';
+      var did='ccmac-'+idx;
+      var detail='<div id="'+did+'" style="display:none;font-size:10.5px;color:var(--text2);line-height:1.8;margin-top:7px;padding-top:7px;border-top:1px solid var(--border);">'
+        + ev.what_ar
+        + '<div style="margin-top:6px;color:#19c37d;">\u2193 '+(ev.impact_ar?ev.impact_ar.lower:'')+'</div>'
+        + '<div style="margin-top:3px;color:#e5764d;">\u2191 '+(ev.impact_ar?ev.impact_ar.higher:'')+'</div>'
+        + '</div>';
+      return '<div style="padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;" '
+        +'onclick="var e=document.getElementById(\''+did+'\');e.style.display=e.style.display===\'none\'?\'block\':\'none\';">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;margin-bottom:5px;">'
+          +'<span style="color:'+acc+';font-weight:700;font-family:'+MONO+';">'+dayBadge(ev.daysAway)+'</span>'
+          +'<span style="color:var(--text);font-weight:700;text-align:right;line-height:1.4;">'+ev.name_ar+' <span style="font-size:9px;color:var(--text3);">\u25be</span></span>'
+        +'</div>'
+        +'<div style="position:relative;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:5px;">'
+          +'<div style="position:absolute;top:0;right:0;height:100%;width:'+fp+'%;background:'+acc+';border-radius:3px;"></div></div>'
+        +'<div style="font-size:9.5px;color:var(--text3);font-family:'+MONO+';text-align:right;">'+meta+'</div>'
+        +detail
+        +'</div>';
+    }).join('');
+    var legend='<div style="font-size:9px;color:var(--text3);margin-top:8px;line-height:1.6;">'
+      +'<span style="color:#FF0A78;">\u25cf</span> \u062d\u062f\u062b \u0645\u0624\u062b\u0631 \u00b7 \u0627\u0644\u062e\u0637 = \u0627\u0642\u062a\u0631\u0627\u0628 \u0627\u0644\u0645\u0648\u0639\u062f \u00b7 \u0627\u0636\u063a\u0637 \u0644\u0644\u062a\u0641\u0627\u0635\u064a\u0644'
+      +'</div>';
+    return panel(secLabel('\u0627\u0644\u0623\u062d\u062f\u0627\u062b \u0627\u0644\u0627\u0642\u062a\u0635\u0627\u062f\u064a\u0629')
+      +'<div style="max-height:232px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none;">'+rows+'</div>'
+      +legend);
+  }
+
   // ---- NEW: News affecting portfolio card (from briefing d.news) ----
   function newsCard(){
     var T=window._themedNews;
@@ -4686,24 +4725,15 @@ function renderCommandCenter(){
     var col=sc<25?'#e5484d':sc<45?'#e5764d':sc<55?'#e5aa00':sc<75?'#7cc34d':'#19c37d';
     var ar=d.label_ar||'';
     var uid='fg'+Math.floor(Math.random()*99999);
-    var W=120, H=64, cx=60, cy=60, r=48, sw=9;
+    var W=120, H=74, cx=60, cy=63, r=50, sw=9;
     function pol(deg,rad){ var a=deg*Math.PI/180; return [cx+rad*Math.cos(a), cy-rad*Math.sin(a)]; }
     var p0=pol(180,r), p1=pol(0,r);
     var track='M '+p0[0].toFixed(1)+' '+p0[1].toFixed(1)+' A '+r+' '+r+' 0 0 1 '+p1[0].toFixed(1)+' '+p1[1].toFixed(1);
     var vdeg=180-(sc/100)*180;
     var vEnd=pol(vdeg,r);
     var arcLen=Math.PI*r;
-    // CNN reference marker on the same dial (only if CNN data present)
-    var cnnMark=(function(){
-        if (!d.cnn || d.cnn.score == null) return '';
-        var cnnSc = Math.max(0, Math.min(100, d.cnn.score));
-        var cp = pol(180 - (cnnSc/100)*180, r);
-        return '<circle cx="'+cp[0].toFixed(1)+'" cy="'+cp[1].toFixed(1)+'" r="4" fill="none" stroke="var(--text2)" stroke-width="1.6"/>'
-             + '<circle cx="'+cp[0].toFixed(1)+'" cy="'+cp[1].toFixed(1)+'" r="1.3" fill="var(--text2)"/>'
-             + '<text x="'+cp[0].toFixed(1)+'" y="'+(cp[1]-7).toFixed(1)+'" font-size="6.5" fill="var(--text2)" text-anchor="middle" font-weight="700">CNN</text>';
-      })();
-    var gauge='<svg viewBox="0 0 '+W+' '+H+'" dir="ltr" style="width:120px;height:64px;display:block;flex:none;">'
-      +'<defs>'
+    var gauge='<svg viewBox="0 0 '+W+' '+H+'" dir="ltr" style="width:120px;height:74px;flex:none;">'
+      
         +'<linearGradient id="'+uid+'g" x1="0%" y1="0%" x2="100%" y2="0%">'
           +'<stop offset="0%" stop-color="#e5484d"/><stop offset="30%" stop-color="#e5764d"/>'
           +'<stop offset="52%" stop-color="#e5aa00"/><stop offset="74%" stop-color="#7cc34d"/>'
@@ -4716,20 +4746,28 @@ function renderCommandCenter(){
       +'<circle cx="'+vEnd[0].toFixed(1)+'" cy="'+vEnd[1].toFixed(1)+'" r="6" fill="'+col+'" opacity="0.28" filter="url(#'+uid+'glow)"/>'
       +'<circle cx="'+vEnd[0].toFixed(1)+'" cy="'+vEnd[1].toFixed(1)+'" r="3.6" fill="#fff"/>'
       +'<circle cx="'+vEnd[0].toFixed(1)+'" cy="'+vEnd[1].toFixed(1)+'" r="1.8" fill="'+col+'"/>'
-      +cnnMark
+      // CNN reference marker on the same dial (only if CNN data present)
+      + (function(){
+          if (!d.cnn || d.cnn.score == null) return '';
+          var cnnSc = Math.max(0, Math.min(100, d.cnn.score));
+          var cnnDeg = 180 - (cnnSc/100)*180;
+          var cp = pol(cnnDeg, r);
+          // small hollow ring + tick so it reads as "reference", not the main needle
+          return '<circle cx="'+cp[0].toFixed(1)+'" cy="'+cp[1].toFixed(1)+'" r="4.2" fill="none" stroke="var(--text2)" stroke-width="1.6"/>'
+               + '<circle cx="'+cp[0].toFixed(1)+'" cy="'+cp[1].toFixed(1)+'" r="1.3" fill="var(--text2)"/>'
+               + '<text x="'+cp[0].toFixed(1)+'" y="'+(cp[1]-7).toFixed(1)+'" font-size="6.5" fill="var(--text2)" text-anchor="middle" font-weight="700">CNN</text>';
+        })()
+      +'<rect x="2" y="63.5" width="22" height="8.5" rx="3" fill="var(--bg2)" opacity="0.85"/>'
+      +'<rect x="96" y="63.5" width="22" height="8.5" rx="3" fill="var(--bg2)" opacity="0.85"/>'
+      +'<text x="6" y="70" font-size="7" fill="#e5484d" font-weight="700">\u062e\u0648\u0641</text>'
+      +'<text x="114" y="70" font-size="7" fill="#19c37d" font-weight="700" text-anchor="end">\u062c\u0634\u0639</text>'
       +'</svg>';
     var I=function(x){return '<span dir="ltr" style="unicode-bidi:isolate;">'+x+'</span>';};
-    // gauge flanked by HTML خوف / جشع labels (HTML renders Arabic reliably; SVG text clipped it)
-    var gaugeRow='<div style="display:flex;align-items:flex-end;justify-content:center;gap:4px;">'
-        +'<span style="font-size:9px;color:#e5484d;font-weight:700;margin-bottom:3px;">\u062e\u0648\u0641</span>'
-        +gauge
-        +'<span style="font-size:9px;color:#19c37d;font-weight:700;margin-bottom:3px;">\u062c\u0634\u0639</span>'
-      +'</div>';
     var gaugeCol='<div onclick="_ccFGPopup()" style="cursor:pointer;width:100%;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;">'
-      +gaugeRow
-      +'<div style="font-size:28px;font-weight:800;color:'+col+';font-family:'+MONO+';line-height:1;margin-top:6px;">'+sc+'</div>'
+      +gauge
+      +'<div style="font-size:28px;font-weight:800;color:'+col+';font-family:'+MONO+';line-height:1;margin-top:2px;">'+sc+'</div>'
       +'<div style="font-size:12px;color:'+col+';font-weight:800;margin-top:2px;">'+ar+' <span style="color:var(--text3);font-size:9px;font-weight:400;">\u24d8</span></div>'
-      +'<div style="font-size:10px;margin-top:7px;line-height:1.5;display:flex;align-items:flex-start;justify-content:center;gap:16px;">'
+         +'<div style="font-size:10px;margin-top:5px;line-height:1.5;display:flex;align-items:flex-start;justify-content:center;gap:14px;">'
         +'<div style="text-align:center;">'
           +'<div style="color:'+col+';font-weight:800;">THEISI '+I(String(sc))+'</div>'
           +'<div style="color:'+col+';font-size:9px;font-weight:700;">'+(d.label_ar||'')+'</div>'
@@ -4738,16 +4776,16 @@ function renderCommandCenter(){
             ? (function(){
                 var c = Math.round(d.cnn.score);
                 var ccol = c<25?'#e5484d':c<45?'#e5764d':c<55?'#e5aa00':c<75?'#7cc34d':'#19c37d';
-                var diff = sc - c; var s='('+(diff>0?'+':'')+diff+')';
+                var diff = sc - c; var s=(diff>0?'+':'')+diff;
                 return '<div style="text-align:center;">'
                   +'<div style="color:var(--text2);font-weight:700;">CNN '+I(String(c))+'</div>'
                   +'<div style="color:'+ccol+';font-size:9px;font-weight:700;">'+(d.cnn.label_ar||'')
-                    +' <span style="color:var(--text3);font-weight:400;">'+I(s)+'</span></div>'
+                    +' <span style="color:var(--text3);font-weight:400;">('+I(s)+')</span></div>'
                 +'</div>';
               })()
             : '')
       +'</div>'
-      +'<div style="font-size:9px;color:var(--text3);margin-top:4px;line-height:1.5;">'+I('VIX '+d.vix)+' \u00b7 '+I(d.vixPercentile+'%')+' \u0645\u0646 \u0627\u0644\u0633\u0646\u0629</div>'
+      +'<div style="font-size:9px;color:var(--text3);margin-top:3px;line-height:1.5;">'+I('VIX '+d.vix)+' \u00b7 '+I(d.vixPercentile+'%')+' \u0645\u0646 \u0627\u0644\u0633\u0646\u0629</div>'
       +'</div>';
     var body='<div style="display:flex;flex-direction:column;height:100%;align-items:stretch;">'+gaugeCol+'</div>';
     return panel(secLabel('\u0645\u0632\u0627\u062c \u0627\u0644\u0633\u0648\u0642')+body,{style:'display:flex;flex-direction:column;height:100%;'});
@@ -4775,7 +4813,7 @@ function renderCommandCenter(){
   }
   window._ccFGPopup=_ccFGPopup;
   var hzCard='<div class="cc-analysis-scroll" style="max-height:250px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;">'+panel(hzInner,{style:'display:flex;flex-direction:column;'})+'</div>';
-  var analysisCards=[panel(positionsInner),earningsCard(),riskCard(),divCard(),rangeCard()].filter(Boolean)
+  var analysisCards=[panel(positionsInner),earningsCard(),macroCard(),riskCard(),divCard(),rangeCard()].filter(Boolean)
     .map(function(c){return '<div class="cc-analysis-scroll" style="max-height:250px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;">'+c+'</div>';});
   analysisCards.push(hzCard);
   var analysisSection='';
@@ -4845,6 +4883,7 @@ function ccRefresh(){
   loadShariaData();
   loadFearGreed();
   loadStockSentiment();
+  loadMacro();
   snapshotToday();
   if(typeof loadAnalysis==='function') loadAnalysis();
 }
@@ -4880,6 +4919,16 @@ function loadStockSentiment(){
     fetch('/api/portfolio-for-ai?mode=stock-sentiment&nickname='+encodeURIComponent(_nick)+'&t='+Date.now())
       .then(function(r){return r.json();})
       .then(function(d){ if(d&&d.data){ var m={}; d.data.forEach(function(x){ m[x.sym]=x; }); window._sentData=m; renderCommandCenter(); } })
+      .catch(function(){});
+  }catch(e){}
+}
+function loadMacro(){
+  if(window._macroData || window._macroTried){ return; }
+  window._macroTried=true;
+  try{
+    fetch('/api/portfolio-for-ai?mode=macro&t='+Date.now())
+      .then(function(r){return r.json();})
+      .then(function(d){ if(d&&d.events){ window._macroData=d; renderCommandCenter(); } })
       .catch(function(){});
   }catch(e){}
 }
