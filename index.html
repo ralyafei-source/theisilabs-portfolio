@@ -4297,6 +4297,7 @@ function renderCommandCenter(){
         +'\u062a\u0623\u0643\u062f \u0645\u0646 \u062a\u0641\u0639\u064a\u0644 \u0633\u064a\u0646\u0627\u0631\u064a\u0648 <span style="font-family:\'IBM Plex Mono\',monospace;direction:ltr;unicode-bidi:isolate;">marketRead</span> \u0641\u064a <span style="font-family:\'IBM Plex Mono\',monospace;direction:ltr;unicode-bidi:isolate;">Make.com</span>.</div>');
 
   var fgCard=fearGreedCard()||'';
+  var mcCard=macroCard()||'';
 
   // LEFT COLUMN: قراءة اليوم + قراءة السوق stacked, equal height
   var leftStack=
@@ -4309,10 +4310,11 @@ function renderCommandCenter(){
   var rightSide=
     '<div style="display:flex;flex-direction:column;gap:10px;height:100%;">'
       // top 3 cards
-      +'<div class="cc-collapse3" style="display:grid;grid-template-columns:minmax(0,255px) minmax(0,255px) minmax(0,170px);gap:10px;flex:none;">'
+      +'<div class="cc-collapse3" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,0.9fr) minmax(0,0.75fr) minmax(0,0.85fr);gap:10px;flex:none;">'
         +panel(exposureInner,{style:'display:flex;flex-direction:column;'})
         +panel(pulse,{style:'display:flex;flex-direction:column;background:var(--bg2);border-color:rgba(255,10,120,.25);'})
         +(fgCard||'')
+        +(mcCard||'')
       +'</div>'
       // movers spans full width below
       +(moversSection||'<div></div>')
@@ -4352,7 +4354,7 @@ function renderCommandCenter(){
 
   var openingBrief=
     '<div>'+tickerHtml
-    +'<div class="cc-collapse" style="display:grid;grid-template-columns:minmax(0,680px) minmax(0,1fr);gap:10px;align-items:stretch;">'
+    +'<div class="cc-collapse" style="display:grid;grid-template-columns:minmax(0,40%) minmax(0,60%);gap:10px;align-items:stretch;">'
       +leftStack
       +rightSide
     +'</div></div>';
@@ -4813,7 +4815,7 @@ function renderCommandCenter(){
   }
   window._ccFGPopup=_ccFGPopup;
   var hzCard='<div class="cc-analysis-scroll" style="max-height:250px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;">'+panel(hzInner,{style:'display:flex;flex-direction:column;'})+'</div>';
-  var analysisCards=[panel(positionsInner),earningsCard(),macroCard(),riskCard(),divCard(),rangeCard()].filter(Boolean)
+  var analysisCards=[panel(positionsInner),earningsCard(),riskCard(),divCard(),rangeCard()].filter(Boolean)
     .map(function(c){return '<div class="cc-analysis-scroll" style="max-height:250px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;">'+c+'</div>';});
   analysisCards.push(hzCard);
   var analysisSection='';
