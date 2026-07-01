@@ -4275,7 +4275,7 @@ function renderCommandCenter(){
     +'<text x="60" y="56" text-anchor="middle" fill="var(--text)" font-size="15" font-weight="800" font-family="'+MONO+'">'+donutSegs[0].pct.toFixed(0)+'%</text>'
     +'<text x="60" y="71" text-anchor="middle" fill="var(--text3)" font-size="8">'+donutSegs[0].label+'</text></svg>';
   var legend=donutSegs.map(function(sg){ return '<div style="display:flex;align-items:center;gap:5px;margin:3px 0;font-size:10px;"><span style="width:7px;height:7px;border-radius:2px;background:'+sg.color+';flex:none;"></span><span style="color:var(--text2);flex:1;">'+sg.label+'</span><span style="color:var(--text3);font-family:'+MONO+';">'+sg.pct.toFixed(1)+'%</span></div>'; }).join('');
-  var donutBlock='<div style="display:flex;align-items:center;gap:10px;">'+donutSvg+'<div style="flex:1;">'+legend+'</div></div>';
+  var donutBlock='<div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><div style="display:flex;justify-content:center;">'+donutSvg+'</div><div style="width:100%;">'+legend+'</div></div>';
   var exposureInner=secLabel('\u0627\u0644\u062a\u0639\u0631\u0636 \u0648\u0627\u0644\u062a\u0631\u0643\u064a\u0632')+donutBlock
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">'
       +'<div style="background:var(--bg3);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:9px;color:var(--text3);">\u0623\u0643\u0628\u0631 \u0645\u0631\u0643\u0632</div><div style="font-size:11px;font-weight:700;color:var(--text);margin-top:2px;">'+(biggest?biggest.sym:'\u2014')+' '+biggestPct.toFixed(1)+'%</div></div>'
@@ -4310,7 +4310,7 @@ function renderCommandCenter(){
   var rightSide=
     '<div style="display:flex;flex-direction:column;gap:10px;height:100%;">'
       // top 3 cards
-      +'<div class="cc-collapse3" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,0.9fr) minmax(0,0.75fr) minmax(0,0.85fr);gap:10px;flex:none;">'
+      +'<div class="cc-collapse3" style="display:grid;grid-template-columns:minmax(0,0.7fr) minmax(0,0.9fr) minmax(0,0.75fr) minmax(0,1.05fr);gap:10px;flex:none;">'
         +panel(exposureInner,{style:'display:flex;flex-direction:column;'})
         +panel(pulse,{style:'display:flex;flex-direction:column;background:var(--bg2);border-color:rgba(255,10,120,.25);'})
         +(fgCard||'')
