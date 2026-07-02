@@ -3642,10 +3642,10 @@ const indicators=[
 
 const periodCfg={
   '1D':{pts:13,vol:0.006,xMax:5,lbl:(i)=>{const h=9+i;return(h>12?h-12:h)+(h>=12?'pm':'am');}},
-  '7D':{pts:7,vol:0.018,xMax:7,lbl:(i)=>{const d=new Date(2026,4,21);d.setDate(d.getDate()-(6-i));return['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];}},
-  '1M':{pts:22,vol:0.022,xMax:5,lbl:(i)=>{const d=new Date(2026,4,21);d.setDate(d.getDate()-(21-i));return(d.getMonth()+1)+'/'+d.getDate();}},
-  '6M':{pts:26,vol:0.045,xMax:5,lbl:(i)=>{const d=new Date(2026,4,21);d.setDate(d.getDate()-(25-i)*7);return(d.getMonth()+1)+'/'+d.getDate();}},
-  '1Y':{pts:52,vol:0.065,xMax:6,lbl:(i)=>{const d=new Date(2026,4,21);d.setDate(d.getDate()-(51-i)*7);const m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return(i===0||d.getDate()<=7)?m[d.getMonth()]:'';}},
+  '7D':{pts:7,vol:0.018,xMax:7,lbl:(i)=>{const d=new Date();d.setDate(d.getDate()-(6-i));return['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];}},
+  '1M':{pts:22,vol:0.022,xMax:5,lbl:(i)=>{const d=new Date();d.setDate(d.getDate()-(21-i));return(d.getMonth()+1)+'/'+d.getDate();}},
+  '6M':{pts:26,vol:0.045,xMax:5,lbl:(i)=>{const d=new Date();d.setDate(d.getDate()-(25-i)*7);return(d.getMonth()+1)+'/'+d.getDate();}},
+  '1Y':{pts:52,vol:0.065,xMax:6,lbl:(i)=>{const d=new Date();d.setDate(d.getDate()-(51-i)*7);const m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return(i===0||d.getDate()<=7)?m[d.getMonth()]:'';}},
 };
 
 // placeholder news
