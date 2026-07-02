@@ -542,7 +542,7 @@ module.exports = async (req, res) => {
   if (req.body && req.body.dailyRead && GITHUB_TOKEN) {
     try {
       const today = new Date().toISOString().slice(0,10);
-      const cachePath = `data/daily-brief${TAG}.json`;
+      const cachePath = `data/daily-brief${TAG}-${today}.json`;
       const readJson = async (fp) => { const ex = await fetch(`https://api.github.com/repos/${REPO}/contents/${fp}`, { headers:{ 'Authorization':`token ${GITHUB_TOKEN}`,'User-Agent':'theisi' } }); if(!ex.ok) return null; const f = await ex.json(); return { data: JSON.parse(Buffer.from(f.content,'base64').toString('utf8')), sha: f.sha }; };
       const cachedWrap = await readJson(cachePath);
       if (cachedWrap && cachedWrap.data && !req.body.forceRefresh) return res.status(200).json({ ...cachedWrap.data, cached:true });
