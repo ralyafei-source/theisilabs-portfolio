@@ -5711,12 +5711,22 @@ async function loadPriceHist(sym){
   }catch(e){}
   return null;
 }
+  function sliceHist(hist,cfg){
+  const closes=hist.map(p=>p.close).filter(v=>v!=null);
+  if(closes.length<=cfg.pts) return closes;
+  const step=Math.floor(closes.length/cfg.pts);
+  const out=[];for(let i=0;i<cfg.pts;i++)out.push(closes[i*step]);
+  out[cfg.pts-1]=closes[closes.length-1];
+  return out;
+}
+  
 function drawChart(stock,cid,height){
   if(tCharts[cid]){try{tCharts[cid].destroy();}catch(e){} delete tCharts[cid];}
   const canvas=document.getElementById(cid);
   if(!canvas) return;
   const cfg=periodCfg[tPeriod];
-  const data=generateData(stock,cfg);
+  const hist=window._priceHist&&window._priceHist[stock.sym];
+const data=hist&&hist.length?sliceHist(hist,cfg):generateData(stock,cfg);
   const labels=Array.from({length:cfg.pts},(_,i)=>cfg.lbl(i));
   const fullDates=Array.from({length:cfg.pts},(_,i)=>chartFullDate(tPeriod,i,cfg.pts));
   const cost=stock.cost;
@@ -5808,7 +5818,9 @@ function renderTrends(){
     </div>`;
   }).join('');
   requestAnimationFrame(()=>{
-    visible.forEach(i=>drawChart(stocks[i],'tc_'+stocks[i].sym,h));
+    Promise.all(visible.map(i=>loadPriceHist(stocks[i].sym)))
+  .then(()=>visible.forEach(i=>drawChart(stocks[i],'tc_'+stocks[i].sym,h)));
+    
   });
 }
 
