@@ -5739,8 +5739,7 @@ const data=hist&&hist.length?sliceHist(hist,cfg):generateData(stock,cfg);
   tCharts[cid]=new Chart(canvas,{
     type:'line',
     data:{labels,datasets:[
-      {label:'above',data:data.map(v=>v>=cost?v:null),borderColor:_ct.up,borderWidth:1.5,pointRadius:0,tension:0.35,fill:false,spanGaps:true},
-      {label:'below',data:data.map(v=>v<cost?v:null),borderColor:_ct.down,borderWidth:1.5,pointRadius:0,tension:0.35,fill:false,spanGaps:true},
+      {label:'price',data:data,borderColor:(data[data.length-1]>=cost?_ct.up:_ct.down),borderWidth:1.5,pointRadius:0,tension:0.35,fill:false,spanGaps:true},
       {label:'cost',data:Array(cfg.pts).fill(cost),borderColor:dashC,borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false}
     ]},
     options:{
@@ -5752,8 +5751,7 @@ const data=hist&&hist.length?sliceHist(hist,cfg):generateData(stock,cfg);
         tooltip:{mode:'index',intersect:false,callbacks:{
           title:ctx=>fullDates[ctx[0].dataIndex]||ctx[0].label,
           label:ctx=>{
-            {label:'price',data:data,borderColor:(data[data.length-1]>=cost?_ct.up:_ct.down),borderWidth:1.5,pointRadius:0,tension:0.35,fill:false,spanGaps:true},
-      {label:'cost',data:Array(cfg.pts).fill(cost),borderColor:dashC,borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false}
+            if(ctx.datasetIndex===1) return (lang==='ar'?'سعر الشراء':'Cost')+': $'+cost.toFixed(2);
             const v=ctx.parsed.y;if(v===null) return null;
             const d=((v-cost)/cost*100).toFixed(2);
             return '$'+v.toFixed(2)+' ('+(d>0?'+':'')+d+'%)';
