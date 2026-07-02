@@ -5701,6 +5701,16 @@ function getChartThemeColors(){
     up, down
   };
 }
+  window._priceHist=window._priceHist||{};
+async function loadPriceHist(sym){
+  if(window._priceHist[sym]) return window._priceHist[sym];
+  try{
+    const r=await saFetch({priceHistory:true,symbol:sym});
+    const d=await r.json();
+    if(d&&Array.isArray(d.prices)&&d.prices.length){window._priceHist[sym]=d.prices;return d.prices;}
+  }catch(e){}
+  return null;
+}
 function drawChart(stock,cid,height){
   if(tCharts[cid]){try{tCharts[cid].destroy();}catch(e){} delete tCharts[cid];}
   const canvas=document.getElementById(cid);
