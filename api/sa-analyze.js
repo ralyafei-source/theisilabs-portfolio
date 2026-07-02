@@ -752,6 +752,19 @@ module.exports = async (req, res) => {
     } catch(e){ return res.status(500).json({ error:e.message }); }
   }
 
+  // ── priceHistory ─────────────────────────────────────────────────────────────
+  if (req.body && req.body.priceHistory && req.body.symbol) {
+    try {
+      const sym = String(req.body.symbol).toUpperCase();
+      const FMP_K = process.env.FMP_API_KEY || process.env.FMP_KEY;
+      const r = await fetch(`https://financialmodelingprep.com/stable/historical-price-eod/light?symbol=${sym}&apikey=${FMP_K}`, { headers:{ 'User-Agent':'theisi' } });
+      const d = await r.json();
+      const arr = Array.isArray(d) ? d : (d.historical||[]);
+      const prices = arr.slice(0,260).reverse().map(x=>({ date:x.date, close:x.close ?? x.price }));
+      return res.status(200).json({ symbol:sym, prices });
+    } catch(e){ return res.status(200).json({ symbol:req.body.symbol, prices:[], error:e.message }); }
+  }
+  
     // ── Main Analysis ───────────────────────────────────────────────────────────
   if (inputs && GITHUB_TOKEN) {
     try {
