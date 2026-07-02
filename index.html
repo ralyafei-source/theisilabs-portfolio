@@ -5712,13 +5712,12 @@ async function loadPriceHist(sym){
   return null;
 }
  function sliceHist(hist,cfg){
-  const closes=hist.map(p=>p.close).filter(v=>v!=null);
-  const span={13:1,7:7,22:22,26:130,52:260}[cfg.pts]||cfg.pts;
+  const closes=hist.map(p=>(p.close!=null?p.close:p.price)).filter(v=>v!=null);
+  const span={13:2,7:7,22:22,26:130,52:260}[cfg.pts]||cfg.pts;
   const sub=closes.slice(-span);
   if(sub.length<=cfg.pts) return sub;
-  const step=Math.floor(sub.length/cfg.pts);
-  const out=[];for(let i=0;i<cfg.pts;i++)out.push(sub[i*step]);
-  out[cfg.pts-1]=sub[sub.length-1];
+  const step=(sub.length-1)/(cfg.pts-1);
+  const out=[];for(let i=0;i<cfg.pts;i++)out.push(sub[Math.round(i*step)]);
   return out;
 }
   
