@@ -5659,7 +5659,7 @@ function chartFullDate(period, i, pts){
   const arM=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
   const M=(typeof lang!=='undefined'&&lang==='ar')?arM:enM;
   if(period==='1D'){ const h=9+i; const ap=h>=12?'pm':'am'; const hh=h>12?h-12:h; return hh+':00 '+ap; }
-  const anchor=new Date(2026,4,21);
+  const anchor=new Date();
   const d=new Date(anchor);
   if(period==='7D') d.setDate(anchor.getDate()-(6-i));
   else if(period==='6M') d.setDate(anchor.getDate()-((pts-1)-i)*7);
