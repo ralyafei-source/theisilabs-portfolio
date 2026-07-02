@@ -5752,7 +5752,8 @@ const data=hist&&hist.length?sliceHist(hist,cfg):generateData(stock,cfg);
         tooltip:{mode:'index',intersect:false,callbacks:{
           title:ctx=>fullDates[ctx[0].dataIndex]||ctx[0].label,
           label:ctx=>{
-            if(ctx.datasetIndex===2) return (lang==='ar'?'سعر الشراء':'Cost')+': $'+cost.toFixed(2);
+            {label:'price',data:data,borderColor:(data[data.length-1]>=cost?_ct.up:_ct.down),borderWidth:1.5,pointRadius:0,tension:0.35,fill:false,spanGaps:true},
+      {label:'cost',data:Array(cfg.pts).fill(cost),borderColor:dashC,borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false}
             const v=ctx.parsed.y;if(v===null) return null;
             const d=((v-cost)/cost*100).toFixed(2);
             return '$'+v.toFixed(2)+' ('+(d>0?'+':'')+d+'%)';
