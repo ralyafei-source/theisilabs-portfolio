@@ -5811,7 +5811,7 @@ function renderTrends(){
         <div>
           <div class="s-price">$${s.price.toFixed(2)}</div>
           <div class="${up?'s-pct-up':'s-pct-dn'}">${up?'+':''}${pct.toFixed(2)}%</div>
-          ${pPct!=null?`<div style="font-size:10px;color:${pUp?'var(--up,#19c37d)':'var(--down,#e5746b)'};margin-top:2px;">${tPeriod}: ${pUp?'+':''}${pPct.toFixed(2)}%</div>`:''}
+          ${pPct!=null?`<div style="font-size:10px;color:${pUp?'#19c37d':'#e5746b'};margin-top:3px;font-family:'IBM Plex Mono',monospace;text-align:right;">${tPeriod} ${pUp?'▲':'▼'} ${pUp?'+':''}${pPct.toFixed(2)}%</div>`:''}
         </div>
       </div>
       <div style="position:relative;height:${h}px">
