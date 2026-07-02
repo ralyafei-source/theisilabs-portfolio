@@ -5707,7 +5707,11 @@ async function loadPriceHist(sym){
   try{
     const r=await saFetch({priceHistory:true,symbol:sym});
     const d=await r.json();
-    if(d&&Array.isArray(d.prices)&&d.prices.length){window._priceHist[sym]=d.prices;return d.prices;}
+    if(d&&Array.isArray(d.prices)&&d.prices.length){
+      const st=stocks.find(x=>x.sym===sym);
+      if(st&&st.price!=null) d.prices.push({date:new Date().toISOString().slice(0,10),close:st.price});
+      window._priceHist[sym]=d.prices;return d.prices;
+    }
   }catch(e){}
   return null;
 }
