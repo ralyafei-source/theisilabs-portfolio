@@ -5759,11 +5759,7 @@ const data=hist&&hist.length?sliceHist(hist,cfg):generateData(stock,cfg);
         }}
       },
 
-      const _ph=window._priceHist&&window._priceHist[s.sym];
-    const _pd=_ph&&_ph.length?sliceHist(_ph,periodCfg[tPeriod]):null;
-    const pPct=(_pd&&_pd.length>=2)?((_pd[_pd.length-1]-_pd[0])/_pd[0]*100):null;
-    const pUp=pPct>=0;
-        
+         
       scales:{
         x:{display:true,ticks:{color:axC,font:{size:fs,family:'IBM Plex Mono, monospace'},maxRotation:0,autoSkip:true,maxTicksLimit:cfg.xMax},grid:{display:false},border:{display:false}},
         y:{display:true,position:'right',ticks:{color:axC,font:{size:fs,family:'IBM Plex Mono, monospace'},maxTicksLimit:3,callback:v=>'$'+(v>=1000?(v/1000).toFixed(1)+'k':v.toFixed(0))},grid:{color:gridC,drawTicks:false},border:{display:false}}
@@ -5791,6 +5787,10 @@ function renderTrends(){
     const s=stocks[i];
     const pct=((s.price-s.cost)/s.cost*100);
     const up=pct>=0;
+    const _ph=window._priceHist&&window._priceHist[s.sym];
+    const _pd=_ph&&_ph.length?sliceHist(_ph,periodCfg[tPeriod]):null;
+    const pPct=(_pd&&_pd.length>=2)?((_pd[_pd.length-1]-_pd[0])/_pd[0]*100):null;
+    const pUp=pPct>=0;
     const isPinned=tPinned.has(i);
     const name=lang==='ar'?s.ar:s.en;
     const sec=lang==='ar'?(sectors[s.sec]||sectors.other).ar:(sectors[s.sec]||sectors.other).en;
