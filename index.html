@@ -5759,9 +5759,9 @@ const data=hist&&hist.length?sliceHist(hist,cfg):generateData(stock,cfg);
         }}
       },
 
-      const hist=window._priceHist&&window._priceHist[s.sym];
-    const pdata=hist&&hist.length?sliceHist(hist,periodCfg[tPeriod]):null;
-    const pPct=(pdata&&pdata.length>=2)?((pdata[pdata.length-1]-pdata[0])/pdata[0]*100):null;
+      const _ph=window._priceHist&&window._priceHist[s.sym];
+    const _pd=_ph&&_ph.length?sliceHist(_ph,periodCfg[tPeriod]):null;
+    const pPct=(_pd&&_pd.length>=2)?((_pd[_pd.length-1]-_pd[0])/_pd[0]*100):null;
     const pUp=pPct>=0;
         
       scales:{
