@@ -2066,6 +2066,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
   <div class="z-narr" id="z-narr">
     <div class="z-narr-hd"><span class="z-narr-dot"></span><span class="z-narr-lbl" data-en="THEISI’s read today" data-ar="قراءة ثيسي اليوم">قراءة ثيسي اليوم</span></div>
     <div class="z-narr-body z-narr-skel" id="z-narr-body" data-en="THEISI’s daily briefing will appear here — the one story worth knowing, what it means, and how it touches your portfolio. (Connecting to the analysis engine…)" data-ar="ستظهر هنا قراءة ثيسي اليومية — أهم خبر يستحق المعرفة، وماذا يعني، وكيف يؤثر على محفظتك. (جاري الربط بمحرك التحليل…)">جاري التحميل…</div>
+    <div class="briefing-ts" id="z-narr-date" style="margin-top:8px"></div>
     <div class="z-narr-note" data-en="We connect the dots and explain — you decide. Not financial advice." data-ar="نربط النقاط ونشرح — القرار لك. ليست نصيحة مالية.">نربط النقاط ونشرح — القرار لك.</div>
   </div>
 
@@ -13574,6 +13575,21 @@ async function loadNarrative(){
     bodyEl.classList.toggle('en', !isArabicText);
     bodyEl.style.direction = isArabicText ? 'rtl' : 'ltr';
     bodyEl.textContent=text;
+    var dateEl=document.getElementById('z-narr-date');
+    if(dateEl){
+      var raw=d.date||d.generated_at||d.updated_at||d.created_at||null;
+      if(raw){
+        var rd=new Date(raw);
+        if(!isNaN(rd)){
+          var tm=new Date();tm.setHours(0,0,0,0);
+          var rm=new Date(rd);rm.setHours(0,0,0,0);
+          var days=Math.round((tm-rm)/86400000);
+          var age=days<=0?'اليوم':days===1?'أمس':('قبل '+days+' أيام');
+          var stale=days>=2;
+          dateEl.innerHTML='آخر تحليل: '+rd.toISOString().slice(0,10)+' · <span style="'+(stale?'color:var(--rose);font-weight:700':'')+'">'+age+'</span>';
+        }
+      }
+    }
   }catch(e){}
 }
 document.addEventListener('DOMContentLoaded',function(){
