@@ -5758,6 +5758,12 @@ const data=hist&&hist.length?sliceHist(hist,cfg):generateData(stock,cfg);
           }
         }}
       },
+
+      const hist=window._priceHist&&window._priceHist[s.sym];
+    const pdata=hist&&hist.length?sliceHist(hist,periodCfg[tPeriod]):null;
+    const pPct=(pdata&&pdata.length>=2)?((pdata[pdata.length-1]-pdata[0])/pdata[0]*100):null;
+    const pUp=pPct>=0;
+        
       scales:{
         x:{display:true,ticks:{color:axC,font:{size:fs,family:'IBM Plex Mono, monospace'},maxRotation:0,autoSkip:true,maxTicksLimit:cfg.xMax},grid:{display:false},border:{display:false}},
         y:{display:true,position:'right',ticks:{color:axC,font:{size:fs,family:'IBM Plex Mono, monospace'},maxTicksLimit:3,callback:v=>'$'+(v>=1000?(v/1000).toFixed(1)+'k':v.toFixed(0))},grid:{color:gridC,drawTicks:false},border:{display:false}}
@@ -5805,6 +5811,7 @@ function renderTrends(){
         <div>
           <div class="s-price">$${s.price.toFixed(2)}</div>
           <div class="${up?'s-pct-up':'s-pct-dn'}">${up?'+':''}${pct.toFixed(2)}%</div>
+          ${pPct!=null?`<div style="font-size:10px;color:${pUp?'var(--up,#19c37d)':'var(--down,#e5746b)'};margin-top:2px;">${tPeriod}: ${pUp?'+':''}${pPct.toFixed(2)}%</div>`:''}
         </div>
       </div>
       <div style="position:relative;height:${h}px">
