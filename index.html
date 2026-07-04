@@ -14775,6 +14775,7 @@ function saBuildViewerTab() {
   tab.className = 'tab-content';
   tab.innerHTML =
     '<div style="max-width:1100px;margin:0 auto;direction:rtl">' +
+      '<div id="sa-grades-host" style="margin-bottom:22px;"></div>' +
       '<div id="sa-view-nav" style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:14px"></div>' +
       '<div id="sa-view-vernav" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px"></div>' +
       '<div id="sa-view-card"></div>' +
@@ -14783,8 +14784,74 @@ function saBuildViewerTab() {
   document.querySelector('.tab-content').parentElement.appendChild(tab);
 }
 
+
+// ══════════ SA RESULTS v2 — grades table hero ══════════
+async function saGradesFetch(){
+  const gh='https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/';
+  const t=Date.now();
+  for(let o=0;o<30;o++){
+    const d=new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10);
+    try{ const r=await fetch(gh+`sa-portfolio-${d}.json?t=`+t); if(r.ok){ const j=await r.json(); j._date=j.date||d; return j; } }catch(e){}
+  }
+  return null;
+}
+function saGradeChip(g){
+  if(g==null||g==='') return '<span style="color:var(--text3);font-size:11px;">—</span>';
+  var s=String(g).trim(); var L=s[0];
+  var bg,fg;
+  if(L==='A'){bg='rgba(16,185,129,.14)';fg:'';fg='#34d399';}
+  else if(L==='B'){bg='rgba(59,130,246,.14)';fg='#60a5fa';}
+  else if(L==='C'){bg='rgba(245,158,11,.14)';fg='#fbbf24';}
+  else {bg='rgba(239,68,68,.14)';fg='#f87171';}
+  return '<span style="display:inline-block;min-width:26px;text-align:center;border-radius:6px;font-size:11px;font-weight:700;padding:2px 5px;background:'+bg+';color:'+fg+';">'+s+'</span>';
+}
+function saQuantColor(q){ if(q==null)return 'var(--text3)'; return q>=4?'#34d399':q>=3?'#fbbf24':'#f87171'; }
+window._saGrades=null; window._saGradesQuery='';
+async function saGradesInit(){
+  const host=document.getElementById('sa-grades-host'); if(!host) return;
+  if(!window._saGrades){
+    host.innerHTML='<div style="color:var(--text3);text-align:center;padding:30px;">\u062c\u0627\u0631\u064d \u0627\u0644\u062a\u062d\u0645\u064a\u0644\u2026</div>';
+    window._saGrades=await saGradesFetch();
+  }
+  saGradesRender();
+}
+function saGradesRender(){
+  const host=document.getElementById('sa-grades-host'); if(!host) return;
+  const d=window._saGrades;
+  if(!d){ host.innerHTML='<div style="text-align:center;padding:40px;"><div style="font-size:15px;font-weight:800;margin-bottom:8px;">\u0644\u0627 \u062a\u0648\u062c\u062f \u062a\u0642\u064a\u064a\u0645\u0627\u062a \u0645\u062d\u0641\u0648\u0638\u0629</div><div style="font-size:12px;color:var(--text3);">\u0627\u0631\u0641\u0639 \u0645\u0644\u0641 SA \u0645\u0646 \u062a\u0628\u0648\u064a\u0628 SA Intel</div></div>'; return; }
+  var rows=[...(d.stocks||[]),...(d.etfs||[])];
+  var owned={}; try{ (stocks||[]).forEach(function(s){owned[s.sym]=1;}); }catch(e){}
+  var q=(window._saGradesQuery||'').toUpperCase();
+  if(q) rows=rows.filter(function(r){ return String(r.symbol||r.sym||'').toUpperCase().indexOf(q)>=0; });
+  rows.sort(function(a,b){ return (b['Quant Rating']||0)-(a['Quant Rating']||0); });
+  var g=function(r,k){ return r[k]!==undefined&&r[k]!==''?r[k]:null; };
+  var head='<tr>'+['\u0627\u0644\u0633\u0647\u0645','Quant','SA','Wall St','V','G','P','M','R','RSI','\u0623\u064a\u0627\u0645','\u0627\u0644\u0633\u0639\u0631'].map(function(h){return '<th style="text-align:right;font-size:10px;color:var(--text3);font-weight:700;padding:7px 8px;border-bottom:1px solid var(--border);white-space:nowrap;">'+h+'</th>';}).join('')+'</tr>';
+  var body=rows.map(function(r){
+    var sym=g(r,'symbol')||g(r,'sym')||'?';
+    var quant=g(r,'Quant Rating'); var rsi=g(r,'RSI'); var price=g(r,'Price');
+    return '<tr style="'+(owned[sym]?'':'opacity:.55;')+'">'
+      +'<td style="padding:7px 8px;border-bottom:1px solid var(--border);"><span style="font-family:\'IBM Plex Mono\',monospace;font-weight:700;font-size:12px;direction:ltr;unicode-bidi:isolate;">'+sym+'</span>'+(owned[sym]?' <span style="font-size:9px;color:var(--rose);">\u25cf</span>':'')+'</td>'
+      +'<td style="padding:7px 8px;border-bottom:1px solid var(--border);font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:'+saQuantColor(quant)+';">'+(quant!=null?Number(quant).toFixed(2):'—')+'</td>'
+      +'<td style="padding:7px 8px;border-bottom:1px solid var(--border);font-family:\'IBM Plex Mono\',monospace;font-size:11.5px;">'+(g(r,'SA Analyst Ratings')!=null?Number(g(r,'SA Analyst Ratings')).toFixed(2):'—')+'</td>'
+      +'<td style="padding:7px 8px;border-bottom:1px solid var(--border);font-family:\'IBM Plex Mono\',monospace;font-size:11.5px;">'+(g(r,'Wall Street Ratings')!=null?Number(g(r,'Wall Street Ratings')).toFixed(2):'—')+'</td>'
+      +['Valuation Grade','Growth Grade','Profitability Grade','Momentum Grade','EPS Revision Grade'].map(function(k){return '<td style="padding:7px 8px;border-bottom:1px solid var(--border);">'+saGradeChip(g(r,k))+'</td>';}).join('')
+      +'<td style="padding:7px 8px;border-bottom:1px solid var(--border);font-family:\'IBM Plex Mono\',monospace;font-size:11.5px;">'+(rsi!=null?Number(rsi).toFixed(1):'—')+'</td>'
+      +'<td style="padding:7px 8px;border-bottom:1px solid var(--border);font-family:\'IBM Plex Mono\',monospace;font-size:11.5px;">'+(g(r,'Days at Rating')||'—')+'</td>'
+      +'<td style="padding:7px 8px;border-bottom:1px solid var(--border);font-family:\'IBM Plex Mono\',monospace;font-size:11.5px;">'+(price!=null?'$'+Number(price).toFixed(2):'—')+'</td>'
+    +'</tr>';
+  }).join('');
+  host.innerHTML=
+    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">'
+      +'<span style="background:rgba(16,185,129,.12);color:#34d399;border-radius:12px;padding:3px 12px;font-size:11px;font-weight:700;">\u0622\u062e\u0631 \u0631\u0641\u0639: '+(d._date||'')+' \u00b7 '+rows.length+' \u0633\u0647\u0645</span>'
+      +'<span style="font-size:10.5px;color:var(--text3);">\u25cf = \u0645\u0645\u0644\u0648\u0643</span>'
+      +'<input placeholder="\u0627\u0628\u062d\u062b\u2026" oninput="window._saGradesQuery=this.value;saGradesRender();" value="'+(window._saGradesQuery||'')+'" style="margin-inline-start:auto;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:6px 12px;font-size:12px;font-family:inherit;width:160px;">'
+    +'</div>'
+    +'<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">'+head+body+'</table></div>';
+}
+
 async function saViewerInit() {
   saBuildViewerTab();
+  saGradesInit();
   try {
     const r = await fetch('/api/sa-analyze', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ listAnalyses:true }) });
     const d = await r.json();
