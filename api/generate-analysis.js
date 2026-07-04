@@ -48,15 +48,33 @@ async function loadLatestSA() {
 
 function saToText(sa, symbolSet) {
   if (!sa) return 'SA ratings unavailable — rely on FMP data and say so.';
-  let rows = Array.isArray(sa) ? sa : (sa.holdings || sa.ratings || []);
+  let rows = Array.isArray(sa) ? sa : [...(sa.stocks || []), ...(sa.etfs || []), ...(sa.holdings || []), ...(sa.ratings || [])];
   if (!rows.length) return JSON.stringify(sa).slice(0, 20000);
   if (symbolSet && symbolSet.size) {
     rows = rows.filter(r => symbolSet.has(String(r.sym || r.symbol || r.ticker || '').toUpperCase()));
   }
-  const pick = (r, keys) => keys.map(k => r[k] !== undefined ? `${k}:${r[k]}` : null).filter(Boolean).join(' ');
+  const g = (r, ...keys) => { for (const k of keys) { if (r[k] !== undefined && r[k] !== null && r[k] !== '') return r[k]; } return null; };
+  const num = v => v === null ? null : (typeof v === 'number' ? +v.toFixed(2) : v);
   return rows.map(r => {
-    const sym = r.sym || r.symbol || r.ticker || '?';
-    return sym + ' | ' + pick(r, ['quant','sa_analyst','wall_st','wallSt','days_at_rating','V','G','P','M','R','valuation','growth','profitability','momentum','revisions','eps_estimate','eps_actual','eps_surprise','rsi','price']);
+    const sym = g(r, 'sym', 'symbol', 'ticker', 'Symbol') || '?';
+    const parts = [
+      ['Quant', num(g(r, 'Quant Rating', 'quant'))],
+      ['SA', num(g(r, 'SA Analyst Ratings', 'sa_analyst'))],
+      ['WallSt', num(g(r, 'Wall Street Ratings', 'wall_st', 'wallSt'))],
+      ['DaysAtRating', g(r, 'Days at Rating', 'days_at_rating')],
+      ['V', g(r, 'Valuation Grade', 'V', 'valuation')],
+      ['G', g(r, 'Growth Grade', 'G', 'growth')],
+      ['P', g(r, 'Profitability Grade', 'P', 'profitability')],
+      ['M', g(r, 'Momentum Grade', 'M', 'momentum')],
+      ['R', g(r, 'EPS Revision Grade', 'R', 'revisions')],
+      ['NextEarnings', g(r, 'Upcoming Announce Date')],
+      ['EPSest', num(g(r, 'EPS Estimate', 'eps_estimate'))],
+      ['EPSact', num(g(r, 'EPS Actual', 'eps_actual'))],
+      ['EPSsurprise', num(g(r, 'EPS Surprise', 'eps_surprise'))],
+      ['RSI', num(g(r, 'RSI', 'rsi'))],
+      ['Price', num(g(r, 'Price', 'price'))],
+    ].filter(([k, v]) => v !== null).map(([k, v]) => `${k}:${v}`);
+    return sym + ' | ' + parts.join(' ');
   }).join('\n').slice(0, 30000);
 }
 
