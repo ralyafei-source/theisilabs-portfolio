@@ -1730,6 +1730,35 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 .sub-pills{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;}
 .sub-pill{cursor:pointer;font-size:11.5px;font-weight:600;padding:6px 14px;border-radius:20px;border:1px solid var(--border);color:var(--text2);background:var(--bg2);}
 .sub-pill:hover{color:var(--text);border-color:var(--rose);}
+
+/* ── Advisor v2 ── */
+.adv2-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+.adv2-type{display:flex;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:24px;padding:4px;}
+.adv2-type button{border:none;background:transparent;color:var(--text2);font-size:12.5px;font-weight:700;padding:7px 18px;border-radius:20px;cursor:pointer;font-family:inherit;}
+.adv2-type button.on{background:var(--rose);color:#fff;}
+.adv2-meta{font-size:11px;color:var(--text2);margin-inline-start:auto;display:flex;align-items:center;gap:10px;}
+.adv2-fresh{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-size:10.5px;font-weight:700;background:rgba(16,185,129,.12);color:#34d399;}
+.adv2-fresh.old{background:rgba(245,158,11,.12);color:#fbbf24;}
+.adv2-secnav{position:sticky;top:0;z-index:5;display:flex;gap:6px;flex-wrap:wrap;padding:10px 0;background:var(--bg);border-bottom:1px solid var(--border);margin-bottom:6px;}
+.adv2-secnav button{border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-size:11.5px;font-weight:600;padding:6px 14px;border-radius:16px;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.adv2-secnav button:hover{color:var(--text);border-color:var(--rose);}
+.adv2-doc{max-width:860px;}
+.adv2-sec{padding:26px 0 8px;border-bottom:1px solid var(--border);}
+.adv2-sec:last-child{border-bottom:none;}
+.adv2-sec>h2{font-size:19px;font-weight:800;margin:0 0 4px;letter-spacing:-.2px;}
+.adv2-sec>h2 .adv2-ico{margin-inline-end:8px;}
+.adv2-sec .adv2-body{font-size:14px;line-height:2;color:var(--text);}
+.adv2-body p{margin:10px 0;}
+.adv2-body strong{color:var(--rose);font-weight:700;}
+.adv2-body h3,.adv2-body h4{font-size:14.5px;font-weight:800;margin:20px 0 6px;color:var(--text);}
+.adv2-body table{width:100%;border-collapse:collapse;margin:14px 0;font-size:12.5px;}
+.adv2-body th{text-align:start;font-size:10.5px;letter-spacing:.6px;color:var(--text2);font-weight:700;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.adv2-body td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+.adv2-body tr:last-child td{border-bottom:none;}
+.adv2-tick{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:700;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:1px 7px;direction:ltr;unicode-bidi:isolate;}
+.adv2-empty{padding:60px 20px;text-align:center;}
+.adv2-empty .t{font-size:16px;font-weight:800;margin-bottom:8px;}
+.adv2-empty .s{font-size:12.5px;color:var(--text2);line-height:1.9;max-width:420px;margin:0 auto 18px;}
 </style>
 <style>
 .sa-section{margin-bottom:24px}
@@ -2488,6 +2517,20 @@ WOLF remains at critical lows<br><br>
       <button class="btn btn-outline" style="font-size:11px;padding:5px 12px;" onclick="loadAnalysis()">↺ Refresh</button>
     </div>
 
+    <!-- Advisor v2 toolbar -->
+    <div class="adv2-toolbar">
+      <div class="adv2-type">
+        <button id="adv2-w" class="on" onclick="adv2Load('weekly',this)" data-en="Weekly" data-ar="أسبوعي">أسبوعي</button>
+        <button id="adv2-m" onclick="adv2Load('monthly',this)" data-en="Monthly" data-ar="شهري">شهري</button>
+      </div>
+      <div class="adv2-meta">
+        <span id="adv2-fresh" class="adv2-fresh" style="display:none;"></span>
+        <button class="btn btn-outline" style="font-size:11px;padding:5px 12px;" onclick="adv2Generate()" id="adv2-gen">⚡ <span data-en="Generate now" data-ar="توليد الآن">توليد الآن</span></button>
+      </div>
+    </div>
+    <div id="adv2-secnav" class="adv2-secnav" style="display:none;"></div>
+    <div id="adv2-doc" class="adv2-doc"></div>
+    <div id="legacyAdvisor" style="display:none;">
     <!-- Date Navigation -->
     <div class="advisor-date-nav">
       <button class="advisor-date-btn" onclick="navigateDate(-1)">← Previous</button>
@@ -2513,6 +2556,7 @@ WOLF remains at critical lows<br><br>
       </div>
     </div>
 
+    </div><!-- /legacyAdvisor -->
     <!-- Loading State -->
     <div id="advisorLoading" style="display:none;">
       <div class="advisor-loading">
@@ -7719,7 +7763,125 @@ function goToToday(){
   loadAnalysis();
 }
 
+
+// ══════════ ADVISOR v2 — document renderer for generate-analysis output ══════════
+var adv2Type='weekly', adv2Data=null;
+function adv2Nick(){ try{return (localStorage.getItem(AUTH_NICK_KEY)||'').trim().toLowerCase();}catch(e){return '';} }
+function adv2Date(o){ return new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10); }
+
+async function adv2Fetch(type){
+  const nick=adv2Nick(); if(!nick) return null;
+  const gh='https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/';
+  const t=Date.now();
+  if(type==='weekly'){
+    for(let o=0;o<21;o++){
+      try{ const r=await fetch(gh+`analysis-weekly-${nick}-${adv2Date(o)}.json?t=`+t); if(r.ok) return await r.json(); }catch(e){}
+    }
+  } else {
+    for(let mo=0;mo<4;mo++){
+      const d=new Date(); d.setMonth(d.getMonth()-mo);
+      const key=d.toISOString().slice(0,7);
+      try{ const r=await fetch(gh+`analysis-monthly-${nick}-${key}.json?t=`+t); if(r.ok) return await r.json(); }catch(e){}
+    }
+  }
+  return null;
+}
+
+// Header detector: الجزء lines, ═══ lines, markdown # headers, standalone **bold** lines
+function adv2Parse(content){
+  const lines=(content||'').split('\n');
+  const secs=[]; let cur=null;
+  const isHdr=l=>{
+    const s=l.trim();
+    if(!s) return false;
+    if(/^═+/.test(s)) return true;
+    if(/الجزء\s+(الأول|الثاني|الثالث|الرابع|الخامس)/.test(s)) return true;
+    if(/^#{1,3}\s+/.test(s)) return true;
+    if(/^\*\*[^*]{3,60}\*\*:?$/.test(s)) return true;
+    return false;
+  };
+  const clean=s=>s.replace(/[═#*]/g,'').trim().replace(/^[-—:\s]+|[-—:\s]+$/g,'');
+  lines.forEach(l=>{
+    if(isHdr(l)){
+      const title=clean(l);
+      if(title.length>=3){ cur={title:title, body:[]}; secs.push(cur); return; }
+    }
+    if(!cur){ cur={title:'', body:[]}; secs.push(cur); }
+    cur.body.push(l);
+  });
+  return secs.filter(s=>s.body.join('').trim().length>0 || s.title);
+}
+
+function adv2Icon(title){
+  if(/مخاطر|RISK/i.test(title)) return '⚠️';
+  if(/قيمة|VALUE/i.test(title)) return '⚖️';
+  if(/أفضل|أسوأ|SCOR|درجات/i.test(title)) return '🏆';
+  if(/تنافس|COMPETITIVE|خندق/i.test(title)) return '🏰';
+  if(/بعيد|طويل|LONG/i.test(title)) return '🔭';
+  if(/صحة|HEALTH|توزيع/i.test(title)) return '🩺';
+  return '📄';
+}
+
+function adv2Render(doc){
+  const nav=document.getElementById('adv2-secnav');
+  const box=document.getElementById('adv2-doc');
+  const fresh=document.getElementById('adv2-fresh');
+  const isAr=(typeof advisorLang!=='undefined')?advisorLang==='ar':true;
+  if(!doc||!doc.content){
+    nav.style.display='none'; fresh.style.display='none';
+    box.innerHTML='<div class="adv2-empty"><div class="t">'+(isAr?'لا يوجد تحليل بعد':'No analysis yet')+'</div><div class="s">'+(isAr?'التحليل الأسبوعي يصدر كل سبت، والشهري أول كل شهر. يمكنك توليده الآن مباشرة.':'Weekly runs each Saturday, monthly on the 1st. You can generate one now.')+'</div><button class="btn" onclick="adv2Generate()">⚡ '+(isAr?'توليد الآن':'Generate now')+'</button></div>';
+    return;
+  }
+  // freshness
+  const ageDays=Math.floor((Date.now()-new Date(doc.date).getTime())/86400000);
+  fresh.style.display='inline-flex';
+  fresh.className='adv2-fresh'+(ageDays> (adv2Type==='weekly'?7:32) ?' old':'');
+  fresh.textContent=(isAr?'آخر تحديث: ':'Updated: ')+doc.date+(ageDays>0?(isAr?' — قبل '+ageDays+' يوم':' — '+ageDays+'d ago'):'');
+  // parse + render
+  const secs=adv2Parse(doc.content);
+  let navH='', docH='';
+  secs.forEach((s,i)=>{
+    const id='adv2s'+i;
+    const title=s.title||(isAr?'مقدمة':'Intro');
+    navH+='<button onclick="document.getElementById(\''+id+'\').scrollIntoView({behavior:\'smooth\',block:\'start\'})">'+adv2Icon(title)+' '+title.slice(0,28)+'</button>';
+    let body=(typeof mdToHtml==='function')?mdToHtml(s.body.join('\n')):s.body.join('<br>');
+    body=body.replace(/\b([A-Z]{2,5})\b(?=[^<>]*(?:<|$))/g,function(m){ return '<span class="adv2-tick">'+m+'</span>'; });
+    docH+='<div class="adv2-sec" id="'+id+'"><h2><span class="adv2-ico">'+adv2Icon(title)+'</span>'+title+'</h2><div class="adv2-body">'+body+'</div></div>';
+  });
+  nav.style.display=secs.length>1?'flex':'none';
+  nav.innerHTML=navH;
+  box.innerHTML=docH;
+}
+
+async function adv2Load(type,btn){
+  adv2Type=type||adv2Type;
+  document.getElementById('adv2-w').classList.toggle('on',adv2Type==='weekly');
+  document.getElementById('adv2-m').classList.toggle('on',adv2Type==='monthly');
+  const box=document.getElementById('adv2-doc');
+  box.innerHTML='<div class="advisor-loading"><div class="briefing-dot"></div><span>Loading…</span></div>';
+  adv2Data=await adv2Fetch(adv2Type);
+  adv2Render(adv2Data);
+}
+
+async function adv2Generate(){
+  const isAr=(typeof advisorLang!=='undefined')?advisorLang==='ar':true;
+  const btn=document.getElementById('adv2-gen');
+  const nick=adv2Nick();
+  if(!nick) return;
+  if(!confirm(isAr?'توليد تحليل '+(adv2Type==='weekly'?'أسبوعي':'شهري')+' جديد الآن؟ يستغرق ٢-٥ دقائق.':'Generate a new '+adv2Type+' analysis now? Takes 2-5 min.')) return;
+  btn.disabled=true; btn.style.opacity=.5;
+  try{
+    const r=await fetch('/api/generate-analysis',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('theisilabs_session')},body:JSON.stringify({nickname:nick,type:adv2Type})});
+    const d=await r.json();
+    if(d&&d.success){ await adv2Load(adv2Type); }
+    else alert((isAr?'فشل التوليد: ':'Failed: ')+(d.error||''));
+  }catch(e){ alert('Error: '+e.message); }
+  btn.disabled=false; btn.style.opacity=1;
+}
+
 async function loadAnalysis(){
+  // v2 path
+  if(document.getElementById('adv2-doc')){ adv2Load(adv2Type); document.getElementById('advisorLoading').style.display='none'; document.getElementById('advisorEmpty').style.display='none'; document.getElementById('advisorContent').style.display='none'; return; }
   document.getElementById('advisorLoading').style.display='block';
   document.getElementById('advisorEmpty').style.display='none';
   document.getElementById('advisorContent').style.display='none';
