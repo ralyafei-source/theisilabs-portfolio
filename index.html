@@ -1726,6 +1726,10 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 .cc-scroll::-webkit-scrollbar-track{background:var(--bg3) !important;border-radius:6px !important;}
 .cc-scroll::-webkit-scrollbar-thumb{background:var(--accent) !important;border-radius:6px !important;}
 .cc-scroll::-webkit-scrollbar-thumb:hover{background:var(--rose) !important;}
+
+.sub-pills{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;}
+.sub-pill{cursor:pointer;font-size:11.5px;font-weight:600;padding:6px 14px;border-radius:20px;border:1px solid var(--border);color:var(--text2);background:var(--bg2);}
+.sub-pill:hover{color:var(--text);border-color:var(--rose);}
 </style>
 <style>
 .sa-section{margin-bottom:24px}
@@ -1953,19 +1957,19 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 <div id="appBody">
 <nav id="appSidebar">
   <div class="sb-item active" data-tab="command"      onclick="showTab('command',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/><line x1="12" y1="3" x2="12" y2="6.5"/><line x1="12" y1="17.5" x2="12" y2="21"/><line x1="3" y1="12" x2="6.5" y2="12"/><line x1="17.5" y1="12" x2="21" y2="12"/></svg></span><span class="sb-lbl">Command</span></div>
-  <div class="sb-item" data-tab="dashboard"    onclick="showTab('dashboard',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="sb-lbl">Dashboard</span></div>
+  <div class="sb-item" data-tab="dashboard" style="display:none;"    onclick="showTab('dashboard',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="sb-lbl">Dashboard</span></div>
   <div class="sb-item" data-tab="advisor"             onclick="showTab('advisor',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg></span><span class="sb-lbl">AI Advisor</span></div>
   <div class="sb-item" data-tab="portfolio"           onclick="showTab('portfolio',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><span class="sb-lbl">Portfolio</span></div>
-  <div class="sb-item" data-tab="lookup"              onclick="showTab('lookup',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></span><span class="sb-lbl">Lookup</span></div>
+  <div class="sb-item" data-tab="lookup"              onclick="showTab('lookup',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></span><span class="sb-lbl">Explore</span></div>
   <div class="sb-sep"></div>
   <div class="sb-group-lbl" data-en="More" data-ar="المزيد" style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);padding:6px 14px 4px;">المزيد</div>
   <div class="sb-item" data-tab="trends"              onclick="showTab('trends',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg></span><span class="sb-lbl">Trends</span></div>
-  <div class="sb-item" data-tab="weights"             onclick="showTab('weights',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="14" cy="6" r="2.2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="8" cy="12" r="2.2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="16" cy="18" r="2.2"/></svg></span><span class="sb-lbl">Indicators</span></div>
-  <div class="sb-item" data-tab="alerts"              onclick="showTab('alerts',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9"/><path d="M10.2 20a2 2 0 0 0 3.6 0"/></svg></span><span class="sb-lbl">Alerts</span></div>
-  <div class="sb-item" data-tab="transactions"        onclick="showTab('transactions',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 4 3 8 7 12"/><line x1="3" y1="8" x2="16" y2="8"/><polyline points="17 12 21 16 17 20"/><line x1="8" y1="16" x2="21" y2="16"/></svg></span><span class="sb-lbl">Transactions</span></div>
+  <div class="sb-item" data-tab="weights" style="display:none;"             onclick="showTab('weights',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="14" cy="6" r="2.2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="8" cy="12" r="2.2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="16" cy="18" r="2.2"/></svg></span><span class="sb-lbl">Indicators</span></div>
+  <div class="sb-item" data-tab="alerts" style="display:none;"              onclick="showTab('alerts',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9"/><path d="M10.2 20a2 2 0 0 0 3.6 0"/></svg></span><span class="sb-lbl">Alerts</span></div>
+  <div class="sb-item" data-tab="transactions" style="display:none;"        onclick="showTab('transactions',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 4 3 8 7 12"/><line x1="3" y1="8" x2="16" y2="8"/><polyline points="17 12 21 16 17 20"/><line x1="8" y1="16" x2="21" y2="16"/></svg></span><span class="sb-lbl">Transactions</span></div>
   <div class="sb-item" data-tab="health" id="healthNavTab" style="display:none;" onclick="showTab('health',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.6-9.2-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.2 11C19 15.4 12 20 12 20z"/></svg></span><span class="sb-lbl">Health</span></div>
-  <div class="sb-item" data-tab="sa-intel" onclick="showTab('sa-intel',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><circle cx="8" cy="10" r="2"/><line x1="13" y1="8" x2="19" y2="8"/><line x1="13" y1="11" x2="19" y2="11"/><line x1="13" y1="14" x2="19" y2="14"/></svg></span><span class="sb-lbl">SA Intel</span></div>
-  <div class="sb-item" data-tab="horizon" onclick="showTab('horizon',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h18"/><path d="M5 14a7 7 0 0 1 14 0"/><line x1="12" y1="4" x2="12" y2="7"/><line x1="19.5" y1="9" x2="17.5" y2="10.5"/><line x1="4.5" y1="9" x2="6.5" y2="10.5"/></svg></span><span class="sb-lbl">Horizon</span></div>
+  <div class="sb-item" data-tab="sa-intel" style="display:none;" onclick="showTab('sa-intel',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><circle cx="8" cy="10" r="2"/><line x1="13" y1="8" x2="19" y2="8"/><line x1="13" y1="11" x2="19" y2="11"/><line x1="13" y1="14" x2="19" y2="14"/></svg></span><span class="sb-lbl">SA Intel</span></div>
+  <div class="sb-item" data-tab="horizon" style="display:none;" onclick="showTab('horizon',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h18"/><path d="M5 14a7 7 0 0 1 14 0"/><line x1="12" y1="4" x2="12" y2="7"/><line x1="19.5" y1="9" x2="17.5" y2="10.5"/><line x1="4.5" y1="9" x2="6.5" y2="10.5"/></svg></span><span class="sb-lbl">Horizon</span></div>
   <div class="sb-item" data-tab="setup"               onclick="showTab('setup',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="sb-lbl">Settings</span></div>
 </nav>
 <div id="appMain">
@@ -2022,7 +2026,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 
 <!-- ===== PORTFOLIO TAB ===== -->
 <!-- COMMAND CENTER -->
-<div id="tab-command" class="tab-content active">
+<div id="tab-command" class="tab-content active"><div class="sub-pills"><div class="sub-pill" onclick="showTab('dashboard',document.querySelector('[data-tab=dashboard]'))">نظرة عامة | Overview</div></div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
     <div style="display:flex;flex-direction:column;gap:6px;">
       <div style="display:flex;align-items:baseline;gap:10px;">
@@ -2040,7 +2044,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 
 <!-- SA GRADES ADMIN -->
 <!-- DASHBOARD -->
-<div id="tab-dashboard" class="tab-content">
+<div id="tab-dashboard" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('command',document.querySelector('[data-tab=command]'))">← Command</div></div>
   <!-- ═══ 1. VALUE + HEALTH (share a row) ═══ -->
   <div class="dash-row dash-value-row">
     <div class="zone1" style="flex:1">
@@ -2131,7 +2135,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
   </div>
 </div>
 
-<div id="tab-portfolio" class="tab-content">
+<div id="tab-portfolio" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('transactions',document.querySelector('[data-tab=transactions]'))">Transactions | العمليات</div></div>
   <!-- Reminder Banner (shown if setup incomplete) -->
   <div class="reminder-banner" id="reminderBanner" style="display:none;">
     <div class="reminder-text" id="reminder-text">⚠ï¸ Your portfolio is empty. Add your stocks to see your full dashboard.</div>
@@ -2234,7 +2238,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 </div>
 
 <!-- ===== WEIGHTS TAB ===== -->
-<div id="tab-weights" class="tab-content">
+<div id="tab-weights" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('setup',document.querySelector('[data-tab=setup]'))">← Settings</div></div>
   <div class="grid-2">
     <div>
       <div class="card">
@@ -2268,7 +2272,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 </div>
 
 <!-- ===== ALERTS TAB ===== -->
-<div id="tab-alerts" class="tab-content">
+<div id="tab-alerts" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('setup',document.querySelector('[data-tab=setup]'))">← Settings</div></div>
   <div class="grid-2">
     <div>
       <div class="card">
@@ -2344,7 +2348,7 @@ WOLF remains at critical lows<br><br>
 </div>
 
 <!-- ===== TRANSACTIONS TAB ===== -->
-<div id="tab-transactions" class="tab-content">
+<div id="tab-transactions" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('portfolio',document.querySelector('[data-tab=portfolio]'))">← Portfolio</div></div>
   <div class="card">
     <div class="section-hdr">
       <div>
@@ -2431,7 +2435,7 @@ WOLF remains at critical lows<br><br>
 </div>
 
   <!-- ===== STOCK LOOKUP TAB ===== -->
-<div id="tab-lookup" class="tab-content">
+<div id="tab-lookup" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('horizon',document.querySelector('[data-tab=horizon]'))">Horizon | الآفاق</div></div>
   <div class="card">
     <div class="section-hdr" style="margin-bottom:16px;">
       <div>
@@ -2474,7 +2478,7 @@ WOLF remains at critical lows<br><br>
   
   
 <!-- ===== AI ADVISOR TAB ===== -->
-<div id="tab-advisor" class="tab-content">
+<div id="tab-advisor" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('sa-intel',document.querySelector('[data-tab=sa-intel]'))">SA Intel</div></div>
   <div class="card">
     <div class="section-hdr" style="margin-bottom:16px;">
       <div>
@@ -2724,7 +2728,7 @@ WOLF remains at critical lows<br><br>
   </div>
 </div>
 
-<div id="tab-sa-intel" class="tab-content">
+<div id="tab-sa-intel" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('advisor',document.querySelector('[data-tab=advisor]'))">← AI Advisor</div></div>
 
 
 <div style="padding:20px">
@@ -2999,7 +3003,7 @@ WOLF remains at critical lows<br><br>
 </div><!-- end tab-sa-intel -->
 
 <!-- HORIZON -->
-<div id="tab-horizon" class="tab-content">
+<div id="tab-horizon" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('lookup',document.querySelector('[data-tab=lookup]'))">← Explore</div></div>
 <style>
 #hz-root{
     --bg:#111318; --bg2:#171a21; --bg3:#1e222b; --bg4:#252a35;
@@ -3470,7 +3474,7 @@ async function boot(){
 
 
 <!-- ===== SETUP TAB ===== -->
-<div id="tab-setup" class="tab-content">
+<div id="tab-setup" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('weights',document.querySelector('[data-tab=weights]'))">Indicators</div><div class="sub-pill" onclick="showTab('alerts',document.querySelector('[data-tab=alerts]'))">Alerts | التنبيهات</div><div class="sub-pill" onclick="showTab('health',document.querySelector('[data-tab=health]'))">Health</div></div>
   <div class="grid-2">
     <div class="card">
       <div class="card-title" id="s-keys-title">API Keys</div>
@@ -3554,7 +3558,7 @@ async function boot(){
 </div>
 
 </div>
-<div id="tab-health" class="tab-content">
+<div id="tab-health" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('setup',document.querySelector('[data-tab=setup]'))">← Settings</div></div>
   <div class="card">
     <div class="section-hdr" style="margin-bottom:20px;">
       <div>
