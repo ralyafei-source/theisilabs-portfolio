@@ -281,6 +281,7 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 @media(max-width:760px){
   #cc-grid .cc-brief,#cc-grid .cc-2col,#cc-grid .cc-analysis{grid-template-columns:1fr !important;}
   #cc-grid .cc-collapse{grid-template-columns:1fr !important;}
+  #cc-grid .cc-bento>.cc-bcell{grid-column:1/-1 !important;}
   #cc-grid .cc-collapse3{grid-template-columns:1fr !important;}
   #cc-grid .cc-collapse-analysis{grid-template-columns:1fr 1fr !important;}
   #cc-grid .cc-hero-val{font-size:36px !important;}
@@ -4871,7 +4872,7 @@ return '<div style="font-size:13px;line-height:1.85;color:var(--text);display:-w
   var hzCard='<div class="cc-analysis-scroll" style="max-height:250px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;">'+panel(hzInner,{style:'display:flex;flex-direction:column;'})+'</div>';
   var analysisCards=[panel(positionsInner),earningsCard(),riskCard(),divCard(),rangeCard()].filter(Boolean)
     .map(function(c){return '<div class="cc-analysis-scroll" style="max-height:250px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;">'+c+'</div>';});
-  analysisCards.push(hzCard);
+  /* hzCard placed in bento */
   var analysisSection='';
   if(analysisCards.length){
     var cols=Math.min(6,analysisCards.length);
@@ -4884,10 +4885,22 @@ return '<div style="font-size:13px;line-height:1.85;color:var(--text);display:-w
 
   // ============ NEWS + REVIEW SIDE BY SIDE ============
   var newsCardHtml=newsCard();
-  var sideBySide=(newsCardHtml&&reviewSection)
-    ? '<div class="cc-collapse" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;margin-top:14px;">'+newsCardHtml+reviewSection+'</div>'
-    : (newsCardHtml?'<div style="margin-top:14px;">'+newsCardHtml+'</div>':reviewSection);
-  grid.innerHTML=healthChip+openingBrief+analysisSection+sideBySide+footer;
+  // ── BENTO ASSEMBLY (desktop 12-col; mobile stacks via CSS) ──
+  function bcell(html,span){ if(!html) return ''; return '<div style="grid-column:span '+span+';min-width:0;display:flex;flex-direction:column;" class="cc-bcell">'+html+'</div>'; }
+  var fgmc='';
+  if(fgCard||mcCard){ fgmc='<div style="display:flex;flex-direction:column;gap:10px;height:100%;">'+(fgCard||'')+(mcCard||'')+'</div>'; }
+  var bento='<div class="cc-bento" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;align-items:stretch;">'
+    +bcell(panel(todayInner,{style:'flex:1;display:flex;flex-direction:column;min-height:0;'}),8)
+    +bcell(panel(marketReadInner,{style:'flex:1;display:flex;flex-direction:column;min-height:0;'}),4)
+    +bcell(panel(exposureInner,{style:'flex:1;display:flex;flex-direction:column;'}),4)
+    +bcell(panel(pulse,{style:'flex:1;display:flex;flex-direction:column;background:var(--bg2);border-color:rgba(255,10,120,.25);'}),4)
+    +bcell(fgmc,4)
+    +bcell(hzCard,4)
+    +bcell(moversSection||'',8)
+    +bcell(reviewSection||'',6)
+    +bcell(newsCardHtml||'',6)
+  +'</div>';
+  grid.innerHTML=healthChip+tickerHtml+bento+analysisSection+footer;
 
   // ---- progress dots: one per CC section, filled = has data, hollow = pending/empty ----
   try{
