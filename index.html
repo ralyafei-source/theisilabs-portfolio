@@ -11,6 +11,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Financial Intelligence Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack.min.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack-all.min.js"></script>
+<style>
+.grid-stack{direction:ltr;}
+.grid-stack-item-content{overflow-y:auto;overflow-x:hidden;scrollbar-width:none;direction:rtl;display:flex;flex-direction:column;}
+.grid-stack-item-content::-webkit-scrollbar{display:none;}
+.grid-stack-item-content>div{flex:1;display:flex;flex-direction:column;min-height:0;}
+.grid-stack-item>.ui-resizable-handle{opacity:.25;}
+.gs-reset{cursor:pointer;color:var(--text3);font-size:10.5px;text-decoration:underline;}
+</style>
 <meta name="description" content="Arabic Finance Intelligence System — Personal Portfolio Advisor">
 <meta name="theme-color" content="#0d1117">
 
@@ -4914,21 +4924,37 @@ return '<div style="font-size:13px;line-height:1.85;color:var(--text);display:-w
   var newsCardHtml=newsCard();
   // ── BENTO ASSEMBLY (desktop 12-col; mobile stacks via CSS) ──
   function bcell(html,span){ if(!html) return ''; return '<div style="grid-column:span '+span+';min-width:0;display:flex;flex-direction:column;" class="cc-bcell">'+html+'</div>'; }
-  function bcol(items){
-    var inner=items.filter(Boolean).map(function(h,i){ return '<div class="cc-colfill" style="'+(i===items.filter(Boolean).length-1?'flex:1;':'')+'display:flex;flex-direction:column;min-height:0;">'+h+'</div>'; }).join('');
-    return '<div style="grid-column:span 4;min-width:0;display:flex;flex-direction:column;gap:10px;" class="cc-bcell">'+inner+'</div>';
+  var _gsDefaults={today:{x:0,y:0,w:8,h:3},market:{x:8,y:0,w:4,h:3},pulse:{x:8,y:3,w:4,h:3},exposure:{x:4,y:3,w:4,h:4},fg:{x:0,y:3,w:4,h:3},mc:{x:0,y:6,w:4,h:4},hz:{x:8,y:6,w:4,h:3},review:{x:4,y:7,w:4,h:4},movers:{x:0,y:11,w:12,h:2},news:{x:0,y:13,w:12,h:4}};
+  var _gsSaved={}; try{ _gsSaved=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
+  function gsItem(id,html){
+    if(!html) return '';
+    var p=_gsSaved[id]||_gsDefaults[id]||{x:0,y:99,w:4,h:3};
+    return '<div class="grid-stack-item" gs-id="'+id+'" gs-x="'+p.x+'" gs-y="'+p.y+'" gs-w="'+p.w+'" gs-h="'+p.h+'"><div class="grid-stack-item-content">'+html+'</div></div>';
   }
-  var bento='<div class="cc-bento" id="ccBento" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;align-items:stretch;">'
-    +bcell(panel(todayInner,{style:'flex:1;display:flex;flex-direction:column;min-height:0;'}),8)
-    +bcell(panel(marketReadInner,{style:'flex:1;display:flex;flex-direction:column;min-height:0;'}),4)
-    +bcol([ panel(pulse,{style:'display:flex;flex-direction:column;background:var(--bg2);border-color:rgba(255,10,120,.25);'}), mcCard||'' ])
-    +bcol([ panel(exposureInner,{style:'display:flex;flex-direction:column;'}), hzCard ])
-    +bcol([ fgCard||'', reviewSection||'' ])
-    +bcell(moversSection||'',12)
-    +bcell(newsCardHtml||'',12)
-  +'</div>';
+  var bento='<div class="grid-stack" id="ccBento">'
+    +gsItem('today',panel(todayInner,{style:'flex:1;display:flex;flex-direction:column;min-height:0;'}))
+    +gsItem('market',panel(marketReadInner,{style:'flex:1;display:flex;flex-direction:column;min-height:0;'}))
+    +gsItem('pulse',panel(pulse,{style:'flex:1;display:flex;flex-direction:column;background:var(--bg2);border-color:rgba(255,10,120,.25);'}))
+    +gsItem('exposure',panel(exposureInner,{style:'flex:1;display:flex;flex-direction:column;'}))
+    +gsItem('fg',fgCard||'')
+    +gsItem('mc',mcCard||'')
+    +gsItem('hz',hzCard)
+    +gsItem('review',reviewSection||'')
+    +gsItem('movers',moversSection||'')
+    +gsItem('news',newsCardHtml||'')
+  +'</div><div style="text-align:left;padding:4px 2px;"><span class="gs-reset" onclick="localStorage.removeItem(\'theisi_cc_layout\');renderCommandCenter();">\u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u062a\u062e\u0637\u064a\u0637 \u0627\u0644\u0627\u0641\u062a\u0631\u0627\u0636\u064a</span></div>';
   grid.innerHTML=healthChip+tickerHtml+bento+analysisSection+footer;
-  ccBentoPack();
+  try{
+    if(window._ccGS){ try{window._ccGS.destroy(false);}catch(e){} window._ccGS=null; }
+    if(window.GridStack){
+      window._ccGS=GridStack.init({column:12,cellHeight:90,margin:6,float:false,animate:false,resizable:{handles:'se,sw,e,w,s'},columnOpts:{breakpoints:[{w:1100,c:1}]}},document.getElementById('ccBento'));
+      window._ccGS.on('change',function(ev,items){
+        var m={}; try{ m=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
+        window._ccGS.engine.nodes.forEach(function(n){ if(n.id) m[n.id]={x:n.x,y:n.y,w:n.w,h:n.h}; });
+        localStorage.setItem('theisi_cc_layout',JSON.stringify(m));
+      });
+    }
+  }catch(e){ console.warn('gridstack init',e); }
 
   // ---- progress dots: one per CC section, filled = has data, hollow = pending/empty ----
   try{
