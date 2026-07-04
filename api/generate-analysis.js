@@ -78,6 +78,7 @@ CRITICAL RULES:
 - Use analyst $ targets from ${portfolioText} for FAIR VALUE section — they ARE in the data.
 - If a specific metric is not in the data, use the equivalent SA grade and say so clearly.
 - No probability % columns — never invent probabilities.
+- إذا لم يكن هدف المحللين موجوداً في البيانات، اكتب "غير متوفر" — يُمنع منعاً باتاً استنتاج أهداف من معرفة عامة أو الذاكرة.
 - UAE investor: zero capital gains tax, long-only, SPUS never sell.
 
 يجب أن تبدأ كل قسم بالعلامة التالية بالضبط:
@@ -416,7 +417,7 @@ async function callClaude(prompt) {
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 12000, messages: [{ role: 'user', content: prompt }] })
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 16000, messages: [{ role: 'user', content: prompt }] })
   });
   if (!r.ok) throw new Error('Claude API error: ' + (await r.text()).slice(0, 200));
   const d = await r.json();
@@ -466,7 +467,7 @@ module.exports = async function handler(req, res) {
     }
     if (!analysisText) return res.status(500).json({ error: 'Empty response from Claude' });
 
-    const dateKey = today.slice(0, 7);
+    const dateKey = type === 'monthly' ? today.slice(0, 7) : today;
     const filePath = `data/analysis-${type}-${nickname}-${dateKey}.json`;
     const doc = { type, date: today, nickname, content: analysisText, generated: new Date().toISOString() };
     const saved = await ghWrite(filePath, doc);
