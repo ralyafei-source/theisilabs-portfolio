@@ -49,8 +49,12 @@ async function loadLatestSA() {
 function saToText(sa) {
   if (!sa) return 'SA ratings unavailable — rely on FMP data and say so.';
   const rows = Array.isArray(sa) ? sa : (sa.holdings || sa.ratings || []);
-  if (!rows.length) return JSON.stringify(sa).slice(0, 8000);
-  return rows.map(r => JSON.stringify(r)).join('\n').slice(0, 12000);
+  if (!rows.length) return JSON.stringify(sa).slice(0, 20000);
+  const pick = (r, keys) => keys.map(k => r[k] !== undefined ? `${k}:${r[k]}` : null).filter(Boolean).join(' ');
+  return rows.map(r => {
+    const sym = r.sym || r.symbol || r.ticker || '?';
+    return sym + ' | ' + pick(r, ['quant','sa_analyst','wall_st','wallSt','days_at_rating','V','G','P','M','R','valuation','growth','profitability','momentum','revisions','eps_estimate','eps_actual','eps_surprise','rsi','price']);
+  }).join('\n').slice(0, 30000);
 }
 
 function buildPrompt(type, portfolioText, saText, marketText, today) {
@@ -86,6 +90,7 @@ CRITICAL RULES:
 ═══ FAIR VALUE ═══
 ═══ SCORING ENGINE ═══
 ثلاثة أقسام فقط — لا رابع
+- SCORING ENGINE: قيّم فقط أفضل 5 وأسوأ 5. لا تنشئ جدول درجات كاملاً لكل المحفظة. لا تقدّر درجات لأسهم بلا بيانات — اكتب "بيانات غير كافية للتقييم" بدلاً من درجة (ت).
 
 TODAY: ${today}
 MARKET DATA: ${marketText}
