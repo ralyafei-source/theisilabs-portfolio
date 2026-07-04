@@ -104,14 +104,26 @@ module.exports = async (req, res) => {
         jget(H('^GSPC')),   // S&P 500 index for momentum
         jget(H('SPY')),     // S&P ETF for safe-haven + strength
         jget(H('TLT')),     // 20yr treasuries for safe-haven
+      const meta = d?.chart?.result?.[0]?.meta;
+      return { sym, price: meta?.regularMarketPrice || null, prev: meta?.chartPreviousClose || null };
       ]);
 
+      priceResults.forEach(({ sym, price, prev }) => { priceMap[sym] = { price, prev }; });
       const vixNow = Array.isArray(vixQ) && vixQ[0] ? Number(vixQ[0].price) : null;
       const vixSeries = closesOf(vixH);
       const spxSeries = closesOf(spxH);
       const spySeries = closesOf(spyH);
       const tltSeries = closesOf(tltH);
-
+      const enriched = holdings.map(h => {
+  const q = priceMap[h.sym] || {};
+  const price = q.price || h.cost;
+  const value = Math.round(h.shares * price);
+  const glPct = ((price - h.cost) / h.cost * 100);
+  const dayPct = q.prev ? ((price - q.prev) / q.prev * 100) : null;
+  return { ...h, livePrice: price, value, glPct, dayPct };
+});
+      
+      
       // ════════════════════════════════════════════════════════════════════════
       // FACTOR 1 — VOLATILITY  (VIX percentile, inverted)  — same as your v2
       // low VIX vs its year = calm = greed = high score
