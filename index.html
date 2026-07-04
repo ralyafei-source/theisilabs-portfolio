@@ -282,6 +282,9 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
   #cc-grid .cc-brief,#cc-grid .cc-2col,#cc-grid .cc-analysis{grid-template-columns:1fr !important;}
   #cc-grid .cc-collapse{grid-template-columns:1fr !important;}
   #cc-grid .cc-bento>.cc-bcell{grid-column:1/-1 !important;}
+}
+#cc-grid .cc-colfill>*{flex:1;display:flex;flex-direction:column;min-height:0;}
+@media(max-width:1100px){
   #cc-grid .cc-collapse3{grid-template-columns:1fr !important;}
   #cc-grid .cc-collapse-analysis{grid-template-columns:1fr 1fr !important;}
   #cc-grid .cc-hero-val{font-size:36px !important;}
@@ -4057,6 +4060,7 @@ function ccOpenDeep(sym){
 
 // ── Bento masonry pack: each tile spans exactly the rows its content needs ──
 function ccBentoPack(){
+  return; /* replaced by balanced column stacks */
   var g=document.getElementById('ccBento'); if(!g) return;
   if(window.innerWidth<1100){
     g.style.gridAutoRows='auto';
@@ -4909,16 +4913,17 @@ return '<div style="font-size:13px;line-height:1.85;color:var(--text);display:-w
   // ============ NEWS + REVIEW SIDE BY SIDE ============
   var newsCardHtml=newsCard();
   // ── BENTO ASSEMBLY (desktop 12-col; mobile stacks via CSS) ──
-  function bcell(html,span){ if(!html) return ''; return '<div style="grid-column:span '+span+';min-width:0;" class="cc-bcell"><div class="cc-binner">'+html+'</div></div>'; }
-  var bento='<div class="cc-bento" id="ccBento" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-rows:10px;grid-auto-flow:dense;column-gap:10px;row-gap:10px;">'
-    +bcell(panel(todayInner,{style:'display:flex;flex-direction:column;min-height:0;'}),8)
-    +bcell(panel(marketReadInner,{style:'display:flex;flex-direction:column;min-height:0;'}),4)
-    +bcell(panel(pulse,{style:'display:flex;flex-direction:column;background:var(--bg2);border-color:rgba(255,10,120,.25);'}),4)
-    +bcell(panel(exposureInner,{style:'display:flex;flex-direction:column;'}),4)
-    +bcell(fgCard||'',4)
-    +bcell(mcCard||'',4)
-    +bcell(hzCard,4)
-    +bcell(reviewSection||'',4)
+  function bcell(html,span){ if(!html) return ''; return '<div style="grid-column:span '+span+';min-width:0;display:flex;flex-direction:column;" class="cc-bcell">'+html+'</div>'; }
+  function bcol(items){
+    var inner=items.filter(Boolean).map(function(h,i){ return '<div class="cc-colfill" style="'+(i===items.filter(Boolean).length-1?'flex:1;':'')+'display:flex;flex-direction:column;min-height:0;">'+h+'</div>'; }).join('');
+    return '<div style="grid-column:span 4;min-width:0;display:flex;flex-direction:column;gap:10px;" class="cc-bcell">'+inner+'</div>';
+  }
+  var bento='<div class="cc-bento" id="ccBento" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;align-items:stretch;">'
+    +bcell(panel(todayInner,{style:'flex:1;display:flex;flex-direction:column;min-height:0;'}),8)
+    +bcell(panel(marketReadInner,{style:'flex:1;display:flex;flex-direction:column;min-height:0;'}),4)
+    +bcol([ panel(pulse,{style:'display:flex;flex-direction:column;background:var(--bg2);border-color:rgba(255,10,120,.25);'}), mcCard||'' ])
+    +bcol([ panel(exposureInner,{style:'display:flex;flex-direction:column;'}), hzCard ])
+    +bcol([ fgCard||'', reviewSection||'' ])
     +bcell(moversSection||'',12)
     +bcell(newsCardHtml||'',12)
   +'</div>';
