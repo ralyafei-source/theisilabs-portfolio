@@ -4924,7 +4924,7 @@ return '<div style="font-size:13px;line-height:1.85;color:var(--text);display:-w
   var newsCardHtml=newsCard();
   // ── BENTO ASSEMBLY (desktop 12-col; mobile stacks via CSS) ──
   function bcell(html,span){ if(!html) return ''; return '<div style="grid-column:span '+span+';min-width:0;display:flex;flex-direction:column;" class="cc-bcell">'+html+'</div>'; }
-  var _gsDefaults={today:{x:0,y:0,w:8,h:3},market:{x:8,y:0,w:4,h:3},pulse:{x:8,y:3,w:4,h:3},exposure:{x:4,y:3,w:4,h:4},fg:{x:0,y:3,w:4,h:3},mc:{x:0,y:6,w:4,h:4},hz:{x:8,y:6,w:4,h:3},review:{x:4,y:7,w:4,h:4},movers:{x:0,y:11,w:12,h:2},news:{x:0,y:13,w:12,h:4}};
+  var _gsDefaults={today:{x:0,y:0,w:16,h:9},market:{x:16,y:0,w:8,h:9},pulse:{x:16,y:9,w:8,h:9},exposure:{x:8,y:9,w:8,h:12},fg:{x:0,y:9,w:8,h:9},mc:{x:0,y:18,w:8,h:12},hz:{x:16,y:18,w:8,h:9},review:{x:8,y:21,w:8,h:12},movers:{x:0,y:33,w:24,h:6},news:{x:0,y:39,w:24,h:12}};
   var _gsSaved={}; try{ _gsSaved=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
   function gsItem(id,html){
     if(!html) return '';
@@ -4947,7 +4947,7 @@ return '<div style="font-size:13px;line-height:1.85;color:var(--text);display:-w
   try{
     if(window._ccGS){ try{window._ccGS.destroy(false);}catch(e){} window._ccGS=null; }
     if(window.GridStack){
-      window._ccGS=GridStack.init({column:12,cellHeight:90,margin:6,float:false,animate:false,resizable:{handles:'se,sw,e,w,s'},columnOpts:{breakpoints:[{w:1100,c:1}]}},document.getElementById('ccBento'));
+      window._ccGS=GridStack.init({column:24,cellHeight:30,margin:6,float:false,animate:false,resizable:{handles:'se,sw,e,w,s'},columnOpts:{breakpoints:[{w:1100,c:1}]}},document.getElementById('ccBento'));
       window._ccGS.on('change',function(ev,items){
         var m={}; try{ m=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
         window._ccGS.engine.nodes.forEach(function(n){ if(n.id) m[n.id]={x:n.x,y:n.y,w:n.w,h:n.h}; });
