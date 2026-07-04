@@ -2495,6 +2495,7 @@ WOLF remains at critical lows<br><br>
       <button onclick="lookupStock()" style="background:var(--rose);border:none;color:#fff;padding:10px 24px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Almarai',sans-serif;">بحث</button>
     </div>
     <!-- Loading -->
+    <div id="lookup-opps"></div>
     <div id="lookup-loading" style="display:none;padding:34px 20px;text-align:center;color:var(--text2);font-size:13px;">
       <div class="lk-spinner"></div>
       <div id="lk-load-stage" style="margin-top:14px;font-size:13.5px;color:var(--text);font-weight:700;">جاري جلب البيانات المالية…</div>
@@ -14745,6 +14746,7 @@ async function saLoadSavedInputs() {
       _origShowTab(name, el);
       if (name === 'sa-intel') { saReorganizeInputs(); saLoadSavedInputs(); saLoadSavedResult(); }
       if (name === 'sa-view') { saViewerInit(); }
+      if (name === 'lookup') { try{ lookupOppsInit(); }catch(e){} }
     };
     showTab.__saWrapped = true;
   }
@@ -14786,6 +14788,38 @@ function saBuildViewerTab() {
 
 
 // ══════════ SA RESULTS v2 — grades table hero ══════════
+
+// ══════════ EXPLORE default state — top opportunities before search ══════════
+async function lookupOppsInit(){
+  var host=document.getElementById('lookup-opps'); if(!host||host.dataset.done) return;
+  host.dataset.done='1';
+  var gh='https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/opportunities/';
+  var t=Date.now(), data=null;
+  for(var o=0;o<21;o++){
+    var d=new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10);
+    try{ var r=await fetch(gh+'scored-'+d+'.json?t='+t); if(r.ok){ data=await r.json(); data._date=d; break; } }catch(e){}
+  }
+  if(!data) return;
+  var rows=data.scored||data.opportunities||data.stocks||data;
+  if(!Array.isArray(rows)){ rows=Object.keys(rows).filter(function(k){return k[0]!=='_';}).map(function(k){ var v=rows[k]; v.sym=v.sym||v.symbol||k; return v; }); }
+  var owned={}; try{ (stocks||[]).forEach(function(s){owned[s.sym]=1;}); }catch(e){}
+  rows=rows.filter(function(x){ var s=x.sym||x.symbol; return s && !owned[s]; });
+  rows.sort(function(a,b){ return (b.score||b.total||0)-(a.score||a.total||0); });
+  rows=rows.slice(0,9);
+  if(!rows.length) return;
+  var cards=rows.map(function(x){
+    var s=x.sym||x.symbol, sc=Math.round(x.score||x.total||0);
+    var why=x.reason||x.why||x.sector||'';
+    return '<div onclick="document.getElementById(\'lookup-input\').value=\''+s+'\';lookupStock();" style="cursor:pointer;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-family:\'IBM Plex Mono\',monospace;font-weight:700;font-size:13px;direction:ltr;unicode-bidi:isolate;">'+s+'</span>'
+      +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:'+(sc>=80?'#34d399':sc>=60?'#fbbf24':'var(--text2)')+';">'+sc+'</span></div>'
+      +(why?'<div style="font-size:10.5px;color:var(--text3);margin-top:5px;line-height:1.6;">'+String(why).slice(0,70)+'</div>':'')
+    +'</div>';
+  }).join('');
+  host.innerHTML='<div style="font-size:12px;font-weight:700;color:var(--text2);margin:0 0 10px;">\u0623\u0639\u0644\u0649 \u0627\u0644\u0641\u0631\u0635 \u0645\u0646 \u0627\u0644\u062a\u0642\u064a\u064a\u0645 \u2014 \u063a\u064a\u0631 \u0645\u0645\u0644\u0648\u0643\u0629 <span style="font-weight:400;color:var(--text3);">\u00b7 '+data._date+' \u00b7 \u0627\u0636\u063a\u0637 \u0644\u0644\u062a\u062d\u0644\u064a\u0644</span></div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:22px;">'+cards+'</div>';
+}
+
 async function saGradesFetch(){
   const gh='https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/';
   const t=Date.now();
@@ -14823,7 +14857,6 @@ function saGradesRender(){
   var owned={}; try{ (stocks||[]).forEach(function(s){owned[s.sym]=1;}); }catch(e){}
   var q=(window._saGradesQuery||'').toUpperCase();
   if(q) rows=rows.filter(function(r){ return String(r.symbol||r.sym||'').toUpperCase().indexOf(q)>=0; });
-  window._saSort=window._saSort||{k:'Quant Rating',dir:-1};
   var sk=window._saSort.k, sd=window._saSort.dir;
   var GR={'A+':12,'A':11,'A-':10,'B+':9,'B':8,'B-':7,'C+':6,'C':5,'C-':4,'D+':3,'D':2,'D-':1,'F':0};
   rows.sort(function(a,b){
