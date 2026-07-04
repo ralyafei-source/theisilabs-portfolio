@@ -14823,6 +14823,7 @@ function saGradesRender(){
   var owned={}; try{ (stocks||[]).forEach(function(s){owned[s.sym]=1;}); }catch(e){}
   var q=(window._saGradesQuery||'').toUpperCase();
   if(q) rows=rows.filter(function(r){ return String(r.symbol||r.sym||'').toUpperCase().indexOf(q)>=0; });
+  window._saSort=window._saSort||{k:'Quant Rating',dir:-1};
   var sk=window._saSort.k, sd=window._saSort.dir;
   var GR={'A+':12,'A':11,'A-':10,'B+':9,'B':8,'B-':7,'C+':6,'C':5,'C-':4,'D+':3,'D':2,'D-':1,'F':0};
   rows.sort(function(a,b){
