@@ -104,24 +104,13 @@ module.exports = async (req, res) => {
         jget(H('^GSPC')),   // S&P 500 index for momentum
         jget(H('SPY')),     // S&P ETF for safe-haven + strength
         jget(H('TLT')),     // 20yr treasuries for safe-haven
-      const meta = d?.chart?.result?.[0]?.meta;
-      return { sym, price: meta?.regularMarketPrice || null, prev: meta?.chartPreviousClose || null };
       ]);
 
-      priceResults.forEach(({ sym, price, prev }) => { priceMap[sym] = { price, prev }; });
       const vixNow = Array.isArray(vixQ) && vixQ[0] ? Number(vixQ[0].price) : null;
       const vixSeries = closesOf(vixH);
       const spxSeries = closesOf(spxH);
       const spySeries = closesOf(spyH);
       const tltSeries = closesOf(tltH);
-      const enriched = holdings.map(h => {
-  const q = priceMap[h.sym] || {};
-  const price = q.price || h.cost;
-  const value = Math.round(h.shares * price);
-  const glPct = ((price - h.cost) / h.cost * 100);
-  const dayPct = q.prev ? ((price - q.prev) / q.prev * 100) : null;
-  return { ...h, livePrice: price, value, glPct, dayPct };
-});
       
       
       // ════════════════════════════════════════════════════════════════════════
@@ -1007,20 +996,23 @@ ${JSON.stringify(facts, null, 2)}
           );
           if (!r.ok) return { sym, price: null };
           const d = await r.json();
-          return { sym, price: d?.chart?.result?.[0]?.meta?.regularMarketPrice || null };
+          const meta = d?.chart?.result?.[0]?.meta;
+          return { sym, price: meta?.regularMarketPrice || null, prev: meta?.chartPreviousClose || null };
         } catch { return { sym, price: null }; }
       })
     );
-    priceResults.forEach(({ sym, price }) => { priceMap[sym] = price; });
+    priceResults.forEach(({ sym, price, prev }) => { priceMap[sym] = { price, prev }; });
 
     // ── Calculate totals ─────────────────────────────────────────────────────
     let totalValue = 0;
     const enriched = holdings.map(h => {
-      const price = priceMap[h.sym] || h.cost;
+      const q = priceMap[h.sym] || {};
+      const price = q.price || h.cost;
       const value = Math.round(h.shares * price);
       const glPct = ((price - h.cost) / h.cost * 100);
+      const dayPct = q.prev ? +(((price - q.prev) / q.prev) * 100).toFixed(2) : null;
       totalValue += value;
-      return { ...h, livePrice: price, value, glPct };
+      return { ...h, livePrice: price, value, glPct, dayPct };
     });
     enriched.sort((a, b) => b.value - a.value);
 
@@ -1036,7 +1028,7 @@ ${JSON.stringify(facts, null, 2)}
     enriched.forEach(h => { (sectors[h.sector] || sectors.other).items.push(h); });
 
     // ── Format portfolio text ────────────────────────────────────────────────
-    const pricesAvailable = Object.values(priceMap).filter(Boolean).length;
+    const pricesAvailable = Object.values(priceMap).filter(q => q && q.price).length;
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
 
     let text = '';
@@ -1173,17 +1165,17 @@ ${JSON.stringify(facts, null, 2)}
       sma200Results.forEach(({ sym, sma200 }) => { if (techMap[sym]) techMap[sym].sma200 = sma200 !== null ? +sma200.toFixed(2) : null; });
       ema20Results.forEach( ({ sym, ema20 })  => { if (techMap[sym]) techMap[sym].ema20  = ema20  !== null ? +ema20.toFixed(2)  : null; });
       bbResults.forEach(    ({ sym, stddev }) => {
-        if (techMap[sym] && stddev !== null && priceMap[sym]) {
-          const mid = techMap[sym].sma20 || priceMap[sym];
-          techMap[sym].bb_upper = +(priceMap[sym] + 2 * stddev).toFixed(2);
-          techMap[sym].bb_lower = +(priceMap[sym] - 2 * stddev).toFixed(2);
+        if (techMap[sym] && stddev !== null && priceMap[sym]?.price) {
+          const mid = techMap[sym].sma20 || priceMap[sym].price;
+          techMap[sym].bb_upper = +(priceMap[sym].price + 2 * stddev).toFixed(2);
+          techMap[sym].bb_lower = +(priceMap[sym].price - 2 * stddev).toFixed(2);
           techMap[sym].bb_stddev = +stddev.toFixed(4);
         }
       });
 
       // ── Add plain-language signal interpretation ──────────────────────────
       Object.entries(techMap).forEach(([sym, t]) => {
-        const price = priceMap[sym];
+        const price = priceMap[sym]?.price;
         const signals = [];
 
         if (t.rsi !== null) {
