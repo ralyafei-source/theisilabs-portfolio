@@ -46,10 +46,13 @@ async function loadLatestSA() {
   return { data: null, date: null };
 }
 
-function saToText(sa) {
+function saToText(sa, symbolSet) {
   if (!sa) return 'SA ratings unavailable — rely on FMP data and say so.';
-  const rows = Array.isArray(sa) ? sa : (sa.holdings || sa.ratings || []);
+  let rows = Array.isArray(sa) ? sa : (sa.holdings || sa.ratings || []);
   if (!rows.length) return JSON.stringify(sa).slice(0, 20000);
+  if (symbolSet && symbolSet.size) {
+    rows = rows.filter(r => symbolSet.has(String(r.sym || r.symbol || r.ticker || '').toUpperCase()));
+  }
   const pick = (r, keys) => keys.map(k => r[k] !== undefined ? `${k}:${r[k]}` : null).filter(Boolean).join(' ');
   return rows.map(r => {
     const sym = r.sym || r.symbol || r.ticker || '?';
@@ -195,12 +198,6 @@ L1×0.15 + L2×0.30 + L3×0.20 + L4×0.25 + L5×0.10 = <b>Score: X/10</b>
 
 <b>━━━ الجزء الثاني — أعلى 5 مراكز تحتاج مراجعة ━━━</b>
 نفس التنسيق — القرار: بِع X سهم = $X محرر → أعِده لـ [SYMBOL] لأن [السبب بالأرقام]
-
-──────────────────────────────
-
-<b>━━━ الجزء الثالث — جدول الدرجات الكامل ━━━</b>
-| الرمز | الدرجة | SA Quant | التوصية | السبب الرئيسي |
-|---|---|---|---|---|
 
 ──────────────────────────────
 
@@ -457,8 +454,10 @@ module.exports = async function handler(req, res) {
     const portfolioText = await pfRes.text();
 
     const today = new Date(Date.now() + 4 * 3600 * 1000).toISOString().slice(0, 10);
+    const pf = await ghRead(nickname === 'rashed' ? 'data/portfolio.json' : `data/portfolio-${nickname}.json`);
+    const symbolSet = new Set(((pf && (pf.holdings || pf.stocks)) || []).map(h => String(h.sym).toUpperCase()));
     const { data: sa } = await loadLatestSA();
-    const saText = saToText(sa);
+    const saText = saToText(sa, symbolSet);
     const market = await ghRead(`data/market-data-${today}.json`, true);
     const marketText = market ? String(market).slice(0, 3000) : 'market data unavailable — skip silently';
 
