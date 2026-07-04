@@ -14795,10 +14795,7 @@ async function lookupOppsInit(){
   host.dataset.done='1';
   var gh='https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/opportunities/';
   var t=Date.now(), data=null;
-  for(var o=0;o<21;o++){
-    var d=new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10);
-    try{ var r=await fetch(gh+'scored-'+d+'.json?t='+t); if(r.ok){ data=await r.json(); data._date=d; break; } }catch(e){}
-  }
+  try{ var r=await fetch(gh+'today.json?t='+t); if(r.ok){ data=await r.json(); data._date=data.date||''; } }catch(e){}
   if(!data) return;
   var rows=data.scored||data.opportunities||data.stocks||data;
   if(!Array.isArray(rows)){ rows=Object.keys(rows).filter(function(k){return k[0]!=='_';}).map(function(k){ var v=rows[k]; v.sym=v.sym||v.symbol||k; return v; }); }
@@ -14857,6 +14854,7 @@ function saGradesRender(){
   var owned={}; try{ (stocks||[]).forEach(function(s){owned[s.sym]=1;}); }catch(e){}
   var q=(window._saGradesQuery||'').toUpperCase();
   if(q) rows=rows.filter(function(r){ return String(r.symbol||r.sym||'').toUpperCase().indexOf(q)>=0; });
+  window._saSort=window._saSort||{k:'Quant Rating',dir:-1};
   var sk=window._saSort.k, sd=window._saSort.dir;
   var GR={'A+':12,'A':11,'A-':10,'B+':9,'B':8,'B-':7,'C+':6,'C':5,'C-':4,'D+':3,'D':2,'D-':1,'F':0};
   rows.sort(function(a,b){
