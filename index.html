@@ -4953,7 +4953,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
   var newsCardHtml=newsCard();
   // ── BENTO ASSEMBLY (desktop 12-col; mobile stacks via CSS) ──
   function bcell(html,span){ if(!html) return ''; return '<div style="grid-column:span '+span+';min-width:0;display:flex;flex-direction:column;" class="cc-bcell">'+html+'</div>'; }
-  var _gsDefaults={today:{x:0,y:0,w:16,h:9},market:{x:16,y:0,w:8,h:9},pulse:{x:16,y:9,w:8,h:9},exposure:{x:8,y:9,w:8,h:12},fg:{x:0,y:9,w:8,h:9},mc:{x:0,y:21,w:8,h:12},hz:{x:16,y:18,w:8,h:9},review:{x:8,y:21,w:8,h:12},movers:{x:0,y:33,w:24,h:6},news:{x:0,y:39,w:16,h:12},opp:{x:16,y:39,w:8,h:9}};
+  localStorage.removeItem('theisi_cc_layout'); localStorage.removeItem('theisi_cc_default'); location.reload();
   var _gsSaved={}; try{ _gsSaved=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
   function gsItem(id,html,popupTitle){
     if(!html) return '';
