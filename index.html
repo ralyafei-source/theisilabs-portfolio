@@ -23,9 +23,8 @@
 
 :root{--fs-display:22px;--fs-title:15px;--fs-body:12.5px;--fs-label:10.5px;--radius-card:12px;--radius-chip:6px;}
 @media(max-width:1100px){.p-grid{grid-template-columns:1fr !important;}.p-grid>div{position:static !important;}}
-  .p-table-scroll{max-height:780px;overflow:auto;}
+.p-table-scroll{max-height:780px;overflow:auto;}
 #pTable thead th{position:sticky;top:0;background:var(--bg2);z-index:2;}
-  
 </style>
 <meta name="description" content="Arabic Finance Intelligence System — Personal Portfolio Advisor">
 <meta name="theme-color" content="#0d1117">
@@ -4996,11 +4995,10 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
   try{
     if(window._ccGS){ try{window._ccGS.destroy(false);}catch(e){} window._ccGS=null; }
     if(window.GridStack){
-      localStorage.removeItem('theisi_cc_layout'); localStorage.removeItem('theisi_cc_default'); location.reload();
-      
-        window._ccGS.on('change',function(ev,items){
-  if(window._ccGS.getColumn&&window._ccGS.getColumn()<24) return;
-  var m={}; try{ m=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
+      window._ccGS=GridStack.init({column:24,cellHeight:30,margin:6,float:false,animate:false,resizable:{handles:'se,sw,e,w,s'},columnOpts:{breakpoints:[{w:1100,c:1}]}},document.getElementById('ccBento'));
+      window._ccGS.on('change',function(ev,items){
+        if(window._ccGS.getColumn&&window._ccGS.getColumn()<24) return;
+        var m={}; try{ m=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
         
         window._ccGS.engine.nodes.forEach(function(n){ if(n.id) m[n.id]={x:n.x,y:n.y,w:n.w,h:n.h}; });
         localStorage.setItem('theisi_cc_layout',JSON.stringify(m));
