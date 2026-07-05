@@ -2219,7 +2219,22 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
     </div>
   </div>
 
-<div class="p-grid" style="display:grid;grid-template-columns:minmax(0,2.2fr) minmax(260px,1fr);gap:14px;align-items:start;"><div style="min-width:0;"><div class="card">
+<div class="p-grid" style="display:grid;grid-template-columns:minmax(260px,1fr) minmax(0,2.2fr);gap:14px;align-items:start;"><div class="p-rail" style="min-width:0;"><!-- AI BRIEFING — structured, full width, no news -->
+  <div class="card p-brief-card" style="margin-bottom:16px;">
+    <div class="section-hdr" style="margin-bottom:14px;">
+      <div>
+        <div class="card-title" style="margin-bottom:0;" id="brief-title" data-en="Today's AI Analysis" data-ar="تحليل ثيسي اليوم">تحليل ثيسي اليوم</div>
+        <div id="brief-date" style="font-size:10.5px;color:var(--text3);margin-top:2px;"></div>
+      </div>
+      <button class="btn btn-outline" style="font-size:11px;padding:5px 12px;" onclick="loadBriefing()">↺ Refresh</button>
+    </div>
+    <div id="briefingContent">
+      <div class="briefing-loading"><div class="briefing-dot"></div><span id="brief-loading-txt">Loading latest briefing...</span></div>
+    </div>
+  </div>
+
+
+</div><div style="min-width:0;"><div class="card">
     <div class="section-hdr">
       <div>
         <div class="section-title" id="p-all-stocks">All Holdings</div>
@@ -2247,21 +2262,6 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
       </table>
     </div>
   </div>
-</div><div class="p-rail" style="min-width:0;"><!-- AI BRIEFING — structured, full width, no news -->
-  <div class="card p-brief-card" style="margin-bottom:16px;">
-    <div class="section-hdr" style="margin-bottom:14px;">
-      <div>
-        <div class="card-title" style="margin-bottom:0;" id="brief-title" data-en="Today's AI Analysis" data-ar="تحليل ثيسي اليوم">تحليل ثيسي اليوم</div>
-        <div id="brief-date" style="font-size:10.5px;color:var(--text3);margin-top:2px;"></div>
-      </div>
-      <button class="btn btn-outline" style="font-size:11px;padding:5px 12px;" onclick="loadBriefing()">↺ Refresh</button>
-    </div>
-    <div id="briefingContent">
-      <div class="briefing-loading"><div class="briefing-dot"></div><span id="brief-loading-txt">Loading latest briefing...</span></div>
-    </div>
-  </div>
-
-
 </div></div></div>
 
 <!-- ===== TRENDS TAB ===== -->
