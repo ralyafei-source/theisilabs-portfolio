@@ -568,10 +568,26 @@ module.exports = async function handler(req, res) {
     if (type === 'weekly') {
       try {
       // ═══ v3 structured weekly ═══
-      let pf=null; try{ pf=JSON.parse(portfolioText); }catch(e){}
-      let holdings=(pf&&(pf.holdings||pf.portfolio||pf.enriched||(pf.data&&(pf.data.holdings||pf.data.portfolio))))||[];
-      if(!holdings.length&&pf&&pf.sectors){ holdings=Object.values(pf.sectors).flatMap(s=>s.items||[]); }
-      if(!holdings.length) return res.status(400).json({ error:'portfolio parse failed' });
+      // build holdings from portfolio.json + live Yahoo prices (portfolio-for-ai returns text, not JSON)
+      const baseHold=((pf&&(pf.holdings||pf.stocks))||[]).filter(h=>h&&h.sym&&h.shares>0);
+      if(!baseHold.length) return res.status(400).json({ error:'portfolio.json empty for '+nickname });
+      const quotes={};
+      await Promise.all(baseHold.map(async h=>{
+        try{
+          const r=await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(h.sym)}?interval=1d&range=5d`,{headers:{'User-Agent':'Mozilla/5.0'}});
+          if(!r.ok) return;
+          const d=await r.json(); const meta=d?.chart?.result?.[0]?.meta;
+          if(meta) quotes[h.sym]={price:meta.regularMarketPrice||null, prev:meta.chartPreviousClose||null};
+        }catch(e){}
+      }));
+      const holdings=baseHold.map(h=>{
+        const q=quotes[h.sym]||{};
+        const price=q.price||h.cost;
+        const value=Math.round(h.shares*price);
+        const glPct=h.cost?((price-h.cost)/h.cost*100):0;
+        const dayPct=q.prev?+(((price-q.prev)/q.prev)*100).toFixed(2):null;
+        return { sym:h.sym, sector:h.sector||null, shares:h.shares, cost:h.cost, livePrice:price, value, glPct, dayPct };
+      });
       const totalValue=holdings.reduce((a,h)=>a+(h.value||0),0);
       const saMap=saRowMap(sa);
       const saDate=(sa&&sa.date)||'غير معروف';
