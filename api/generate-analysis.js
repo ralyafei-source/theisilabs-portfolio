@@ -88,7 +88,7 @@ async function fetchTargets(symbols){
   const list=symbols.slice(0,25);
   await Promise.all(list.map(async sym=>{
     try{
-      const r=await fetch(`https://financialmodelingprep.com/api/v4/price-target-consensus?symbol=${sym}&apikey=${FMP_KEY}`);
+      const r=await fetch(`https://financialmodelingprep.com/stable/price-target-consensus?symbol=${sym}&apikey=${FMP_KEY}`);
       if(r.ok){ const d=await r.json(); const row=Array.isArray(d)?d[0]:d; if(row&&row.targetConsensus) out[sym]=+row.targetConsensus; }
     }catch(e){}
   }));
@@ -127,8 +127,8 @@ function computeSignals(holdings, saMap, targets, totalValue){
     if(h.glPct<=-50) reasons.push('loss>=50%');
     if(quant!=null&&quant<2) reasons.push('quant<2');
     if(M&&/^[DF]/.test(M)&&h.value>5000) reasons.push('momentum D/F on >$5K');
-    if(h.dayPct!=null&&Math.abs(h.dayPct)>=5) reasons.push('day move >=5%');
-    if(rsi!=null&&(rsi>70||rsi<30)) reasons.push(rsi>70?'RSI>70':'RSI<30');
+    if(h.dayPct!=null&&Math.abs(h.dayPct)>=8) reasons.push('day move >=8%');
+    if(rsi!=null&&(rsi>70||rsi<30)&&h.value>5000) reasons.push(rsi>70?'RSI>70':'RSI<30');
     if(earnDays!=null&&earnDays>=0&&earnDays<=14) reasons.push('earnings<=14d');
     let verdict='hold';
     if(h.glPct<=-50||(quant!=null&&quant<2)||(M&&/^[DF]/.test(M)&&h.value>5000)) verdict='review';
@@ -596,12 +596,14 @@ module.exports = async function handler(req, res) {
       const news=await fetchWeekNews();
       const newsText=news.items.slice(0,14).map(n=>'- '+(n.title_ar||n.title||'')+' ['+((n.syms||[]).join(','))+'] '+(n.insight_ar||'').slice(0,160)).join('\n')||'لا أخبار متوفرة';
       const rows=computeSignals(holdings, saMap, targets, totalValue);
-      const selected=rows.filter(r=>r.verdict!=='hold');
+      let selected=rows.filter(r=>r.verdict!=='hold');
+      const watchRows=selected.filter(r=>r.verdict==='watch').sort((a,b)=>(b.value||0)-(a.value||0)).slice(0,10);
+      selected=selected.filter(r=>r.verdict!=='watch').concat(watchRows);
       const techValue=rows.filter(r=>/tech/i.test(r.sector||'')).reduce((a,r)=>a+(r.value||0),0);
       const portfolioStats={ total_value:Math.round(totalValue), holdings:rows.length,
         tech_concentration_pct:totalValue?+((techValue/totalValue)*100).toFixed(1):null,
-        review_count:rows.filter(r=>r.verdict==='review').length,
-        watch_count:rows.filter(r=>r.verdict==='watch').length,
+        review_count:selected.filter(r=>r.verdict==='review').length,
+        watch_count:selected.filter(r=>r.verdict==='watch').length,
         strong_count:rows.filter(r=>r.verdict==='strong').length,
         stress_tech_minus20:Math.round(techValue*0.2) };
       const asOf={prices:today, sa:saDate, news:news.date};
