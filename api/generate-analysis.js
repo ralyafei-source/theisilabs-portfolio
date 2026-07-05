@@ -78,6 +78,90 @@ function saToText(sa, symbolSet) {
   }).join('\n').slice(0, 30000);
 }
 
+
+// ═══ v3 WEEKLY — deterministic signals, structured JSON output ═══
+const FMP_KEY = process.env.FMP_API_KEY || process.env.FMP_KEY || '';
+
+async function fetchTargets(symbols){
+  const out={};
+  if(!FMP_KEY) return out;
+  await Promise.all(symbols.map(async sym=>{
+    try{
+      const r=await fetch(`https://financialmodelingprep.com/api/v4/price-target-consensus?symbol=${sym}&apikey=${FMP_KEY}`);
+      if(r.ok){ const d=await r.json(); const row=Array.isArray(d)?d[0]:d; if(row&&row.targetConsensus) out[sym]=+row.targetConsensus; }
+    }catch(e){}
+  }));
+  return out;
+}
+
+async function fetchWeekNews(){
+  for(let o=0;o<7;o++){
+    const d=new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10);
+    const j=await ghRead(`data/market/news-${d}.json`);
+    if(j) return {date:d, items:(Array.isArray(j)?j:(j.news||j.items||[]))};
+  }
+  return {date:null, items:[]};
+}
+
+function saRowMap(sa){
+  const m={};
+  [...((sa&&sa.stocks)||[]),...((sa&&sa.etfs)||[])].forEach(r=>{ const s=r.symbol||r.sym; if(s) m[s]=r; });
+  return m;
+}
+
+// deterministic verdicts — the selection basis, enforced in code
+function computeSignals(holdings, saMap, targets, totalValue){
+  const today=Date.now();
+  const rows=holdings.map(h=>{
+    const sa=saMap[h.sym]||{};
+    const quant=sa['Quant Rating']!=null?+sa['Quant Rating']:null;
+    const M=sa['Momentum Grade']||null, V=sa['Valuation Grade']||null, G=sa['Growth Grade']||null, P=sa['Profitability Grade']||null, R=sa['EPS Revision Grade']||null;
+    const rsi=sa['RSI']!=null?+(+sa['RSI']).toFixed(1):null;
+    let earnDays=null;
+    if(sa['Upcoming Announce Date']){ const t=Date.parse(sa['Upcoming Announce Date']); if(!isNaN(t)) earnDays=Math.round((t-today)/86400000); }
+    const target=targets[h.sym]||null;
+    const gapPct=(target&&h.livePrice)?+(((target-h.livePrice)/h.livePrice)*100).toFixed(1):null;
+    const weight=totalValue?+((h.value/totalValue)*100).toFixed(1):null;
+    const reasons=[];
+    if(h.glPct<=-50) reasons.push('loss>=50%');
+    if(quant!=null&&quant<2) reasons.push('quant<2');
+    if(M&&/^[DF]/.test(M)&&h.value>5000) reasons.push('momentum D/F on >$5K');
+    if(h.dayPct!=null&&Math.abs(h.dayPct)>=5) reasons.push('day move >=5%');
+    if(rsi!=null&&(rsi>70||rsi<30)) reasons.push(rsi>70?'RSI>70':'RSI<30');
+    if(earnDays!=null&&earnDays>=0&&earnDays<=14) reasons.push('earnings<=14d');
+    let verdict='hold';
+    if(h.glPct<=-50||(quant!=null&&quant<2)||(M&&/^[DF]/.test(M)&&h.value>5000)) verdict='review';
+    else if(reasons.length) verdict='watch';
+    else if(quant!=null&&quant>=4&&weight!=null&&weight>=2) verdict='strong';
+    return {sym:h.sym, price:h.livePrice, glPct:+(+h.glPct).toFixed(1), dayPct:h.dayPct, value:h.value, weight, quant, V,G,P,M,R, rsi, earnDays, target, gapPct, sector:h.sector||sa['Sector']||null, verdict, reasons};
+  });
+  return rows;
+}
+
+function weeklyPromptV3(selected, portfolioStats, newsText, asOf){
+  return `أنت محلل مالي محترف. البيانات أدناه محسوبة مسبقاً — لا تعيد حسابها ولا تخترع أي رقم أو اسم قاعدة أو اقتباس غير موجود في البيانات. يُمنع منعاً باتاً نسب أي قاعدة لجهة (مثل قاعدة Bridgewater) ما لم ترد في البيانات. وصف أي شركة يكون فقط من الحقول المقدمة.
+
+تواريخ البيانات: الأسعار ${asOf.prices} · تقييمات SA ${asOf.sa} · الأخبار حتى ${asOf.news||'غير متوفر'}
+
+إحصاءات المحفظة (محسوبة): ${JSON.stringify(portfolioStats)}
+
+الأسهم المختارة (بالقواعد الآلية — verdict و reasons محسوبة، لا تغيّرها):
+${JSON.stringify(selected)}
+
+أخبار الأسبوع (مترجمة):
+${newsText}
+
+أخرج JSON فقط، بلا أي نص قبله أو بعده، بهذا الشكل:
+{
+ "summary":"فقرة خليجية 3-4 جمل: خلاصة الأسبوع للمحفظة، اذكر تواريخ البيانات، واربط بأخبار الأسبوع إن مسّت أسهمه، بدون توصية شراء/بيع",
+ "biggest_risk":"جملة واحدة: أكبر خطر هذا الأسبوع",
+ "stocks":[{"sym":"DUOL","thesis":"2-3 جمل تجمع كل شيء عن السهم: ماذا تقول درجاته وسعره وخبره إن وجد، ولماذا هو بهذا الـverdict، معلوماتياً بدون أمر","watch":"مستوى أو حدث للمراقبة إن وجد وإلا \"\""}],
+ "clusters":[{"name":"اسم المجموعة","syms":["A","B"],"note":"لماذا تتحرك معاً — من قطاعاتها وقيمها المقدمة فقط"}],
+ "hedge":"فكرة تحوط معلوماتية إن ظهرت من البيانات وإلا \"\""
+}
+قواعد: stocks يشمل كل سهم في القائمة المختارة فقط. thesis بالعربية الخليجية المهنية. إن غاب target اكتب في thesis أن هدف المحللين غير متوفر فقط إذا كان ذلك مهماً. لا نصيحة مالية.`;
+}
+
 function buildPrompt(type, portfolioText, saText, marketText, today) {
   if (type === 'weekly') return `${portfolioText}
 
@@ -481,7 +565,43 @@ module.exports = async function handler(req, res) {
 
     let analysisText = '';
     if (type === 'weekly') {
-      analysisText = await callClaude(buildPrompt('weekly', portfolioText, saText, marketText, today));
+      // ═══ v3 structured weekly ═══
+      let pf=null; try{ pf=JSON.parse(portfolioText); }catch(e){}
+      const holdings=(pf&&(pf.holdings||pf.portfolio||pf.enriched))||[];
+      if(!holdings.length) return res.status(400).json({ error:'portfolio parse failed' });
+      const totalValue=holdings.reduce((a,h)=>a+(h.value||0),0);
+      const saMap=saRowMap(sa);
+      const saDate=(sa&&sa.date)||'غير معروف';
+      const bigSyms=holdings.filter(h=>h.value>5000).map(h=>h.sym);
+      const targets=await fetchTargets(bigSyms);
+      const news=await fetchWeekNews();
+      const newsText=news.items.slice(0,14).map(n=>'- '+(n.title_ar||n.title||'')+' ['+((n.syms||[]).join(','))+'] '+(n.insight_ar||'').slice(0,160)).join('\n')||'لا أخبار متوفرة';
+      const rows=computeSignals(holdings, saMap, targets, totalValue);
+      const selected=rows.filter(r=>r.verdict!=='hold');
+      const techValue=rows.filter(r=>/tech/i.test(r.sector||'')).reduce((a,r)=>a+(r.value||0),0);
+      const portfolioStats={ total_value:Math.round(totalValue), holdings:rows.length,
+        tech_concentration_pct:totalValue?+((techValue/totalValue)*100).toFixed(1):null,
+        review_count:rows.filter(r=>r.verdict==='review').length,
+        watch_count:rows.filter(r=>r.verdict==='watch').length,
+        strong_count:rows.filter(r=>r.verdict==='strong').length,
+        stress_tech_minus20:Math.round(techValue*0.2) };
+      const asOf={prices:today, sa:saDate, news:news.date};
+      const raw=await callClaude(weeklyPromptV3(selected, portfolioStats, newsText, asOf));
+      let cj=null; try{ cj=JSON.parse(raw.replace(/```json|```/g,'').trim()); }catch(e){ return res.status(500).json({error:'Claude JSON parse failed', preview:raw.slice(0,200)}); }
+      const thesisMap={}; (cj.stocks||[]).forEach(s=>{ thesisMap[s.sym]={thesis:s.thesis||'',watch:s.watch||''}; });
+      const stocksOut=selected.map(r=>Object.assign({},r,thesisMap[r.sym]||{}));
+      // clusters: attach code-summed values
+      const valBySym={}; rows.forEach(r=>valBySym[r.sym]=r.value||0);
+      const clusters=(cj.clusters||[]).map(c=>Object.assign({},c,{value:Math.round((c.syms||[]).reduce((a,s)=>a+(valBySym[s]||0),0))}));
+      const doc={ type:'weekly', schema:2, date:today, nickname, as_of:asOf,
+        verdict:Object.assign({},portfolioStats,{biggest_risk:cj.biggest_risk||''}),
+        summary:cj.summary||'', stocks:stocksOut, clusters, hedge:cj.hedge||'',
+        stress:[{scenario:'تصحيح تقنية -20%', impact_usd:-portfolioStats.stress_tech_minus20}],
+        generated:new Date().toISOString() };
+      const filePath=`data/analysis-weekly-${nickname}-${today}.json`;
+      const ok=await ghWrite(filePath, doc);
+      if(!ok) return res.status(500).json({ error:'Failed to save analysis' });
+      return res.status(200).json({ success:true, type, nickname, path:filePath, schema:2, selected:selected.length });
     } else {
       const a = await callClaude(buildPrompt('monthly-a', portfolioText, saText, marketText, today));
       const b = await callClaude(buildPrompt('monthly-b', portfolioText, saText, marketText, today));
