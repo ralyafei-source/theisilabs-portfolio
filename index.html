@@ -4994,7 +4994,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     if(window._ccGS){ try{window._ccGS.destroy(false);}catch(e){} window._ccGS=null; }
     if(window.GridStack){
       window._ccGS=GridStack.init({column:24,cellHeight:30,margin:6,float:false,animate:false,resizable:{handles:'se,sw,e,w,s'},columnOpts:{breakpoints:[{w:1100,c:1}]}},document.getElementById('ccBento'));
-      window._ccGS.on('change',function(ev,items){
+      
         window._ccGS.on('change',function(ev,items){
   if(window._ccGS.getColumn&&window._ccGS.getColumn()<24) return;
   var m={}; try{ m=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
