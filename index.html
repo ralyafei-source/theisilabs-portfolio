@@ -7916,7 +7916,74 @@ function adv2Icon(title){
   return '📄';
 }
 
+window._adv2Filter='all';
+function adv2GradeChip(k,v){ if(!v) return ''; var L=String(v)[0]; var c=L==='A'?['rgba(16,185,129,.14)','#34d399']:L==='B'?['rgba(59,130,246,.14)','#60a5fa']:L==='C'?['rgba(245,158,11,.14)','#fbbf24']:['rgba(239,68,68,.14)','#f87171']; return '<span style="display:inline-block;min-width:30px;text-align:center;border-radius:5px;font-size:10px;font-weight:700;padding:1px 5px;background:'+c[0]+';color:'+c[1]+';">'+k+' '+v+'</span>'; }
+function adv2VerdictChip(v){
+  var m={review:['\u0645\u0631\u0627\u062c\u0639\u0629','rgba(239,68,68,.14)','#f87171'],watch:['\u0631\u0627\u0642\u0628','rgba(245,158,11,.14)','#fbbf24'],strong:['\u0642\u0648\u064a','rgba(16,185,129,.14)','#34d399'],hold:['\u0627\u062d\u062a\u0641\u0638','rgba(59,130,246,.14)','#60a5fa']}[v]||['—','var(--bg2)','var(--text2)'];
+  return '<span style="font-size:10px;font-weight:700;border-radius:12px;padding:2px 10px;background:'+m[1]+';color:'+m[2]+';">'+m[0]+'</span>';
+}
+function adv2StockCard(s){
+  var mono="font-family:'IBM Plex Mono',monospace;direction:ltr;unicode-bidi:isolate;";
+  var glc=s.glPct>=0?'#34d399':'#f87171';
+  var grades=['V','G','P','M','R'].map(function(k){return adv2GradeChip(k,s[k]);}).join(' ');
+  var tgt=s.target?('<span style="font-size:10px;color:var(--text3);">\u0647\u062f\u0641 <span style="'+mono+'">$'+s.target+'</span>'+(s.gapPct!=null?' ('+(s.gapPct>0?'+':'')+s.gapPct+'%)':'')+'</span>'):'';
+  return '<div onclick="window._ccHtmlPopup(\''+s.sym+'\',window._adv2CardDetail[\''+s.sym+'\'])" style="cursor:pointer;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 15px;">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">'
+      +'<div><span style="'+mono+'font-size:15px;font-weight:700;">'+s.sym+'</span> '+adv2VerdictChip(s.verdict)+'</div>'
+      +'<div style="'+mono+'font-size:12.5px;">$'+(s.price!=null?Number(s.price).toFixed(2):'—')+' <span style="color:'+glc+';font-size:10.5px;">'+(s.glPct>0?'+':'')+s.glPct+'%</span></div>'
+    +'</div>'
+    +'<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin:8px 0 7px;">'
+      +'<span style="font-size:10px;color:var(--text3);">Quant <b style="'+mono+'color:'+(s.quant>=4?'#34d399':s.quant>=3?'#fbbf24':'#f87171')+';">'+(s.quant!=null?s.quant.toFixed?s.quant.toFixed(2):s.quant:'—')+'</b></span>'
+      +grades
+      +'<span style="font-size:10px;color:var(--text3);">RSI <span style="'+mono+'">'+(s.rsi!=null?s.rsi:'—')+'</span></span>'
+      +'<span style="font-size:10px;color:var(--text3);margin-inline-start:auto;"><span style="'+mono+'">$'+Math.round(s.value/1000)+'K</span> \u00b7 '+(s.weight!=null?s.weight+'%':'')+'</span>'
+    +'</div>'
+    +'<div style="font-size:11.5px;line-height:1.85;color:var(--text2);">'+(s.thesis||'')+'</div>'
+    +(s.watch?'<div style="font-size:10.5px;color:var(--gold,#fbbf24);margin-top:6px;">\u26a1 '+s.watch+'</div>':'')
+    +(tgt?'<div style="margin-top:5px;">'+tgt+'</div>':'')
+  +'</div>';
+}
+function adv2RenderStructured(doc){
+  var nav=document.getElementById('adv2-secnav');
+  var box=document.getElementById('adv2-doc');
+  var fresh=document.getElementById('adv2-fresh');
+  nav.style.display='none';
+  fresh.style.display='inline-flex';
+  var ageDays=Math.floor((Date.now()-new Date(doc.date).getTime())/86400000);
+  fresh.className='adv2-fresh'+(ageDays>7?' old':'');
+  fresh.textContent='\u0627\u0644\u0623\u0633\u0639\u0627\u0631: '+doc.as_of.prices+' \u00b7 SA: '+doc.as_of.sa;
+  var v=doc.verdict||{};
+  window._adv2CardDetail={};
+  (doc.stocks||[]).forEach(function(s){
+    window._adv2CardDetail[s.sym]='<div style="font-size:12.5px;line-height:2;color:var(--text);">'
+      +'<div style="margin-bottom:8px;">'+adv2VerdictChip(s.verdict)+' \u00b7 \u0623\u0633\u0628\u0627\u0628 \u0622\u0644\u064a\u0629: <span style="font-family:monospace;font-size:11px;direction:ltr;unicode-bidi:isolate;">'+(s.reasons||[]).join(', ')+'</span></div>'
+      +(s.thesis||'')+(s.watch?'<div style="color:#fbbf24;margin-top:8px;">\u26a1 '+s.watch+'</div>':'')+'</div>';
+  });
+  var order={review:0,watch:1,strong:2,hold:3};
+  var stocks=(doc.stocks||[]).slice().sort(function(a,b){return (order[a.verdict]||9)-(order[b.verdict]||9)||(b.value||0)-(a.value||0);});
+  var f=window._adv2Filter;
+  var shown=f==='all'?stocks:stocks.filter(function(s){return s.verdict===f;});
+  function pill(key,label,count){ return '<button onclick="window._adv2Filter=\''+key+'\';adv2RenderStructured(window._adv2Doc);" style="border:1px solid '+(f===key?'transparent':'var(--border)')+';background:'+(f===key?'var(--rose,#FF0A78)':'var(--bg2)')+';color:'+(f===key?'#fff':'var(--text2)')+';font-size:11px;font-weight:700;padding:5px 13px;border-radius:16px;cursor:pointer;font-family:inherit;">'+label+' ('+count+')</button>'; }
+  var strip='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;">'
+    +'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;"><div style="font-size:10.5px;color:var(--text3);">\u062a\u0631\u0643\u0651\u0632 \u0627\u0644\u062a\u0642\u0646\u064a\u0629</div><div style="font-size:17px;font-weight:800;color:'+(v.tech_concentration_pct>60?'#fbbf24':'var(--text)')+';">'+(v.tech_concentration_pct!=null?v.tech_concentration_pct+'%':'—')+'</div></div>'
+    +'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;"><div style="font-size:10.5px;color:var(--text3);">\u0645\u0631\u0627\u062c\u0639\u0629</div><div style="font-size:17px;font-weight:800;color:#f87171;">'+(v.review_count||0)+'</div></div>'
+    +'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;"><div style="font-size:10.5px;color:var(--text3);">\u0631\u0627\u0642\u0628</div><div style="font-size:17px;font-weight:800;color:#fbbf24;">'+(v.watch_count||0)+'</div></div>'
+    +'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;grid-column:span 2;min-width:220px;"><div style="font-size:10.5px;color:var(--text3);">\u0623\u0643\u0628\u0631 \u062e\u0637\u0631</div><div style="font-size:12px;font-weight:700;line-height:1.6;">'+(v.biggest_risk||'—')+'</div></div>'
+  +'</div>';
+  var pills='<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;">'
+    +pill('review','\u0645\u0631\u0627\u062c\u0639\u0629',v.review_count||0)
+    +pill('watch','\u0631\u0627\u0642\u0628',v.watch_count||0)
+    +pill('strong','\u0642\u0648\u064a',v.strong_count||0)
+    +pill('all','\u0627\u0644\u0643\u0644',stocks.length)
+  +'</div>';
+  var cards='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-bottom:18px;">'+shown.map(adv2StockCard).join('')+'</div>';
+  var clusters=(doc.clusters&&doc.clusters.length)?'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 15px;"><div style="font-size:12px;font-weight:700;margin-bottom:8px;">\u0627\u0644\u0645\u062c\u0645\u0648\u0639\u0627\u062a \u0627\u0644\u0645\u062a\u0631\u0627\u0628\u0637\u0629</div>'+doc.clusters.map(function(c){return '<div style="font-size:11.5px;line-height:1.9;color:var(--text2);margin-bottom:6px;"><b>'+c.name+'</b> <span style="font-family:monospace;font-size:10.5px;direction:ltr;unicode-bidi:isolate;">'+(c.syms||[]).join('\u00b7')+'</span> \u2014 $'+Math.round((c.value||0)/1000)+'K<br><span style="color:var(--text3);">'+(c.note||'')+'</span></div>';}).join('')+'</div>':'';
+  var stress=(doc.stress&&doc.stress.length)?'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 15px;"><div style="font-size:12px;font-weight:700;margin-bottom:8px;">\u0627\u062e\u062a\u0628\u0627\u0631 \u0627\u0644\u0625\u062c\u0647\u0627\u062f</div>'+doc.stress.map(function(s){return '<div style="font-size:11.5px;color:var(--text2);line-height:1.9;">'+s.scenario+' \u2192 <span style="font-family:monospace;color:#f87171;direction:ltr;unicode-bidi:isolate;">-$'+Math.abs(Math.round((s.impact_usd||0)/1000))+'K</span></div>';}).join('')+(doc.hedge?'<div style="font-size:11px;color:var(--text3);margin-top:8px;">'+doc.hedge+'</div>':'')+'</div>':'';
+  var summary=doc.summary?'<div style="background:var(--bg2);border:1px solid rgba(255,10,120,.25);border-radius:12px;padding:14px 16px;font-size:12.5px;line-height:2;margin-bottom:14px;">'+doc.summary+'</div>':'';
+  box.innerHTML=strip+summary+pills+cards+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'+clusters+stress+'</div>';
+}
 function adv2Render(doc){
+  if(doc&&doc.schema>=2){ window._adv2Doc=doc; adv2RenderStructured(doc); return; }
   const nav=document.getElementById('adv2-secnav');
   const box=document.getElementById('adv2-doc');
   const fresh=document.getElementById('adv2-fresh');
