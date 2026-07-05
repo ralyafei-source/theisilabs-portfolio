@@ -4951,7 +4951,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
   var newsCardHtml=newsCard();
   // ── BENTO ASSEMBLY (desktop 12-col; mobile stacks via CSS) ──
   function bcell(html,span){ if(!html) return ''; return '<div style="grid-column:span '+span+';min-width:0;display:flex;flex-direction:column;" class="cc-bcell">'+html+'</div>'; }
-  var _gsDefaults={today:{x:0,y:0,w:8,h:3},market:{x:8,y:0,w:4,h:3},pulse:{x:8,y:3,w:4,h:3},exposure:{x:4,y:3,w:4,h:4},fg:{x:0,y:3,w:4,h:3},mc:{x:0,y:6,w:4,h:4},hz:{x:8,y:6,w:4,h:3},review:{x:4,y:7,w:4,h:4},movers:{x:0,y:11,w:12,h:2},news:{x:0,y:13,w:12,h:4},opp:{x:0,y:10,w:4,h:3}};
+  var _gsDefaults={today:{x:0,y:0,w:8,h:3},market:{x:8,y:0,w:4,h:3},pulse:{x:8,y:3,w:4,h:3},exposure:{x:4,y:3,w:4,h:4},fg:{x:0,y:3,w:4,h:3},mc:{x:0,y:6,w:4,h:4},hz:{x:8,y:6,w:4,h:3},review:{x:4,y:7,w:4,h:4},movers:{x:0,y:11,w:12,h:3},news:{x:0,y:13,w:12,h:4},opp:{x:0,y:10,w:4,h:3}};
   var _gsSaved={}; try{ _gsSaved=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
   function gsItem(id,html,popupTitle){
     if(!html) return '';
