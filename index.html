@@ -2072,7 +2072,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 
 <!-- ===== PORTFOLIO TAB ===== -->
 <!-- COMMAND CENTER -->
-<div id="tab-command" class="tab-content active"><div class="sub-pills"><div class="sub-pill" onclick="showTab('dashboard',document.querySelector('[data-tab=dashboard]'))">نظرة عامة | Overview</div></div>
+<div id="tab-command" class="tab-content active"><div class="sub-pills"></div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
     <div style="display:flex;flex-direction:column;gap:6px;">
       <div style="display:flex;align-items:baseline;gap:10px;">
@@ -3536,9 +3536,9 @@ async function boot(){
 
 
 <!-- ===== SETUP TAB ===== -->
-<div id="tab-setup" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('weights',document.querySelector('[data-tab=weights]'))">Indicators</div><div class="sub-pill" onclick="showTab('alerts',document.querySelector('[data-tab=alerts]'))">Alerts | التنبيهات</div><div class="sub-pill" onclick="showTab('health',document.querySelector('[data-tab=health]'))">Health</div></div>
+<div id="tab-setup" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('alerts',document.querySelector('[data-tab=alerts]'))">Alerts | التنبيهات</div><div class="sub-pill" onclick="showTab('health',document.querySelector('[data-tab=health]'))">Health</div></div>
   <div class="grid-2">
-    <div class="card">
+    <div class="card" style="display:none;">
       <div class="card-title" id="s-keys-title">API Keys</div>
       <div class="form-group">
         <label class="form-label">Claude API Key</label>
@@ -4325,7 +4325,14 @@ return '<div onclick="window._ccReadOpen(\'today\')" style="cursor:pointer;"><di
 // ============ MOVERS BAND — visual gain/loss distribution (no words) ============
   var moversSection='';
   (function(){
-    var withGl=stocks.filter(function(s){return s.gl!=null;});
+    function dayPct(s){
+      var h=window._priceHist&&window._priceHist[s.sym];
+      if(h&&h.length>=2){ var a=h[h.length-2].c!=null?h[h.length-2].c:h[h.length-2].close, b=h[h.length-1].c!=null?h[h.length-1].c:h[h.length-1].close; if(a&&b) return (b-a)/a*100; }
+      return null;
+    }
+    var withGl=stocks.filter(function(s){ s._d=dayPct(s); return s._d!=null; });
+    if(withGl.length<5){ withGl=stocks.filter(function(s){return s.gl!=null;}).map(function(s){ s._d=s.gl; return s; }); }
+    withGl.forEach(function(s){ s._gl0=s.gl; s.gl=s._d; });
     if(!withGl.length) return;
     var sortedGl=withGl.slice().sort(function(a,b){return a.gl-b.gl;});
     // color by gain/loss band
@@ -4338,11 +4345,11 @@ return '<div onclick="window._ccReadOpen(\'today\')" style="cursor:pointer;"><di
     // size dot by position weight
     var maxW=Math.max.apply(null,withGl.map(function(s){return s.mv||0;}))||1;
     // scale: clamp gl to [-80, +200] for x-position
-    var lo=-80, hi=200;
+    var lo=(withGl[0]._d===withGl[0]._gl0)?-80:-12, hi=(withGl[0]._d===withGl[0]._gl0)?200:12;
     function xpos(g){ var c=Math.max(lo,Math.min(hi,g)); return ((c-lo)/(hi-lo))*100; }
     var dots=sortedGl.map(function(s){
       var x=xpos(s.gl); var sz=6+Math.round((s.mv||0)/maxW*8); var c=glColor(s.gl);
-      var notable=(s.gl<=-50||s.gl>=100); // label outliers only
+      var notable=(hi===12)?(Math.abs(s.gl)>=5):(s.gl<=-50||s.gl>=100); // label outliers only
       return '<div title="'+s.sym+' '+(s.gl>=0?'+':'')+s.gl.toFixed(0)+'%" style="position:absolute;right:'+x.toFixed(1)+'%;top:50%;transform:translate(50%,-50%);width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+c+';border:1px solid var(--bg2);'+(notable?'box-shadow:0 0 0 2px '+c+'33;':'')+'"></div>';
     }).join('');
     // zero line position
@@ -4370,6 +4377,7 @@ return '<div onclick="window._ccReadOpen(\'today\')" style="cursor:pointer;"><di
         +secLabel('\u062d\u0631\u0643\u0629 \u0627\u0644\u0645\u0631\u0627\u0643\u0632')
         +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'+worst+best+'</div></div>'
       +track, {style:'width:100%;display:flex;flex-direction:column;justify-content:center;'});
+    withGl.forEach(function(s){ s.gl=s._gl0; });
   })();
 
   // ============ PORTFOLIO MAP ============
