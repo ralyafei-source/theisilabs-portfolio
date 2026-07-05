@@ -567,7 +567,8 @@ module.exports = async function handler(req, res) {
     if (type === 'weekly') {
       // ═══ v3 structured weekly ═══
       let pf=null; try{ pf=JSON.parse(portfolioText); }catch(e){}
-      const holdings=(pf&&(pf.holdings||pf.portfolio||pf.enriched))||[];
+      let holdings=(pf&&(pf.holdings||pf.portfolio||pf.enriched||(pf.data&&(pf.data.holdings||pf.data.portfolio))))||[];
+      if(!holdings.length&&pf&&pf.sectors){ holdings=Object.values(pf.sectors).flatMap(s=>s.items||[]); }
       if(!holdings.length) return res.status(400).json({ error:'portfolio parse failed' });
       const totalValue=holdings.reduce((a,h)=>a+(h.value||0),0);
       const saMap=saRowMap(sa);
