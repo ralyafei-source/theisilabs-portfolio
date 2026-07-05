@@ -2247,7 +2247,22 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
       </table>
     </div>
   </div>
-</div>
+</div><div class="p-rail" style="min-width:0;"><!-- AI BRIEFING — structured, full width, no news -->
+  <div class="card p-brief-card" style="margin-bottom:16px;">
+    <div class="section-hdr" style="margin-bottom:14px;">
+      <div>
+        <div class="card-title" style="margin-bottom:0;" id="brief-title" data-en="Today's AI Analysis" data-ar="تحليل ثيسي اليوم">تحليل ثيسي اليوم</div>
+        <div id="brief-date" style="font-size:10.5px;color:var(--text3);margin-top:2px;"></div>
+      </div>
+      <button class="btn btn-outline" style="font-size:11px;padding:5px 12px;" onclick="loadBriefing()">↺ Refresh</button>
+    </div>
+    <div id="briefingContent">
+      <div class="briefing-loading"><div class="briefing-dot"></div><span id="brief-loading-txt">Loading latest briefing...</span></div>
+    </div>
+  </div>
+
+
+</div></div></div>
 
 <!-- ===== TRENDS TAB ===== -->
 <div id="tab-trends" class="tab-content">
@@ -2272,22 +2287,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 <div id="tab-weights" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('setup',document.querySelector('[data-tab=setup]'))">← Settings</div></div>
   <div class="grid-2">
     <div>
-      </div><div style="min-width:0;position:sticky;top:10px;"><!-- AI BRIEFING — structured, full width, no news -->
-  <div class="card p-brief-card" style="margin-bottom:16px;">
-    <div class="section-hdr" style="margin-bottom:14px;">
-      <div>
-        <div class="card-title" style="margin-bottom:0;" id="brief-title" data-en="Today's AI Analysis" data-ar="تحليل ثيسي اليوم">تحليل ثيسي اليوم</div>
-        <div id="brief-date" style="font-size:10.5px;color:var(--text3);margin-top:2px;"></div>
-      </div>
-      <button class="btn btn-outline" style="font-size:11px;padding:5px 12px;" onclick="loadBriefing()">↺ Refresh</button>
-    </div>
-    <div id="briefingContent">
-      <div class="briefing-loading"><div class="briefing-dot"></div><span id="brief-loading-txt">Loading latest briefing...</span></div>
-    </div>
-  </div>
-
-
-</div></div><div class="card">
+      <div class="card">
         <div class="card-title" id="w-title">Indicator Weights</div>
         <div class="total-w">
           <div class="total-w-num w-ok" id="totalW">100%</div>
