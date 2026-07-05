@@ -85,7 +85,8 @@ const FMP_KEY = process.env.FMP_API_KEY || process.env.FMP_KEY || '';
 async function fetchTargets(symbols){
   const out={};
   if(!FMP_KEY) return out;
-  await Promise.all(symbols.map(async sym=>{
+  const list=symbols.slice(0,25);
+  await Promise.all(list.map(async sym=>{
     try{
       const r=await fetch(`https://financialmodelingprep.com/api/v4/price-target-consensus?symbol=${sym}&apikey=${FMP_KEY}`);
       if(r.ok){ const d=await r.json(); const row=Array.isArray(d)?d[0]:d; if(row&&row.targetConsensus) out[sym]=+row.targetConsensus; }
@@ -565,6 +566,7 @@ module.exports = async function handler(req, res) {
 
     let analysisText = '';
     if (type === 'weekly') {
+      try {
       // ═══ v3 structured weekly ═══
       let pf=null; try{ pf=JSON.parse(portfolioText); }catch(e){}
       let holdings=(pf&&(pf.holdings||pf.portfolio||pf.enriched||(pf.data&&(pf.data.holdings||pf.data.portfolio))))||[];
@@ -603,6 +605,9 @@ module.exports = async function handler(req, res) {
       const ok=await ghWrite(filePath, doc);
       if(!ok) return res.status(500).json({ error:'Failed to save analysis' });
       return res.status(200).json({ success:true, type, nickname, path:filePath, schema:2, selected:selected.length });
+      } catch(e) {
+        return res.status(500).json({ error:'weekly v3 crashed', detail:String(e && e.stack || e).slice(0,400) });
+      }
     } else {
       const a = await callClaude(buildPrompt('monthly-a', portfolioText, saText, marketText, today));
       const b = await callClaude(buildPrompt('monthly-b', portfolioText, saText, marketText, today));
