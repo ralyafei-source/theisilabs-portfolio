@@ -4951,7 +4951,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
   var newsCardHtml=newsCard();
   // ── BENTO ASSEMBLY (desktop 12-col; mobile stacks via CSS) ──
   function bcell(html,span){ if(!html) return ''; return '<div style="grid-column:span '+span+';min-width:0;display:flex;flex-direction:column;" class="cc-bcell">'+html+'</div>'; }
-  var _gsDefaults={today:{x:0,y:0,w:8,h:3},market:{x:8,y:0,w:4,h:3},pulse:{x:8,y:3,w:4,h:3},exposure:{x:4,y:3,w:4,h:4},fg:{x:0,y:3,w:4,h:3},mc:{x:0,y:6,w:4,h:4},hz:{x:8,y:6,w:4,h:3},review:{x:4,y:7,w:4,h:4},movers:{x:0,y:11,w:12,h:2},news:{x:0,y:13,w:12,h:4}};
+  var _gsDefaults={today:{x:0,y:0,w:8,h:3},market:{x:8,y:0,w:4,h:3},pulse:{x:8,y:3,w:4,h:3},exposure:{x:4,y:3,w:4,h:4},fg:{x:0,y:3,w:4,h:3},mc:{x:0,y:6,w:4,h:4},hz:{x:8,y:6,w:4,h:3},review:{x:4,y:7,w:4,h:4},movers:{x:0,y:11,w:12,h:2},news:{x:0,y:13,w:12,h:4},opp:{x:0,y:10,w:4,h:3}};
   var _gsSaved={}; try{ _gsSaved=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
   function gsItem(id,html,popupTitle){
     if(!html) return '';
@@ -4964,6 +4964,16 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     }
     return '<div class="grid-stack-item" gs-id="'+id+'" gs-x="'+p.x+'" gs-y="'+p.y+'" gs-w="'+p.w+'" gs-h="'+p.h+'"><div class="grid-stack-item-content">'+inner+'</div></div>';
   }
+  var oppCard='';
+  (function(){
+    var o=window._oppData&&window._oppData.opp; if(!o||!o.sym) return;
+    var why=(o.why||'').slice(0,220);
+    oppCard=panel('<div class="cc-sec-label" style="color:var(--rose,#FF0A78);">\u0641\u0631\u0635\u0629 \u064a\u0631\u0627\u0647\u0627 \u0627\u0644\u062a\u0642\u064a\u064a\u0645</div>'
+      +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:17px;font-weight:700;direction:ltr;unicode-bidi:isolate;text-align:right;margin:4px 0;">'+o.sym+'</div>'
+      +'<div style="font-size:11.5px;line-height:1.85;color:var(--text2);">'+why+'</div>'
+      +'<div style="font-size:10px;color:var(--text3);margin-top:6px;">\u0645\u0646 \u0642\u0627\u0626\u0645\u0629 \u0645\u062a\u0627\u0628\u0639\u062a\u0643 \u00b7 '+(window._oppData.generated_at||'')+'</div>'
+    ,{style:'display:flex;flex-direction:column;border-color:rgba(255,10,120,.3);'});
+  })();
   var bento='<div class="grid-stack" id="ccBento">'
     +gsItem('today',panel(todayInner,{style:'flex:1;display:flex;flex-direction:column;min-height:0;'}))
     +gsItem('market',panel(marketReadInner,{style:'flex:1;display:flex;flex-direction:column;min-height:0;'}))
@@ -4975,6 +4985,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     +gsItem('review',reviewSection||'','\u0645\u0627 \u064a\u0633\u062a\u062d\u0642 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629')
     +gsItem('movers',moversSection||'')
     +gsItem('news',newsCardHtml||'','\u0623\u062e\u0628\u0627\u0631 \u062a\u0645\u0633 \u0645\u062d\u0641\u0638\u062a\u0643')
+    +gsItem('opp',oppCard||'')
   +'</div><div style="text-align:left;padding:4px 2px;"><span class="gs-reset" onclick="localStorage.removeItem(\'theisi_cc_layout\');renderCommandCenter();">\u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u062a\u062e\u0637\u064a\u0637 \u0627\u0644\u0627\u0641\u062a\u0631\u0627\u0636\u064a</span></div>';
   grid.innerHTML=healthChip+tickerHtml+bento+analysisSection+footer;
   try{
@@ -7957,7 +7968,6 @@ function adv2StockCard(s){
 function adv2RenderStructured(doc){
   var nav=document.getElementById('adv2-secnav');
   var box=document.getElementById('adv2-doc');
-  box.style.maxWidth='none';
   var fresh=document.getElementById('adv2-fresh');
   nav.style.display='none';
   fresh.style.display='inline-flex';
@@ -13949,6 +13959,7 @@ function applyBriefV2(d){
   const gen=d._briefDate||d.date||'';
   if(d.narrative){ window._dailyBrief={brief:d.narrative, detail:d.narrative+(d.risk_flags&&d.risk_flags.length?'\n\n⚠️ '+d.risk_flags.join('\n⚠️ '):''), generated_at:gen}; }
   if(d.market){ window._marketRead={brief:d.market, detail:d.market, generated_at:gen}; }
+  if(d.opportunity){ window._oppData={opp:d.opportunity, generated_at:gen}; }
   renderCommandCenter();
 }
 // ── NARRATIVE BRIEFING — loads per-user narrative-{nick}-{date}.json from GitHub (graceful) ──
