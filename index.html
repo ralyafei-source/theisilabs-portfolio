@@ -3329,7 +3329,7 @@ function renderGradeRow(sym, v, key){
       </span>
     </div>
     <div class="row-meta">
-      <div class="fpills">${factorPills(b.grades)}</div>
+      <div class="fpills">${factorPills(b.grades||b.tags)}</div>
       ${flagIcons(b)}
       ${crossTags(v,key)}
     </div>
