@@ -7917,7 +7917,7 @@ function adv2Icon(title){
 }
 
 window._adv2Filter='all';
-function adv2GradeChip(k,v){ if(!v) return ''; var L=String(v)[0]; var c=L==='A'?['rgba(16,185,129,.14)','#34d399']:L==='B'?['rgba(59,130,246,.14)','#60a5fa']:L==='C'?['rgba(245,158,11,.14)','#fbbf24']:['rgba(239,68,68,.14)','#f87171']; return '<span style="display:inline-block;min-width:30px;text-align:center;border-radius:5px;font-size:10px;font-weight:700;padding:1px 5px;background:'+c[0]+';color:'+c[1]+';">'+k+' '+v+'</span>'; }
+function adv2GradeChip(k,v){ if(!v) return ''; var tips={V:'درجة التقييم — هل السهم رخيص أم غالٍ',G:'درجة النمو — نمو الإيرادات والأرباح',P:'درجة الربحية — هوامش وعوائد',M:'درجة الزخم — أداء السعر مقارنة بالسوق',R:'مراجعات الأرباح — هل المحللون يرفعون التوقعات'}; var L=String(v)[0]; var c=L==='A'?['rgba(16,185,129,.14)','#34d399']:L==='B'?['rgba(59,130,246,.14)','#60a5fa']:L==='C'?['rgba(245,158,11,.14)','#fbbf24']:['rgba(239,68,68,.14)','#f87171']; return '<span title="'+(tips[k]||'')+'" style="display:inline-block;min-width:30px;text-align:center;border-radius:5px;font-size:10px;font-weight:700;padding:1px 5px;background:'+c[0]+';color:'+c[1]+';direction:ltr;unicode-bidi:isolate;">'+k+' '+v+'</span>'; }
 function adv2VerdictChip(v){
   var m={review:['\u0645\u0631\u0627\u062c\u0639\u0629','rgba(239,68,68,.14)','#f87171'],watch:['\u0631\u0627\u0642\u0628','rgba(245,158,11,.14)','#fbbf24'],strong:['\u0642\u0648\u064a','rgba(16,185,129,.14)','#34d399'],hold:['\u0627\u062d\u062a\u0641\u0638','rgba(59,130,246,.14)','#60a5fa']}[v]||['—','var(--bg2)','var(--text2)'];
   return '<span style="font-size:10px;font-weight:700;border-radius:12px;padding:2px 10px;background:'+m[1]+';color:'+m[2]+';">'+m[0]+'</span>';
@@ -7933,7 +7933,7 @@ function adv2StockCard(s){
       +'<div style="'+mono+'font-size:12.5px;">$'+(s.price!=null?Number(s.price).toFixed(2):'—')+' <span style="color:'+glc+';font-size:10.5px;">'+(s.glPct>0?'+':'')+s.glPct+'%</span></div>'
     +'</div>'
     +'<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin:8px 0 7px;">'
-      +'<span style="font-size:10px;color:var(--text3);">Quant <b style="'+mono+'color:'+(s.quant>=4?'#34d399':s.quant>=3?'#fbbf24':'#f87171')+';">'+(s.quant!=null?s.quant.toFixed?s.quant.toFixed(2):s.quant:'—')+'</b></span>'
+      +'<span title="تقييم SA الكمي (1-5) — أعلى = أفضل" style="font-size:10px;color:var(--text3);">Quant <b style="'+mono+'color:'+(s.quant>=4?'#34d399':s.quant>=3?'#fbbf24':'#f87171')+';">'+(s.quant!=null?s.quant.toFixed?s.quant.toFixed(2):s.quant:'—')+'</b></span>'
       +grades
       +'<span style="font-size:10px;color:var(--text3);">RSI <span style="'+mono+'">'+(s.rsi!=null?s.rsi:'—')+'</span></span>'
       +'<span style="font-size:10px;color:var(--text3);margin-inline-start:auto;"><span style="'+mono+'">$'+Math.round(s.value/1000)+'K</span> \u00b7 '+(s.weight!=null?s.weight+'%':'')+'</span>'
