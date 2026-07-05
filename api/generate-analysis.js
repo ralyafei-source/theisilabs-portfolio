@@ -139,6 +139,26 @@ function computeSignals(holdings, saMap, targets, totalValue){
   return rows;
 }
 
+
+function monthlyPromptV3(selected, portfolioStats, asOf){
+  return `أنت محلل مالي محترف. حلّل الميزة التنافسية والنظرة البعيدة (سنة+) لكل سهم أدناه. البيانات محسوبة مسبقاً — لا تخترع أي رقم أو اسم قاعدة أو وصف شركة غير مستمد من الحقول. archetype و binding و conviction محسوبة آلياً — فسّرها ولا تغيّرها.
+
+تواريخ البيانات: الأسعار ${asOf.prices} · تقييمات SA ${asOf.sa}
+إحصاءات المحفظة: ${JSON.stringify(portfolioStats)}
+الأسهم (أكبر المراكز + ما يحتاج قراراً بعيد المدى):
+${JSON.stringify(selected)}
+
+أخرج JSON فقط:
+{
+ "summary":"فقرة خليجية: خلاصة شهرية للمحفظة من منظور الاحتفاظ طويل المدى، اذكر تواريخ البيانات",
+ "biggest_risk":"جملة واحدة: أكبر خطر بنيوي (تركّز/جودة/تقييم)",
+ "long_view":"فقرة: كيف تبدو المحفظة على أفق سنة+ بناءً على درجات الجودة والنمو",
+ "health":"فقرة: صحة التوزيع والتركّز وما يستحق إعادة نظر — معلومات لا أوامر",
+ "stocks":[{"sym":"NVDA","moat":"wide|narrow|none|unclear","thesis":"2-3 جمل: قوة الأعمال من P وG، ماذا يعني archetype وbinding، وهل الاحتفاظ مبرر من البيانات","watch":"العائق أو الحدث للمراقبة أو \"\""}]
+}
+قواعد: moat يُشتق حصراً من Profitability وGrowth وconviction (P≥A- ونمو معقول ومؤكد = wide، P في B = narrow، P≤C أو distortion = none/unclear). لا نصيحة مالية. JSON فقط.`;
+}
+
 function weeklyPromptV3(selected, portfolioStats, newsText, asOf){
   return `أنت محلل مالي محترف. البيانات أدناه محسوبة مسبقاً — لا تعيد حسابها ولا تخترع أي رقم أو اسم قاعدة أو اقتباس غير موجود في البيانات. يُمنع منعاً باتاً نسب أي قاعدة لجهة (مثل قاعدة Bridgewater) ما لم ترد في البيانات. وصف أي شركة يكون فقط من الحقول المقدمة.
 
@@ -627,9 +647,64 @@ module.exports = async function handler(req, res) {
         return res.status(500).json({ error:'weekly v3 crashed', detail:String(e && e.stack || e).slice(0,400) });
       }
     } else {
-      const a = await callClaude(buildPrompt('monthly-a', portfolioText, saText, marketText, today));
-      const b = await callClaude(buildPrompt('monthly-b', portfolioText, saText, marketText, today));
-      analysisText = a + '\n\n' + b;
+      // ═══ v3 structured monthly ═══
+      try {
+      const baseHold=((pf&&(pf.holdings||pf.stocks))||[]).filter(h=>h&&h.sym&&h.shares>0);
+      if(!baseHold.length) return res.status(400).json({ error:'portfolio.json empty for '+nickname });
+      const quotes={};
+      await Promise.all(baseHold.map(async h=>{
+        try{ const r=await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(h.sym)}?interval=1d&range=5d`,{headers:{'User-Agent':'Mozilla/5.0'}});
+          if(!r.ok) return; const d=await r.json(); const meta=d?.chart?.result?.[0]?.meta;
+          if(meta) quotes[h.sym]={price:meta.regularMarketPrice||null};
+        }catch(e){}
+      }));
+      const holdings=baseHold.map(h=>{ const price=(quotes[h.sym]&&quotes[h.sym].price)||h.cost; return { sym:h.sym, sector:h.sector||null, value:Math.round(h.shares*price), livePrice:price, glPct:h.cost?+(((price-h.cost)/h.cost)*100).toFixed(1):0 }; });
+      const totalValue=holdings.reduce((a,h)=>a+(h.value||0),0);
+      const saMap=saRowMap(sa);
+      // buckets (scorer v2 output) — walk back 14 days
+      let bk=null;
+      for(let o=0;o<14;o++){ const d=new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10);
+        bk=await ghRead(`data/sa-buckets-${d}.json`)||await ghRead(`data/sa-buckets-${nickname}-${d}.json`); if(bk) break; }
+      const bkMap=(bk&&bk.scored)||{};
+      const rows=holdings.map(h=>{
+        const r=saMap[h.sym]||{}; const b=bkMap[h.sym]||{};
+        return { sym:h.sym, value:h.value, weight:totalValue?+((h.value/totalValue)*100).toFixed(1):null,
+          glPct:h.glPct, sector:h.sector,
+          quant:r['Quant Rating']!=null?+r['Quant Rating']:null,
+          P:r['Profitability Grade']||null, G:r['Growth Grade']||null, V:r['Valuation Grade']||null,
+          long_score:(b.long&&b.long.score!=null)?b.long.score:null,
+          archetype:(b.archetype&&b.archetype.key)||null,
+          conviction:(b.conviction&&b.conviction.tier)||null,
+          binding:(b.binding&&(b.binding.grade+':'+b.binding.letter))||null,
+          distortion:!!b.distortion };
+      });
+      rows.sort((a,b)=>(b.value||0)-(a.value||0));
+      const selected=rows.slice(0,12);
+      const techValue=rows.filter(r=>/tech/i.test(r.sector||'')).reduce((a,r)=>a+(r.value||0),0);
+      const portfolioStats={ total_value:Math.round(totalValue), holdings:rows.length,
+        tech_concentration_pct:totalValue?+((techValue/totalValue)*100).toFixed(1):null };
+      const asOf={prices:today, sa:(sa&&sa.date)||'غير معروف'};
+      const raw=await callClaude(monthlyPromptV3(selected, portfolioStats, asOf));
+      let cj=null; try{ cj=JSON.parse(raw.replace(/```json|```/g,'').trim()); }catch(e){ return res.status(500).json({error:'Claude JSON parse failed', preview:raw.slice(0,200)}); }
+      const tm={}; (cj.stocks||[]).forEach(s=>{ tm[s.sym]={thesis:s.thesis||'', watch:s.watch||'', moat:s.moat||'unclear'}; });
+      const MOAT2V={wide:'strong', narrow:'hold', unclear:'watch', none:'review'};
+      const stocksOut=selected.map(r=>{ const t=tm[r.sym]||{}; return Object.assign({},r,t,{verdict:MOAT2V[t.moat]||'watch', price:holdings.find(h=>h.sym===r.sym).livePrice}); });
+      const doc={ type:'monthly', schema:2, date:today, nickname, as_of:asOf,
+        verdict:{ tech_concentration_pct:portfolioStats.tech_concentration_pct,
+          review_count:stocksOut.filter(s=>s.verdict==='review').length,
+          watch_count:stocksOut.filter(s=>s.verdict==='watch').length,
+          strong_count:stocksOut.filter(s=>s.verdict==='strong').length,
+          biggest_risk:cj.biggest_risk||'' },
+        summary:cj.summary||'', long_view:cj.long_view||'', health:cj.health||'',
+        stocks:stocksOut, clusters:[], hedge:'', stress:[],
+        generated:new Date().toISOString() };
+      const filePath=`data/analysis-monthly-${nickname}-${today.slice(0,7)}.json`;
+      const ok=await ghWrite(filePath, doc);
+      if(!ok) return res.status(500).json({ error:'Failed to save analysis' });
+      return res.status(200).json({ success:true, type, nickname, path:filePath, schema:2, selected:stocksOut.length });
+      } catch(e) {
+        return res.status(500).json({ error:'monthly v3 crashed', detail:String(e&&e.stack||e).slice(0,400) });
+      }
     }
     if (!analysisText) return res.status(500).json({ error: 'Empty response from Claude' });
 
