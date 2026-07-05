@@ -1759,7 +1759,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
 .adv2-secnav{position:sticky;top:0;z-index:5;display:flex;gap:6px;flex-wrap:wrap;padding:10px 0;background:var(--bg);border-bottom:1px solid var(--border);margin-bottom:6px;}
 .adv2-secnav button{border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-size:11.5px;font-weight:600;padding:6px 14px;border-radius:16px;cursor:pointer;font-family:inherit;white-space:nowrap;}
 .adv2-secnav button:hover{color:var(--text);border-color:var(--rose);}
-.adv2-doc{max-width:860px;}
+.adv2-doc{max-width:none;}
 .adv2-sec{padding:26px 0 8px;border-bottom:1px solid var(--border);}
 .adv2-sec:last-child{border-bottom:none;}
 .adv2-sec>h2{font-size:19px;font-weight:800;margin:0 0 4px;letter-spacing:-.2px;}
@@ -4502,7 +4502,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
       return '<div onclick="showTab(\''+it.tab+'\',document.querySelector(\'[data-tab='+it.tab+']\'))" style="cursor:pointer;display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--border);">'
         +'<span style="font-size:13px;font-weight:700;color:'+AC+';font-family:'+MONO+';width:24px;flex:none;">'+n+'</span>'
         +'<span style="font-size:11px;color:var(--text3);width:90px;flex:none;">'+it.cat+'</span>'
-        +'<span style="font-size:12.5px;color:var(--text);flex:1;line-height:1.6;">'+it.txt+'</span>'
+        +'<span style="font-size:11.5px;color:var(--text);flex:1;line-height:1.6;">'+it.txt+'</span>'
         +'<span style="color:'+AC+';font-size:14px;flex:none;">\u2190</span>'
         +'</div>';
     }).join('');
