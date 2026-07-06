@@ -4956,7 +4956,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
   function bcell(html,span){ if(!html) return ''; return '<div style="grid-column:span '+span+';min-width:0;display:flex;flex-direction:column;" class="cc-bcell">'+html+'</div>'; }
   
   var _gsSaved={}; try{ _gsSaved=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
-  var _gsDefaults={market:{x:0,y:0,w:7,h:8},opp:{x:7,y:0,w:4,h:8},today:{x:11,y:0,w:13,h:8},mc:{x:0,y:8,w:6,h:11},hz:{x:6,y:8,w:5,h:11},fg:{x:11,y:8,w:4,h:11},exposure:{x:15,y:8,w:4,h:11},pulse:{x:19,y:8,w:5,h:11},review:{x:0,y:19,w:6,h:12},news:{x:6,y:19,w:5,h:12},movers:{x:11,y:19,w:13,h:5}};
+  var _gsDefaults={market:{x:0,y:0,w:4,h:6},opp:{x:4,y:0,w:2,h:6},today:{x:6,y:0,w:6,h:6},mc:{x:0,y:6,w:3,h:7},review:{x:3,y:6,w:3,h:7},fg:{x:6,y:6,w:2,h:9},exposure:{x:8,y:6,w:2,h:9},pulse:{x:10,y:6,w:2,h:9},hz:{x:0,y:13,w:3,h:7},news:{x:3,y:13,w:3,h:7},movers:{x:6,y:15,w:6,h:5}};
   function gsItem(id,html,popupTitle){
     if(!html) return '';
     var p=_gsSaved[id]; if(p&&(p.w==null||p.w<2)) p=null;
@@ -4997,9 +4997,9 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
   try{
     if(window._ccGS){ try{window._ccGS.destroy(false);}catch(e){} window._ccGS=null; }
     if(window.GridStack){
-      window._ccGS=GridStack.init({column:24,cellHeight:30,margin:6,float:false,animate:false,resizable:{handles:'se,sw,e,w,s'},columnOpts:{breakpoints:[{w:1100,c:1}]}},document.getElementById('ccBento'));
+      window._ccGS=GridStack.init({column:12,cellHeight:30,margin:6,float:false,animate:false,resizable:{handles:'se,sw,e,w,s'},columnOpts:{breakpoints:[{w:1100,c:1}]}},document.getElementById('ccBento'));
       window._ccGS.on('change',function(ev,items){
-        if(window._ccGS.getColumn&&window._ccGS.getColumn()<24) return;
+        if(window._ccGS.getColumn&&window._ccGS.getColumn()<12) return;
         var m={}; try{ m=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
         
         window._ccGS.engine.nodes.forEach(function(n){ if(n.id) m[n.id]={x:n.x,y:n.y,w:n.w,h:n.h}; });
