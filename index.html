@@ -4954,7 +4954,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
   var newsCardHtml=newsCard();
   // ── BENTO ASSEMBLY (desktop 12-col; mobile stacks via CSS) ──
   function bcell(html,span){ if(!html) return ''; return '<div style="grid-column:span '+span+';min-width:0;display:flex;flex-direction:column;" class="cc-bcell">'+html+'</div>'; }
-  localStorage.removeItem('theisi_cc_layout'); localStorage.removeItem('theisi_cc_default'); location.reload();
+  
   var _gsSaved={}; try{ _gsSaved=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
   var _gsDefaults={market:{x:0,y:0,w:7,h:8},opp:{x:7,y:0,w:4,h:8},today:{x:11,y:0,w:13,h:8},mc:{x:0,y:8,w:6,h:11},hz:{x:6,y:8,w:5,h:11},fg:{x:11,y:8,w:4,h:11},exposure:{x:15,y:8,w:4,h:11},pulse:{x:19,y:8,w:5,h:11},review:{x:0,y:19,w:6,h:12},news:{x:6,y:19,w:5,h:12},movers:{x:11,y:19,w:13,h:5}};
   function gsItem(id,html,popupTitle){
