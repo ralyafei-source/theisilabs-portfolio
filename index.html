@@ -4943,7 +4943,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
   var analysisSection='';
   if(analysisCards.length){
     var cols=Math.min(6,analysisCards.length);
-    analysisSection='<div>'+secLabel('\u0623\u062d\u062f\u062b \u0627\u0644\u062a\u062d\u0644\u064a\u0644\u0627\u062a')
+    analysisSection='<div>'
       +'<div class="cc-analysis cc-collapse-analysis" style="display:grid;grid-template-columns:repeat('+cols+',minmax(0,1fr));gap:12px;align-items:start;">'+analysisCards.join('')+'</div></div>';
   }
 
@@ -4992,7 +4992,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     +gsItem('movers',moversSection||'')
     +gsItem('news',newsCardHtml||'','\u0623\u062e\u0628\u0627\u0631 \u062a\u0645\u0633 \u0645\u062d\u0641\u0638\u062a\u0643')
     +gsItem('opp',oppCard||'')
-  +'</div><div style="text-align:left;padding:4px 2px;"><span class="gs-reset" onclick="localStorage.setItem(\'theisi_cc_default\',localStorage.getItem(\'theisi_cc_layout\')||\'{}\');this.textContent=\'✓ تم الحفظ\';">حفظ كتخطيط افتراضي</span> · <span class="gs-reset" onclick="localStorage.removeItem(\'theisi_cc_layout\');renderCommandCenter();">إعادة التخطيط الافتراضي</span></div>';
+  +'</div>';
   grid.innerHTML=healthChip+tickerHtml+bento+analysisSection+footer;
   try{
     if(window._ccGS){ try{window._ccGS.destroy(false);}catch(e){} window._ccGS=null; }
