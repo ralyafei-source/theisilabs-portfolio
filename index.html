@@ -4752,13 +4752,13 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
       var prev = ev.previous ? ('\u0627\u0644\u0633\u0627\u0628\u0642 '+I(ev.previous)) : '';
       var meta = [cons,prev].filter(Boolean).join(' \u00b7 ') || '\u2014';
       var did='ccmac-'+idx;
-      var detail='<div id="'+did+'" style="display:none;font-size:10.5px;color:var(--text2);line-height:1.8;margin-top:7px;padding-top:7px;border-top:1px solid var(--border);">'
+      var detail='<div data-did="1" style="display:none;font-size:10.5px;color:var(--text2);line-height:1.8;margin-top:7px;padding-top:7px;border-top:1px solid var(--border);">'
         + ev.what_ar
         + '<div style="margin-top:6px;color:#19c37d;">\u2193 '+(ev.impact_ar?ev.impact_ar.lower:'')+'</div>'
         + '<div style="margin-top:3px;color:#e5764d;">\u2191 '+(ev.impact_ar?ev.impact_ar.higher:'')+'</div>'
         + '</div>';
       return '<div style="padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;" '
-        +'onclick="var e=document.getElementById(\''+did+'\');e.style.display=e.style.display===\'none\'?\'block\':\'none\';">'
+        +'onclick="event.stopPropagation();var e=this.querySelector(\'[data-did]\');if(e)e.style.display=e.style.display===\'none\'?\'block\':\'none\';">'
         +'<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;margin-bottom:5px;">'
           +'<span style="color:'+acc+';font-weight:700;font-family:'+MONO+';">'+dayBadge(ev.daysAway)+'</span>'
           +'<span style="color:var(--text);font-weight:700;text-align:right;line-height:1.4;">'+ev.name_ar+' <span style="font-size:10.5px;color:var(--text3);">\u25be</span></span>'
@@ -4782,16 +4782,17 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     var T=window._themedNews;
     if(T&&T.themes&&T.themes.length){
       var themeDate=T.date||'';
+      window._ccNewsDetail={};
       var list=T.themes.map(function(th,ti){
         var syms=(th.tickers||[]).join(' \u00b7 ');
         var hasDetail=!!(th.detail&&th.detail.trim());
+        if(hasDetail){ window._ccNewsDetail[ti]='<div style="font-size:12.5px;color:var(--text);line-height:2;">'+(th.summary||'')+'</div>'+(syms?'<div style="font-size:11px;color:var(--text3);font-family:'+MONO+';margin:8px 0;direction:ltr;text-align:right;">'+syms+'</div>':'')+'<div style="font-size:12px;color:var(--text2);line-height:1.95;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">'+th.detail+'</div>'; }
         return '<div style="padding:7px 0;border-bottom:1px solid var(--border);cursor:'+(hasDetail?'pointer':'default')+';"'
-          +(hasDetail?(' onclick="var e=document.getElementById(\'cctn-'+ti+'\');e.style.display=e.style.display===\'none\'?\'block\':\'none\';"'):'')+'>'
+          +(hasDetail?(' onclick="event.stopPropagation();window._ccHtmlPopup(\'\u062e\u0628\u0631 \u064a\u0645\u0633 \u0645\u062d\u0641\u0638\u062a\u0643\',window._ccNewsDetail['+ti+'])"'):'')+'>'
           +'<div style="display:flex;gap:8px;">'
             +'<span style="width:7px;height:7px;border-radius:50%;background:#FF0A78;flex:none;margin-top:5px;"></span>'
-            +'<div style="flex:1;"><div style="font-size:11.5px;color:var(--text);line-height:1.6;">'+(th.summary||'')+(hasDetail?' <span style="font-size:10.5px;color:var(--text3);">\u25be</span>':'')+'</div>'
+            +'<div style="flex:1;"><div style="font-size:11.5px;color:var(--text);line-height:1.6;">'+(th.summary||'')+(hasDetail?' <span style="font-size:10.5px;color:var(--text3);">\u2197</span>':'')+'</div>'
             +(syms?'<div style="font-size:10.5px;color:var(--text3);font-family:'+MONO+';margin-top:2px;">'+syms+'</div>':'')
-            +(hasDetail?'<div id="cctn-'+ti+'" style="display:none;font-size:11px;color:var(--text2);line-height:1.8;margin-top:7px;padding-top:7px;border-top:1px solid var(--border);">'+th.detail+'</div>':'')
             +'</div></div></div>';
       }).join('');
       var titleRow='<div style="display:flex;justify-content:space-between;align-items:center;">'
