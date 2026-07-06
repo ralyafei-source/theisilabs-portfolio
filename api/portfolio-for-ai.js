@@ -81,7 +81,13 @@ module.exports = async (req, res) => {
       const W = { vol: 0.20, mom: 0.20, safe: 0.20, strength: 0.15, junk: 0.15, breadth: 0.10 };
 
       // ── helpers ────────────────────────────────────────────────────────────
-      const jget = async (url) => { try { const r = await fetch(url); return r.ok ? await r.json() : null; } catch { return null; } };
+      const jget = async (url) => {
+        for (let i = 0; i < 2; i++) {
+          try { const r = await fetch(url); if (r.ok) return await r.json(); } catch {}
+          await new Promise(s => setTimeout(s, 500));
+        }
+        return null;
+      };
       const closesOf = (raw) => {
         const arr = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.historical) ? raw.historical : []);
         return arr.map(d => ({ date: d.date, v: Number(d.price != null ? d.price : d.close) }))
@@ -104,7 +110,8 @@ module.exports = async (req, res) => {
       // ── fetch all series in parallel ───────────────────────────────────────
       // FMP Starter excludes index symbols (^VIX, ^GSPC) → VIX from Yahoo (free),
       // momentum from SPY (same signal as ^GSPC).
-      const H = (sym) => `${FMP_BASE}/historical-price-eod/light?symbol=${encodeURIComponent(sym)}&apikey=${FMP}`;
+      const FROM = new Date(Date.now() - 550 * 86400000).toISOString().slice(0, 10);
+      const H = (sym) => `${FMP_BASE}/historical-price-eod/light?symbol=${encodeURIComponent(sym)}&from=${FROM}&apikey=${FMP}`;
       const yahooVix = async () => {
         try {
           const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=2y&interval=1d', { headers: { 'User-Agent': UA } });
@@ -385,19 +392,34 @@ module.exports = async (req, res) => {
       const today = new Date(Date.now() + 4*3600*1000).toISOString().slice(0,10);     // UAE
       const to    = new Date(Date.now() + 4*3600*1000 + horizon*86400000).toISOString().slice(0,10);
 
-      // ── pull FMP economic calendar for the window ─────────────────────────
-      let rows = [];
-      try {
-        const r = await fetch(`${FMP_BASE}/economic-calendar?from=${today}&to=${to}&apikey=${FMP}`);
-        if (r.ok) { const j = await r.json(); rows = Array.isArray(j) ? j : []; }
-      } catch {}
-
-      // US only — strict. FMP tags US events with country 'US'. Some feeds also
-      // carry 'United States'. Currency/USD is too loose (catches FX pairs), so
-      // we require an explicit US country tag.
-      rows = rows.filter(e => {
-        const c = String(e.country || '').trim().toUpperCase();
-        return c === 'US' || c === 'USA' || c === 'UNITED STATES';
+      // ── OFFICIAL US MACRO SCHEDULE (static — FMP Starter excludes economic-calendar) ──
+      // Sources: Fed FOMC calendar + BLS release schedules (bls.gov/schedule).
+      // Times UTC: 8:30 ET = 12:30 UTC (EDT) / 13:30 UTC (EST, from Nov 1 2026).
+      // FOMC decision 2:00 PM ET = 18:00 UTC (EDT) / 19:00 UTC (EST).
+      // UPDATE ONCE A YEAR when Fed/BLS publish the next schedule.
+      const SCHEDULE = [
+        // FOMC decision days 2026 (fed federal funds rate)
+        { key: 'fomc', event: 'FOMC Interest Rate Decision', date: '2026-07-29 18:00:00' },
+        { key: 'fomc', event: 'FOMC Interest Rate Decision', date: '2026-09-16 18:00:00' },
+        { key: 'fomc', event: 'FOMC Interest Rate Decision', date: '2026-10-28 18:00:00' },
+        { key: 'fomc', event: 'FOMC Interest Rate Decision', date: '2026-12-09 19:00:00' },
+        // CPI (BLS, 8:30 ET)
+        { key: 'cpi', event: 'CPI Consumer Price Index', date: '2026-07-14 12:30:00' },
+        { key: 'cpi', event: 'CPI Consumer Price Index', date: '2026-08-12 12:30:00' },
+        { key: 'cpi', event: 'CPI Consumer Price Index', date: '2026-09-11 12:30:00' },
+        { key: 'cpi', event: 'CPI Consumer Price Index', date: '2026-10-14 12:30:00' },
+        { key: 'cpi', event: 'CPI Consumer Price Index', date: '2026-11-10 13:30:00' },
+        { key: 'cpi', event: 'CPI Consumer Price Index', date: '2026-12-10 13:30:00' },
+        // Employment Situation = Nonfarm Payrolls + Unemployment Rate (BLS, 8:30 ET)
+        { key: 'nfp', event: 'Nonfarm Payrolls', date: '2026-08-07 12:30:00' },
+        { key: 'nfp', event: 'Nonfarm Payrolls', date: '2026-09-04 12:30:00' },
+        { key: 'nfp', event: 'Nonfarm Payrolls', date: '2026-10-02 12:30:00' },
+        { key: 'nfp', event: 'Nonfarm Payrolls', date: '2026-11-06 13:30:00' },
+        { key: 'nfp', event: 'Nonfarm Payrolls', date: '2026-12-04 13:30:00' },
+      ];
+      const rows = SCHEDULE.filter(e => {
+        const d = e.date.slice(0, 10);
+        return d >= today && d <= to;
       });
 
       // ── event catalog: which events we care about + Arabic playbook ───────
@@ -548,7 +570,7 @@ module.exports = async (req, res) => {
         count: out.length,
         next,             // soonest top-tier event, for a "next Fed decision in X days" headline
         events: out,
-        note_ar: 'التوقعات (consensus) من إجماع المحللين قبل الإعلان. الأرقام الفعلية تظهر بعد صدورها.',
+        note_ar: 'المواعيد من الجداول الرسمية (الفيدرالي وBLS). الأرقام الفعلية تصدر في موعد الحدث.',
       });
     } catch (e) {
       return res.status(200).json({ error: e.message });
