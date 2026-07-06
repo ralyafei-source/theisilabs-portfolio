@@ -4959,11 +4959,11 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     +gsItem('opp',oppCard||'')
   +'</div>';
   if(window._ccReadStore&&window._ccReadStore.movers){
-    var _mv=(typeof withGl!=='undefined'?withGl:[]).slice().sort(function(a,b){return Math.abs(b.gl)-Math.abs(a.gl);}).slice(0,5);
+    var _mv=(typeof withGl!=='undefined'?withGl:[]).filter(function(s){return s._d!=null;}).slice().sort(function(a,b){return Math.abs(b._d)-Math.abs(a._d);}).slice(0,5);
     function _mcol(g){ if(g<=-50)return'#b81e2e'; if(g<0)return'#e5746b'; if(g<50)return'#3a9e6f'; return'#19c37d'; }
     var _top5='<div style="margin-bottom:14px;">'
       +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">أكبر 5 متحركين اليوم</div>'
-      +_mv.map(function(s){ var c=_mcol(s.gl); return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg3);border-radius:8px;margin-bottom:5px;border-inline-start:2px solid '+c+';"><span style="font-weight:700;color:var(--text);font-family:\''+"'"+'IBM Plex Mono'+"'"+'\',monospace;" dir="ltr">'+ccShariaMark(s.sym)+s.sym+'</span><span style="color:'+c+';font-weight:700;font-family:\''+"'"+'IBM Plex Mono'+"'"+'\',monospace;" dir="ltr">'+(s.gl>=0?'+':'')+s.gl.toFixed(2)+'%</span></div>'; }).join('')
+      +_mv.map(function(s){ var g=s._d; var c=_mcol(g); return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg3);border-radius:8px;margin-bottom:5px;border-inline-start:2px solid '+c+';"><span style="font-weight:700;color:var(--text);font-family:\''+"'"+'IBM Plex Mono'+"'"+'\',monospace;" dir="ltr">'+ccShariaMark(s.sym)+s.sym+'</span><span style="color:'+c+';font-weight:700;font-family:\''+"'"+'IBM Plex Mono'+"'"+'\',monospace;" dir="ltr">'+(g>=0?'+':'')+g.toFixed(2)+'%</span></div>'; }).join('')
       +'</div>';
     window._ccReadStore.movers.wide=true;
     window._ccReadStore.movers.html=_top5+'<div style="font-size:11.5px;color:var(--text3);line-height:1.9;margin-bottom:10px;">كل نقطة تمثل سهماً من محفظتك — موقعها على الخط يعكس تغير آخر جلسة تداول (٪): الأخضر ارتفاع والأحمر هبوط، وحجم النقطة يعكس حجم المركز. مرّر على أي نقطة لمعرفة السهم.</div>'+window._ccReadStore.movers.html;
@@ -15406,3 +15406,4 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
 
 </body>
 </html>
+                              
