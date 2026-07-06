@@ -1042,6 +1042,22 @@ ${JSON.stringify(facts, null, 2)}
     );
     priceResults.forEach(({ sym, price, prev }) => { priceMap[sym] = { price, prev }; });
 
+    // ── RSI per holding from latest SA file ─────────────────────────────────
+    const rsiMap = {};
+    try {
+      for (let o = 0; o < 30; o++) {
+        const d = new Date(Date.now() + 4 * 3600000 - o * 86400000).toISOString().slice(0, 10);
+        const r = await fetch(`https://raw.githubusercontent.com/${REPO}/main/data/sa-portfolio-${d}.json?t=${Date.now()}`);
+        if (!r.ok) continue;
+        const sa = await r.json();
+        [...(sa.stocks || []), ...(sa.etfs || [])].forEach(row => {
+          const s = String(row.symbol || row.sym || '').toUpperCase();
+          if (s && row['RSI'] != null) rsiMap[s] = +(+row['RSI']).toFixed(1);
+        });
+        break;
+      }
+    } catch {}
+
     // ── Calculate totals ─────────────────────────────────────────────────────
     let totalValue = 0;
     const enriched = holdings.map(h => {
@@ -1100,7 +1116,8 @@ ${JSON.stringify(facts, null, 2)}
         text += `now $${String(h.livePrice.toFixed(2)).padEnd(8)}  `;
         text += `value $${h.value.toLocaleString().padEnd(8)}  `;
         text += `${glSign}${h.glPct.toFixed(1)}%`;
-        text += h.dayPct != null ? `  dayPct: ${h.dayPct >= 0 ? '+' : ''}${h.dayPct}%\n` : `  dayPct: n/a\n`;
+        text += h.dayPct != null ? `  dayPct: ${h.dayPct >= 0 ? '+' : ''}${h.dayPct}%` : `  dayPct: n/a`;
+        text += rsiMap[String(h.sym).toUpperCase()] != null ? `  rsi: ${rsiMap[String(h.sym).toUpperCase()]}\n` : `\n`;
       });
       text += '\n';
     });
