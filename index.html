@@ -4186,7 +4186,7 @@ function renderCommandCenter(){
     window._ccReadStore={};
     window._ccReadOpen=function(key){
       var d=window._ccReadStore[key]; if(!d) return;
-      if(d.html){ window._ccHtmlPopup(d.title,d.html); return; }
+      if(d.html){ window._ccHtmlPopup(d.title,d.html,d.wide); return; }
       window._ccReadPopup(d.title,d.brief,d.detail);
     };
     window._ccCardOpen=function(key,ev){
@@ -4194,12 +4194,13 @@ function renderCommandCenter(){
       if(h && h!==ev.currentTarget) return;
       window._ccReadOpen(key);
     };
-    window._ccHtmlPopup=function(title,html){
+    window._ccHtmlPopup=function(title,html,wide){
       var ov=document.getElementById('ccReadOv');
       if(!ov){ ov=document.createElement('div'); ov.id='ccReadOv'; ov.className='sheet-ov';
         ov.onclick=function(e){ if(e.target===ov) window._ccReadClose(); };
         document.body.appendChild(ov); }
-      ov.innerHTML='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;max-width:560px;width:94vw;max-height:82vh;overflow-y:auto;padding:18px;box-shadow:0 16px 48px rgba(0,0,0,.5);direction:rtl;text-align:right;">'
+      var _mw=wide?'820px':'560px';
+      ov.innerHTML='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;max-width:'+_mw+';width:94vw;max-height:82vh;overflow-y:auto;padding:18px;box-shadow:0 16px 48px rgba(0,0,0,.5);direction:rtl;text-align:right;">'
         +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div style="font-size:15px;font-weight:700;color:var(--text);">'+title+'</div>'
         +'<span onclick="window._ccReadClose()" style="cursor:pointer;color:var(--text3);font-size:18px;line-height:1;">\u2715</span></div>'
         +html+'</div>';
@@ -4957,7 +4958,16 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     +gsItem('news',newsCardHtml||'','\u0623\u062e\u0628\u0627\u0631 \u062a\u0645\u0633 \u0645\u062d\u0641\u0638\u062a\u0643')
     +gsItem('opp',oppCard||'')
   +'</div>';
-  if(window._ccReadStore&&window._ccReadStore.movers){ window._ccReadStore.movers.html='<div style="font-size:11.5px;color:var(--text3);line-height:1.9;margin-bottom:10px;">كل نقطة تمثل سهماً من محفظتك — موقعها على الخط يعكس تغير آخر جلسة تداول (٪): الأخضر ارتفاع والأحمر هبوط، وحجم النقطة يعكس حجم المركز. الشرائح في الأعلى تبرز أكبر المتحركين. مرّر على أي نقطة لمعرفة السهم.</div>'+window._ccReadStore.movers.html; }
+  if(window._ccReadStore&&window._ccReadStore.movers){
+    var _mv=(typeof withGl!=='undefined'?withGl:[]).slice().sort(function(a,b){return Math.abs(b.gl)-Math.abs(a.gl);}).slice(0,5);
+    function _mcol(g){ if(g<=-50)return'#b81e2e'; if(g<0)return'#e5746b'; if(g<50)return'#3a9e6f'; return'#19c37d'; }
+    var _top5='<div style="margin-bottom:14px;">'
+      +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">أكبر 5 متحركين اليوم</div>'
+      +_mv.map(function(s){ var c=_mcol(s.gl); return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg3);border-radius:8px;margin-bottom:5px;border-inline-start:2px solid '+c+';"><span style="font-weight:700;color:var(--text);font-family:\''+"'"+'IBM Plex Mono'+"'"+'\',monospace;" dir="ltr">'+ccShariaMark(s.sym)+s.sym+'</span><span style="color:'+c+';font-weight:700;font-family:\''+"'"+'IBM Plex Mono'+"'"+'\',monospace;" dir="ltr">'+(s.gl>=0?'+':'')+s.gl.toFixed(2)+'%</span></div>'; }).join('')
+      +'</div>';
+    window._ccReadStore.movers.wide=true;
+    window._ccReadStore.movers.html=_top5+'<div style="font-size:11.5px;color:var(--text3);line-height:1.9;margin-bottom:10px;">كل نقطة تمثل سهماً من محفظتك — موقعها على الخط يعكس تغير آخر جلسة تداول (٪): الأخضر ارتفاع والأحمر هبوط، وحجم النقطة يعكس حجم المركز. مرّر على أي نقطة لمعرفة السهم.</div>'+window._ccReadStore.movers.html;
+  }
   grid.innerHTML=healthChip+tickerHtml+bento+analysisSection+footer;
   try{
     if(window._ccGS){ try{window._ccGS.destroy(false);}catch(e){} window._ccGS=null; }
