@@ -1099,7 +1099,8 @@ ${JSON.stringify(facts, null, 2)}
         text += `cost $${String(h.cost.toFixed(2)).padEnd(8)}  `;
         text += `now $${String(h.livePrice.toFixed(2)).padEnd(8)}  `;
         text += `value $${h.value.toLocaleString().padEnd(8)}  `;
-        text += `${glSign}${h.glPct.toFixed(1)}%\n`;
+        text += `${glSign}${h.glPct.toFixed(1)}%`;
+        text += h.dayPct != null ? `  dayPct: ${h.dayPct >= 0 ? '+' : ''}${h.dayPct}%\n` : `  dayPct: n/a\n`;
       });
       text += '\n';
     });
