@@ -2015,7 +2015,6 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:19px;}.hstat-
   <div class="sb-item" data-tab="weights" style="display:none;"             onclick="showTab('weights',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="14" cy="6" r="2.2"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="8" cy="12" r="2.2"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="16" cy="18" r="2.2"/></svg></span><span class="sb-lbl">Indicators</span></div>
   <div class="sb-item" data-tab="alerts" style="display:none;"              onclick="showTab('alerts',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 1 0-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9"/><path d="M10.2 20a2 2 0 0 0 3.6 0"/></svg></span><span class="sb-lbl">Alerts</span></div>
   <div class="sb-item" data-tab="transactions" style="display:none;"        onclick="showTab('transactions',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 4 3 8 7 12"/><line x1="3" y1="8" x2="16" y2="8"/><polyline points="17 12 21 16 17 20"/><line x1="8" y1="16" x2="21" y2="16"/></svg></span><span class="sb-lbl">Transactions</span></div>
-  <div class="sb-item" data-tab="health" id="healthNavTab" style="display:none;" onclick="showTab('health',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.6-9.2-9A5.2 5.2 0 0 1 12 6.4 5.2 5.2 0 0 1 21.2 11C19 15.4 12 20 12 20z"/></svg></span><span class="sb-lbl">Health</span></div>
   <div class="sb-item" data-tab="sa-intel" style="display:none;" onclick="showTab('sa-intel',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><circle cx="8" cy="10" r="2"/><line x1="13" y1="8" x2="19" y2="8"/><line x1="13" y1="11" x2="19" y2="11"/><line x1="13" y1="14" x2="19" y2="14"/></svg></span><span class="sb-lbl">SA Intel</span></div>
   <div class="sb-item" data-tab="horizon" style="display:none;" onclick="showTab('horizon',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h18"/><path d="M5 14a7 7 0 0 1 14 0"/><line x1="12" y1="4" x2="12" y2="7"/><line x1="19.5" y1="9" x2="17.5" y2="10.5"/><line x1="4.5" y1="9" x2="6.5" y2="10.5"/></svg></span><span class="sb-lbl">Horizon</span></div>
   <div class="sb-item" data-tab="setup"               onclick="showTab('setup',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="sb-lbl">Settings</span></div>
@@ -3539,7 +3538,7 @@ async function boot(){
 
 
 <!-- ===== SETUP TAB ===== -->
-<div id="tab-setup" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('alerts',document.querySelector('[data-tab=alerts]'))">Alerts | التنبيهات</div><div class="sub-pill" onclick="showTab('health',document.querySelector('[data-tab=health]'))">Health</div></div>
+<div id="tab-setup" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('alerts',document.querySelector('[data-tab=alerts]'))">Alerts | التنبيهات</div></div>
   <div class="grid-2">
     <div class="card" style="display:none;">
       <div class="card-title" id="s-keys-title">API Keys</div>
@@ -3623,52 +3622,6 @@ async function boot(){
 </div>
 
 </div>
-<div id="tab-health" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('setup',document.querySelector('[data-tab=setup]'))">← Settings</div></div>
-  <div class="card">
-    <div class="section-hdr" style="margin-bottom:20px;">
-      <div>
-        <div class="section-title" id="health-title">System Health Log</div>
-        <div class="section-sub" id="health-sub">Last 30 analysis runs — source quality and write verification</div>
-      </div>
-      <button class="btn btn-outline" style="font-size:11px;padding:5px 12px;" onclick="loadHealthLog()">↺ Refresh</button>
-    </div>
-
-    <!-- Summary cards -->
-    <div class="grid-4" id="healthSummary" style="margin-bottom:20px;">
-      <div class="stat-card blue"><div class="stat-label">Total runs</div><div class="stat-value" id="hl-total" style="color:var(--accent)">—</div></div>
-      <div class="stat-card green"><div class="stat-label">OK</div><div class="stat-value" id="hl-ok" style="color:var(--accent2)">—</div></div>
-      <div class="stat-card gold"><div class="stat-label">Degraded</div><div class="stat-value" id="hl-degraded" style="color:var(--gold)">—</div></div>
-      <div class="stat-card orange"><div class="stat-label">Failed</div><div class="stat-value" id="hl-failed" style="color:var(--red)">—</div></div>
-    </div>
-
-    <!-- Filter buttons -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-      <button class="t-btn active" onclick="hlFilter('all',this)">All</button>
-      <button class="t-btn" onclick="hlFilter('ok',this)">OK ✅</button>
-      <button class="t-btn" onclick="hlFilter('degraded',this)">Degraded ⚠ï¸</button>
-      <button class="t-btn" onclick="hlFilter('failed',this)">Failed ✗</button>
-    </div>
-
-    <!-- Log table -->
-    <div style="overflow-x:auto;">
-      <table class="ptable js-sortable" id="healthTable">
-        <thead><tr>
-          <th>Time (UAE)</th>
-          <th>Type</th>
-          <th>User</th>
-          <th>Status</th>
-          <th>Note</th>
-          <th class="num">Size</th>
-          <th class="num">Sections</th>
-          <th class="num">Unavailable</th>
-          <th class="num">Write</th>
-        </tr></thead>
-        <tbody id="healthBody">
-          <tr><td colspan="9" style="text-align:center;color:var(--text2);padding:30px;">Loading...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
 
 
 
@@ -3853,7 +3806,7 @@ function setLang(l,btn){ setTimeout(function(){ if(typeof renderCalmZones==='fun
   renderNews();
   // Nav tabs
   const _isAr = lang==='ar';
-  const navMap={'nav-dashboard':_isAr?'الرئيسية':'Dashboard','nav-portfolio':T[lang].navPortfolio,'nav-advisor':_isAr?'المستشار الذكي':'AI Advisor','nav-trends':T[lang].navTrends,'nav-indicators':T[lang].navIndicators,'nav-alerts':T[lang].navAlerts,'nav-transactions':T[lang].navTransactions,'nav-setup':T[lang].navSetup||'Setup','nav-health':_isAr?'الصحة':'Health'};
+  const navMap={'nav-dashboard':_isAr?'الرئيسية':'Dashboard','nav-portfolio':T[lang].navPortfolio,'nav-advisor':_isAr?'المستشار الذكي':'AI Advisor','nav-trends':T[lang].navTrends,'nav-indicators':T[lang].navIndicators,'nav-alerts':T[lang].navAlerts,'nav-transactions':T[lang].navTransactions,'nav-setup':T[lang].navSetup||'Setup'};
   Object.entries(navMap).forEach(([id,txt])=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
   // Dashboard labels
   const _dmap={'cmd-happened':_isAr?'ما الذي حدث اليوم':'What happened today','cmd-news-title':_isAr?'أخبار السوق':'Market news','cmd-port-label':_isAr?'قيمة المحفظة':'Portfolio Value','cmd-score-label-txt':_isAr?'لمحة عن المحفظة':'Portfolio Snapshot'};
@@ -5278,7 +5231,6 @@ function showTab(name,el){
     if(name==='transactions') renderTxTable();
     if(name==='advisor') loadAnalysis();
     if(name==='horizon' && typeof _hzInit==='function') _hzInit();
-    if(name==='health') loadHealthLog();
   }catch(e){
     console.error('Tab error in '+name+':',e);
     document.getElementById('tab-'+name).innerHTML='<div style="padding:40px;color:var(--red);font-family:monospace;">Error: '+e.message+'</div>';
@@ -12958,7 +12910,6 @@ function showAdminButton() {
   btn.className='tb-btn'; btn.style.cssText='font-size:12px;font-weight:700;padding:0 11px;';
   btn.onclick = openAdminPanel;
   headerRight.appendChild(btn);
-  revealHealthTab();
   try{ var uw=document.getElementById('sa-universe-wrap'); if(uw) uw.style.display='block'; }catch(_){}
 }
 
@@ -13422,151 +13373,6 @@ document.addEventListener('DOMContentLoaded', () => {
   checkSession();
 });
 
-// ── Health tab functions (CP6 dashboard viewer) ──────────────────────────────
-
-let _hlLogs = [];
-let _hlFilter = 'all';
-
-function revealHealthTab() {
-  const t = document.getElementById('healthNavTab');
-  if (t) t.style.display = '';
-}
-
-function hlFilter(status, btn) {
-  _hlFilter = status;
-  document.querySelectorAll('.t-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  _hlRender();
-}
-
-function _hlToUAE(ts) {
-  try {
-    return new Date(ts).toLocaleString('en-GB', {
-      timeZone: 'Asia/Dubai', day: '2-digit', month: 'short',
-      hour: '2-digit', minute: '2-digit'
-    });
-  } catch { return ts || '—'; }
-}
-
-function _hlBadge(status) {
-  const map = {
-    ok:       'background:#1a4a1a;color:#7dda7d',
-    degraded: 'background:#4a3a0a;color:#f0c060',
-    failed:   'background:#4a1a1a;color:#f07070'
-  };
-  const s = map[status] || 'background:var(--bg2);color:var(--text2)';
-  return `<span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500;${s}">${status}</span>`;
-}
-
-function _hlRender() {
-  const filtered = _hlFilter === 'all' ? _hlLogs : _hlLogs.filter(l => l.status === _hlFilter);
-  const rows = [...filtered].reverse();
-  if (!rows.length) {
-    document.getElementById('healthBody').innerHTML =
-      `<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:30px;">No entries for this filter.</td></tr>`;
-    return;
-  }
-  document.getElementById('healthBody').innerHTML = rows.map(l => {
-    const c = l.checks || {};
-    const missing = c.sectionsMissing && c.sectionsMissing.length
-      ? `<div style="font-size:11px;color:var(--red);margin-top:2px;">missing: ${c.sectionsMissing.join(', ')}</div>` : '';
-    const writeCell = c.writeOk === false
-      ? `<span style="color:var(--red)">✗</span>`
-      : `<span style="color:var(--accent2)">✓</span>`;
-    const kb = c.contentLength ? Math.round(c.contentLength / 102.4) / 10 + 'k' : '—';
-    const sects = c.sectionsFound ? c.sectionsFound.length + '/3' : '—';
-    const unavail = c.totalSentinels || '—';
-    return `<tr onclick="_hlExpand('${l.ts}')" style="cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
-      <td style="font-family:var(--font-mono,monospace);font-size:11px;white-space:nowrap">${_hlToUAE(l.ts)}</td>
-      <td style="font-size:12px">${l.type || '—'}</td>
-      <td style="font-size:12px;color:var(--text2)">${l.nickname || 'rashed'}</td>
-      <td>${_hlBadge(l.status)}</td>
-      <td style="font-size:12px">${l.note || ''}${missing}</td>
-      <td class="num" style="font-size:12px">${kb}</td>
-      <td class="num" style="font-size:12px">${sects}</td>
-      <td class="num" style="font-size:12px;${c.totalSentinels > 20 ? 'color:var(--red)' : c.totalSentinels > 0 ? 'color:var(--gold)' : ''}">${unavail}</td>
-      <td class="num">${writeCell}</td>
-    </tr>`;
-  }).join('');
-}
-
-function _hlExpand(ts) {
-  const l = _hlLogs.find(x => x.ts === ts);
-  if (!l) return;
-  const existing = document.getElementById('hlDetail');
-  if (existing && existing.dataset.ts === ts) { existing.remove(); return; }
-  if (existing) existing.remove();
-  const c = l.checks || {};
-  let html = `<div id="hlDetail" data-ts="${ts}" style="background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;padding:16px;margin:12px 0;font-size:12px;">`;
-  html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">`;
-  html += `<span style="font-weight:500;color:var(--text1)">${_hlToUAE(l.ts)} — ${l.type} / ${l.nickname || 'rashed'} — ${_hlBadge(l.status)}</span>`;
-  html += `<span style="color:var(--text2);cursor:pointer;" onclick="document.getElementById('hlDetail').remove()">✕</span></div>`;
-  if (l.scenario) html += `<div style="margin-bottom:8px;color:var(--text2)">Scenario: <span style="color:var(--text1)">${l.scenario}${l.scenarioTitle ? ' — ' + l.scenarioTitle : ''}</span></div>`;
-  html += `<div style="margin-bottom:12px;"><span style="color:var(--text2)">Sentinel hits: </span>`;
-  if (c.sentinelHits && Object.keys(c.sentinelHits).length) {
-    html += Object.entries(c.sentinelHits).map(([k,v]) => `<span style="color:var(--gold)">${k} × ${v}</span>`).join('  ');
-  } else { html += '<span style="color:var(--text2)">none</span>'; }
-  html += '</div>';
-  if (l.dataQuality) {
-    const lines = l.dataQuality.split('\n').filter(ln => ln.includes('|') && ln.includes('missing='));
-    if (lines.length) {
-      html += `<div style="margin-bottom:8px;font-weight:500;color:var(--text1)">Per-stock field coverage:</div>`;
-      html += `<div style="font-family:var(--font-mono,monospace);font-size:11px;line-height:1.8;">`;
-      lines.forEach(ln => {
-        const miss = ln.match(/missing=(\d+)/);
-        const missCount = miss ? parseInt(miss[1]) : 0;
-        const color = missCount >= 4 ? 'var(--red)' : missCount >= 2 ? 'var(--gold)' : 'var(--text2)';
-        html += `<div style="color:${color}">${ln.trim()}</div>`;
-      });
-      html += '</div>';
-      const summary = l.dataQuality.match(/SUMMARY: (.+)/);
-      if (summary) html += `<div style="margin-top:8px;color:var(--text2)">${summary[1]}</div>`;
-      const perField = l.dataQuality.match(/PER_FIELD_MISSING: (.+)/);
-      if (perField) html += `<div style="color:var(--text2);font-family:var(--font-mono,monospace);font-size:11px;margin-top:4px;">${perField[1]}</div>`;
-    }
-  }
-  html += '</div>';
-  const table = document.getElementById('healthTable');
-  table.parentNode.insertBefore(document.createRange().createContextualFragment(html), table);
-}
-
-async function loadHealthLog() {
-  const body = document.getElementById('healthBody');
-  if (body) body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:30px;">Loading...</td></tr>`;
-  try {
-    const r = await fetch(
-      `https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/health-log.json?t=${Date.now()}`
-    );
-    if (!r.ok) throw new Error('fetch failed ' + r.status);
-    _hlLogs = await r.json();
-
-    // Summary cards
-    const ok       = _hlLogs.filter(l => l.status === 'ok').length;
-    const degraded = _hlLogs.filter(l => l.status === 'degraded').length;
-    const failed   = _hlLogs.filter(l => l.status === 'failed').length;
-    document.getElementById('hl-total').textContent    = _hlLogs.length;
-    document.getElementById('hl-ok').textContent       = ok;
-    document.getElementById('hl-degraded').textContent = degraded;
-    document.getElementById('hl-failed').textContent   = failed;
-
-    // Last run timestamp in subtitle
-    if (_hlLogs.length) {
-      const last = _hlLogs[_hlLogs.length - 1];
-      const sub = document.getElementById('health-sub');
-      if (sub) sub.textContent = `Last run: ${_hlToUAE(last.ts)} — ${_hlLogs.length} entries`;
-    }
-
-    _hlRender();
-  } catch(e) {
-    if (body) body.innerHTML =
-      `<tr><td colspan="9" style="text-align:center;color:var(--red);padding:30px;">Could not load health log: ${e.message}</td></tr>`;
-  }
-}
-
-</script>
-
-
-<script>
 // ── Auth fix: hide header/nav z-index when auth opens ──
 const _origShowAuth = typeof showAuth !== 'undefined' ? showAuth : null;
 document.addEventListener('DOMContentLoaded', function(){
