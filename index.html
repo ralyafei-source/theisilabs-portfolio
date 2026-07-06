@@ -4312,7 +4312,7 @@ var _pad=Math.max(1,(_dmax-_dmin)*0.10); var lo=_dmin-_pad, hi=_dmax+_pad; if(lo
     function xpos(g){ var c=Math.max(lo,Math.min(hi,g)); return ((c-lo)/(hi-lo))*100; }
     var dots=sortedGl.map(function(s){
       var x=xpos(s.gl); var sz=6+Math.round((s.mv||0)/maxW*8); var c=glColor(s.gl);
-      var notable=(hi===12)?(Math.abs(s.gl)>=5):(s.gl<=-50||s.gl>=100); // label outliers only
+      var notable=(withGl[0]._d!==withGl[0]._gl0)?(Math.abs(s.gl)>=5):(s.gl<=-50||s.gl>=100); // label outliers only
       return '<div title="'+s.sym+' '+(s.gl>=0?'+':'')+s.gl.toFixed(1)+'%" style="position:absolute;right:'+x.toFixed(1)+'%;top:50%;transform:translate(50%,-50%);width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+c+';border:1px solid var(--bg2);'+(notable?'box-shadow:0 0 0 2px '+c+'33;':'')+'"></div>';
     }).join('');
     // zero line position
