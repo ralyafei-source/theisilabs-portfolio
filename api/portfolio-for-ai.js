@@ -102,24 +102,35 @@ module.exports = async (req, res) => {
       };
 
       // ── fetch all series in parallel ───────────────────────────────────────
-      const Q = (sym) => `${FMP_BASE}/quote?symbol=${encodeURIComponent(sym)}&apikey=${FMP}`;
+      // FMP Starter excludes index symbols (^VIX, ^GSPC) → VIX from Yahoo (free),
+      // momentum from SPY (same signal as ^GSPC).
       const H = (sym) => `${FMP_BASE}/historical-price-eod/light?symbol=${encodeURIComponent(sym)}&apikey=${FMP}`;
+      const yahooVix = async () => {
+        try {
+          const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?range=2y&interval=1d', { headers: { 'User-Agent': UA } });
+          if (!r.ok) return null;
+          const c = (await r.json()).chart.result[0];
+          const ts = c.timestamp || [];
+          const cl = c.indicators.quote[0].close || [];
+          return ts.map((t, i) => ({ date: new Date(t * 1000).toISOString().slice(0, 10), v: Number(cl[i]) }))
+                   .filter(x => isFinite(x.v))
+                   .reverse();   // newest-first, same shape as closesOf
+        } catch { return null; }
+      };
 
-      const [vixQ, vixH, spxH, spyH, tltH, hygH, lqdH, rspH] = await Promise.all([
-        jget(Q('^VIX')),
-        jget(H('^VIX')),
-        jget(H('^GSPC')),   // S&P 500 index for momentum
-        jget(H('SPY')),     // S&P ETF for safe-haven + strength + breadth
+      const [vixHY, spyH, tltH, hygH, lqdH, rspH] = await Promise.all([
+        yahooVix(),
+        jget(H('SPY')),     // S&P ETF for momentum + safe-haven + strength + breadth
         jget(H('TLT')),     // 20yr treasuries for safe-haven
         jget(H('HYG')),     // junk bonds
         jget(H('LQD')),     // investment-grade bonds
         jget(H('RSP')),     // equal-weight S&P for breadth proxy
       ]);
 
-      const vixNow = Array.isArray(vixQ) && vixQ[0] ? Number(vixQ[0].price) : null;
-      const vixSeries = closesOf(vixH);
-      const spxSeries = closesOf(spxH);
-      const spySeries = closesOf(spyH);
+      const vixSeries = vixHY || [];
+      const vixNow = vixSeries.length ? +vixSeries[0].v.toFixed(2) : null;
+      const spxSeries = closesOf(spyH);   // SPY stands in for ^GSPC
+      const spySeries = spxSeries;
       const tltSeries = closesOf(tltH);
       const hygSeries = closesOf(hygH);
       const lqdSeries = closesOf(lqdH);
