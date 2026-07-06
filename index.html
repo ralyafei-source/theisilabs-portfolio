@@ -4312,7 +4312,7 @@ return '<div onclick="window._ccReadOpen(\'today\')" style="cursor:pointer;"><di
     var o=t.o, sym=t.sym, sc=o[key].score, c=lean(sc);
     var arch=o[key].archetype?(archMap[o[key].archetype]||''):'';
     var badge=o.owned
-      ? '<span style="font-size:10.5px;color:var(--text3);border:1px solid var(--border);border-radius:6px;padding:1px 7px;">\u0645\u0645\u0644\u0648\u0643</span>'
+      ? ''
       : '<span style="font-size:10.5px;color:#85b7eb;background:rgba(133,183,235,.15);border-radius:6px;padding:1px 7px;">\u062c\u062f\u064a\u062f</span>';
     return '<div onclick="ccOpenDeep(\''+sym+'\')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">'
       +'<span style="font-size:10.5px;color:var(--text3);width:46px;flex:none;">'+hzLabels[key]+'</span>'
@@ -4510,7 +4510,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
         +'<span style="font-size:13px;font-weight:700;color:'+AC+';font-family:'+MONO+';width:24px;flex:none;">'+n+'</span>'
         +'<span style="font-size:11px;color:var(--text3);width:90px;flex:none;">'+it.cat+'</span>'
         +'<span style="font-size:11.5px;color:var(--text);flex:1;line-height:1.6;">'+it.txt+'</span>'
-        +'<span style="color:'+AC+';font-size:14px;flex:none;">\u2190</span>'
+        
         +'</div>';
     }).join('');
     reviewSection=panel(secLabel('\u0645\u0627 \u064a\u0633\u062a\u062d\u0642 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629')+rows);
