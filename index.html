@@ -4306,7 +4306,9 @@ return '<div onclick="window._ccReadOpen(\'today\')" style="cursor:pointer;"><di
     // size dot by position weight
     var maxW=Math.max.apply(null,withGl.map(function(s){return s.mv||0;}))||1;
     // scale: clamp gl to [-80, +200] for x-position
-    var lo=(withGl[0]._d===withGl[0]._gl0)?-80:-12, hi=(withGl[0]._d===withGl[0]._gl0)?200:12;
+    var _dvals=withGl.map(function(s){return s.gl;}); var _dmin=Math.min.apply(null,_dvals), _dmax=Math.max.apply(null,_dvals);
+var _pad=Math.max(1,(_dmax-_dmin)*0.10); var lo=_dmin-_pad, hi=_dmax+_pad; if(lo===hi){lo-=1;hi+=1;}
+    
     function xpos(g){ var c=Math.max(lo,Math.min(hi,g)); return ((c-lo)/(hi-lo))*100; }
     var dots=sortedGl.map(function(s){
       var x=xpos(s.gl); var sz=6+Math.round((s.mv||0)/maxW*8); var c=glColor(s.gl);
@@ -4959,10 +4961,10 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     +gsItem('opp',oppCard||'')
   +'</div>';
   if(window._ccReadStore&&window._ccReadStore.movers){
-    var _mv=(typeof withGl!=='undefined'?withGl:[]).filter(function(s){return s._d!=null;}).slice().sort(function(a,b){return Math.abs(b._d)-Math.abs(a._d);}).slice(0,5);
+    var _mv=(typeof withGl!=='undefined'?withGl:[]).filter(function(s){return s._d!=null;}).slice().sort(function(a,b){return Math.abs(b._d)-Math.abs(a._d);}).slice(0,6);
     function _mcol(g){ if(g<=-50)return'#b81e2e'; if(g<0)return'#e5746b'; if(g<50)return'#3a9e6f'; return'#19c37d'; }
     var _top5='<div style="margin-bottom:14px;">'
-      +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">أكبر 5 متحركين اليوم</div>'
+      +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">أكبر 6 متحركين اليوم</div>'
       +_mv.map(function(s){ var g=s._d; var c=_mcol(g); return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg3);border-radius:8px;margin-bottom:5px;border-inline-start:2px solid '+c+';"><span style="font-weight:700;color:var(--text);font-family:\''+"'"+'IBM Plex Mono'+"'"+'\',monospace;" dir="ltr">'+ccShariaMark(s.sym)+s.sym+'</span><span style="color:'+c+';font-weight:700;font-family:\''+"'"+'IBM Plex Mono'+"'"+'\',monospace;" dir="ltr">'+(g>=0?'+':'')+g.toFixed(2)+'%</span></div>'; }).join('')
       +'</div>';
     window._ccReadStore.movers.wide=true;
