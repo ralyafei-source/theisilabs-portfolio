@@ -146,8 +146,10 @@ async function ghCreate(path, content, token) {
 async function verifySession(sessionToken, githubToken) {
   const usersFile = await ghGet('data/users.json', githubToken);
   const users = JSON.parse(Buffer.from(usersFile.content, 'base64').toString());
-  const user = users.find(u => u.sessionToken === sessionToken);
-  if (!user || new Date(user.sessionExpiry) < new Date()) return null;
+  const user = users.find(u => (u.sessions || []).some(s => s.sessionToken === sessionToken));
+  if (!user) return null;
+  const session = user.sessions.find(s => s.sessionToken === sessionToken);
+  if (new Date(session.sessionExpiry) < new Date()) return null;
   return user;
 }
 
