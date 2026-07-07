@@ -4325,8 +4325,8 @@ var _pad=Math.max(1,(_dmax-_dmin)*0.10); var lo=_dmin-_pad, hi=_dmax+_pad; if(lo
     var nWin=withGl.filter(function(s){return s.gl>=50;}).length;
     // outlier chips (worst 2 + best 2)
     function chip(s,pos){ var c=glColor(s.gl); return '<span style="display:inline-flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:11px;"><span style="color:var(--text);font-weight:700;">'+ccShariaMark(s.sym)+s.sym+'</span><span style="color:'+c+';font-family:'+MONO+';">'+(s.gl>=0?'+':'')+s.gl.toFixed(0)+'%</span></span>'; }
-    var worst=sortedGl.slice(0,2).map(function(s){return chip(s);}).join('');
-    var best=sortedGl.slice(-2).reverse().map(function(s){return chip(s);}).join('');
+    var worst=sortedGl.slice(0,3).map(function(s){return chip(s);}).join('');
+    var best=sortedGl.slice(-3).reverse().map(function(s){return chip(s);}).join('');
     var legend='<div style="display:flex;gap:14px;font-size:10.5px;color:var(--text3);margin-top:10px;justify-content:flex-start;flex-wrap:wrap;">'
       +'<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#b81e2e;margin-inline-end:4px;"></span>\u062e\u0633\u0627\u0626\u0631 \u062d\u0631\u062c\u0629 '+nCrit+'</span>'
       +'<span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5746b;margin-inline-end:4px;"></span>\u062e\u0633\u0627\u0626\u0631 '+nLoss+'</span>'
