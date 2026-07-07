@@ -2,10 +2,8 @@
 // Shared session-validation helper.
 // Used by any endpoint that needs to verify a login token.
 // Returns the user object if valid, or null if invalid/expired.
-
 const https = require('https');
 const REPO = 'ralyafei-source/theisilabs-portfolio';
-
 async function ghGet(path, token) {
   return new Promise((resolve, reject) => {
     const options = {
@@ -20,7 +18,6 @@ async function ghGet(path, token) {
     }).on('error', reject);
   });
 }
-
 async function verifySession(req, githubToken) {
   const authHeader = req.headers.authorization || '';
   const sessionToken = authHeader.replace('Bearer ', '').trim();
@@ -28,14 +25,14 @@ async function verifySession(req, githubToken) {
   try {
     const usersFile = await ghGet('data/users.json', githubToken);
     const users = JSON.parse(Buffer.from(usersFile.content, 'base64').toString());
-    const user = users.find(u => u.sessionToken === sessionToken);
+    const user = users.find(u => (u.sessions || []).some(s => s.sessionToken === sessionToken));
     if (!user) return null;
-    if (new Date(user.sessionExpiry) < new Date()) return null;
+    const session = user.sessions.find(s => s.sessionToken === sessionToken);
+    if (new Date(session.sessionExpiry) < new Date()) return null;
     return user;
   } catch(e) {
     console.error('verifySession error:', e);
     return null;
   }
 }
-
 module.exports = { verifySession };
