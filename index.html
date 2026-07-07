@@ -4283,6 +4283,7 @@ return '<div onclick="window._ccReadOpen(\'today\')" style="cursor:pointer;"><di
   var moversSection='';
   (function(){
     function dayPct(s){
+      if(s.dayCh!=null && s.price!=null){ var prev=s.price-Number(s.dayCh); if(prev>0) return Number(s.dayCh)/prev*100; }
       var h=window._priceHist&&window._priceHist[s.sym];
       if(!h||h.length<2) return null;
       var c=function(e){return e.c!=null?e.c:e.close;};
