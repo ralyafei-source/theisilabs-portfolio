@@ -135,10 +135,10 @@ async function handleLogin(req, res, token) {
     users[userIdx].needsPinSetup = false;
     users[userIdx].failedAttempts = 0;
     const sessionToken = generateToken();
-const expiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-users[userIdx].sessions = users[userIdx].sessions || [];
-users[userIdx].sessions.push({ sessionToken, sessionExpiry: expiry });
-users[userIdx].sessions = users[userIdx].sessions.filter(s => new Date(s.sessionExpiry) > new Date()); // prune expired
+    const expiry1 = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    users[userIdx].sessions = (users[userIdx].sessions || []).filter(s => new Date(s.sessionExpiry) > new Date());
+    users[userIdx].sessions.push({ sessionToken, sessionExpiry: expiry1 });
+    if (users[userIdx].sessions.length > 3) users[userIdx].sessions.shift();
     await ghPut('data/users.json', users, usersFile.sha, token);
     return res.status(200).json({ token: sessionToken, nickname: user.nickname, isAdmin: user.isAdmin || false, firstLogin: true });
   }
@@ -169,8 +169,10 @@ users[userIdx].sessions = users[userIdx].sessions.filter(s => new Date(s.session
   users[userIdx].failedAttempts = 0;
   users[userIdx].lockoutUntil = null;
   const sessionToken = generateToken();
-  users[userIdx].sessionToken = sessionToken;
-  users[userIdx].sessionExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const expiry2 = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  users[userIdx].sessions = (users[userIdx].sessions || []).filter(s => new Date(s.sessionExpiry) > new Date());
+  users[userIdx].sessions.push({ sessionToken, sessionExpiry: expiry2 });
+  if (users[userIdx].sessions.length > 3) users[userIdx].sessions.shift();
   await ghPut('data/users.json', users, usersFile.sha, token);
   return res.status(200).json({ token: sessionToken, nickname: user.nickname, isAdmin: user.isAdmin || false });
 }
@@ -200,8 +202,7 @@ async function handleSignup(req, res, token) {
     nickname: nickname.toLowerCase().trim(),
     pinHash,
     needsPinSetup: false,
-    sessionToken,
-    sessionExpiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    sessions: [{ sessionToken, sessionExpiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() }],
     failedAttempts: 0,
     lockoutUntil: null,
     isAdmin: false,
@@ -236,9 +237,9 @@ async function handleMe(req, res, token) {
   const usersFile = await ghGet('data/users.json', token);
   const users = JSON.parse(Buffer.from(usersFile.content, 'base64').toString());
   const user = users.find(u => (u.sessions || []).some(s => s.sessionToken === sessionToken));
-if (!user) return res.status(401).json({ error: 'Invalid session' });
-const session = user.sessions.find(s => s.sessionToken === sessionToken);
-if (new Date(session.sessionExpiry) < new Date()) return res.status(401).json({ error: 'Session expired' });
+  if (!user) return res.status(401).json({ error: 'Invalid session' });
+  const session = user.sessions.find(s => s.sessionToken === sessionToken);
+  if (new Date(session.sessionExpiry) < new Date()) return res.status(401).json({ error: 'Session expired' });
   return res.status(200).json({ nickname: user.nickname, isAdmin: user.isAdmin || false, portfolioFile: user.portfolioFile || null, telegram_chat_id: user.telegram_chat_id || null });
 }
 
@@ -259,9 +260,9 @@ async function handleSetTelegram(req, res, token) {
   const usersFile = await ghGet('data/users.json', token);
   const users = JSON.parse(Buffer.from(usersFile.content, 'base64').toString());
   const user = users.find(u => (u.sessions || []).some(s => s.sessionToken === sessionToken));
-if (!user) return res.status(401).json({ error: 'Invalid session' });
-const session = user.sessions.find(s => s.sessionToken === sessionToken);
-if (new Date(session.sessionExpiry) < new Date()) return res.status(401).json({ error: 'Session expired' });
+  if (!user) return res.status(401).json({ error: 'Invalid session' });
+  const session = user.sessions.find(s => s.sessionToken === sessionToken);
+  if (new Date(session.sessionExpiry) < new Date()) return res.status(401).json({ error: 'Session expired' });
 
   if (raw) user.telegram_chat_id = raw;
   else delete user.telegram_chat_id;
