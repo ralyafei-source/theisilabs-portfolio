@@ -4934,7 +4934,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     if(popupTitle){
       window._ccReadStore=window._ccReadStore||{};
       window._ccReadStore[id]={title:popupTitle,html:html};
-      inner='<div onclick="window._ccCardOpen(\''+id+'\',event)" style="cursor:pointer;flex:1;display:flex;flex-direction:column;min-height:0;">'+html+'</div>';
+      inner='<div onclick="window._ccCardOpen(\''+id+'\',event)" style="cursor:pointer;flex:1;display:flex;flex-direction:column;min-height:0;touch-action:pan-y;">'+html+'</div>';
     }
     return '<div class="grid-stack-item" gs-id="'+id+'" gs-x="'+p.x+'" gs-y="'+p.y+'" gs-w="'+p.w+'" gs-h="'+p.h+'"><div class="grid-stack-item-content">'+inner+'</div></div>';
   }
