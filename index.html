@@ -4968,7 +4968,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     +gsItem('movers',moversSection||ccPh('حركة المراكز'),'\u062d\u0631\u0643\u0629 \u0627\u0644\u0645\u0631\u0627\u0643\u0632')
     +gsItem('news',newsCardHtml||ccPh('أخبار تمس محفظتك'),'\u0623\u062e\u0628\u0627\u0631 \u062a\u0645\u0633 \u0645\u062d\u0641\u0638\u062a\u0643')
     +gsItem('opp',oppCard||ccPh('فرصة يراها التقييم'))
-  +'</div><div style="text-align:left;padding:4px 2px;"><span class="gs-reset" onclick="localStorage.removeItem(\'theisi_cc_layout\');renderCommandCenter();">إعادة التخطيط الافتراضي</span></div>';
+  +'</div>';
   if(window._ccReadStore&&window._ccReadStore.movers){
     var _mv=(typeof withGl!=='undefined'?withGl:[]).filter(function(s){return s._d!=null;}).slice().sort(function(a,b){return Math.abs(b._d)-Math.abs(a._d);}).slice(0,6);
     function _mcol(g){ if(g<=-50)return'#b81e2e'; if(g<0)return'#e5746b'; if(g<50)return'#3a9e6f'; return'#19c37d'; }
@@ -15419,3 +15419,4 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
 
 </body>
 </html>
+  
