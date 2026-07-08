@@ -455,6 +455,8 @@ select.form-input{direction:rtl;font-family:'Almarai',sans-serif;}
 .auth-tab.active{background:var(--accent);color:#000;}
 .auth-input{width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;font-family:'Almarai',sans-serif;margin-bottom:12px;outline:none;transition:border .2s;}
 .auth-input:focus{border-color:var(--accent);}
+/* iOS: inputs <16px trigger focus-zoom that persists after login — force 16px on mobile */
+@media(max-width:760px){input,select,textarea,.auth-input,.form-input{font-size:16px !important;}}
 .auth-btn{width:100%;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:'Almarai',sans-serif;transition:all .2s;margin-top:4px;}
 .auth-btn-primary{background:var(--rose);color:#fff;}
 .auth-btn-primary:hover{opacity:0.9;}
@@ -3414,6 +3416,28 @@ function fmtDate(iso){
   try{ const d=new Date(iso); return d.toLocaleDateString('ar',{year:'numeric',month:'long',day:'numeric'}); }catch(_){ return ''; }
 }
 
+function _hzScoreFallback(sym){
+  try{
+    var sc=(window._hzData&&window._hzData.scored)?window._hzData.scored[sym]:null;
+    if(!sc) return '';
+    var lbl={long:'طويل المدى',mid:'متوسط المدى',short:'قصير المدى'};
+    var archMap={momentum_trap:'فخ الزخم',value_trap:'فخ القيمة',quality_premium:'علاوة الجودة',hidden_quality:'جودة قوية',unconfirmed:'غير مؤكد'};
+    function col(v){ if(v>=65)return '#19c37d'; if(v>=45)return '#2bb3b8'; return '#e5aa00'; }
+    var rows=['long','mid','short'].map(function(k){
+      var o=sc[k]; if(!o||o.score==null) return '';
+      var a=o.archetype?(archMap[o.archetype]||o.archetype):'';
+      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);">'
+        +'<span style="font-size:11px;color:var(--txt3);width:84px;flex:none;">'+lbl[k]+'</span>'
+        +'<span style="flex:1;font-size:12px;color:var(--txt2);">'+a+'</span>'
+        +'<span style="font-size:16px;font-weight:800;color:'+col(o.score)+';font-family:\'IBM Plex Mono\',monospace;">'+o.score+'<span style="font-size:10px;color:var(--txt3);">/100</span></span>'
+        +'</div>';
+    }).join('');
+    if(!rows) return '';
+    return '<div style="text-align:right;"><div style="font-size:12.5px;color:var(--txt2);margin-bottom:6px;">درجات الإشارات لهذا السهم:</div>'+rows
+      +'<div style="font-size:11px;color:var(--txt3);margin-top:12px;line-height:1.7;">القراءة التحليلية المكتوبة غير متاحة بعد — الدرجات أعلاه محسوبة من بيانات محفظتك.</div></div>';
+  }catch(e){ return ''; }
+}
+
 // open the modal and load (cached unless forceRefresh)
 async function loadDeepRead(sym, forceRefresh){
   HZ_CURRENT_SYM = sym;
@@ -3444,7 +3468,8 @@ async function loadDeepRead(sym, forceRefresh){
     const d = await r.json();
     if(!d || !d.result){
       _clearProg();
-      body.innerHTML = `<div class="dr-loading">قراءة تحليلية غير متاحة الحين — الملخّص في البطاقة هو المتاح.</div>`;
+      var _fb=_hzScoreFallback(sym);
+      body.innerHTML = _fb || `<div class="dr-loading">قراءة تحليلية غير متاحة الحين — الملخّص في البطاقة هو المتاح.</div>`;
       return;
     }
     _clearProg();
@@ -3475,7 +3500,9 @@ async function loadDeepRead(sym, forceRefresh){
       refreshBtn.textContent = h!=null && h>0 ? `التحديث متاح بعد ${h} ساعة` : 'تحديث القراءة ↻';
     }
   }catch(_){
-    body.innerHTML = `<div class="dr-loading">تعذّر تحميل قراءة تحليلية — حاول لاحقاً.</div>`;
+    _clearProg();
+    var _fb2=_hzScoreFallback(sym);
+    body.innerHTML = _fb2 || `<div class="dr-loading">تعذّر تحميل قراءة تحليلية — حاول لاحقاً.</div>`;
   }
 }
 
@@ -4723,16 +4750,15 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
       var prev = ev.previous ? ('\u0627\u0644\u0633\u0627\u0628\u0642 '+I(ev.previous)) : '';
       var meta = [cons,prev].filter(Boolean).join(' \u00b7 ') || '\u2014';
       var did='ccmac-'+idx;
-      var detail='<div data-did="1" style="display:none;font-size:10.5px;color:var(--text2);line-height:1.8;margin-top:7px;padding-top:7px;border-top:1px solid var(--border);">'
+      var detail='<div data-did="1" style="display:block;font-size:10.5px;color:var(--text2);line-height:1.8;margin-top:7px;padding-top:7px;border-top:1px solid var(--border);">'
         + ev.what_ar
         + '<div style="margin-top:6px;color:#19c37d;">\u2193 '+(ev.impact_ar?ev.impact_ar.lower:'')+'</div>'
         + '<div style="margin-top:3px;color:#e5764d;">\u2191 '+(ev.impact_ar?ev.impact_ar.higher:'')+'</div>'
         + '</div>';
-      return '<div style="padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;" '
-        +'onclick="event.stopPropagation();var e=this.querySelector(\'[data-did]\');if(e)e.style.display=e.style.display===\'none\'?\'block\':\'none\';">'
+      return '<div style="padding:9px 0;border-bottom:1px solid var(--border);">'
         +'<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;margin-bottom:5px;">'
           +'<span style="color:'+acc+';font-weight:700;font-family:'+MONO+';">'+dayBadge(ev.daysAway)+'</span>'
-          +'<span style="color:var(--text);font-weight:700;text-align:right;line-height:1.4;">'+ev.name_ar+' <span style="font-size:10.5px;color:var(--text3);">\u25be</span></span>'
+          +'<span style="color:var(--text);font-weight:700;text-align:right;line-height:1.4;">'+ev.name_ar+'</span>'
         +'</div>'
         +'<div style="position:relative;height:5px;background:var(--bg3);border-radius:6px;overflow:hidden;margin-bottom:5px;">'
           +'<div style="position:absolute;top:0;right:0;height:100%;width:'+fp+'%;background:'+acc+';border-radius:6px;"></div></div>'
@@ -4741,7 +4767,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
         +'</div>';
     }).join('');
     var legend='<div style="font-size:10.5px;color:var(--text3);margin-top:8px;line-height:1.6;">'
-      +'<span style="color:#FF0A78;">\u25cf</span> \u062d\u062f\u062b \u0645\u0624\u062b\u0631 \u00b7 \u0627\u0644\u062e\u0637 = \u0627\u0642\u062a\u0631\u0627\u0628 \u0627\u0644\u0645\u0648\u0639\u062f \u00b7 \u0627\u0636\u063a\u0637 \u0644\u0644\u062a\u0641\u0627\u0635\u064a\u0644'
+      +'<span style="color:#FF0A78;">\u25cf</span> \u062d\u062f\u062b \u0645\u0624\u062b\u0631 \u00b7 \u0627\u0644\u062e\u0637 = \u0627\u0642\u062a\u0631\u0627\u0628 \u0627\u0644\u0645\u0648\u0639\u062f'
       +'</div>';
     return panel(secLabel('\u0627\u0644\u0623\u062d\u062f\u0627\u062b \u0627\u0644\u0627\u0642\u062a\u0635\u0627\u062f\u064a\u0629')
       +rows
@@ -4983,7 +5009,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
   try{
     if(window._ccGS){ try{window._ccGS.destroy(false);}catch(e){} window._ccGS=null; }
     if(window.GridStack){
-      window._ccGS=GridStack.init({column:12,cellHeight:30,margin:6,float:false,animate:false,resizable:{handles:''},columnOpts:{breakpoints:[{w:1100,c:1}]}},document.getElementById('ccBento'));
+      window._ccGS=GridStack.init({column:12,cellHeight:30,margin:6,float:false,animate:false,staticGrid:true,disableDrag:true,disableResize:true,resizable:{handles:''},columnOpts:{breakpoints:[{w:1100,c:1}]}},document.getElementById('ccBento'));
       window._ccGS.on('change',function(ev,items){
         if(window._ccGS.getColumn&&window._ccGS.getColumn()<12) return;
         var m={}; try{ m=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
@@ -15419,4 +15445,3 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
 
 </body>
 </html>
-  
