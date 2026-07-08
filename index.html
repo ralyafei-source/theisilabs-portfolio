@@ -4080,7 +4080,15 @@ function renderCommandCenter(){
   function door(label, tab){ return '<div onclick="showTab(\''+tab+'\',document.querySelector(\'[data-tab='+tab+']\'))" style="cursor:pointer;display:flex;align-items:center;gap:5px;color:'+AC+';font-size:11px;font-weight:600;margin-top:12px;">'+label+' \u2190</div>'; }
   function panel(inner, opts){ opts=opts||{}; return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:'+(opts.pad||'18px')+';'+(opts.style||'')+'">'+inner+'</div>'; }
   function secLabel(t, icon){ return '<div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:9px;display:flex;align-items:center;gap:7px;justify-content:flex-start;">'+(icon||'')+'<span>'+t+'</span></div>'; }
-
+function ccPh(title){
+  return panel(
+    secLabel(title)
+    +'<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:22px 8px;color:var(--text3);text-align:center;min-height:90px;">'
+    +'<div style="width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;"></div>'
+    +'<div style="font-size:11.5px;line-height:1.7;">جارِ التحميل… سيظهر المحتوى فور توفّر البيانات</div>'
+    +'</div>'
+  ,{style:'display:flex;flex-direction:column;'});
+}
   // ---- data ----
   var total=stocks.reduce(function(a,s){return a+(s.mv||0);},0);
   var sorted=stocks.slice().sort(function(a,b){return (b.mv||0)-(a.mv||0);});
@@ -4905,7 +4913,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
   }
   window._ccFGPopup=_ccFGPopup;
   var hzCard='<div class="cc-analysis-scroll" style="max-height:250px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;">'+panel(hzInner,{style:'display:flex;flex-direction:column;'})+'</div>';
-  var analysisCards=[panel(positionsInner),earningsCard(),riskCard(),divCard(),rangeCard()].filter(Boolean)
+  var analysisCards=[panel(positionsInner),earningsCard()||ccPh('الأرباح القادمة'),riskCard()||ccPh('رادار المخاطر'),divCard()||ccPh('التوزيعات'),rangeCard()||ccPh('المدى ٥٢ أسبوعاً')]
     .map(function(c){return '<div class="cc-analysis-scroll" style="max-height:250px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;">'+c+'</div>';});
   /* hzCard placed in bento */
   var analysisSection='';
