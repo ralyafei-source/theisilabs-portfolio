@@ -12726,7 +12726,9 @@ function onAuthSuccess(nickname, isAdmin, token, firstLogin) {
     }
   }
   // Load portfolio for this user
-  loadUserPortfolio(token, isAdmin, nickname);
+  loadUserPortfolio(token, isAdmin, nickname).then(function(){
+    if (typeof ccRefresh === 'function') ccRefresh();
+  });
 }
 
 // ── Load portfolio for logged-in user ──
