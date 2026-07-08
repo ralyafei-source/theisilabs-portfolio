@@ -4961,13 +4961,13 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     +gsItem('market',panel(marketReadInner,{style:'flex:1;display:flex;flex-direction:column;min-height:0;'}))
     +gsItem('pulse',panel(pulse,{style:'flex:1;display:flex;flex-direction:column;background:var(--bg2);border-color:rgba(255,10,120,.25);'}))
     +gsItem('exposure',panel(exposureInner,{style:'flex:1;display:flex;flex-direction:column;'}))
-    +gsItem('fg',fgCard||'')
-    +gsItem('mc',mcCard||'','\u0627\u0644\u0623\u062d\u062f\u0627\u062b \u0627\u0644\u0627\u0642\u062a\u0635\u0627\u062f\u064a\u0629')
+    +gsItem('fg',fgCard||ccPh('مزاج السوق'))
+    +gsItem('mc',mcCard||ccPh('الأحداث الاقتصادية'),'\u0627\u0644\u0623\u062d\u062f\u0627\u062b \u0627\u0644\u0627\u0642\u062a\u0635\u0627\u062f\u064a\u0629')
     +gsItem('hz',hzCard,'\u0625\u0634\u0627\u0631\u0627\u062a \u0627\u0644\u0622\u0641\u0627\u0642')
-    +gsItem('review',reviewSection||'','\u0645\u0627 \u064a\u0633\u062a\u062d\u0642 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629')
-    +gsItem('movers',moversSection||'','\u062d\u0631\u0643\u0629 \u0627\u0644\u0645\u0631\u0627\u0643\u0632')
-    +gsItem('news',newsCardHtml||'','\u0623\u062e\u0628\u0627\u0631 \u062a\u0645\u0633 \u0645\u062d\u0641\u0638\u062a\u0643')
-    +gsItem('opp',oppCard||'')
+    +gsItem('review',reviewSection||ccPh('ما يستحق المراجعة'),'\u0645\u0627 \u064a\u0633\u062a\u062d\u0642 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629')
+    +gsItem('movers',moversSection||ccPh('حركة المراكز'),'\u062d\u0631\u0643\u0629 \u0627\u0644\u0645\u0631\u0627\u0643\u0632')
+    +gsItem('news',newsCardHtml||ccPh('أخبار تمس محفظتك'),'\u0623\u062e\u0628\u0627\u0631 \u062a\u0645\u0633 \u0645\u062d\u0641\u0638\u062a\u0643')
+    +gsItem('opp',oppCard||ccPh('فرصة يراها التقييم'))
   +'</div><div style="text-align:left;padding:4px 2px;"><span class="gs-reset" onclick="localStorage.removeItem(\'theisi_cc_layout\');renderCommandCenter();">إعادة التخطيط الافتراضي</span></div>';
   if(window._ccReadStore&&window._ccReadStore.movers){
     var _mv=(typeof withGl!=='undefined'?withGl:[]).filter(function(s){return s._d!=null;}).slice().sort(function(a,b){return Math.abs(b._d)-Math.abs(a._d);}).slice(0,6);
