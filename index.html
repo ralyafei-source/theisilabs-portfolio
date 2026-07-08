@@ -4743,27 +4743,27 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     function fillPct(days){ var d=Math.max(0,Math.min(40,days||0)); return Math.round(10 + (40-d)/40*90); }
     function accentOf(ev){ return ev.tier===1 ? '#FF0A78' : 'var(--text3)'; }
     function dayBadge(days){ if(days===0) return '\u0627\u0644\u064a\u0648\u0645'; if(days===1) return '\u063a\u062f\u0627\u064b'; return '\u0628\u0639\u062f '+days+' \u064a\u0648\u0645'; }
+    window._ccMacroDetail={};
     var rows=M.events.map(function(ev,idx){
       var acc=accentOf(ev);
       var fp=fillPct(ev.daysAway);
       var cons = ev.consensus ? ('\u0627\u0644\u0645\u062a\u0648\u0642\u0639 '+I(ev.consensus)) : '';
       var prev = ev.previous ? ('\u0627\u0644\u0633\u0627\u0628\u0642 '+I(ev.previous)) : '';
       var meta = [cons,prev].filter(Boolean).join(' \u00b7 ') || '\u2014';
-      var did='ccmac-'+idx;
-      var detail='<div data-did="1" style="display:block;font-size:10.5px;color:var(--text2);line-height:1.8;margin-top:7px;padding-top:7px;border-top:1px solid var(--border);">'
-        + ev.what_ar
-        + '<div style="margin-top:6px;color:#19c37d;">\u2193 '+(ev.impact_ar?ev.impact_ar.lower:'')+'</div>'
-        + '<div style="margin-top:3px;color:#e5764d;">\u2191 '+(ev.impact_ar?ev.impact_ar.higher:'')+'</div>'
-        + '</div>';
-      return '<div style="padding:9px 0;border-bottom:1px solid var(--border);">'
+      window._ccMacroDetail[idx]=
+          '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">'+ev.name_ar+'</div>'
+        + '<div style="font-size:11px;color:var(--text3);font-family:'+MONO+';margin-bottom:10px;">'+dayBadge(ev.daysAway)+' \u00b7 '+meta+'</div>'
+        + '<div style="font-size:13px;color:var(--text2);line-height:1.95;">'+(ev.what_ar||'')+'</div>'
+        + '<div style="margin-top:10px;color:#19c37d;font-size:12.5px;line-height:1.85;">\u2193 '+(ev.impact_ar?ev.impact_ar.lower:'')+'</div>'
+        + '<div style="margin-top:4px;color:#e5764d;font-size:12.5px;line-height:1.85;">\u2191 '+(ev.impact_ar?ev.impact_ar.higher:'')+'</div>';
+      return '<div style="padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="event.stopPropagation();window._ccHtmlPopup(\'\u0627\u0644\u0623\u062d\u062f\u0627\u062b \u0627\u0644\u0627\u0642\u062a\u0635\u0627\u062f\u064a\u0629\',window._ccMacroDetail['+idx+'])">'
         +'<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px;margin-bottom:5px;">'
           +'<span style="color:'+acc+';font-weight:700;font-family:'+MONO+';">'+dayBadge(ev.daysAway)+'</span>'
-          +'<span style="color:var(--text);font-weight:700;text-align:right;line-height:1.4;">'+ev.name_ar+'</span>'
+          +'<span style="color:var(--text);font-weight:700;text-align:right;line-height:1.4;">'+ev.name_ar+' <span style="font-size:10.5px;color:var(--text3);">\u2197</span></span>'
         +'</div>'
         +'<div style="position:relative;height:5px;background:var(--bg3);border-radius:6px;overflow:hidden;margin-bottom:5px;">'
           +'<div style="position:absolute;top:0;right:0;height:100%;width:'+fp+'%;background:'+acc+';border-radius:6px;"></div></div>'
         +'<div style="font-size:10.5px;color:var(--text3);font-family:'+MONO+';text-align:right;">'+meta+'</div>'
-        +detail
         +'</div>';
     }).join('');
     var legend='<div style="font-size:10.5px;color:var(--text3);margin-top:8px;line-height:1.6;">'
