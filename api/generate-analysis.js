@@ -28,11 +28,19 @@ async function ghWrite(path, data) {
 }
 
 async function verifyAccess(sessionToken) {
+  if (!sessionToken) return null;
   const usersData = await ghRead('data/users.json');
   if (!usersData) return null;
   const list = Array.isArray(usersData) ? usersData : (usersData.users || []);
-  const user = list.find(u => u.sessionToken === sessionToken);
-  if (!user || new Date(user.sessionExpiry) < new Date()) return null;
+
+  const user = list.find(u =>
+    (u.sessions || []).some(s => s.sessionToken === sessionToken)
+  );
+  if (!user) return null;
+
+  const session = user.sessions.find(s => s.sessionToken === sessionToken);
+  if (new Date(session.sessionExpiry) < new Date()) return null;
+
   return user;
 }
 
