@@ -73,6 +73,21 @@ async function mpGhWrite(path, obj) {
 }
 
 // ── FMP quote (batch with per-symbol fallback for Starter tier) ──────────────
+// FIX: compute dayPct OURSELVES from (price - previousClose)/previousClose.
+// FMP's changePercentage field occasionally returns a bad value (e.g. DIA showed
+// +1.2% on 2026-07-28 when the real close was +0.57%). We only fall back to
+// FMP's field if previousClose is missing.
+function mpNorm(q) {
+  const price = +q.price;
+  const prev  = +q.previousClose;
+  let dayPct = null;
+  if (prev > 0 && isFinite(price)) {
+    dayPct = +(((price - prev) / prev) * 100).toFixed(2);      // self-computed (trusted)
+  } else if (q.changePercentage != null) {
+    dayPct = +(+q.changePercentage).toFixed(2);                // fallback only
+  }
+  return { price, previousClose: prev || null, dayPct, name: q.name };
+}
 async function mpQuotes(symbols) {
   const out = {};
   const chunk = (a, n) => a.reduce((r, _, i) => (i % n ? r : [...r, a.slice(i, i + n)]), []);
@@ -82,7 +97,7 @@ async function mpQuotes(symbols) {
       if (r.ok) {
         const arr = await r.json();
         if (Array.isArray(arr) && arr.length) {
-          arr.forEach(q => { if (q && q.symbol) out[q.symbol] = { price: q.price, dayPct: q.changePercentage, name: q.name }; });
+          arr.forEach(q => { if (q && q.symbol) out[q.symbol] = mpNorm(q); });
           continue;
         }
       }
@@ -93,11 +108,26 @@ async function mpQuotes(symbols) {
         const r = await fetch(`https://financialmodelingprep.com/stable/quote?symbol=${s}&apikey=${MP_FMP_KEY}`);
         const a = await r.json();
         const q = Array.isArray(a) ? a[0] : a;
-        if (q && q.symbol) out[q.symbol] = { price: q.price, dayPct: q.changePercentage, name: q.name };
+        if (q && q.symbol) out[q.symbol] = mpNorm(q);
       } catch (_) {}
     }
   }
   return out;
+}
+
+// ── Is the US market open right now? (labels the card intraday vs closed) ─────
+// Regular hours 9:30–16:00 ET. DST approximated as Mar–Oct (EDT, UTC-4);
+// otherwise EST (UTC-5). Good enough for a session label.
+function mpSession() {
+  const now = new Date();                       // UTC in Vercel
+  const dow = now.getUTCDay();                  // 0=Sun … 6=Sat
+  if (dow === 0 || dow === 6) return 'closed';
+  const month = now.getUTCMonth() + 1;
+  const edt = month >= 3 && month <= 10;        // rough DST window
+  const openMin  = edt ? (13 * 60 + 30) : (14 * 60 + 30);
+  const closeMin = edt ? (20 * 60) : (21 * 60);
+  const mins = now.getUTCHours() * 60 + now.getUTCMinutes();
+  return (mins >= openMin && mins < closeMin) ? 'intraday' : 'closed';
 }
 
 // ── Marketaux: news for movers, with HARD noise filter ───────────────────────
@@ -254,6 +284,7 @@ async function runPulse(req, res) {
       schema: 3,
       nickname,
       date: today,
+      session: mpSession(),   // 'intraday' = numbers still moving | 'closed' = final
       generated_at: new Date(Date.now() + 4 * 36e5).toISOString().slice(0, 16).replace('T', ' '),
       market,
       movers,
