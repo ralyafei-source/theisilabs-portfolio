@@ -4983,7 +4983,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
       +'<div style="font-size:10px;color:var(--text3);margin-top:6px;">\u0645\u0646 \u0642\u0627\u0626\u0645\u0629 \u0645\u062a\u0627\u0628\u0639\u062a\u0643 \u00b7 '+(window._oppData.generated_at||'')+'</div>'
     ,{style:'display:flex;flex-direction:column;border-color:rgba(255,10,120,.3);'});
   })();
-  /* ============================================================================
+/* ============================================================================
    THEISI — نبض السوق card for the Command Center (index.html)
    ----------------------------------------------------------------------------
    INSTALL (inside index.html, in the Command-center render scope where the
@@ -5025,9 +5025,16 @@ function mpRenderHtml(d){
   if(!d || d.error){ return '<div style="font-size:12px;color:var(--text3);">تعذّر تحميل نبض السوق. جرّب التحديث.</div>'; }
   var name = d.footer ? d.footer.replace('القرار في النهاية عندك يا ','') : '';
 
+  // session label — so intraday numbers aren't read as final
+  var intraday = (d.session === 'intraday');
+  var sessTxt = intraday ? 'خلال الجلسة' : 'إغلاق';
+  var sessCol = intraday ? '#e0a021' : 'var(--text3)';
+  var sessPill = '<span style="font-size:9.5px;border:1px solid '+sessCol+';color:'+sessCol
+    + ';border-radius:999px;padding:1px 7px;margin-inline-start:6px;">'+sessTxt+'</span>';
+
   // header + refresh
   var head = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
-    + '<div class="cc-sec-label" style="color:var(--rose,#FF0A78);">نبض السوق الآن</div>'
+    + '<div class="cc-sec-label" style="color:var(--rose,#FF0A78);">نبض السوق الآن'+sessPill+'</div>'
     + '<button onclick="window.loadPulse(true)" title="تحديث" '
     + 'style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);'
     + 'font-size:11px;padding:3px 9px;cursor:pointer;">↻ تحديث</button></div>';
