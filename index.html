@@ -4959,7 +4959,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
   
   var _gsSaved={}; try{ _gsSaved=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
   var _gsDefaults={market:{x:0,y:0,w:4,h:6},opp:{x:4,y:0,w:2,h:6},today:{x:6,y:0,w:6,h:6},review:{x:0,y:6,w:3,h:6},mc:{x:3,y:6,w:3,h:6},exposure:{x:6,y:6,w:2,h:8},pulse:{x:8,y:6,w:2,h:8},fg:{x:10,y:6,w:2,h:8},hz:{x:0,y:12,w:2,h:6},news:{x:2,y:12,w:4,h:6},movers:{x:6,y:14,w:6,h:4}};
-  _gsDefaults.mpulse = { x:0, y:20, w:4, h:7 };
+  _gsDefaults.mpulse = { x:0, y:0, w:4, h:6 };
   function gsItem(id,html,popupTitle){
     if(!html) return '';
     var p=_gsSaved[id]; if(p&&(p.w==null||p.w<2)) p=null;
@@ -5112,7 +5112,7 @@ window.loadPulse = function(force){
 };
   var bento='<div class="grid-stack" id="ccBento">'
     +gsItem('today',panel(todayInner,{style:'flex:1;display:flex;flex-direction:column;min-height:0;'}))
-    +gsItem('market',panel(marketReadInner,{style:'flex:1;display:flex;flex-direction:column;min-height:0;'}))
+    //+gsItem('market',panel(marketReadInner,{style:'flex:1;display:flex;flex-direction:column;min-height:0;'}))
     +gsItem('pulse',panel(pulse,{style:'flex:1;display:flex;flex-direction:column;background:var(--bg2);border-color:rgba(255,10,120,.25);'}))
     +gsItem('exposure',panel(exposureInner,{style:'flex:1;display:flex;flex-direction:column;'}))
     +gsItem('fg',fgCard||ccPh('مزاج السوق'))
