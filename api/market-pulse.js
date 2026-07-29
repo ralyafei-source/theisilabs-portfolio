@@ -1,7 +1,7 @@
 /* ============================================================================
    THEISI — نبض السوق (Market Pulse)  ·  on-demand "what / why / so-what"
    ----------------------------------------------------------------------------
-   INSTALL (Vercel Pro — standalone function is fine): 
+   INSTALL (Vercel Pro — standalone function is fine):
    1. Save this whole file as:  api/market-pulse.js  in your GitHub repo.
    2. Nothing else — the card POSTs to /api/market-pulse.
 
@@ -91,19 +91,27 @@ function mpNorm(q) {
   return { price, previousClose: prev > 0 ? prev : null, dayPct, name: q.name };
 }
 
-// Index % from Yahoo (no key) — FMP serves a bad previousClose for DIA, so we
-// don't trust FMP for the index strip. Yahoo's chartPreviousClose is reliable.
+// Index % from Yahoo (no key). We do NOT trust any single "previousClose"
+// meta field (FMP's was wrong for DIA; Yahoo's chartPreviousClose meta field
+// was ALSO found to be stale/inflated around market-closed hours — e.g. it
+// returned DIA +1.08% and QQQ -0.97% when the verified true EOD numbers for
+// that session were +0.57% and -0.66%). Instead we pull 5 days of daily
+// closes and diff the last two ourselves — no ambiguous meta field involved.
 async function mpYahooIndex(symbols) {
   const out = {};
   await Promise.all(symbols.map(async s => {
     try {
-      const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${s}?interval=1d&range=1d`,
+      const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${s}?interval=1d&range=5d`,
         { headers: { 'User-Agent': 'Mozilla/5.0' } });
       const j = await r.json();
-      const m = j && j.chart && j.chart.result && j.chart.result[0] && j.chart.result[0].meta;
-      const px = m && (m.regularMarketPrice != null ? m.regularMarketPrice : null);
-      const prev = m && (m.chartPreviousClose || m.previousClose);
-      if (px != null && prev) out[s] = +(((px - prev) / prev) * 100).toFixed(2);
+      const res = j && j.chart && j.chart.result && j.chart.result[0];
+      const closes = res && res.indicators && res.indicators.quote && res.indicators.quote[0] && res.indicators.quote[0].close;
+      if (!Array.isArray(closes)) return;
+      const valid = closes.filter(c => c != null);           // drop holiday/incomplete nulls
+      if (valid.length < 2) return;
+      const last = valid[valid.length - 1];                  // most recent completed/live session
+      const prev = valid[valid.length - 2];                  // session before it
+      if (prev) out[s] = +(((last - prev) / prev) * 100).toFixed(2);
     } catch (_) {}
   }));
   return out;
