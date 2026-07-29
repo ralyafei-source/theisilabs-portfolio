@@ -1,7 +1,7 @@
 /* ============================================================================
    THEISI — نبض السوق (Market Pulse)  ·  on-demand "what / why / so-what"
    ----------------------------------------------------------------------------
-   INSTALL (Vercel Pro — standalone function is fine):
+   INSTALL (Vercel Pro — standalone function is fine): 
    1. Save this whole file as:  api/market-pulse.js  in your GitHub repo.
    2. Nothing else — the card POSTs to /api/market-pulse.
 
