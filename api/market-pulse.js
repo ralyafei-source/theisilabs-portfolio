@@ -11,6 +11,7 @@
    FMP key falls back to your hardcoded key like your other handlers.
    ============================================================================ */
 
+const MP_CODE_VERSION = 'pulse-v3-close-array-2026-07-29'; // bump this string whenever this file changes, so /api/market-pulse debug output proves which deploy is live
 const MP_FMP_KEY   = process.env.FMP_API_KEY   || 'pSwvmzs4KUzvmePFIbSF0ulu5KnxcrHj';
 const MP_MARKETAUX = process.env.MARKETAUX_TOKEN || '';
 const MP_ANTHROPIC = process.env.ANTHROPIC_API_KEY;
@@ -317,6 +318,7 @@ async function runPulse(req, res) {
 
     const result = {
       schema: 3,
+      codeVersion: MP_CODE_VERSION,
       nickname,
       date: today,
       session: mpSession(),   // 'intraday' = numbers still moving | 'closed' = final
