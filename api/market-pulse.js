@@ -79,14 +79,34 @@ async function mpGhWrite(path, obj) {
 // FMP's field if previousClose is missing.
 function mpNorm(q) {
   const price = +q.price;
-  const prev  = +q.previousClose;
+  let prev = +q.previousClose;
+  // batch-quote often omits previousClose — derive it from the absolute change field
+  if (!(prev > 0) && q.change != null && isFinite(price)) prev = price - (+q.change);
   let dayPct = null;
   if (prev > 0 && isFinite(price)) {
     dayPct = +(((price - prev) / prev) * 100).toFixed(2);      // self-computed (trusted)
   } else if (q.changePercentage != null) {
     dayPct = +(+q.changePercentage).toFixed(2);                // fallback only
   }
-  return { price, previousClose: prev || null, dayPct, name: q.name };
+  return { price, previousClose: prev > 0 ? prev : null, dayPct, name: q.name };
+}
+
+// Index % from Yahoo (no key) — FMP serves a bad previousClose for DIA, so we
+// don't trust FMP for the index strip. Yahoo's chartPreviousClose is reliable.
+async function mpYahooIndex(symbols) {
+  const out = {};
+  await Promise.all(symbols.map(async s => {
+    try {
+      const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${s}?interval=1d&range=1d`,
+        { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      const j = await r.json();
+      const m = j && j.chart && j.chart.result && j.chart.result[0] && j.chart.result[0].meta;
+      const px = m && (m.regularMarketPrice != null ? m.regularMarketPrice : null);
+      const prev = m && (m.chartPreviousClose || m.previousClose);
+      if (px != null && prev) out[s] = +(((px - prev) / prev) * 100).toFixed(2);
+    } catch (_) {}
+  }));
+  return out;
 }
 async function mpQuotes(symbols) {
   const out = {};
@@ -247,12 +267,15 @@ async function runPulse(req, res) {
     })).filter(h => h.sym);
     const pfSyms = [...new Set(rows.map(r => r.sym))];
 
-    // 3) quotes for indices + holdings
-    const quotes = await mpQuotes([...MP_INDEXES, ...pfSyms]);
+    // 3) quotes — holdings via FMP, indices via Yahoo (FMP's DIA prevClose is bad)
+    const [quotes, idx] = await Promise.all([
+      mpQuotes(pfSyms),
+      mpYahooIndex(MP_INDEXES)
+    ]);
 
     const market = MP_INDEXES.map(s => ({
       sym: s,
-      dayPct: quotes[s] ? +(+quotes[s].dayPct).toFixed(2) : null
+      dayPct: idx[s] != null ? idx[s] : null
     })).filter(m => m.dayPct != null);
 
     // 4) rank movers (matters if it moved OR it's a big position)
