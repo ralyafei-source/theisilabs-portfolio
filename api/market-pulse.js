@@ -11,7 +11,7 @@
    FMP key falls back to your hardcoded key like your other handlers.
    ============================================================================ */
 
-const MP_CODE_VERSION = 'pulse-v3-close-array-2026-07-29'; // bump this string whenever this file changes, so /api/market-pulse debug output proves which deploy is live
+const MP_CODE_VERSION = 'pulse-v4-yahoo-raw-debug-2026-07-29'; // bump this string whenever this file changes, so /api/market-pulse debug output proves which deploy is live
 const MP_FMP_KEY   = process.env.FMP_API_KEY   || 'pSwvmzs4KUzvmePFIbSF0ulu5KnxcrHj';
 const MP_MARKETAUX = process.env.MARKETAUX_TOKEN || '';
 const MP_ANTHROPIC = process.env.ANTHROPIC_API_KEY;
@@ -98,22 +98,30 @@ function mpNorm(q) {
 // returned DIA +1.08% and QQQ -0.97% when the verified true EOD numbers for
 // that session were +0.57% and -0.66%). Instead we pull 5 days of daily
 // closes and diff the last two ourselves — no ambiguous meta field involved.
-async function mpYahooIndex(symbols) {
+async function mpYahooIndex(symbols, dbg) {
   const out = {};
+  if (dbg) dbg.yahooRaw = {};
   await Promise.all(symbols.map(async s => {
     try {
       const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${s}?interval=1d&range=5d`,
         { headers: { 'User-Agent': 'Mozilla/5.0' } });
       const j = await r.json();
       const res = j && j.chart && j.chart.result && j.chart.result[0];
+      const ts = (res && res.timestamp) || [];
       const closes = res && res.indicators && res.indicators.quote && res.indicators.quote[0] && res.indicators.quote[0].close;
+      if (dbg) {
+        dbg.yahooRaw[s] = ts.map((t, i) => ({
+          date: new Date(t * 1000).toISOString().slice(0, 10),
+          close: (closes && closes[i] != null) ? +closes[i].toFixed(2) : null
+        }));
+      }
       if (!Array.isArray(closes)) return;
       const valid = closes.filter(c => c != null);           // drop holiday/incomplete nulls
       if (valid.length < 2) return;
       const last = valid[valid.length - 1];                  // most recent completed/live session
       const prev = valid[valid.length - 2];                  // session before it
       if (prev) out[s] = +(((last - prev) / prev) * 100).toFixed(2);
-    } catch (_) {}
+    } catch (e) { if (dbg) { dbg.yahooRaw = dbg.yahooRaw || {}; dbg.yahooRaw[s + '_error'] = String(e).slice(0, 120); } }
   }));
   return out;
 }
@@ -280,9 +288,10 @@ async function runPulse(req, res) {
     const pfSyms = [...new Set(rows.map(r => r.sym))];
 
     // 3) quotes — holdings via FMP, indices via Yahoo (FMP's DIA prevClose is bad)
+    const dbg = body.debug ? {} : null;
     const [quotes, idx] = await Promise.all([
       mpQuotes(pfSyms),
-      mpYahooIndex(MP_INDEXES)
+      mpYahooIndex(MP_INDEXES, dbg)
     ]);
 
     const market = MP_INDEXES.map(s => ({
@@ -303,7 +312,6 @@ async function runPulse(req, res) {
       .slice(0, MP_MAX_MOVERS);
 
     // 5) drivers (the "why") — filtered hard against noise
-    const dbg = body.debug ? {} : null;
     const drivers = await mpDrivers(movers.map(m => m.sym), dbg);
     movers = movers.map(m => ({ ...m, driver: drivers[m.sym] || null }));
 
