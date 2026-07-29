@@ -40,7 +40,12 @@ function mpSkeleton(){
 }
 
 function mpRenderHtml(d){
-  if(!d || d.error){ return '<div style="font-size:12px;color:var(--text3);">تعذّر تحميل نبض السوق. جرّب التحديث.</div>'; }
+  if(!d || d.error){
+    var detail = (d && (d._clientError || d.error)) ? mpEsc(String(d._clientError || d.error)).slice(0,160) : '';
+    return '<div style="font-size:12px;color:var(--text3);">تعذّر تحميل نبض السوق. جرّب التحديث.'
+      + (detail ? '<div style="font-family:monospace;font-size:10px;color:var(--text3);opacity:.7;margin-top:6px;direction:ltr;text-align:left;">'+detail+'</div>' : '')
+      + '</div>';
+  }
   var name = d.footer ? d.footer.replace('القرار في النهاية عندك يا ','') : '';
 
   // session label — so intraday numbers aren't read as final
@@ -141,7 +146,14 @@ window.loadPulse = function(force){
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ mode:'pulse', nickname: nick, forceRefresh: !!force })
   })
-  .then(function(r){ return r.json(); })
+  .then(function(r){
+    if(!r.ok){
+      return r.text().then(function(t){
+        throw new Error('HTTP '+r.status+': '+(t||'').slice(0,140));
+      });
+    }
+    return r.json();
+  })
   .then(function(d){ window._mpulse = d; mpPaint(mpRenderHtml(d)); })
-  .catch(function(){ mpPaint(mpRenderHtml({error:true})); });
+  .catch(function(e){ mpPaint(mpRenderHtml({ error:true, _clientError: (e && e.message) || String(e) })); });
 };
