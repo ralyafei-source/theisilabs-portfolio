@@ -154,10 +154,11 @@ function mpSession() {
 function mpCleanHighlight(h) { return (h || '').replace(/<\/?em>/g, '').replace(/\[\+\d+ characters\]/g, '').trim(); }
 function mpIsAd(text) { return MP_AD_PATTERNS.some(re => re.test(text || '')); }
 
-async function mpDrivers(moverSyms) {
+async function mpDrivers(moverSyms, dbg) {
   const drivers = {}; // sym -> {title, sentiment, source} | null
   moverSyms.forEach(s => { drivers[s] = null; });
-  if (!MP_MARKETAUX || !moverSyms.length) return drivers;
+  if (dbg) { dbg.hasToken = !!MP_MARKETAUX; dbg.symbols = moverSyms; }
+  if (!MP_MARKETAUX || !moverSyms.length) { if (dbg) dbg.note = 'no token or no movers'; return drivers; }
 
   // 2-day lookback so a mover always has a shot at a catalyst
   const since = new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10);
@@ -169,13 +170,15 @@ async function mpDrivers(moverSyms) {
     const r = await fetch(url);
     const j = await r.json();
     data = j.data || [];
-  } catch (_) { return drivers; }
+    if (dbg) { dbg.found = (j.meta && j.meta.found) || 0; dbg.returned = data.length; dbg.apiError = j.error || null; dbg.tagged = []; }
+  } catch (e) { if (dbg) dbg.fetchError = String(e).slice(0, 120); return drivers; }
 
   for (const art of data) {
     const titleIsAd = mpIsAd(art.title);
     for (const ent of (art.entities || [])) {
       const sym = ent.symbol;
       if (!moverSyms.includes(sym)) continue;
+      if (dbg) dbg.tagged.push({ sym, match: +(+(ent.match_score || 0)).toFixed(1), inTitle: (ent.highlights || []).some(h => h.highlighted_in === 'title'), title: (art.title || '').slice(0, 55) });
       if ((ent.match_score || 0) < MP_MATCH_MIN) continue;          // kill weak tags (the Eli-Lilly→NVDA trap)
 
       // require at least one NON-AD highlight that mentions the entity
@@ -291,7 +294,8 @@ async function runPulse(req, res) {
       .slice(0, MP_MAX_MOVERS);
 
     // 5) drivers (the "why") — filtered hard against noise
-    const drivers = await mpDrivers(movers.map(m => m.sym));
+    const dbg = body.debug ? {} : null;
+    const drivers = await mpDrivers(movers.map(m => m.sym), dbg);
     movers = movers.map(m => ({ ...m, driver: drivers[m.sym] || null }));
 
     // 6) narrative
@@ -316,7 +320,8 @@ async function runPulse(req, res) {
       so_what: narrative.so_what || '',
       watch: Array.isArray(narrative.watch) ? narrative.watch : [],
       disclaimer: 'تحليل معلوماتي — ليست نصيحة مالية',
-      footer: `القرار في النهاية عندك يا ${displayName}`
+      footer: `القرار في النهاية عندك يا ${displayName}`,
+      ...(dbg ? { _debug: dbg } : {})
     };
 
     // 7) cache + return
