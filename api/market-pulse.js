@@ -1,354 +1,147 @@
 /* ============================================================================
-   THEISI — نبض السوق (Market Pulse)  ·  on-demand "what / why / so-what"
+   THEISI — نبض السوق card for the Command Center (index.html)
    ----------------------------------------------------------------------------
-   INSTALL (Vercel Pro — standalone function is fine):
-   1. Save this whole file as:  api/market-pulse.js  in your GitHub repo.
-   2. Nothing else — the card POSTs to /api/market-pulse.
+   INSTALL (inside index.html, in the Command-center render scope where the
+   other cards like pulse/movers/news are built):
 
-   Endpoint:  POST /api/market-pulse   body { nickname, forceRefresh }
-   ENV needed (all already in your Vercel project except the last):
-     ANTHROPIC_API_KEY, GITHUB_TOKEN, and MARKETAUX_TOKEN (add this one).
-   FMP key falls back to your hardcoded key like your other handlers.
+   STEP 1 — paste the three helpers below (mpColor / mpSkeleton / mpRenderHtml
+            / window.loadPulse) somewhere before the "var bento = ..." assembly.
+
+   STEP 2 — add a default tile size next to the other _gsDefaults entries:
+            _gsDefaults.mpulse = { x:0, y:20, w:4, h:7 };
+
+   STEP 3 — add ONE item to the bento string (near +gsItem('movers',...)).
+            Pass a THIRD argument (popupTitle) — same mechanism your today/market
+            cards already use — so clicking the card opens the same popup sheet:
+            +gsItem('mpulse', panel('<div id="mpBody">'+mpSkeleton()+'</div>',
+                 {style:'flex:1;display:flex;flex-direction:column;background:var(--bg2);border-color:rgba(255,10,120,.25);'}),
+                 'نبض السوق الآن')
+
+   STEP 4 — after the bento is inserted into the DOM (end of the Command render),
+            trigger the first load:
+            try { window.loadPulse(false); } catch(e){}
+
+   The endpoint is the standalone function:
+   POST /api/market-pulse  body { nickname, forceRefresh }
    ============================================================================ */
 
-const MP_CODE_VERSION = 'pulse-v4-yahoo-raw-debug-2026-07-29'; // bump this string whenever this file changes, so /api/market-pulse debug output proves which deploy is live
-const MP_FMP_KEY   = process.env.FMP_API_KEY   || 'pSwvmzs4KUzvmePFIbSF0ulu5KnxcrHj';
-const MP_MARKETAUX = process.env.MARKETAUX_TOKEN || '';
-const MP_ANTHROPIC = process.env.ANTHROPIC_API_KEY;
-const MP_GH_TOKEN  = process.env.GITHUB_TOKEN;
-const MP_GH_OWNER  = 'ralyafei-source';
-const MP_GH_REPO   = 'theisilabs-portfolio';
-const MP_GH_BRANCH = 'main';
+var MP_ENDPOINT = '/api/market-pulse';
 
-// ── tuning knobs ────────────────────────────────────────────────────────────
-const MP_MATCH_MIN   = 20;      // Marketaux match_score below this = noise (Eli-Lilly→NVDA was 13.5)
-const MP_MOVER_ABS   = 3.0;     // |dayPct| >= this qualifies as a mover
-const MP_MOVER_VALUE = 5000;    // OR holding value >= this (only movers that matter to the portfolio)
-const MP_MAX_MOVERS  = 8;       // cap movers we explain
-const MP_INDEXES     = ['SPY', 'QQQ', 'DIA'];  // market context (S&P / Nasdaq / Dow proxies)
+function mpColor(v){ return v==null ? 'var(--text3)' : (v>=0 ? 'var(--up,#12b886)' : 'var(--down,#ff4d67)'); }
+function mpSign(v){ return v>=0 ? '+' : ''; }
+function mpEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
-// Motley-Fool / newsletter ad boilerplate that Marketaux mis-tags to tickers.
-// Any highlight containing one of these is IGNORED (it is an ad, not news).
-const MP_AD_PATTERNS = [
-  /missed\s+\w+\s+in\s+20\d\d/i,        // "Missed Nvidia in 2009?"
-  /the analyst who called/i,           // "Act now: the analyst who called NVIDIA..."
-  /\bact now\b/i,
-  /double down/i,
-  /this rare/i,
-  /when \w+ made this list/i
-];
-
-// ── tiny GitHub JSON helpers (self-contained, no name clash) ─────────────────
-async function mpGhRead(path) {
-  try {
-    const r = await fetch(
-      `https://api.github.com/repos/${MP_GH_OWNER}/${MP_GH_REPO}/contents/${path}?ref=${MP_GH_BRANCH}`,
-      { headers: { Authorization: `Bearer ${MP_GH_TOKEN}`, Accept: 'application/vnd.github.v3+json' } }
-    );
-    if (!r.ok) return null;
-    const j = await r.json();
-    return JSON.parse(Buffer.from(j.content, 'base64').toString('utf8'));
-  } catch (_) { return null; }
-}
-async function mpGhWrite(path, obj) {
-  try {
-    // fetch existing sha (update-in-place) if present
-    let sha;
-    const cur = await fetch(
-      `https://api.github.com/repos/${MP_GH_OWNER}/${MP_GH_REPO}/contents/${path}?ref=${MP_GH_BRANCH}`,
-      { headers: { Authorization: `Bearer ${MP_GH_TOKEN}`, Accept: 'application/vnd.github.v3+json' } }
-    );
-    if (cur.ok) { sha = (await cur.json()).sha; }
-    const body = {
-      message: `pulse: ${path}`,
-      content: Buffer.from(JSON.stringify(obj, null, 2)).toString('base64'),
-      branch: MP_GH_BRANCH,
-      ...(sha ? { sha } : {})
-    };
-    const w = await fetch(
-      `https://api.github.com/repos/${MP_GH_OWNER}/${MP_GH_REPO}/contents/${path}`,
-      { method: 'PUT', headers: { Authorization: `Bearer ${MP_GH_TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-    );
-    return w.ok;
-  } catch (_) { return false; }
+function mpSkeleton(){
+  return '<div style="display:flex;flex-direction:column;gap:8px;opacity:.55;">'
+    + '<div style="height:12px;width:55%;background:var(--border);border-radius:4px;"></div>'
+    + '<div style="height:10px;width:80%;background:var(--border);border-radius:4px;"></div>'
+    + '<div style="height:10px;width:70%;background:var(--border);border-radius:4px;"></div>'
+    + '<div style="font-size:11px;color:var(--text3);margin-top:4px;">جاري تحليل السوق…</div></div>';
 }
 
-// ── FMP quote (batch with per-symbol fallback for Starter tier) ──────────────
-// FIX: compute dayPct OURSELVES from (price - previousClose)/previousClose.
-// FMP's changePercentage field occasionally returns a bad value (e.g. DIA showed
-// +1.2% on 2026-07-28 when the real close was +0.57%). We only fall back to
-// FMP's field if previousClose is missing.
-function mpNorm(q) {
-  const price = +q.price;
-  let prev = +q.previousClose;
-  // batch-quote often omits previousClose — derive it from the absolute change field
-  if (!(prev > 0) && q.change != null && isFinite(price)) prev = price - (+q.change);
-  let dayPct = null;
-  if (prev > 0 && isFinite(price)) {
-    dayPct = +(((price - prev) / prev) * 100).toFixed(2);      // self-computed (trusted)
-  } else if (q.changePercentage != null) {
-    dayPct = +(+q.changePercentage).toFixed(2);                // fallback only
+function mpRenderHtml(d){
+  if(!d || d.error){ return '<div style="font-size:12px;color:var(--text3);">تعذّر تحميل نبض السوق. جرّب التحديث.</div>'; }
+  var name = d.footer ? d.footer.replace('القرار في النهاية عندك يا ','') : '';
+
+  // session label — so intraday numbers aren't read as final
+  var intraday = (d.session === 'intraday');
+  var sessTxt = intraday ? 'خلال الجلسة' : 'إغلاق';
+  var sessCol = intraday ? '#e0a021' : 'var(--text3)';
+  var sessPill = '<span style="font-size:9.5px;border:1px solid '+sessCol+';color:'+sessCol
+    + ';border-radius:999px;padding:1px 7px;margin-inline-start:6px;">'+sessTxt+'</span>';
+
+  // header + refresh
+  // stopPropagation on the button — the card's OUTER div gets its own onclick
+  // (added by gsItem's popupTitle wrapper) to open the popup sheet; without
+  // this, clicking ↻ would also fire that outer click and pop the sheet open.
+  var head = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+    + '<div class="cc-sec-label" style="color:var(--rose,#FF0A78);">نبض السوق الآن'+sessPill+'</div>'
+    + '<button onclick="event.stopPropagation();window.loadPulse(true)" title="تحديث" '
+    + 'style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);'
+    + 'font-size:11px;padding:3px 9px;cursor:pointer;">↻ تحديث</button></div>';
+
+  // market strip (indices)
+  var MP_IDX_LABEL = { SPY:'S&P 500', QQQ:'ناسداك 100', DIA:'داو جونز' };
+  var strip = '<div style="display:flex;gap:14px;flex-wrap:wrap;direction:ltr;justify-content:flex-end;margin-bottom:8px;">'
+    + (d.market||[]).map(function(m){
+        return '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;" title="'+mpEsc(MP_IDX_LABEL[m.sym]||m.sym)+'">'
+          + mpEsc(m.sym)+' <b style="color:'+mpColor(m.dayPct)+';">'+mpSign(m.dayPct)+m.dayPct+'%</b></span>';
+      }).join('') + '</div>';
+
+  // WHAT
+  var what = d.what ? '<div style="font-size:12.5px;line-height:1.9;color:var(--text);margin-bottom:10px;">'+mpEsc(d.what)+'</div>' : '';
+
+  // WHY — per mover
+  var byMover = {}; (d.movers||[]).forEach(function(m){ byMover[m.sym]=m; });
+  var why = '';
+  if((d.why||[]).length){
+    why = '<div style="border-top:1px solid var(--border);padding-top:8px;margin-bottom:8px;">'
+      + (d.why||[]).map(function(w){
+          var m = byMover[w.sym]||{};
+          var pct = (m.dayPct!=null) ? '<b style="color:'+mpColor(m.dayPct)+';direction:ltr;unicode-bidi:isolate;">'+mpSign(m.dayPct)+m.dayPct+'%</b>' : '';
+          return '<div style="display:flex;gap:8px;align-items:flex-start;margin:6px 0;">'
+            + '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;direction:ltr;unicode-bidi:isolate;min-width:64px;text-align:right;">'
+            + mpEsc(w.sym)+' '+pct+'</span>'
+            + '<span style="font-size:11.5px;line-height:1.75;color:var(--text2);flex:1;">'+mpEsc(w.text)+'</span></div>';
+        }).join('') + '</div>';
   }
-  return { price, previousClose: prev > 0 ? prev : null, dayPct, name: q.name };
+
+  // SO WHAT
+  var so = d.so_what ? '<div style="font-size:12px;line-height:1.9;color:var(--text2);background:var(--bg);border-radius:10px;padding:9px 11px;margin-bottom:8px;"><b style="color:var(--rose,#FF0A78);font-size:11px;">ماذا يعني</b><br>'+mpEsc(d.so_what)+'</div>' : '';
+
+  // WATCH pills
+  var watch = (d.watch||[]).length
+    ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">'
+      + (d.watch||[]).map(function(w){ return '<span style="font-size:10.5px;background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:3px 9px;color:var(--text2);">'+mpEsc(w)+'</span>'; }).join('')
+      + '</div>'
+    : '';
+
+  var foot = '<div style="font-size:10px;color:var(--text3);border-top:1px solid var(--border);padding-top:7px;margin-top:2px;">'
+    + mpEsc(d.footer||'') + ' · ' + mpEsc(d.disclaimer||'') + ' · ' + mpEsc(d.generated_at||'')
+    + (d.cached ? ' · مخزّن' : '') + '</div>';
+
+  return head + strip + what + why + so + watch + foot;
 }
 
-// Index % from Yahoo (no key). We do NOT trust any single "previousClose"
-// meta field (FMP's was wrong for DIA; Yahoo's chartPreviousClose meta field
-// was ALSO found to be stale/inflated around market-closed hours — e.g. it
-// returned DIA +1.08% and QQQ -0.97% when the verified true EOD numbers for
-// that session were +0.57% and -0.66%). Instead we pull 5 days of daily
-// closes and diff the last two ourselves — no ambiguous meta field involved.
-async function mpYahooIndex(symbols, dbg) {
-  const out = {};
-  if (dbg) dbg.yahooRaw = {};
-  await Promise.all(symbols.map(async s => {
-    try {
-      const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${s}?interval=1d&range=5d`,
-        { headers: { 'User-Agent': 'Mozilla/5.0' } });
-      const j = await r.json();
-      const res = j && j.chart && j.chart.result && j.chart.result[0];
-      const ts = (res && res.timestamp) || [];
-      const closes = res && res.indicators && res.indicators.quote && res.indicators.quote[0] && res.indicators.quote[0].close;
-      if (dbg) {
-        dbg.yahooRaw[s] = ts.map((t, i) => ({
-          date: new Date(t * 1000).toISOString().slice(0, 10),
-          close: (closes && closes[i] != null) ? +closes[i].toFixed(2) : null
-        }));
-      }
-      if (!Array.isArray(closes)) return;
-      const valid = closes.filter(c => c != null);           // drop holiday/incomplete nulls
-      if (valid.length < 2) return;
-      const last = valid[valid.length - 1];                  // most recent completed/live session
-      const prev = valid[valid.length - 2];                  // session before it
-      if (prev) out[s] = +(((last - prev) / prev) * 100).toFixed(2);
-    } catch (e) { if (dbg) { dbg.yahooRaw = dbg.yahooRaw || {}; dbg.yahooRaw[s + '_error'] = String(e).slice(0, 120); } }
-  }));
-  return out;
-}
-async function mpQuotes(symbols) {
-  const out = {};
-  const chunk = (a, n) => a.reduce((r, _, i) => (i % n ? r : [...r, a.slice(i, i + n)]), []);
-  for (const grp of chunk(symbols, 20)) {
-    try {
-      const r = await fetch(`https://financialmodelingprep.com/stable/batch-quote?symbols=${grp.join(',')}&apikey=${MP_FMP_KEY}`);
-      if (r.ok) {
-        const arr = await r.json();
-        if (Array.isArray(arr) && arr.length) {
-          arr.forEach(q => { if (q && q.symbol) out[q.symbol] = mpNorm(q); });
-          continue;
-        }
-      }
-    } catch (_) {}
-    // fallback: single quotes
-    for (const s of grp) {
-      try {
-        const r = await fetch(`https://financialmodelingprep.com/stable/quote?symbol=${s}&apikey=${MP_FMP_KEY}`);
-        const a = await r.json();
-        const q = Array.isArray(a) ? a[0] : a;
-        if (q && q.symbol) out[q.symbol] = mpNorm(q);
-      } catch (_) {}
-    }
-  }
-  return out;
+window._mpulse = window._mpulse || null;
+
+// gsItem's popupTitle mechanism snapshots the card's html ONCE, when the bento
+// string is first built (i.e. the skeleton). Since #mpBody's content changes
+// after that (on load / refresh), we re-sync window._ccReadStore.mpulse every
+// time we paint the card, so the popup (window._ccCardOpen('mpulse',...))
+// always shows what's currently on screen, not the frozen initial skeleton.
+function mpPaint(html){
+  var b = document.getElementById('mpBody');
+  if(b) b.innerHTML = html;
+  try{
+    window._ccReadStore = window._ccReadStore || {};
+    window._ccReadStore.mpulse = { title:'نبض السوق الآن', html: html };
+  }catch(e){}
 }
 
-// ── Is the US market open right now? (labels the card intraday vs closed) ─────
-// Regular hours 9:30–16:00 ET. DST approximated as Mar–Oct (EDT, UTC-4);
-// otherwise EST (UTC-5). Good enough for a session label.
-function mpSession() {
-  const now = new Date();                       // UTC in Vercel
-  const dow = now.getUTCDay();                  // 0=Sun … 6=Sat
-  if (dow === 0 || dow === 6) return 'closed';
-  const month = now.getUTCMonth() + 1;
-  const edt = month >= 3 && month <= 10;        // rough DST window
-  const openMin  = edt ? (13 * 60 + 30) : (14 * 60 + 30);
-  const closeMin = edt ? (20 * 60) : (21 * 60);
-  const mins = now.getUTCHours() * 60 + now.getUTCMinutes();
-  return (mins >= openMin && mins < closeMin) ? 'intraday' : 'closed';
-}
+// Auto-load: polls up to 10s for the card to appear in the DOM, then fills it.
+// If cached data already exists (tab re-entry), it renders instantly first.
+(function mpAutoInit(){
+  var tries = 0;
+  var t = setInterval(function(){
+    var el = document.getElementById('mpBody');
+    if(el){
+      clearInterval(t);
+      if(window._mpulse){ mpPaint(mpRenderHtml(window._mpulse)); }
+      else { window.loadPulse(false); }
+    } else if(++tries > 40){ clearInterval(t); }
+  }, 250);
+})();
 
-// ── Marketaux: news for movers, with HARD noise filter ───────────────────────
-function mpCleanHighlight(h) { return (h || '').replace(/<\/?em>/g, '').replace(/\[\+\d+ characters\]/g, '').trim(); }
-function mpIsAd(text) { return MP_AD_PATTERNS.some(re => re.test(text || '')); }
-
-async function mpDrivers(moverSyms, dbg) {
-  const drivers = {}; // sym -> {title, sentiment, source} | null
-  moverSyms.forEach(s => { drivers[s] = null; });
-  if (dbg) { dbg.hasToken = !!MP_MARKETAUX; dbg.symbols = moverSyms; }
-  if (!MP_MARKETAUX || !moverSyms.length) { if (dbg) dbg.note = 'no token or no movers'; return drivers; }
-
-  // 2-day lookback so a mover always has a shot at a catalyst
-  const since = new Date(Date.now() - 2 * 864e5).toISOString().slice(0, 10);
-  let data = [];
-  try {
-    const url = `https://api.marketaux.com/v1/news/all?symbols=${moverSyms.join(',')}`
-      + `&filter_entities=true&language=en&limit=25&published_after=${since}`
-      + `&api_token=${MP_MARKETAUX}`;
-    const r = await fetch(url);
-    const j = await r.json();
-    data = j.data || [];
-    if (dbg) { dbg.found = (j.meta && j.meta.found) || 0; dbg.returned = data.length; dbg.apiError = j.error || null; dbg.tagged = []; }
-  } catch (e) { if (dbg) dbg.fetchError = String(e).slice(0, 120); return drivers; }
-
-  for (const art of data) {
-    const titleIsAd = mpIsAd(art.title);
-    for (const ent of (art.entities || [])) {
-      const sym = ent.symbol;
-      if (!moverSyms.includes(sym)) continue;
-      if (dbg) dbg.tagged.push({ sym, match: +(+(ent.match_score || 0)).toFixed(1), inTitle: (ent.highlights || []).some(h => h.highlighted_in === 'title'), title: (art.title || '').slice(0, 55) });
-      if ((ent.match_score || 0) < MP_MATCH_MIN) continue;          // kill weak tags (the Eli-Lilly→NVDA trap)
-
-      // require at least one NON-AD highlight that mentions the entity
-      const goodHi = (ent.highlights || [])
-        .map(h => ({ ...h, clean: mpCleanHighlight(h.highlight) }))
-        .filter(h => h.clean && !mpIsAd(h.clean));
-      const inTitle = (ent.highlights || []).some(h => h.highlighted_in === 'title') && !titleIsAd;
-      if (!goodHi.length && !inTitle) continue;
-
-      const cand = {
-        title: (art.title || '').trim(),
-        sentiment: ent.sentiment_score,
-        source: art.source || '',
-        url: art.url || '',
-        match: ent.match_score
-      };
-      // keep the highest-match, non-ad driver per symbol
-      if (!drivers[sym] || cand.match > drivers[sym].match) drivers[sym] = cand;
-    }
-  }
-  // strip internal match score before returning
-  Object.keys(drivers).forEach(s => { if (drivers[s]) delete drivers[s].match; });
-  return drivers;
-}
-
-// ── Arabic narrative (Golden Separation: code gives facts, Claude only phrases) ─
-function mpBuildPrompt(payload, name) {
-  return `أنت محلل مالي يكتب للمستثمر الخليجي "${name}". اكتب بالعربية الخليجية، بأسلوب صديق خبير لا تقرير بنك.
-مهمتك: اشرح ما يحدث الآن في السوق ومحفظته — ماذا، لماذا، وماذا يعني — من البيانات المعطاة فقط.
-
-قواعد صارمة (ممنوع كسرها):
-- لا تخترع أي رقم. استخدم الأرقام المعطاة كما هي فقط.
-- لا تربط خبراً بسهم إلا إذا كان مذكوراً صراحة في حقل driver لذلك السهم.
-- إذا كان driver = null لسهم، اكتب أن سبب حركته "غير مؤكد من البيانات المتاحة" — لا تخمّن.
-- اشرح ولا توصِ. لا "اشترِ" ولا "بِع". صف ما يعنيه الوضع وما يستحق المتابعة.
-- لا تصف الشركات بمعلومات غير موجودة في البيانات.
-
-أعد النتيجة JSON فقط بهذا الشكل (بدون أي نص خارج الـ JSON):
-{
-  "what": "جملتان عن الصورة الكلية للسوق اليوم من أرقام المؤشرات.",
-  "why": [ { "sym": "AAPL", "text": "سطر واحد: كم تحرك السهم ولماذا (من driver أو 'غير مؤكد')." } ],
-  "so_what": "فقرة قصيرة: ماذا يعني هذا لتوزيع محفظته وما الذي يستحق المتابعة — بلا توصية.",
-  "watch": [ "بند متابعة قصير", "بند آخر" ]
-}
-
-البيانات:
-${JSON.stringify(payload, null, 2)}`;
-}
-
-async function mpClaude(prompt) {
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': MP_ANTHROPIC, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, messages: [{ role: 'user', content: prompt }] })
-  });
-  const d = await r.json();
-  let t = (d.content?.[0]?.text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-  return JSON.parse(t);
-}
-
-// ── main handler ─────────────────────────────────────────────────────────────
-async function runPulse(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(200).end();
-
-  try {
-    const body     = req.body || {};
-    const nickname = (body.nickname || 'rashed').toLowerCase();
-    const force    = !!body.forceRefresh;
-    const displayName = nickname.charAt(0).toUpperCase() + nickname.slice(1);
-    const today    = new Date(Date.now() + 4 * 36e5).toISOString().slice(0, 10); // UAE date
-    const cachePath = `data/market-pulse-${nickname}-${today}.json`;
-
-    // 1) cache (skip Claude if fresh copy exists and not forced)
-    if (!force) {
-      const cached = await mpGhRead(cachePath);
-      if (cached) return res.status(200).json({ ...cached, cached: true });
-    }
-
-    // 2) portfolio holdings
-    const pf = await mpGhRead(nickname === 'rashed' ? 'data/portfolio.json' : `data/portfolio-${nickname}.json`);
-    const holdings = (pf && (pf.stocks || pf.holdings || pf)) || [];
-    const rows = (Array.isArray(holdings) ? holdings : []).map(h => ({
-      sym: h.sym || h.symbol,
-      shares: +(h.shares || 0),
-      cost: +(h.cost || 0)
-    })).filter(h => h.sym);
-    const pfSyms = [...new Set(rows.map(r => r.sym))];
-
-    // 3) quotes — holdings via FMP, indices via Yahoo (FMP's DIA prevClose is bad)
-    const dbg = body.debug ? {} : null;
-    const [quotes, idx] = await Promise.all([
-      mpQuotes(pfSyms),
-      mpYahooIndex(MP_INDEXES, dbg)
-    ]);
-
-    const market = MP_INDEXES.map(s => ({
-      sym: s,
-      dayPct: idx[s] != null ? idx[s] : null
-    })).filter(m => m.dayPct != null);
-
-    // 4) rank movers (matters if it moved OR it's a big position)
-    let movers = rows.map(r => {
-      const q = quotes[r.sym] || {};
-      const price = +q.price || 0;
-      const value = price * r.shares;
-      const dayPct = q.dayPct != null ? +(+q.dayPct).toFixed(2) : null;
-      return { sym: r.sym, name: q.name || r.sym, dayPct, value: Math.round(value) };
-    }).filter(m => m.dayPct != null)
-      .filter(m => Math.abs(m.dayPct) >= MP_MOVER_ABS || m.value >= MP_MOVER_VALUE)
-      .sort((a, b) => Math.abs(b.dayPct) - Math.abs(a.dayPct))
-      .slice(0, MP_MAX_MOVERS);
-
-    // 5) drivers (the "why") — filtered hard against noise
-    const drivers = await mpDrivers(movers.map(m => m.sym), dbg);
-    movers = movers.map(m => ({ ...m, driver: drivers[m.sym] || null }));
-
-    // 6) narrative
-    const payload = { date: today, market, movers };
-    let narrative;
-    try {
-      narrative = await mpClaude(mpBuildPrompt(payload, displayName));
-    } catch (e) {
-      return res.status(500).json({ error: 'narrative_failed', details: String(e).slice(0, 200), payload });
-    }
-
-    const result = {
-      schema: 3,
-      codeVersion: MP_CODE_VERSION,
-      nickname,
-      date: today,
-      session: mpSession(),   // 'intraday' = numbers still moving | 'closed' = final
-      generated_at: new Date(Date.now() + 4 * 36e5).toISOString().slice(0, 16).replace('T', ' '),
-      market,
-      movers,
-      what: narrative.what || '',
-      why: Array.isArray(narrative.why) ? narrative.why : [],
-      so_what: narrative.so_what || '',
-      watch: Array.isArray(narrative.watch) ? narrative.watch : [],
-      disclaimer: 'تحليل معلوماتي — ليست نصيحة مالية',
-      footer: `القرار في النهاية عندك يا ${displayName}`,
-      ...(dbg ? { _debug: dbg } : {})
-    };
-
-    // 7) cache + return
-    await mpGhWrite(cachePath, result);
-    return res.status(200).json(result);
-
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
-  }
-}
-
-module.exports = runPulse;
+window.loadPulse = function(force){
+  if(force) mpPaint(mpSkeleton());
+  var nick = (window.currentNickname || window._nickname || 'rashed');
+  fetch(MP_ENDPOINT, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ mode:'pulse', nickname: nick, forceRefresh: !!force })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){ window._mpulse = d; mpPaint(mpRenderHtml(d)); })
+  .catch(function(){ mpPaint(mpRenderHtml({error:true})); });
+};
