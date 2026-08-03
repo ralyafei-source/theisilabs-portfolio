@@ -1,159 +1,222 @@
 /* ============================================================================
-   THEISI — نبض السوق card for the Command Center (index.html)
+   THEISI — /api/market-pulse  (SERVERLESS HANDLER)
    ----------------------------------------------------------------------------
-   INSTALL (inside index.html, in the Command-center render scope where the
-   other cards like pulse/movers/news are built):
+   Replaces the old client-snippet that was wrongly sitting in /api/ (it ran
+   `window.…` at import → "window is not defined" → 500 on every call).
+   The client code already lives inline in index.html; this file is ONLY the
+   endpoint now.
 
-   STEP 1 — paste the three helpers below (mpColor / mpSkeleton / mpRenderHtml
-            / window.loadPulse) somewhere before the "var bento = ..." assembly.
+   GOLDEN SEPARATION:
+     • Code computes market[] (indices) and movers[] (dayPct) — deterministic.
+     • Claude writes ONLY the Arabic narrative: what / why[].text / so_what /
+       watch[]. It never sees prices to invent and never links news to a stock.
 
-   STEP 2 — add a default tile size next to the other _gsDefaults entries:
-            _gsDefaults.mpulse = { x:0, y:20, w:4, h:7 };
-
-   STEP 3 — add ONE item to the bento string (near +gsItem('movers',...)).
-            Pass a THIRD argument (popupTitle) — same mechanism your today/market
-            cards already use — so clicking the card opens the same popup sheet:
-            +gsItem('mpulse', panel('<div id="mpBody">'+mpSkeleton()+'</div>',
-                 {style:'flex:1;display:flex;flex-direction:column;background:var(--bg2);border-color:rgba(255,10,120,.25);'}),
-                 'نبض السوق الآن')
-
-   STEP 4 — after the bento is inserted into the DOM (end of the Command render),
-            trigger the first load:
-            try { window.loadPulse(false); } catch(e){}
-
-   The endpoint is the standalone function:
-   POST /api/market-pulse  body { nickname, forceRefresh }
+   POST body: { mode:'pulse', nickname, forceRefresh }
+   Returns  : { market[], movers[], why[], what, so_what, watch[], session,
+                footer, disclaimer, generated_at, cached }
    ============================================================================ */
 
-var MP_ENDPOINT = '/api/market-pulse';
+const REPO    = 'ralyafei-source/theisilabs-portfolio';
+const FMP_KEY = process.env.FMP_API_KEY || process.env.FMP_KEY || '';
+const FMP     = 'https://financialmodelingprep.com/stable';
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
-function mpColor(v){ return v==null ? 'var(--text3)' : (v>=0 ? 'var(--up,#12b886)' : 'var(--down,#ff4d67)'); }
-function mpSign(v){ return v>=0 ? '+' : ''; }
-function mpEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+const CACHE_TTL_MS = 10 * 60 * 1000;      // serve cached within 10 min unless forceRefresh
+const MOVERS_N     = 6;                    // top movers by |dayPct|
+const INDEXES      = ['SPY', 'QQQ', 'DIA'];
 
-function mpSkeleton(){
-  return '<div style="display:flex;flex-direction:column;gap:8px;opacity:.55;">'
-    + '<div style="height:12px;width:55%;background:var(--border);border-radius:4px;"></div>'
-    + '<div style="height:10px;width:80%;background:var(--border);border-radius:4px;"></div>'
-    + '<div style="height:10px;width:70%;background:var(--border);border-radius:4px;"></div>'
-    + '<div style="font-size:11px;color:var(--text3);margin-top:4px;">جاري تحليل السوق…</div></div>';
+// module-scope cache — persists across warm invocations (stops the DOM-poll
+// from re-billing Claude on every card mount). Cold starts recompute.
+let CACHE = {};
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
+async function fmpGet(path) {
+  const sep = path.includes('?') ? '&' : '?';
+  try {
+    const r = await fetch(`${FMP}${path}${sep}apikey=${FMP_KEY}`);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
 }
 
-function mpRenderHtml(d){
-  if(!d || d.error){
-    var detail = (d && (d._clientError || d.error)) ? mpEsc(String(d._clientError || d.error)).slice(0,160) : '';
-    return '<div style="font-size:12px;color:var(--text3);">تعذّر تحميل نبض السوق. جرّب التحديث.'
-      + (detail ? '<div style="font-family:monospace;font-size:10px;color:var(--text3);opacity:.7;margin-top:6px;direction:ltr;text-align:left;">'+detail+'</div>' : '')
-      + '</div>';
+async function ghRead(path) {
+  try {
+    const r = await fetch(`https://raw.githubusercontent.com/${REPO}/main/${path}?t=${Date.now()}`);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+function pctOf(q) {
+  const x = Array.isArray(q) ? q[0] : q;
+  if (!x) return null;
+  const v = x.changePercentage ?? x.changesPercentage ?? null;
+  return v == null ? null : Math.round(v * 100) / 100;
+}
+
+// US market session by UTC clock (RTH 13:30–20:00 UTC, Mon–Fri; DST-agnostic
+// enough for a session label — numbers themselves come from FMP).
+function usSession() {
+  const now = new Date();
+  const day = now.getUTCDay();                       // 0 Sun … 6 Sat
+  const mins = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const open = day >= 1 && day <= 5 && mins >= 810 && mins < 1200;
+  return open ? 'intraday' : 'closed';
+}
+
+function dubaiTime() {
+  try {
+    return new Intl.DateTimeFormat('ar', {
+      timeZone: 'Asia/Dubai', hour: '2-digit', minute: '2-digit',
+      day: '2-digit', month: '2-digit'
+    }).format(new Date());
+  } catch {
+    return new Date(Date.now() + 4 * 3600 * 1000).toISOString().slice(0, 16).replace('T', ' ');
   }
-  var name = d.footer ? d.footer.replace('القرار في النهاية عندك يا ','') : '';
+}
 
-  // session label — so intraday numbers aren't read as final
-  var intraday = (d.session === 'intraday');
-  var sessTxt = intraday ? 'خلال الجلسة' : 'إغلاق';
-  var sessCol = intraday ? '#e0a021' : 'var(--text3)';
-  var sessPill = '<span style="font-size:9.5px;border:1px solid '+sessCol+';color:'+sessCol
-    + ';border-radius:999px;padding:1px 7px;margin-inline-start:6px;">'+sessTxt+'</span>';
+// small concurrency limiter so 56 holdings don't fire 56 FMP calls at once
+async function mapLimit(items, limit, fn) {
+  const out = new Array(items.length);
+  let i = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (i < items.length) { const idx = i++; out[idx] = await fn(items[idx], idx); }
+  });
+  await Promise.all(workers);
+  return out;
+}
 
-  // header + refresh
-  // stopPropagation on the button — the card's OUTER div gets its own onclick
-  // (added by gsItem's popupTitle wrapper) to open the popup sheet; without
-  // this, clicking ↻ would also fire that outer click and pop the sheet open.
-  var head = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
-    + '<div class="cc-sec-label" style="color:var(--rose,#FF0A78);">نبض السوق الآن'+sessPill+'</div>'
-    + '<button onclick="event.stopPropagation();window.loadPulse(true)" title="تحديث" '
-    + 'style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);'
-    + 'font-size:11px;padding:3px 9px;cursor:pointer;">↻ تحديث</button></div>';
+function displayName(pf, nickname) {
+  return (pf && (pf.nameAr || pf.name || pf.owner)) ||
+         (nickname === 'rashed' ? 'راشد' : nickname);
+}
 
-  // market strip (indices)
-  var MP_IDX_LABEL = { SPY:'S&P 500', QQQ:'ناسداك 100', DIA:'داو جونز' };
-  var strip = '<div style="display:flex;gap:14px;flex-wrap:wrap;direction:ltr;justify-content:flex-end;margin-bottom:8px;">'
-    + (d.market||[]).map(function(m){
-        return '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;" title="'+mpEsc(MP_IDX_LABEL[m.sym]||m.sym)+'">'
-          + mpEsc(m.sym)+' <b style="color:'+mpColor(m.dayPct)+';">'+mpSign(m.dayPct)+m.dayPct+'%</b></span>';
-      }).join('') + '</div>';
+// ─── narrative (Claude writes text ONLY, from computed fields) ────────────────
+async function callClaude(prompt) {
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1200, messages: [{ role: 'user', content: prompt }] })
+  });
+  if (!r.ok) throw new Error('Claude API error: ' + (await r.text()).slice(0, 200));
+  const d = await r.json();
+  return d.content?.[0]?.text || '';
+}
 
-  // WHAT
-  var what = d.what ? '<div style="font-size:12.5px;line-height:1.9;color:var(--text);margin-bottom:10px;">'+mpEsc(d.what)+'</div>' : '';
+function parseJson(txt) {
+  let s = String(txt).replace(/```json|```/g, '').trim();
+  const a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if (a >= 0 && b > a) s = s.slice(a, b + 1);
+  return JSON.parse(s);
+}
 
-  // WHY — per mover
-  var byMover = {}; (d.movers||[]).forEach(function(m){ byMover[m.sym]=m; });
-  var why = '';
-  if((d.why||[]).length){
-    why = '<div style="border-top:1px solid var(--border);padding-top:8px;margin-bottom:8px;">'
-      + (d.why||[]).map(function(w){
-          var m = byMover[w.sym]||{};
-          var pct = (m.dayPct!=null) ? '<b style="color:'+mpColor(m.dayPct)+';direction:ltr;unicode-bidi:isolate;">'+mpSign(m.dayPct)+m.dayPct+'%</b>' : '';
-          return '<div style="display:flex;gap:8px;align-items:flex-start;margin:6px 0;">'
-            + '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;direction:ltr;unicode-bidi:isolate;min-width:64px;text-align:right;">'
-            + mpEsc(w.sym)+' '+pct+'</span>'
-            + '<span style="font-size:11.5px;line-height:1.75;color:var(--text2);flex:1;">'+mpEsc(w.text)+'</span></div>';
-        }).join('') + '</div>';
+function narrativePrompt(market, movers, session) {
+  const sessTxt = session === 'intraday' ? 'خلال الجلسة (الأرقام غير نهائية)' : 'بعد الإغلاق';
+  return `أنت محلل مالي تكتب "نبض السوق" بالعربية الخليجية المهنية لمستثمر.
+الحالة: ${sessTxt}.
+
+المؤشرات (٪ اليوم) — أرقام حقيقية محسوبة، لا تخترع غيرها:
+${JSON.stringify(market)}
+
+أكبر تحركات محفظته اليوم (٪ اليوم) — أرقام حقيقية، لا تخترع غيرها:
+${JSON.stringify(movers)}
+
+اكتب JSON فقط بهذا الشكل بالضبط، دون أي نص خارج الأقواس:
+{
+  "what": "جملة أو جملتان: ماذا يحدث في السوق اليوم بناءً على المؤشرات أعلاه فقط.",
+  "why": [ { "sym": "الرمز", "text": "سبب محتمل عام لحركة هذا السهم — بصياغة حذرة (قد/يبدو)، دون اختراع خبر أو رقم أو ربط بخبر غير مذكور." } ],
+  "so_what": "جملة: ماذا يعني هذا لمستثمر طويل الأمد — تفسير لا توصية.",
+  "watch": [ "نقطة متابعة قصيرة", "نقطة أخرى" ]
+}
+
+قواعد صارمة:
+- استخدم فقط الرموز والأرقام المعطاة أعلاه. لا تضف أرقاماً أو نسباً أو أهدافاً.
+- لا تخترع أخباراً ولا تربط سهماً بحدث غير مذكور. لا تصف الشركات.
+- في why: أدرج فقط الرموز الموجودة في قائمة التحركات أعلاه.
+- لا نصيحة استثمارية — تفسير فقط. اكتب JSON صحيحاً فقط.`;
+}
+
+// ─── handler ─────────────────────────────────────────────────────────────────
+module.exports = async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const body = req.body || {};
+  const nickname = (body.nickname || 'rashed').toLowerCase();
+  const force = !!body.forceRefresh;
+
+  // cache
+  const hit = CACHE[nickname];
+  if (!force && hit && (Date.now() - hit.at) < CACHE_TTL_MS) {
+    return res.status(200).json({ ...hit.data, cached: true });
   }
 
-  // SO WHAT
-  var so = d.so_what ? '<div style="font-size:12px;line-height:1.9;color:var(--text2);background:var(--bg);border-radius:10px;padding:9px 11px;margin-bottom:8px;"><b style="color:var(--rose,#FF0A78);font-size:11px;">ماذا يعني</b><br>'+mpEsc(d.so_what)+'</div>' : '';
+  const disclaimer = 'تحليل معلوماتي — ليست نصيحة مالية';
 
-  // WATCH pills
-  var watch = (d.watch||[]).length
-    ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">'
-      + (d.watch||[]).map(function(w){ return '<span style="font-size:10.5px;background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:3px 9px;color:var(--text2);">'+mpEsc(w)+'</span>'; }).join('')
-      + '</div>'
-    : '';
+  try {
+    if (!FMP_KEY) return res.status(500).json({ error: 'FMP_API_KEY missing' });
 
-  var foot = '<div style="font-size:10px;color:var(--text3);border-top:1px solid var(--border);padding-top:7px;margin-top:2px;">'
-    + mpEsc(d.footer||'') + ' · ' + mpEsc(d.disclaimer||'') + ' · ' + mpEsc(d.generated_at||'')
-    + (d.cached ? ' · مخزّن' : '') + '</div>';
+    // 1) portfolio holdings
+    const pf = await ghRead(nickname === 'rashed' ? 'data/portfolio.json' : `data/portfolio-${nickname}.json`);
+    const holdings = ((pf && (pf.holdings || pf.stocks)) || [])
+      .filter(h => h && h.sym && (h.shares == null || h.shares > 0))
+      .map(h => String(h.sym).toUpperCase());
 
-  return head + strip + what + why + so + watch + foot;
-}
+    // 2) market indices (batch)
+    const idxRaw = await fmpGet(`/quote?symbol=${INDEXES.join(',')}`);
+    const idxArr = Array.isArray(idxRaw) ? idxRaw : (idxRaw ? [idxRaw] : []);
+    const market = INDEXES.map(sym => {
+      const q = idxArr.find(x => String(x.symbol).toUpperCase() === sym);
+      return { sym, dayPct: pctOf(q) };
+    });
 
-window._mpulse = window._mpulse || null;
+    // 3) holdings quotes → top movers by |dayPct|
+    const quotes = await mapLimit(holdings, 8, async sym => {
+      const q = await fmpGet(`/quote?symbol=${sym}`);
+      return { sym, dayPct: pctOf(q) };
+    });
+    const movers = quotes
+      .filter(m => m.dayPct != null)
+      .sort((a, b) => Math.abs(b.dayPct) - Math.abs(a.dayPct))
+      .slice(0, MOVERS_N);
 
-// gsItem's popupTitle mechanism snapshots the card's html ONCE, when the bento
-// string is first built (i.e. the skeleton). Since #mpBody's content changes
-// after that (on load / refresh), we re-sync window._ccReadStore.mpulse every
-// time we paint the card, so the popup (window._ccCardOpen('mpulse',...))
-// always shows what's currently on screen, not the frozen initial skeleton.
-function mpPaint(html){
-  var b = document.getElementById('mpBody');
-  if(b) b.innerHTML = html;
-  try{
-    window._ccReadStore = window._ccReadStore || {};
-    window._ccReadStore.mpulse = { title:'نبض السوق الآن', html: html };
-  }catch(e){}
-}
+    const session = usSession();
 
-// Auto-load: polls up to 10s for the card to appear in the DOM, then fills it.
-// If cached data already exists (tab re-entry), it renders instantly first.
-(function mpAutoInit(){
-  var tries = 0;
-  var t = setInterval(function(){
-    var el = document.getElementById('mpBody');
-    if(el){
-      clearInterval(t);
-      if(window._mpulse){ mpPaint(mpRenderHtml(window._mpulse)); }
-      else { window.loadPulse(false); }
-    } else if(++tries > 40){ clearInterval(t); }
-  }, 250);
-})();
-
-window.loadPulse = function(force){
-  if(force) mpPaint(mpSkeleton());
-  var nick = (window.currentNickname || window._nickname || 'rashed');
-  fetch(MP_ENDPOINT, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ mode:'pulse', nickname: nick, forceRefresh: !!force })
-  })
-  .then(function(r){
-    if(!r.ok){
-      return r.text().then(function(t){
-        throw new Error('HTTP '+r.status+': '+(t||'').slice(0,140));
-      });
+    // 4) narrative (text only) — falls back gracefully if Claude/key fails
+    let narr = { what: '', why: [], so_what: '', watch: [] };
+    if (ANTHROPIC_API_KEY && movers.length) {
+      try {
+        const parsed = parseJson(await callClaude(narrativePrompt(market, movers, session)));
+        const valid = new Set(movers.map(m => m.sym));
+        narr = {
+          what: String(parsed.what || ''),
+          so_what: String(parsed.so_what || ''),
+          watch: Array.isArray(parsed.watch) ? parsed.watch.map(String).slice(0, 4) : [],
+          why: Array.isArray(parsed.why)
+            ? parsed.why.filter(w => w && valid.has(String(w.sym).toUpperCase()))
+                        .map(w => ({ sym: String(w.sym).toUpperCase(), text: String(w.text || '') }))
+            : []
+        };
+      } catch (e) { narr.what = 'تعذّر توليد التحليل النصي مؤقتاً — الأرقام أعلاه محدّثة.'; }
     }
-    return r.json();
-  })
-  .then(function(d){ window._mpulse = d; mpPaint(mpRenderHtml(d)); })
-  .catch(function(e){ mpPaint(mpRenderHtml({ error:true, _clientError: (e && e.message) || String(e) })); });
+
+    const data = {
+      market, movers,
+      why: narr.why, what: narr.what, so_what: narr.so_what, watch: narr.watch,
+      session,
+      footer: `القرار في النهاية عندك يا ${displayName(pf, nickname)}`,
+      disclaimer,
+      generated_at: dubaiTime(),
+      cached: false
+    };
+
+    CACHE[nickname] = { at: Date.now(), data };
+    return res.status(200).json(data);
+
+  } catch (e) {
+    return res.status(500).json({ error: String(e && e.message || e).slice(0, 200) });
+  }
 };
