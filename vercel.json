@@ -26,6 +26,15 @@
     },
     "api/generate-analysis.js": {
       "maxDuration": 300
+    },
+    "api/cron-weekly.js": {
+      "maxDuration": 300
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron-weekly",
+      "schedule": "0 2 * * 0"
+    }
+  ]
 }
