@@ -4957,9 +4957,9 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
   // ── BENTO ASSEMBLY (desktop 12-col; mobile stacks via CSS) ──
   function bcell(html,span){ if(!html) return ''; return '<div style="grid-column:span '+span+';min-width:0;display:flex;flex-direction:column;" class="cc-bcell">'+html+'</div>'; }
   
-  var _gsSaved={}; try{ _gsSaved=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
-  var _gsDefaults={market:{x:0,y:0,w:4,h:6},opp:{x:4,y:0,w:2,h:6},today:{x:6,y:0,w:6,h:6},review:{x:0,y:6,w:3,h:6},mc:{x:3,y:6,w:3,h:6},exposure:{x:6,y:6,w:2,h:8},pulse:{x:8,y:6,w:2,h:8},fg:{x:10,y:6,w:2,h:8},hz:{x:0,y:12,w:2,h:6},news:{x:2,y:12,w:4,h:6},movers:{x:6,y:14,w:6,h:4}};
-  _gsDefaults.mpulse = { x:0, y:0, w:4, h:6 };
+  var _gsSaved={}; try{ _gsSaved=JSON.parse(localStorage.getItem('theisi_cc_layout_v2')||'{}'); }catch(e){}
+  var _gsDefaults={market:{x:0,y:9,w:4,h:6},opp:{x:4,y:9,w:2,h:6},today:{x:6,y:9,w:6,h:6},review:{x:0,y:15,w:3,h:6},mc:{x:3,y:15,w:3,h:6},exposure:{x:6,y:15,w:2,h:8},pulse:{x:8,y:15,w:2,h:8},fg:{x:10,y:15,w:2,h:8},hz:{x:0,y:21,w:2,h:6},news:{x:2,y:21,w:4,h:6},movers:{x:6,y:23,w:6,h:4}};
+  _gsDefaults.mpulse = { x:0, y:0, w:12, h:9 };
   function gsItem(id,html,popupTitle){
     if(!html) return '';
     var p=_gsSaved[id]; if(p&&(p.w==null||p.w<2)) p=null;
@@ -5141,10 +5141,10 @@ window.loadPulse = function(force){
       window._ccGS=GridStack.init({column:12,cellHeight:30,margin:6,float:false,animate:false,staticGrid:true,disableDrag:true,disableResize:true,resizable:{handles:''},columnOpts:{breakpoints:[{w:1100,c:1}]}},document.getElementById('ccBento'));
       window._ccGS.on('change',function(ev,items){
         if(window._ccGS.getColumn&&window._ccGS.getColumn()<12) return;
-        var m={}; try{ m=JSON.parse(localStorage.getItem('theisi_cc_layout')||'{}'); }catch(e){}
+        var m={}; try{ m=JSON.parse(localStorage.getItem('theisi_cc_layout_v2')||'{}'); }catch(e){}
         
         window._ccGS.engine.nodes.forEach(function(n){ if(n.id) m[n.id]={x:n.x,y:n.y,w:n.w,h:n.h}; });
-        localStorage.setItem('theisi_cc_layout',JSON.stringify(m));
+        localStorage.setItem('theisi_cc_layout_v2',JSON.stringify(m));
       });
     }
   }catch(e){ console.warn('gridstack init',e); }
