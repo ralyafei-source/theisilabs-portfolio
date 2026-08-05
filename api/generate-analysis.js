@@ -178,6 +178,8 @@ async function callClaude(prompt) {
   return d.content?.[0]?.text || '';
 }
 
+const { percentileRead, crossSectional, normalRank } = require('./_lib/percentile-read');
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -216,16 +218,19 @@ module.exports = async function handler(req, res) {
       const quotes={};
       await Promise.all(baseHold.map(async h=>{
         try{
-          const r=await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(h.sym)}?interval=1d&range=1mo`,{headers:{'User-Agent':'Mozilla/5.0'}});
+          const r=await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(h.sym)}?interval=1d&range=1y`,{headers:{'User-Agent':'Mozilla/5.0'}});
           if(!r.ok) return;
           const d=await r.json(); const rs=d?.chart?.result?.[0]; const meta=rs?.meta;
           // Self-compute from the close array — do NOT trust chartPreviousClose (SSOT §6).
           const cl=(rs?.indicators?.quote?.[0]?.close||[]).filter(v=>v!=null);
           const px=meta?.regularMarketPrice ?? cl[cl.length-1] ?? null;
+          const avg=n=>cl.length>=n?cl.slice(-n).reduce((a,b)=>a+b,0)/n:null;
           if(meta) quotes[h.sym]={
             price: px,
-            prev:  cl.length>=2 ? cl[cl.length-2] : null,
-            wk:    cl.length>=6 ? cl[cl.length-6] : null   // 5 trading days back
+            prev:  cl.length>=2  ? cl[cl.length-2]  : null,
+            wk:    cl.length>=6  ? cl[cl.length-6]  : null,   // 5 trading days back
+            q3:    cl.length>=64 ? cl[cl.length-64] : null,   // ~63 trading days back
+            sma50: avg(50), sma200: avg(200)                  // same call, no extra fetch
           };
         }catch(e){}
       }));
@@ -236,7 +241,9 @@ module.exports = async function handler(req, res) {
         const glPct=h.cost?((price-h.cost)/h.cost*100):0;
         const dayPct=q.prev?+(((price-q.prev)/q.prev)*100).toFixed(2):null;
         const weekPct=q.wk?+(((price-q.wk)/q.wk)*100).toFixed(2):null;
-        return { sym:h.sym, sector:h.sector||null, shares:h.shares, cost:h.cost, livePrice:price, value, glPct, dayPct, weekPct };
+        const ret3m=q.q3?+(((price-q.q3)/q.q3)*100).toFixed(2):null;
+        return { sym:h.sym, sector:h.sector||null, shares:h.shares, cost:h.cost, livePrice:price, value,
+                 glPct, dayPct, weekPct, ret3m, sma50:q.sma50??null, sma200:q.sma200??null };
       });
       const totalValue=holdings.reduce((a,h)=>a+(h.value||0),0);
       const saMap=saRowMap(sa);
@@ -253,6 +260,32 @@ module.exports = async function handler(req, res) {
       const shown=new Set(selected.map(r=>r.sym));
       const silent=rows.filter(r=>r.verdict==='hold');              // no signals at all
       const cut=rows.filter(r=>!shown.has(r.sym)&&r.verdict!=='hold'); // had signals, lost to the top-10 cap
+      // ── PRICE READ (section 8 of SSOT) — computed for ALL holdings, shown on some.
+      // Logging every holding every week is the dataset that lets this be TESTED in
+      // ~6 months (percentile band vs forward return). Free now, unreconstructable later.
+      let readLog=[];
+      try {
+        const dists = await ghRead('data/distributions.json');
+        if (dists) {
+          const cross = crossSectional(holdings.map(h=>({sym:h.sym, price:h.livePrice,
+            sma50:h.sma50, sma200:h.sma200, ret3m:h.ret3m})));
+          const byS = Object.fromEntries(holdings.map(h=>[h.sym,h]));
+          rows.forEach(r=>{
+            const h=byS[r.sym]; if(!h) return;
+            const rd = percentileRead({
+              sym:r.sym, price:h.livePrice, sma50:h.sma50, sma200:h.sma200, ret3m:h.ret3m,
+              dist: dists[r.sym] || {}, crossPct: cross[r.sym] || null,
+              normalRank: normalRank(r.sym, dists)
+            });
+            if (rd && rd.show) r.read = rd;               // rendered on the card
+            readLog.push({ sym:r.sym, zone:rd?.zone||null, driver:rd?.driver||null,
+              value:rd?.value??null, normal:rd?.normal??null, self:rd?.self_pct??null,
+              cross:rd?.cross_pct??null, nrank:rd?.normal_rank??null,
+              regime:!!rd?.regime_flag, price:h.livePrice });
+          });
+        }
+      } catch(e) { readLog=[]; }
+
       const portfolioStats={ total_value:Math.round(totalValue), holdings:rows.length,
         tech_concentration_pct:totalValue?+((techValue/totalValue)*100).toFixed(1):null,
         review_count:selected.filter(r=>r.verdict==='review').length,
@@ -287,6 +320,7 @@ module.exports = async function handler(req, res) {
           ].filter(Boolean).join('. ')
         }),
         summary:cj.summary||'', stocks:stocksOut, clusters, hedge:cj.hedge||'',
+        price_reads: readLog,        // ALL holdings, incl. ones not shown — for future testing
         stress:[{scenario:'تصحيح تقنية -20%', impact_usd:-portfolioStats.stress_tech_minus20}],
         generated:new Date().toISOString() };
       const filePath=`data/analysis-weekly-${nickname}-${today}.json`;
@@ -331,6 +365,21 @@ module.exports = async function handler(req, res) {
       rows.sort((a,b)=>(b.value||0)-(a.value||0));
       const selected=rows.slice(0,12);
       const techValue=rows.filter(r=>/tech/i.test(r.sector||'')).reduce((a,r)=>a+(r.value||0),0);
+      // Monthly is a LONG-horizon report: a 3-month percentile is the wrong timescale
+      // and would contradict the moat framing. Only the regime fact carries over —
+      // "this stock's own normal is extreme" is a long-horizon statement.
+      let regimeNotes=[];
+      try {
+        const dists = await ghRead('data/distributions.json');
+        if (dists) rows.forEach(r=>{
+          const nr = normalRank(r.sym, dists), d = dists[r.sym];
+          if (!nr || !d || !d.normal) return;
+          const k = nr.sma200!=null ? 'sma200' : (nr.sma50!=null ? 'sma50' : null);
+          if (k && nr[k] >= 85) regimeNotes.push({ sym:r.sym, metric:k,
+            normal:d.normal[k], normal_rank:nr[k] });
+        });
+      } catch(e) { regimeNotes=[]; }
+
       const portfolioStats={ total_value:Math.round(totalValue), holdings:rows.length,
         tech_concentration_pct:totalValue?+((techValue/totalValue)*100).toFixed(1):null };
       const asOf={prices:today, sa:(sa&&sa.date)||'غير معروف'};
@@ -347,6 +396,7 @@ module.exports = async function handler(req, res) {
           biggest_risk:cj.biggest_risk||'' },
         summary:cj.summary||'', long_view:cj.long_view||'', health:cj.health||'',
         stocks:stocksOut, clusters:[], hedge:'', stress:[],
+        regime_notes: regimeNotes,   // long-horizon only — no short-horizon percentile in monthly
         generated:new Date().toISOString() };
       const filePath=`data/analysis-monthly-${nickname}-${today.slice(0,7)}.json`;
       const ok=await ghWrite(filePath, doc);
