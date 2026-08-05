@@ -7315,7 +7315,40 @@ function _sigSynthesis(reads, agree, isAr){
   return parts.join(' ');
 }
 
-
+// ── Entry-risk block — renders ONLY numbers computed server-side ───────────
+function erRender(er){
+  if(!er || er.score==null) return '';
+  var b=er.band;
+  var bars=er.factors.map(function(f){
+    if(f.risk==null) return '';
+    return '<div style="margin-bottom:10px;">'
+      +'<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--text2);margin-bottom:4px;">'
+        +'<span>'+f.label_ar+' <span style="color:var(--text3);font-size:10px;">('+f.weight_used_pct+'%)</span></span>'
+        +'<span style="font-family:\'IBM Plex Mono\',monospace;color:'+b.color+';">'+f.risk_pct+'</span></div>'
+      +'<div style="height:5px;background:var(--bg3);border-radius:99px;overflow:hidden;">'
+        +'<div style="height:100%;width:'+f.risk_pct+'%;background:'+b.color+';border-radius:99px;"></div></div>'
+      +(f.detail_ar?'<div style="font-size:10.5px;color:var(--text3);margin-top:4px;">'+f.detail_ar+'</div>':'')
+    +'</div>';
+  }).join('');
+  var conf=(er.conflicts&&er.conflicts.length)
+    ? '<div style="margin-top:12px;padding:10px 12px;background:var(--bg3);border-radius:10px;border-inline-start:2px solid var(--gold,#fbbf24);font-size:11.5px;color:var(--text2);line-height:1.9;">'
+      +er.conflicts.map(function(c){return '\u26a1 '+c;}).join('<br>')+'</div>' : '';
+  var miss=er.coverage_pct<100
+    ? '<div style="font-size:10.5px;color:var(--text3);margin-top:8px;">\u0645\u0628\u0646\u064a \u0639\u0644\u0649 '+er.coverage_pct+'% \u0645\u0646 \u0627\u0644\u0639\u0648\u0627\u0645\u0644 \u2014 \u0627\u0644\u0628\u0627\u0642\u064a \u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631</div>' : '';
+  return '<div dir="rtl" style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-top:16px;font-family:\'Almarai\',sans-serif;">'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:12px;">'
+      +'<div><div style="font-size:14px;font-weight:700;color:var(--text);">\u0642\u0631\u0627\u0621\u0629 \u0645\u062e\u0627\u0637\u0631 \u0627\u0644\u062f\u062e\u0648\u0644</div>'
+      +'<div style="font-size:11px;color:var(--text3);margin-top:3px;line-height:1.7;">'+er.means_ar+'</div></div>'
+      +'<div style="text-align:center;flex-shrink:0;">'
+        +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:28px;font-weight:700;line-height:1;color:'+b.color+';">'+er.score+'</div>'
+        +'<div style="font-size:10.5px;color:'+b.color+';margin-top:4px;">'+b.ar+'</div></div>'
+    +'</div>'
+    +bars+conf+miss
+    +'<div style="font-size:10px;color:var(--text3);margin-top:12px;line-height:1.8;border-top:1px solid var(--border);padding-top:10px;">'
+      +er.method_ar+'<br>'+er.caveat_ar+'</div>'
+  +'</div>';
+}
+  
 // ── Derived: Volatility/Risk read ──
 function _lkRiskRead(d){
   // PEG component
@@ -7740,6 +7773,13 @@ async function lookupStock() {
     document.getElementById('lookup-data-card').insertAdjacentHTML('afterbegin', decisionPanel);
     // ── End Decision Dashboard Panel ─────────────────────────────────────
 
+    // ── Entry-risk read, under the decision panel ────────────────────────
+    try{
+      var _dp = document.querySelector('.lk-decision-panel');
+      var _er = erRender(d.entry_risk);
+      if(_dp && _er) _dp.insertAdjacentHTML('afterend', _er);
+    }catch(e){}
+    
     // Render price chart into the decision panel (if API provided history)
     if (d.priceHistory?.length) {
       const chartTarget = document.getElementById('lk-chart-wrap-dp');
