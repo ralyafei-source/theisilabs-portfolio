@@ -8144,6 +8144,32 @@ function adv2VerdictChip(v){
   var m={review:['\u0645\u0631\u0627\u062c\u0639\u0629','rgba(239,68,68,.14)','#f87171'],watch:['\u0631\u0627\u0642\u0628','rgba(245,158,11,.14)','#fbbf24'],strong:['\u0642\u0648\u064a','rgba(16,185,129,.14)','#34d399'],hold:['\u0627\u062d\u062a\u0641\u0638','rgba(59,130,246,.14)','#60a5fa']}[v]||['—','var(--bg2)','var(--text2)'];
   return '<span style="font-size:10.5px;font-weight:700;border-radius:12px;padding:2px 10px;background:'+m[1]+';color:'+m[2]+';">'+m[0]+'</span>';
 }
+// Full price read for the card popup — same four lines as Explore.
+function adv2ReadFull(r){
+  if(!r || !r.show || !r.text) return '';
+  var t=r.text;
+  var row=function(l,x,c){ return x?'<div style="margin-bottom:8px;"><div style="font-size:10px;color:var(--text3);margin-bottom:2px;">'+l+'</div><div style="font-size:11.5px;line-height:1.9;color:'+(c||'var(--text2)')+';">'+x+'</div></div>':''; };
+  return '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">'
+    +'<div style="font-size:11.5px;font-weight:700;margin-bottom:8px;">\u0642\u0631\u0627\u0621\u0629 \u0645\u0648\u0642\u0639 \u0627\u0644\u0633\u0639\u0631</div>'
+    +row('\u0627\u0644\u062d\u0627\u0644\u0629', t.state_ar, 'var(--text)')
+    +row('\u0627\u0644\u0623\u0631\u0642\u0627\u0645', t.numbers_ar)
+    +row('\u0645\u0639\u0646\u0627\u0647\u0627', t.meaning_ar)
+    +row('\u0645\u0627 \u0645\u0639\u0646\u0627\u0647\u0627', t.not_meaning_ar, 'var(--gold,#fbbf24)')
+    +(t.regime_ar?'<div style="background:var(--bg3);border-radius:9px;padding:8px 10px;font-size:11px;line-height:1.9;color:var(--text2);margin-bottom:8px;">\u26a0 '+t.regime_ar+'</div>':'')
+    +'<div style="font-size:9.5px;color:var(--text3);line-height:1.75;">'+t.method_ar+'<br>'+t.caveat_ar+'</div>'
+  +'</div>';
+}
+// One-line price read on an advisor card. Full four-line text is in the popup.
+// Renders only what the server computed — no numbers or sentences invented here.
+function adv2ReadLine(r){
+  if(!r || !r.show || !r.text) return '';
+  var c = r.regime_flag ? 'var(--red,#e5484d)'
+        : r.zone==='very_high' ? 'var(--red,#e5484d)'
+        : r.zone==='high' ? 'var(--gold,#fbbf24)'
+        : 'var(--blue,#00c8ff)';
+  return '<div style="margin-top:7px;padding-top:7px;border-top:1px dashed var(--border);'
+    +'font-size:10.5px;line-height:1.85;color:'+c+';">\u2295 '+r.text.one_line_ar+'</div>';
+}
 function adv2StockCard(s){
   var mono="font-family:'IBM Plex Mono',monospace;direction:ltr;unicode-bidi:isolate;";
   var glc=s.glPct>=0?'#34d399':'#f87171';
@@ -8161,6 +8187,7 @@ function adv2StockCard(s){
       +'<span style="font-size:10.5px;color:var(--text3);margin-inline-start:auto;"><span style="'+mono+'">$'+Math.round(s.value/1000)+'K</span> \u00b7 '+(s.weight!=null?s.weight+'%':'')+'</span>'
     +'</div>'
     +'<div style="font-size:12px;line-height:1.95;color:var(--text2);">'+(s.thesis||'')+'</div>'
+    +adv2ReadLine(s.read)
     +(s.watch?'<div style="font-size:10.5px;color:var(--gold,#fbbf24);margin-top:6px;">\u26a1 '+s.watch+'</div>':'')
     +(tgt?'<div style="margin-top:5px;">'+tgt+'</div>':'')
   +'</div>';
@@ -8179,7 +8206,8 @@ function adv2RenderStructured(doc){
   (doc.stocks||[]).forEach(function(s){
     window._adv2CardDetail[s.sym]='<div style="font-size:12.5px;line-height:2;color:var(--text);">'
       +'<div style="margin-bottom:8px;">'+adv2VerdictChip(s.verdict)+' \u00b7 \u0623\u0633\u0628\u0627\u0628 \u0622\u0644\u064a\u0629: <span style="font-family:monospace;font-size:11px;direction:ltr;unicode-bidi:isolate;">'+(s.reasons||[]).join(', ')+'</span></div>'
-      +(s.thesis||'')+(s.watch?'<div style="color:#fbbf24;margin-top:8px;">\u26a1 '+s.watch+'</div>':'')+'</div>';
+      +(s.thesis||'')+(s.watch?'<div style="color:#fbbf24;margin-top:8px;">\u26a1 '+s.watch+'</div>':'')
+      +adv2ReadFull(s.read)+'</div>';
   });
   var order={review:0,watch:1,strong:2,hold:3};
   var stocks=(doc.stocks||[]).slice().sort(function(a,b){return (order[a.verdict]||9)-(order[b.verdict]||9)||(b.value||0)-(a.value||0);});
@@ -8201,7 +8229,10 @@ function adv2RenderStructured(doc){
   var cards='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:20px;">'+shown.map(adv2StockCard).join('')+'</div>';
   var clusters=(doc.clusters&&doc.clusters.length)?'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 15px;"><div style="font-size:12px;font-weight:700;margin-bottom:8px;">\u0627\u0644\u0645\u062c\u0645\u0648\u0639\u0627\u062a \u0627\u0644\u0645\u062a\u0631\u0627\u0628\u0637\u0629</div>'+doc.clusters.map(function(c){return '<div style="font-size:11.5px;line-height:1.9;color:var(--text2);margin-bottom:6px;"><b>'+c.name+'</b> <span style="font-family:monospace;font-size:10.5px;direction:ltr;unicode-bidi:isolate;">'+(c.syms||[]).join('\u00b7')+'</span> \u2014 $'+Math.round((c.value||0)/1000)+'K<br><span style="color:var(--text3);">'+(c.note||'')+'</span></div>';}).join('')+'</div>':'';
   var stress=(doc.stress&&doc.stress.length)?'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 15px;"><div style="font-size:12px;font-weight:700;margin-bottom:8px;">\u0627\u062e\u062a\u0628\u0627\u0631 \u0627\u0644\u0625\u062c\u0647\u0627\u062f</div>'+doc.stress.map(function(s){return '<div style="font-size:11.5px;color:var(--text2);line-height:1.9;">'+s.scenario+' \u2192 <span style="font-family:monospace;color:#f87171;direction:ltr;unicode-bidi:isolate;">-$'+Math.abs(Math.round((s.impact_usd||0)/1000))+'K</span></div>';}).join('')+(doc.hedge?'<div style="font-size:11px;color:var(--text3);margin-top:8px;">'+doc.hedge+'</div>':'')+'</div>':'';
-  var summary=doc.summary?'<div style="background:var(--bg2);border:1px solid rgba(255,10,120,.25);border-radius:12px;padding:14px 16px;font-size:12.5px;line-height:2;margin-bottom:14px;">'+doc.summary+'</div>':'';
+  var _sn=(doc.verdict&&doc.verdict.silent_note_ar)||'';
+  var summary=doc.summary?'<div style="background:var(--bg2);border:1px solid rgba(255,10,120,.25);border-radius:12px;padding:14px 16px;font-size:12.5px;line-height:2;margin-bottom:14px;">'+doc.summary
+    +(_sn?'<div style="margin-top:10px;padding-top:9px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.9;">'+_sn+'</div>':'')
+    +'</div>':'';
   var lv=doc.long_view?'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 15px;"><div style="font-size:12px;font-weight:700;margin-bottom:8px;">النظرة البعيدة — سنة+</div><div style="font-size:12px;line-height:1.95;color:var(--text2);">'+doc.long_view+'</div></div>':'';
   var hp=doc.health?'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 15px;"><div style="font-size:12px;font-weight:700;margin-bottom:8px;">صحة المحفظة</div><div style="font-size:12px;line-height:1.95;color:var(--text2);">'+doc.health+'</div></div>':'';
   box.innerHTML='<div dir="rtl" style="text-align:right;">'+strip+summary+pills+cards+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'+clusters+stress+lv+hp+'</div></div>';
