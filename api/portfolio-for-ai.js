@@ -42,10 +42,15 @@ async function ghWriteJson(path, data) {
   return r.ok;
 }
 
-// ─── ~3y of daily closes, NEWEST FIRST (percentile-read expects this order) ──
+// ─── Daily closes, NEWEST FIRST (percentile-read expects this order) ────────
+// One retry — FMP rate-limits under concurrency and returns null silently.
 async function closeHistory(sym, days) {
   const from = new Date(Date.now() - (days || 1150) * 86400000).toISOString().slice(0, 10);
-  const raw  = await fmpGet(`/historical-price-eod/light?symbol=${sym}&from=${from}`);
+  let raw = await fmpGet(`/historical-price-eod/light?symbol=${sym}&from=${from}`);
+  if (!Array.isArray(raw) || !raw.length) {
+    await new Promise(r => setTimeout(r, 700));
+    raw = await fmpGet(`/historical-price-eod/light?symbol=${sym}&from=${from}`);
+  }
   const rows = (Array.isArray(raw) ? raw : []).slice()
     .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
   return rows.map(r => r.price ?? r.close).filter(v => v != null).map(Number);
@@ -806,7 +811,7 @@ module.exports = async (req, res) => {
       if (!sym) return res.status(400).json({ error: 'missing sym' });
 
       const [quoteA, profileA, kmA, ptcA, ratingA, dcfA, growthA,
-             sma50A, sma200A, closes] = await Promise.all([
+             sma50A, sma200A] = await Promise.all([
         fmpGet(`/quote?symbol=${sym}`),
         fmpGet(`/profile?symbol=${sym}`),
         fmpGet(`/key-metrics-ttm?symbol=${sym}`),
@@ -815,8 +820,7 @@ module.exports = async (req, res) => {
         fmpGet(`/discounted-cash-flow?symbol=${sym}`),
         fmpGet(`/financial-growth?symbol=${sym}&limit=1`),
         fmpGet(`/technical-indicators/sma?symbol=${sym}&periodLength=50&timeframe=1day&limit=1`),
-        fmpGet(`/technical-indicators/sma?symbol=${sym}&periodLength=200&timeframe=1day&limit=1`),
-        closeHistory(sym)
+        fmpGet(`/technical-indicators/sma?symbol=${sym}&periodLength=200&timeframe=1day&limit=1`)
       ]);
 
       const q  = Array.isArray(quoteA)   ? quoteA[0]   : quoteA;
@@ -896,11 +900,15 @@ module.exports = async (req, res) => {
       // Explore is single-symbol, so there is no cross-sectional peer set here —
       // self-percentile only. The weekly analysis supplies crossPct.
       try {
-        let dist = null, nRank = null;
+        let dist = null, nRank = null, closes = [];
         const cache = await ghReadJson('data/distributions.json');
-        if (cache && cache[sym]) { dist = cache[sym]; nRank = normalRank(sym, cache); }
-        if (!dist) {
-          dist = buildBreakpoints(closes);            // live fallback, uncached symbol
+        if (cache && cache[sym]) {
+          dist  = cache[sym];                         // cached: NO history fetch at all
+          nRank = normalRank(sym, cache);
+          closes = await closeHistory(sym, 130);      // ~90 trading days, just for ret3m
+        } else {
+          closes = await closeHistory(sym);           // uncached: full ~3y, once
+          dist = buildBreakpoints(closes);
           if (cache) { const tmp = Object.assign({}, cache, { [sym]: dist }); nRank = normalRank(sym, tmp); }
         }
         const px3m = closes[63] ?? null;
