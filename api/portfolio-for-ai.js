@@ -95,7 +95,7 @@ module.exports = async (req, res) => {
   // ?syms=A,B  optional override · ?chunk=0&size=60 to split across calls
   // ══════════════════════════════════════════════════════════════════
   if (req.query.mode === 'build-distributions') {
-    if (key !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    if (key !== API_KEY && req.query.key !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
     try {
       let syms = (req.query.syms || '').split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
       if (!syms.length) {
