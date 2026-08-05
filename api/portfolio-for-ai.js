@@ -5,11 +5,51 @@
 // Default (no nickname): reads Rashed's portfolio.json
 
 const REPO    = 'ralyafei-source/theisilabs-portfolio';
-const { entryRisk } = require('./_lib/entry-risk');
 const UA      = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
 const API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
 const FMP_KEY = process.env.FMP_API_KEY;
 const FMP     = 'https://financialmodelingprep.com/stable';
+
+const { buildBreakpoints, percentileRead, crossSectional } = require('./_lib/percentile-read');
+
+// ─── GitHub JSON read / write (distributions cache) ─────────────────────────
+async function ghReadJson(path) {
+  try {
+    const r = await fetch(`https://raw.githubusercontent.com/${REPO}/main/${path}?t=${Date.now()}`);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+async function ghWriteJson(path, data) {
+  const TOKEN = process.env.GITHUB_TOKEN;
+  if (!TOKEN) return false;
+  let sha = null;
+  try {
+    const c = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,
+      { headers: { Authorization: `token ${TOKEN}`, 'User-Agent': 'theisilabs-app' } });
+    if (c.ok) sha = (await c.json()).sha;
+  } catch {}
+  const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
+    method: 'PUT',
+    headers: { Authorization: `token ${TOKEN}`, 'User-Agent': 'theisilabs-app', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: `Update ${path}`,
+      content: Buffer.from(JSON.stringify(data)).toString('base64'),
+      ...(sha && { sha })
+    })
+  });
+  return r.ok;
+}
+
+// ─── ~3y of daily closes, NEWEST FIRST (percentile-read expects this order) ──
+async function closeHistory(sym, days) {
+  const from = new Date(Date.now() - (days || 1150) * 86400000).toISOString().slice(0, 10);
+  const raw  = await fmpGet(`/historical-price-eod/light?symbol=${sym}&from=${from}`);
+  const rows = (Array.isArray(raw) ? raw : []).slice()
+    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  return rows.map(r => r.price ?? r.close).filter(v => v != null).map(Number);
+}
 
 // ─── FMP helper ──────────────────────────────────────────────────────────────
 async function fmpGet(path) {
@@ -30,22 +70,6 @@ function daysAheadUAE(n) {
   return new Date(Date.now() + 4 * 3600 * 1000 + n * 86400000).toISOString().slice(0, 10);
 }
 
-// ─── Latest SA "Valuation Grade" for one symbol (scans back 30 days) ─────────
-async function saValuationGrade(sym) {
-  try {
-    for (let o = 0; o < 30; o++) {
-      const d = new Date(Date.now() + 4*3600000 - o*86400000).toISOString().slice(0,10);
-      const r = await fetch(`https://raw.githubusercontent.com/${REPO}/main/data/sa-portfolio-${d}.json?t=${Date.now()}`);
-      if (!r.ok) continue;
-      const sa = await r.json();
-      const row = [...(sa.stocks||[]), ...(sa.etfs||[])]
-        .find(x => String(x.symbol || x.sym || '').toUpperCase() === sym);
-      return row ? (row['Valuation Grade'] || null) : null;
-    }
-  } catch {}
-  return null;
-}
-
 // ─── Extract latest value from FMP indicator response ────────────────────────
 function latest(arr, field) {
   if (!Array.isArray(arr) || arr.length === 0) return null;
@@ -62,6 +86,55 @@ module.exports = async (req, res) => {
   const key = authHeader.replace('Bearer ', '').trim();
   if (key && key !== API_KEY) {
     return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // mode=build-distributions — weekly job (922). Writes data/distributions.json
+  // Stores ONLY percentile breakpoints + each stock's own "normal" value.
+  // Raw history is never stored. Rebuilt from scratch every run (no drift).
+  // ?syms=A,B  optional override · ?chunk=0&size=60 to split across calls
+  // ══════════════════════════════════════════════════════════════════
+  if (req.query.mode === 'build-distributions') {
+    if (key !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      let syms = (req.query.syms || '').split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+      if (!syms.length) {
+        const pf = await ghReadJson('data/portfolio.json');
+        syms = ((pf && (pf.holdings || pf.stocks)) || [])
+          .filter(h => h && h.sym && h.shares > 0)
+          .map(h => String(h.sym).toUpperCase());
+        syms = [...new Set(syms)];
+      }
+      const size  = Math.min(+req.query.size || 60, 120);
+      const chunk = +req.query.chunk || 0;
+      const slice = syms.slice(chunk * size, (chunk + 1) * size);
+      if (!slice.length) return res.status(200).json({ done: true, total: syms.length, chunk });
+
+      const existing = (chunk > 0 ? await ghReadJson('data/distributions.json') : null) || {};
+      const out = Object.assign({}, existing);
+      const failed = [];
+
+      for (let i = 0; i < slice.length; i += 8) {
+        const batch = slice.slice(i, i + 8);
+        await Promise.all(batch.map(async sym => {
+          try {
+            const closes = await closeHistory(sym);
+            if (!closes.length) { failed.push(sym); return; }
+            out[sym] = buildBreakpoints(closes);
+          } catch (e) { failed.push(sym); }
+        }));
+      }
+
+      out._meta = { updated: todayUAE(), symbols: Object.keys(out).filter(k => k[0] !== '_').length };
+      const ok = await ghWriteJson('data/distributions.json', out);
+      const more = (chunk + 1) * size < syms.length;
+      return res.status(200).json({
+        saved: ok, chunk, built: slice.length - failed.length, failed,
+        total: syms.length, next_chunk: more ? chunk + 1 : null, done: !more
+      });
+    } catch (e) {
+      return res.status(500).json({ error: 'build-distributions failed', detail: String(e).slice(0, 300) });
+    }
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -733,7 +806,7 @@ module.exports = async (req, res) => {
       if (!sym) return res.status(400).json({ error: 'missing sym' });
 
       const [quoteA, profileA, kmA, ptcA, ratingA, dcfA, growthA,
-             rsiA, sma50A, sma200A, histA, saGrade] = await Promise.all([
+             sma50A, sma200A, closes] = await Promise.all([
         fmpGet(`/quote?symbol=${sym}`),
         fmpGet(`/profile?symbol=${sym}`),
         fmpGet(`/key-metrics-ttm?symbol=${sym}`),
@@ -741,11 +814,9 @@ module.exports = async (req, res) => {
         fmpGet(`/ratings-snapshot?symbol=${sym}`),
         fmpGet(`/discounted-cash-flow?symbol=${sym}`),
         fmpGet(`/financial-growth?symbol=${sym}&limit=1`),
-        fmpGet(`/technical-indicators/rsi?symbol=${sym}&periodLength=14&timeframe=1day&limit=1`),
         fmpGet(`/technical-indicators/sma?symbol=${sym}&periodLength=50&timeframe=1day&limit=1`),
         fmpGet(`/technical-indicators/sma?symbol=${sym}&periodLength=200&timeframe=1day&limit=1`),
-        fmpGet(`/historical-price-eod/light?symbol=${sym}&from=${new Date(Date.now()-400*86400000).toISOString().slice(0,10)}`),
-        saValuationGrade(sym)
+        closeHistory(sym)
       ]);
 
       const q  = Array.isArray(quoteA)   ? quoteA[0]   : quoteA;
@@ -820,32 +891,27 @@ module.exports = async (req, res) => {
         });
       }
 
-      // ── Entry-risk read — deterministic, see api/_lib/entry-risk.js ──────
-      // Runs AFTER the sanity gate so it never scores a value the gate rejected.
+      // ── Price read — "وين السعر مقارنة بمعتاده؟" (api/_lib/percentile-read.js)
+      // Runs AFTER the sanity gate so it never reads a value the gate rejected.
+      // Explore is single-symbol, so there is no cross-sectional peer set here —
+      // self-percentile only. The weekly analysis supplies crossPct.
       try {
-        const rows   = (Array.isArray(histA) ? histA : []).slice()
-                         .sort((a,b) => String(b.date||'').localeCompare(String(a.date||'')));
-        const closes = rows.map(r => r.price ?? r.close).filter(v => v != null).map(Number);
-        const px     = data.price;
-        const px3m   = closes[63]  ?? null;   // ~63 trading days
-        const px6m   = closes[126] ?? null;
-        const yr     = closes.slice(0, 252);
-        data.entry_risk = entryRisk({
-          price:  px,
-          chg3m:  (px && px3m) ? ((px - px3m) / px3m) * 100 : null,
-          chg6m:  (px && px6m) ? ((px - px6m) / px6m) * 100 : null,
-          sma50:  latest(sma50A, 'sma'),
+        let dist = null;
+        const cache = await ghReadJson('data/distributions.json');
+        if (cache && cache[sym]) dist = cache[sym];
+        if (!dist) dist = buildBreakpoints(closes);   // live fallback, first lookup only
+        const px3m = closes[63] ?? null;
+        data.price_read = percentileRead({
+          sym,
+          price:  data.price,
+          sma50:  latest(sma50A,  'sma'),
           sma200: latest(sma200A, 'sma'),
-          high52: yr.length ? Math.max(...yr) : null,
-          low52:  yr.length ? Math.min(...yr) : null,
-          valuationGrade: saGrade,
-          pe:  data.pe,
-          peg: data.peg,
-          analystTarget: data.targetMean,
-          rsi: latest(rsiA, 'rsi')
+          ret3m:  (data.price && px3m) ? ((data.price - px3m) / px3m) * 100 : null,
+          dist,
+          crossPct: null
         });
-      } catch (e) { data.entry_risk = null; }
-      
+      } catch (e) { data.price_read = null; }
+
       const missing = ['price','companyName'].filter(k => data[k] == null);
       const confidence = missing.length ? 'low' : (flags.length ? 'medium' : 'high');
 
