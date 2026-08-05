@@ -5,6 +5,7 @@
 // Default (no nickname): reads Rashed's portfolio.json
 
 const REPO    = 'ralyafei-source/theisilabs-portfolio';
+const { entryRisk } = require('./_lib/entry-risk');
 const UA      = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
 const API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
 const FMP_KEY = process.env.FMP_API_KEY;
@@ -27,6 +28,22 @@ function todayUAE() {
 
 function daysAheadUAE(n) {
   return new Date(Date.now() + 4 * 3600 * 1000 + n * 86400000).toISOString().slice(0, 10);
+}
+
+// ─── Latest SA "Valuation Grade" for one symbol (scans back 30 days) ─────────
+async function saValuationGrade(sym) {
+  try {
+    for (let o = 0; o < 30; o++) {
+      const d = new Date(Date.now() + 4*3600000 - o*86400000).toISOString().slice(0,10);
+      const r = await fetch(`https://raw.githubusercontent.com/${REPO}/main/data/sa-portfolio-${d}.json?t=${Date.now()}`);
+      if (!r.ok) continue;
+      const sa = await r.json();
+      const row = [...(sa.stocks||[]), ...(sa.etfs||[])]
+        .find(x => String(x.symbol || x.sym || '').toUpperCase() === sym);
+      return row ? (row['Valuation Grade'] || null) : null;
+    }
+  } catch {}
+  return null;
 }
 
 // ─── Extract latest value from FMP indicator response ────────────────────────
@@ -715,14 +732,20 @@ module.exports = async (req, res) => {
       const sym = (req.query.sym || '').toString().trim().toUpperCase();
       if (!sym) return res.status(400).json({ error: 'missing sym' });
 
-      const [quoteA, profileA, kmA, ptcA, ratingA, dcfA, growthA] = await Promise.all([
+      const [quoteA, profileA, kmA, ptcA, ratingA, dcfA, growthA,
+             rsiA, sma50A, sma200A, histA, saGrade] = await Promise.all([
         fmpGet(`/quote?symbol=${sym}`),
         fmpGet(`/profile?symbol=${sym}`),
         fmpGet(`/key-metrics-ttm?symbol=${sym}`),
         fmpGet(`/price-target-consensus?symbol=${sym}`),
         fmpGet(`/ratings-snapshot?symbol=${sym}`),
         fmpGet(`/discounted-cash-flow?symbol=${sym}`),
-        fmpGet(`/financial-growth?symbol=${sym}&limit=1`)
+        fmpGet(`/financial-growth?symbol=${sym}&limit=1`),
+        fmpGet(`/technical-indicators/rsi?symbol=${sym}&periodLength=14&timeframe=1day&limit=1`),
+        fmpGet(`/technical-indicators/sma?symbol=${sym}&periodLength=50&timeframe=1day&limit=1`),
+        fmpGet(`/technical-indicators/sma?symbol=${sym}&periodLength=200&timeframe=1day&limit=1`),
+        fmpGet(`/historical-price-eod/light?symbol=${sym}&from=${new Date(Date.now()-400*86400000).toISOString().slice(0,10)}`),
+        saValuationGrade(sym)
       ]);
 
       const q  = Array.isArray(quoteA)   ? quoteA[0]   : quoteA;
@@ -797,6 +820,32 @@ module.exports = async (req, res) => {
         });
       }
 
+      // ── Entry-risk read — deterministic, see api/_lib/entry-risk.js ──────
+      // Runs AFTER the sanity gate so it never scores a value the gate rejected.
+      try {
+        const rows   = (Array.isArray(histA) ? histA : []).slice()
+                         .sort((a,b) => String(b.date||'').localeCompare(String(a.date||'')));
+        const closes = rows.map(r => r.price ?? r.close).filter(v => v != null).map(Number);
+        const px     = data.price;
+        const px3m   = closes[63]  ?? null;   // ~63 trading days
+        const px6m   = closes[126] ?? null;
+        const yr     = closes.slice(0, 252);
+        data.entry_risk = entryRisk({
+          price:  px,
+          chg3m:  (px && px3m) ? ((px - px3m) / px3m) * 100 : null,
+          chg6m:  (px && px6m) ? ((px - px6m) / px6m) * 100 : null,
+          sma50:  latest(sma50A, 'sma'),
+          sma200: latest(sma200A, 'sma'),
+          high52: yr.length ? Math.max(...yr) : null,
+          low52:  yr.length ? Math.min(...yr) : null,
+          valuationGrade: saGrade,
+          pe:  data.pe,
+          peg: data.peg,
+          analystTarget: data.targetMean,
+          rsi: latest(rsiA, 'rsi')
+        });
+      } catch (e) { data.entry_risk = null; }
+      
       const missing = ['price','companyName'].filter(k => data[k] == null);
       const confidence = missing.length ? 'low' : (flags.length ? 'medium' : 'high');
 
