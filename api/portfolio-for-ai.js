@@ -10,7 +10,7 @@ const API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
 const FMP_KEY = process.env.FMP_API_KEY;
 const FMP     = 'https://financialmodelingprep.com/stable';
 
-const { buildBreakpoints, percentileRead, crossSectional } = require('./_lib/percentile-read');
+const { buildBreakpoints, percentileRead, crossSectional, normalRank } = require('./_lib/percentile-read');
 
 // ─── GitHub JSON read / write (distributions cache) ─────────────────────────
 async function ghReadJson(path) {
@@ -95,7 +95,7 @@ module.exports = async (req, res) => {
   // ?syms=A,B  optional override · ?chunk=0&size=60 to split across calls
   // ══════════════════════════════════════════════════════════════════
   if (req.query.mode === 'build-distributions') {
-    if (key !== API_KEY && req.query.key !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    if (key !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
     try {
       let syms = (req.query.syms || '').split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
       if (!syms.length) {
@@ -896,10 +896,13 @@ module.exports = async (req, res) => {
       // Explore is single-symbol, so there is no cross-sectional peer set here —
       // self-percentile only. The weekly analysis supplies crossPct.
       try {
-        let dist = null;
+        let dist = null, nRank = null;
         const cache = await ghReadJson('data/distributions.json');
-        if (cache && cache[sym]) dist = cache[sym];
-        if (!dist) dist = buildBreakpoints(closes);   // live fallback, first lookup only
+        if (cache && cache[sym]) { dist = cache[sym]; nRank = normalRank(sym, cache); }
+        if (!dist) {
+          dist = buildBreakpoints(closes);            // live fallback, uncached symbol
+          if (cache) { const tmp = Object.assign({}, cache, { [sym]: dist }); nRank = normalRank(sym, tmp); }
+        }
         const px3m = closes[63] ?? null;
         data.price_read = percentileRead({
           sym,
@@ -908,7 +911,8 @@ module.exports = async (req, res) => {
           sma200: latest(sma200A, 'sma'),
           ret3m:  (data.price && px3m) ? ((data.price - px3m) / px3m) * 100 : null,
           dist,
-          crossPct: null
+          crossPct: null,      // single-symbol page has no live peer set
+          normalRank: nRank    // ...but "its normal vs their normals" still works
         });
       } catch (e) { data.price_read = null; }
 
