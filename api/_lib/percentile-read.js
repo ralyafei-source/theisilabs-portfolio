@@ -100,10 +100,13 @@ function percentileRead(a = {}) {
 
   const self  = driver.self;
   const cross = driver.cross;
+  const nRank = a.normalRank ? (a.normalRank[driver.key] ?? null) : null;
 
-  // ── Regime flag: normal-for-it, but its normal is extreme vs everything else.
+  // ── Regime flag: normal-for-it, but its NORMAL is extreme vs your other stocks.
   // This is the NVDA case — 3 years inside one boom makes abnormal look normal.
-  const regime = (self != null && cross != null && self < 70 && cross >= 85);
+  // Uses normalRank (its typical vs their typicals), so it works on a single
+  // lookup where there is no live peer set.
+  const regime = (self != null && nRank != null && self < 70 && nRank >= 85);
 
   const zone = zoneOf(self, cross, regime);
   const show = zone.key !== 'normal';
@@ -118,12 +121,13 @@ function percentileRead(a = {}) {
     normal: driver.normal,          // ALWAYS surfaced — never show a percentile alone
     self_pct: self,
     cross_pct: cross,
+    normal_rank: nRank,
     days_rarer: (self != null && d.span?.[driver.key]) ? Math.round((( zone.key==="very_low"||zone.key==="low") ? self/100 : (100-self)/100) * d.span[driver.key].days) : null,
     days_total: d.span?.[driver.key]?.days ?? null,
     regime_flag: regime,
     window_days: d.n ?? null,
     insufficient: !!d.insufficient,
-    text: buildText(driver, self, cross, zone, regime, d, a.sym),
+    text: buildText(driver, self, cross, zone, regime, d, a.sym, nRank),
     computed_at: new Date().toISOString()
   };
 }
@@ -179,7 +183,7 @@ function zoneOf(self, cross, regime) {
   return { key: 'normal' };
 }
 
-function buildText(m, self, cross, zone, regime, d, sym) {
+function buildText(m, self, cross, zone, regime, d, sym, nRank) {
   const up      = (m.value ?? 0) >= 0;
   const metric  = METRIC_AR[m.key] || m.key;
   const absV    = fmt(Math.abs(m.value));
@@ -191,12 +195,15 @@ function buildText(m, self, cross, zone, regime, d, sym) {
     ? Math.round((isLow ? self / 100 : (100 - self) / 100) * totalD) : null;
 
   // ── الحالة — plain-language finding, no term to learn
+  const isRet = (m.key === 'ret3m');
   let state;
   if (zone.key === 'very_high' || zone.key === 'high')
-    state = 'السعر أبعد عن معدله المعتاد من العادة';
+    state = isRet ? 'صعوده خلال ٣ أشهر أقوى من إيقاعه المعتاد'
+                  : 'السعر أبعد عن معدله المعتاد من العادة';
   else if (zone.key === 'very_low' || zone.key === 'low')
-    state = up ? 'السعر أقرب لمعدله المعتاد من العادة'
-               : 'السعر تحت معدله المعتاد أكثر من العادة';
+    state = isRet ? 'حركته خلال ٣ أشهر أضعف من إيقاعه المعتاد'
+                  : (up ? 'السعر أقرب لمعدله المعتاد من العادة'
+                        : 'السعر تحت معدله المعتاد أكثر من العادة');
   else if (zone.key === 'cross_only')
     state = 'وضعه طبيعي بالنسبة له — لكنه لافت مقارنة ببقية أسهمك';
   else
@@ -215,10 +222,16 @@ function buildText(m, self, cross, zone, regime, d, sym) {
       numbers += ` — يعني حوالي ${ratio.toFixed(1)} أضعاف وضعه الطبيعي.`;
     else numbers += '.';
   }
+  // sign flip is the real story when normal and today point opposite ways
+  if (normal != null && m.value != null && (normal > 0) !== (m.value > 0))
+    numbers += ` يعني المعتاد له ${normal > 0 ? 'صعود' : 'نزول'} ووضعه اليوم ${m.value > 0 ? 'صعود' : 'نزول'} — عكس إيقاعه.`;
+
   if (rarer != null && totalD) {
-    numbers += (zone.key === 'very_low' || zone.key === 'low')
-      ? ` خلال آخر ٣ سنوات ما كان أقل من كذا إلا في ${rarer} يوم من أصل ${totalD}.`
-      : ` خلال آخر ٣ سنوات ما كان أبعد من كذا إلا في ${rarer} يوم من أصل ${totalD}.`;
+    const small = (rarer / totalD) <= 0.30;          // "إلا" only when it IS rare
+    const verb  = isLow ? 'أقل' : 'أبعد';
+    numbers += small
+      ? ` خلال آخر ٣ سنوات ما كان ${verb} من كذا إلا في ${rarer} يوم من أصل ${totalD}.`
+      : ` خلال آخر ٣ سنوات كان ${verb} من كذا في ${rarer} يوم من أصل ${totalD}.`;
   }
   if (cross != null)
     numbers += ` ومقارنة ببقية أسهمك اليوم، ${sym} أعلى من ${Math.round(cross)}% منها على نفس المقياس.`;
@@ -246,7 +259,7 @@ function buildText(m, self, cross, zone, regime, d, sym) {
   // ── تنبيه المرحلة — the NVDA problem, stated plainly
   let regimeNote = null;
   if (regime)
-    regimeNote = `انتبه: وضع ${sym} اليوم قريب من معتاده، بس معتاده نفسه استثنائي — هو أعلى من ${Math.round(cross)}% من بقية أسهمك على نفس المقياس. آخر ٣ سنوات كانت فترة صعود غير عادي لهذا السهم، فـ"المعتاد" محسوب على فترة ما كانت معتادة.`;
+    regimeNote = `انتبه: وضع ${sym} اليوم قريب من معتاده، بس معتاده نفسه استثنائي — المعتاد له ${normal != null ? (normal >= 0 ? '+' : '-') + fmt(Math.abs(normal)) + '%' : ''} وهذا أعلى من معتاد ${Math.round(nRank)}% من بقية أسهمك. آخر ٣ سنوات كانت فترة غير عادية لهذا السهم، فـ"المعتاد" محسوب على فترة ما كانت معتادة.`;
   else if (d.insufficient)
     regimeNote = `تاريخ ${sym} أقصر من ٣ سنوات (${d.n || 0} يوم)، فالمقارنة مع تاريخه غير متاحة — المعروض مقارنة ببقية أسهمك فقط.`;
 
@@ -311,4 +324,29 @@ function interpPct(breakpoints, v, sortedArr) {
   return 99;
 }
 
-module.exports = { buildBreakpoints, percentileRead, crossSectional, WINDOW_DAYS, MIN_DAYS };
+/**
+ * Rank ONE symbol's own "normal" value against every other symbol's normal.
+ * Answers: "is this stock's typical state itself extreme?" — the regime question.
+ * allDists = the whole distributions.json object.
+ */
+function normalRank(sym, allDists) {
+  if (!allDists || !allDists[sym]) return null;
+  const mine = allDists[sym].normal || {};
+  const out = {};
+  for (const k of ['sma50','sma200','ret3m']) {
+    if (mine[k] == null) { out[k] = null; continue; }
+    const peers = [];
+    for (const s in allDists) {
+      if (s[0] === '_' || s === sym) continue;
+      const v = allDists[s] && allDists[s].normal && allDists[s].normal[k];
+      if (v != null) peers.push(v);
+    }
+    if (peers.length < 5) { out[k] = null; continue; }
+    peers.sort((a,b) => a - b);
+    let n = 0; for (const v of peers) { if (v < mine[k]) n++; else break; }
+    out[k] = Math.round((n / peers.length) * 100);
+  }
+  return out;
+}
+
+module.exports = { buildBreakpoints, percentileRead, crossSectional, normalRank, WINDOW_DAYS, MIN_DAYS };
