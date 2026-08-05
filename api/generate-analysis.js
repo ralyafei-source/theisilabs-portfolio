@@ -163,7 +163,7 @@ ${newsText}
  "clusters":[{"name":"اسم المجموعة","syms":["A","B"],"note":"لماذا تتحرك معاً — من قطاعاتها وقيمها المقدمة فقط"}],
  "hedge":"فكرة تحوط معلوماتية إن ظهرت من البيانات وإلا \"\""
 }
-قواعد: stocks يشمل كل سهم في القائمة المختارة فقط. weekPct هو تغيّر السهم خلال الأسبوع — استخدمه عند الحديث عن الأسبوع. glPct هو الربح/الخسارة منذ الشراء وليس أداء الأسبوع، لا تصفه كأداء أسبوعي. thesis بالعربية الخليجية المهنية. إن غاب target اكتب في thesis أن هدف المحللين غير متوفر فقط إذا كان ذلك مهماً. لا نصيحة مالية.`;
+قواعد: stocks يشمل كل سهم في القائمة المختارة فقط. لا تذكر عدد الأسهم غير المعروضة في summary — الكود يكتبها في silent_note_ar. weekPct هو تغيّر السهم خلال الأسبوع — استخدمه عند الحديث عن الأسبوع. glPct هو الربح/الخسارة منذ الشراء وليس أداء الأسبوع، لا تصفه كأداء أسبوعي. thesis بالعربية الخليجية المهنية. إن غاب target اكتب في thesis أن هدف المحللين غير متوفر فقط إذا كان ذلك مهماً. لا نصيحة مالية.`;
 }
 
 
@@ -250,16 +250,21 @@ module.exports = async function handler(req, res) {
       const watchRows=selected.filter(r=>r.verdict==='watch').sort((a,b)=>(b.value||0)-(a.value||0)).slice(0,10);
       selected=selected.filter(r=>r.verdict!=='watch').concat(watchRows);
       const techValue=rows.filter(r=>/tech/i.test(r.sector||'')).reduce((a,r)=>a+(r.value||0),0);
-      const silent=rows.filter(r=>r.verdict==='hold');
+      const shown=new Set(selected.map(r=>r.sym));
+      const silent=rows.filter(r=>r.verdict==='hold');              // no signals at all
+      const cut=rows.filter(r=>!shown.has(r.sym)&&r.verdict!=='hold'); // had signals, lost to the top-10 cap
       const portfolioStats={ total_value:Math.round(totalValue), holdings:rows.length,
         tech_concentration_pct:totalValue?+((techValue/totalValue)*100).toFixed(1):null,
         review_count:selected.filter(r=>r.verdict==='review').length,
         watch_count:selected.filter(r=>r.verdict==='watch').length,
         strong_count:selected.filter(r=>r.verdict==='strong').length,
-        watch_capped:selected.filter(r=>r.verdict==='watch').length<
-                     rows.filter(r=>r.verdict==='watch').length,
+        watch_capped:cut.length>0,
         silent_count:silent.length,
         silent_value:Math.round(silent.reduce((a,r)=>a+(r.value||0),0)),
+        cut_count:cut.length,
+        cut_value:Math.round(cut.reduce((a,r)=>a+(r.value||0),0)),
+        cut_syms:cut.map(r=>r.sym),
+        not_shown_count:silent.length+cut.length,
         stress_tech_minus20:Math.round(techValue*0.2) };
       const asOf={prices:today, sa:saDate, news:news.date};
       const raw=await callClaude(weeklyPromptV3(selected, portfolioStats, newsText, asOf));
@@ -272,9 +277,14 @@ module.exports = async function handler(req, res) {
       const doc={ type:'weekly', schema:2, date:today, nickname, as_of:asOf,
         verdict:Object.assign({},portfolioStats,{
           biggest_risk:cj.biggest_risk||'',
-          silent_note_ar: portfolioStats.silent_count
-            ? `و${portfolioStats.silent_count} سهم آخر تم فحصها وما ظهرت فيها إشارات هذا الأسبوع`
-            : ''
+          silent_note_ar: [
+            portfolioStats.silent_count
+              ? `و${portfolioStats.silent_count} سهم تم فحصها وما ظهرت فيها إشارات هذا الأسبوع`
+              : '',
+            portfolioStats.cut_count
+              ? `و${portfolioStats.cut_count} سهم ظهرت فيها إشارات لكن ما دخلت القائمة لأن العرض محدود بأكبر ١٠ مراكز قيمةً (${portfolioStats.cut_syms.join('، ')})`
+              : ''
+          ].filter(Boolean).join('. ')
         }),
         summary:cj.summary||'', stocks:stocksOut, clusters, hedge:cj.hedge||'',
         stress:[{scenario:'تصحيح تقنية -20%', impact_usd:-portfolioStats.stress_tech_minus20}],
