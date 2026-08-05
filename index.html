@@ -7315,41 +7315,52 @@ function _sigSynthesis(reads, agree, isAr){
   return parts.join(' ');
 }
 
-// ── Entry-risk block — renders ONLY numbers computed server-side ───────────
-function erRender(er){
-  if(!er || er.score==null) return '';
-  var b=er.band;
-  var bars=er.factors.map(function(f){
-    if(f.risk==null) return '';
-    return '<div style="margin-bottom:10px;">'
-      +'<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--text2);margin-bottom:4px;">'
-        +'<span>'+f.label_ar+' <span style="color:var(--text3);font-size:10px;">('+f.weight_used_pct+'%)</span></span>'
-        +'<span style="font-family:\'IBM Plex Mono\',monospace;color:'+b.color+';">'+f.risk_pct+'</span></div>'
-      +'<div style="height:5px;background:var(--bg3);border-radius:99px;overflow:hidden;">'
-        +'<div style="height:100%;width:'+f.risk_pct+'%;background:'+b.color+';border-radius:99px;"></div></div>'
-      +(f.detail_ar?'<div style="font-size:10.5px;color:var(--text3);margin-top:4px;">'+f.detail_ar+'</div>':'')
-    +'</div>';
-  }).join('');
-  var conf=(er.conflicts&&er.conflicts.length)
-    ? '<div style="margin-top:12px;padding:10px 12px;background:var(--bg3);border-radius:10px;border-inline-start:2px solid var(--gold,#fbbf24);font-size:11.5px;color:var(--text2);line-height:1.9;">'
-      +er.conflicts.map(function(c){return '\u26a1 '+c;}).join('<br>')+'</div>' : '';
-  var miss=er.coverage_pct<100
-    ? '<div style="font-size:10.5px;color:var(--text3);margin-top:8px;">\u0645\u0628\u0646\u064a \u0639\u0644\u0649 '+er.coverage_pct+'% \u0645\u0646 \u0627\u0644\u0639\u0648\u0627\u0645\u0644 \u2014 \u0627\u0644\u0628\u0627\u0642\u064a \u063a\u064a\u0631 \u0645\u062a\u0648\u0641\u0631</div>' : '';
-  return '<div dir="rtl" style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-top:16px;font-family:\'Almarai\',sans-serif;">'
-    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:12px;">'
-      +'<div><div style="font-size:14px;font-weight:700;color:var(--text);">\u0642\u0631\u0627\u0621\u0629 \u0645\u062e\u0627\u0637\u0631 \u0627\u0644\u062f\u062e\u0648\u0644</div>'
-      +'<div style="font-size:11px;color:var(--text3);margin-top:3px;line-height:1.7;">'+er.means_ar+'</div></div>'
-      +'<div style="text-align:center;flex-shrink:0;">'
-        +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:28px;font-weight:700;line-height:1;color:'+b.color+';">'+er.score+'</div>'
-        +'<div style="font-size:10.5px;color:'+b.color+';margin-top:4px;">'+b.ar+'</div></div>'
+
+// ── Derived: Volatility/Risk read ──
+// ══════════ PRICE READ — "وين السعر مقارنة بمعتاده؟" ══════════
+// Renders ONLY fields computed server-side (api/_lib/percentile-read.js).
+// Every Arabic sentence is built in code, not by Claude. Nothing is invented here.
+// Collapsed by default; the four-line explanation opens on tap.
+function _prZoneColor(z){
+  return z==='very_high' ? 'var(--red,#e5484d)'
+       : z==='high'      ? 'var(--gold,#fbbf24)'
+       : z==='very_low'  ? 'var(--blue,#00c8ff)'
+       : z==='low'       ? 'var(--blue,#00c8ff)'
+       : 'var(--text3)';
+}
+function _prToggle(id){
+  var el=document.getElementById(id); if(!el) return;
+  var open = el.style.display!=='none';
+  el.style.display = open ? 'none' : 'block';
+  var b=document.getElementById(id+'-btn');
+  if(b) b.textContent = open ? 'اعرف أكثر' : 'إخفاء';
+}
+function _prRender(pr, idSuffix){
+  if(!pr || !pr.show || !pr.text) return '';
+  var t=pr.text, c=_prZoneColor(pr.zone), id='pr-body-'+(idSuffix||'lk');
+  var row=function(label,txt,color){
+    if(!txt) return '';
+    return '<div style="margin-bottom:9px;">'
+      +'<div style="font-size:10px;color:var(--text3);margin-bottom:2px;">'+label+'</div>'
+      +'<div style="font-size:12px;line-height:1.95;color:'+(color||'var(--text2)')+';">'+txt+'</div></div>';
+  };
+  return '<div dir="rtl" style="background:var(--bg2);border:1px solid var(--border);border-inline-start:3px solid '+c+';border-radius:14px;padding:13px 15px;margin-top:14px;font-family:\'Almarai\',sans-serif;">'
+    +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">'
+      +'<div style="font-size:12.5px;line-height:1.85;color:var(--text);flex:1;">\u26a1 '+t.one_line_ar+'</div>'
+      +'<button id="'+id+'-btn" onclick="_prToggle(\''+id+'\')" style="flex-shrink:0;background:none;border:1px solid var(--border);color:var(--text3);border-radius:99px;padding:3px 11px;font-size:10.5px;cursor:pointer;font-family:\'Almarai\',sans-serif;">اعرف أكثر</button>'
     +'</div>'
-    +bars+conf+miss
-    +'<div style="font-size:10px;color:var(--text3);margin-top:12px;line-height:1.8;border-top:1px solid var(--border);padding-top:10px;">'
-      +er.method_ar+'<br>'+er.caveat_ar+'</div>'
+    +'<div id="'+id+'" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:11px;">'
+      +row('الحالة', t.state_ar, 'var(--text)')
+      +row('الأرقام', t.numbers_ar)
+      +row('معناها', t.meaning_ar)
+      +row('ما معناها', t.not_meaning_ar, 'var(--gold,#fbbf24)')
+      +(t.regime_ar?'<div style="background:var(--bg3);border-radius:10px;padding:9px 11px;margin-bottom:9px;font-size:11.5px;line-height:1.9;color:var(--text2);">\u26a0 '+t.regime_ar+'</div>':'')
+      +'<div style="font-size:10px;color:var(--text3);line-height:1.8;border-top:1px solid var(--border);padding-top:9px;">'
+        +t.method_ar+'<br>'+t.caveat_ar+'</div>'
+    +'</div>'
   +'</div>';
 }
-  
-// ── Derived: Volatility/Risk read ──
+
 function _lkRiskRead(d){
   // PEG component
   let pegRisk = 1; // 0 low, 1 med, 2 high
@@ -7771,15 +7782,14 @@ async function lookupStock() {
 
     // Prepend the decision panel above the card — AFTER innerHTML so it isn't overwritten
     document.getElementById('lookup-data-card').insertAdjacentHTML('afterbegin', decisionPanel);
+    // ── Price read, directly under the decision panel ─────────────────────
+    try{
+      var _prHtml = _prRender(d.price_read, 'lk');
+      var _dp = document.querySelector('.lk-decision-panel');
+      if(_dp && _prHtml) _dp.insertAdjacentHTML('afterend', _prHtml);
+    }catch(e){}
     // ── End Decision Dashboard Panel ─────────────────────────────────────
 
-    // ── Entry-risk read, under the decision panel ────────────────────────
-    try{
-      var _dp = document.querySelector('.lk-decision-panel');
-      var _er = erRender(d.entry_risk);
-      if(_dp && _er) _dp.insertAdjacentHTML('afterend', _er);
-    }catch(e){}
-    
     // Render price chart into the decision panel (if API provided history)
     if (d.priceHistory?.length) {
       const chartTarget = document.getElementById('lk-chart-wrap-dp');
