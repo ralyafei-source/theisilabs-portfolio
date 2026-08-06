@@ -94,8 +94,11 @@ function percentileRead(a = {}) {
     return { show: false, reason: 'no_data', sym: a.sym };
   }
 
-  // Driver = the metric furthest from its own middle (self preferred, else cross).
-  const driver = usable.slice().sort((x, y) =>
+  // Position metrics (sma50/sma200) always win — this read is about WHERE the price
+  // sits, not how fast it moved. ret3m is a fallback only when no SMA is available.
+  const pos = usable.filter(m => m.key !== 'ret3m');
+  const pool = pos.length ? pos : usable;
+  const driver = pool.slice().sort((x, y) =>
     dist50(y.self ?? y.cross) - dist50(x.self ?? x.cross))[0];
 
   const self  = driver.self;
@@ -166,10 +169,12 @@ function crossSectional(holdings) {
 // PART 3 — ARABIC TEMPLATES (fixed strings, variables filled — no LLM)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Descriptive, never technical. "المعتاد" is RESERVED for the habit (the `normal`
+// value) so no word does two jobs — the reference line is just "متوسطه خلال…".
 const METRIC_AR = {
-  sma50:  'متوسط ٥٠ يوم (يعني متوسط سعره خلال آخر شهرين تقريباً)',
-  sma200: 'متوسط ٢٠٠ يوم (يعني متوسط سعره خلال آخر سنة تقريباً)',
-  ret3m:  'حركته خلال آخر ٣ أشهر'
+  sma50:  'متوسطه خلال آخر شهرين',
+  sma200: 'متوسطه خلال آخر سنة',
+  ret3m:  null                      // movement, not position — handled separately
 };
 
 function zoneOf(self, cross, regime) {
@@ -184,82 +189,89 @@ function zoneOf(self, cross, regime) {
 }
 
 function buildText(m, self, cross, zone, regime, d, sym, nRank) {
-  const up      = (m.value ?? 0) >= 0;
-  const metric  = METRIC_AR[m.key] || m.key;
-  const absV    = fmt(Math.abs(m.value));
+  const isRet   = (m.key === 'ret3m');
+  const metric  = METRIC_AR[m.key];
+  const up      = (m.value ?? 0) >= 0;          // today: above the line / gained
   const normal  = m.normal;
+  const nUp     = normal != null && normal >= 0; // habit: usually above / usually gains
+  const absV    = fmt(Math.abs(m.value));
+  const absN    = normal == null ? null : fmt(Math.abs(normal));
   const totalD  = d.span?.[m.key]?.days ?? null;
   const isLow   = (zone.key === 'very_low' || zone.key === 'low');
-  // rarer = how many days were MORE extreme in the same direction as today
   const rarer   = (self != null && totalD)
     ? Math.round((isLow ? self / 100 : (100 - self) / 100) * totalD) : null;
+  const rareSay = (rarer != null && totalD && (rarer / totalD) <= 0.30);
 
-  // ── الحالة — plain-language finding, no term to learn
-  const isRet = (m.key === 'ret3m');
+  // ── الحالة — plain finding. No term to learn, no comparative-on-comparative.
   let state;
-  if (zone.key === 'very_high' || zone.key === 'high')
-    state = isRet ? 'صعوده خلال ٣ أشهر أقوى من إيقاعه المعتاد'
-                  : 'السعر أبعد عن معدله المعتاد من العادة';
-  else if (zone.key === 'very_low' || zone.key === 'low')
-    state = isRet ? 'حركته خلال ٣ أشهر أضعف من إيقاعه المعتاد'
-                  : (up ? 'السعر أقرب لمعدله المعتاد من العادة'
-                        : 'السعر تحت معدله المعتاد أكثر من العادة');
+  if (regime)
+    state = 'السعر ضمن معتاده — لكن معتاده نفسه بعيد';
+  else if (zone.key === 'very_high' || zone.key === 'high')
+    state = isRet ? 'صعوده خلال ٣ أشهر خارج إيقاعه المعتاد' : 'السعر خارج نطاقه المعتاد';
+  else if (isLow)
+    state = isRet ? 'حركته خلال ٣ أشهر خارج إيقاعه المعتاد' : 'السعر تحت نطاقه المعتاد';
   else if (zone.key === 'cross_only')
-    state = 'وضعه طبيعي بالنسبة له — لكنه لافت مقارنة ببقية أسهمك';
+    state = 'وضعه طبيعي له — لكنه لافت مقارنة ببقية أسهمك';
   else
     state = 'السعر ضمن نطاقه المعتاد';
 
-  // ── الأرقام — today's value, its own normal, days out of N
-  let numbers = m.key === 'ret3m'
-    ? `${sym} تحرك ${up ? '+' : '-'}${absV}% خلال آخر ٣ أشهر.`
-    : `${sym} ${up ? 'فوق' : 'تحت'} ${metric} بـ ${absV}%.`;
-
-  if (normal != null) {
-    const nUp = normal >= 0;
-    numbers += ` والمعتاد له ${nUp ? '+' : '-'}${fmt(Math.abs(normal))}%`;
-    const ratio = (normal !== 0) ? Math.abs(m.value / normal) : null;
-    if (ratio && ratio >= 1.8 && Math.abs(m.value) > Math.abs(normal))
-      numbers += ` — يعني حوالي ${ratio.toFixed(1)} أضعاف وضعه الطبيعي.`;
-    else numbers += '.';
+  // ── الأرقام — HABIT first, TODAY second, rarity last. Same order every time.
+  //    Position uses فوق/تحت. Movement uses يرتفع/نزل. Never mixed.
+  let numbers;
+  if (isRet) {
+    numbers = normal != null
+      ? `السعر عادةً ${nUp ? 'يرتفع' : 'ينزل'} ${absN}% كل ٣ أشهر — هالمرة ${up ? 'ارتفع' : 'نزل'} ${absV}%.`
+      : `${sym} ${up ? 'ارتفع' : 'نزل'} ${absV}% خلال آخر ٣ أشهر.`;
+  } else if (normal != null) {
+    numbers = `السعر عادةً ${nUp ? 'فوق' : 'تحت'} ${metric}`
+      + (nUp || Math.abs(normal) >= 0.5 ? ` بـ ${absN}%` : '')
+      + ` — اليوم ${up ? 'فوقه' : 'تحته'} بـ ${absV}%.`;
+    // the "×" line only when the habit and today point the SAME way (else it is nonsense)
+    if (nUp === up && normal !== 0) {
+      const ratio = Math.abs(m.value / normal);
+      if (ratio >= 1.8) numbers += ` يعني حوالي ${ratio.toFixed(1)} أضعاف المعتاد له.`;
+    }
+  } else {
+    numbers = `السعر اليوم ${up ? 'فوق' : 'تحت'} ${metric} بـ ${absV}%.`;
   }
-  // sign flip is the real story when normal and today point opposite ways
-  if (normal != null && m.value != null && (normal > 0) !== (m.value > 0))
-    numbers += ` يعني المعتاد له ${normal > 0 ? 'صعود' : 'نزول'} ووضعه اليوم ${m.value > 0 ? 'صعود' : 'نزول'} — عكس إيقاعه.`;
 
-  if (rarer != null && totalD) {
-    const small = (rarer / totalD) <= 0.30;          // "إلا" only when it IS rare
-    const verb  = isLow ? 'أقل' : 'أبعد';
-    numbers += small
-      ? ` خلال آخر ٣ سنوات ما كان ${verb} من كذا إلا في ${rarer} يوم من أصل ${totalD}.`
-      : ` خلال آخر ٣ سنوات كان ${verb} من كذا في ${rarer} يوم من أصل ${totalD}.`;
-  }
+  if (rarer != null && totalD)
+    numbers += rareSay
+      ? ` وهذا صار في ${rarer} يوم فقط من آخر ${totalD}.`
+      : ` وهذا صار في ${rarer} يوم من آخر ${totalD}.`;
   if (cross != null)
     numbers += ` ومقارنة ببقية أسهمك اليوم، ${sym} أعلى من ${Math.round(cross)}% منها على نفس المقياس.`;
 
-  // ── معناها — honestly two-sided, never one-directional
+  // ── هذا يعني — two-sided, never leaning. Both readings named.
   let meaning;
-  if (zone.key === 'very_high' || zone.key === 'high')
-    meaning = 'السهم ارتفع بسرعة أكبر من إيقاعه الطبيعي. هذا يصير في المراحل القوية، ويصير كمان قبل فترات التهدئة — الرقم وحده ما يفرّق بين الحالتين.';
-  else if (zone.key === 'very_low' || zone.key === 'low')
-    meaning = 'السهم نزل أسرع من إيقاعه المعتاد. هذا يصير عند التصحيحات المؤقتة، ويصير كمان عند بداية تدهور حقيقي — الرقم وحده ما يفرّق بين الحالتين.';
+  if (regime)
+    meaning = 'هذا يعني إن موقع السعر اليوم طبيعي بالنسبة لهذا السهم، لكن ما يعتبره السهم "طبيعي" بعيد عن بقية ما تملك. الطبيعي هنا محسوب على فترة كانت نفسها غير عادية.';
+  else if (zone.key === 'very_high' || zone.key === 'high')
+    meaning = 'هذا يعني إن السعر خرج من نطاقه المعتاد للأعلى. يصير في المراحل القوية، ويصير كمان قبل فترات التهدئة — الرقم وحده ما يفرّق بينهما.';
+  else if (isLow)
+    meaning = 'هذا يعني إن السعر خرج من نطاقه المعتاد للأسفل. يصير عند التصحيحات المؤقتة، ويصير كمان عند بداية تدهور حقيقي — الرقم وحده ما يفرّق بينهما.';
   else if (zone.key === 'cross_only')
-    meaning = 'وضعه اليوم قريب من طبيعته، لكن طبيعته نفسها بعيدة عن بقية ما تملك.';
+    meaning = 'هذا يعني إن وضعه اليوم قريب من طبيعته، لكن طبيعته نفسها بعيدة عن بقية ما تملك.';
   else
-    meaning = 'ما في شي غير معتاد في موقع السعر اليوم.';
+    meaning = 'هذا يعني إنه ما في شي غير معتاد في موقع السعر اليوم.';
 
-  // ── ما معناها — name the wrong inference and block it
+  // ── هذا لا يعني — name the wrong conclusion and block it. The protective line.
   let notMeaning;
-  if (zone.key === 'very_high' || zone.key === 'high')
-    notMeaning = 'ما يعني إنه راح ينزل. السهم ممكن يظل عند هذا المستوى شهور وهو يواصل صعود.';
-  else if (zone.key === 'very_low' || zone.key === 'low')
-    notMeaning = 'ما يعني إنه رخيص ولا إنه راح يرتد. السهم ممكن ينزل أكثر — كل سهم انهار مرّ بهذي المرحلة في طريقه.';
+  if (regime)
+    notMeaning = 'هذا لا يعني إن السهم في خطر ولا إنه مبالغ فيه. يعني إن مقارنته بتاريخه القريب وحدها ما تكفي — تاريخه القريب نفسه استثنائي.';
+  else if (zone.key === 'very_high' || zone.key === 'high')
+    notMeaning = (normal != null && !nUp)
+      ? 'هذا لا يعني إن الاتجاه تغيّر. خروج السعر فوق متوسطه شي وصفي — ما يثبت إن النزول انتهى.'
+      : 'هذا لا يعني إن السهم راح ينزل. ممكن يظل عند هذا المستوى شهور وهو يواصل صعود.';
+  else if (isLow)
+    notMeaning = 'هذا لا يعني إن السهم رخيص ولا إنه راح يرتد. ممكن ينزل أكثر — كل سهم انهار مرّ بهذي المرحلة في طريقه.';
   else
-    notMeaning = 'ما يعني إن السهم جيد أو سيء — هذا مقياس موقع سعر فقط، ما يقيس الشركة.';
+    notMeaning = 'هذا لا يعني إن السهم جيد أو سيء — هذا مقياس موقع سعر فقط، ما يقيس الشركة.';
 
-  // ── تنبيه المرحلة — the NVDA problem, stated plainly
+  // ── regime — the NVDA problem, stated plainly
   let regimeNote = null;
   if (regime)
-    regimeNote = `انتبه: وضع ${sym} اليوم قريب من معتاده، بس معتاده نفسه استثنائي — المعتاد له ${normal != null ? (normal >= 0 ? '+' : '-') + fmt(Math.abs(normal)) + '%' : ''} وهذا أعلى من معتاد ${Math.round(nRank)}% من بقية أسهمك. آخر ٣ سنوات كانت فترة غير عادية لهذا السهم، فـ"المعتاد" محسوب على فترة ما كانت معتادة.`;
+    regimeNote = `انتبه: وضع ${sym} اليوم قريب من معتاده، بس معتاده نفسه استثنائي — السعر عادةً ${nUp ? 'فوق' : 'تحت'} ${metric} بـ ${absN}%، وهذا أعلى من معتاد ${Math.round(nRank)}% من بقية أسهمك. آخر ٣ سنوات كانت فترة غير عادية لهذا السهم، فـ"المعتاد" محسوب على فترة ما كانت معتادة.`;
   else if (d.insufficient)
     regimeNote = `تاريخ ${sym} أقصر من ٣ سنوات (${d.n || 0} يوم)، فالمقارنة مع تاريخه غير متاحة — المعروض مقارنة ببقية أسهمك فقط.`;
 
@@ -269,7 +281,7 @@ function buildText(m, self, cross, zone, regime, d, sym, nRank) {
     meaning_ar: meaning,
     not_meaning_ar: notMeaning,
     regime_ar: regimeNote,
-    one_line_ar: oneLine(zone, m, normal, sym, regime),
+    one_line_ar: oneLine(zone, m, normal, sym, regime, nRank, metric, rarer, totalD),
     method_ar: 'يُحتسب بمقارنة موقع السعر اليوم بكل يوم من آخر ٣ سنوات لنفس السهم'
       + (cross != null ? '، وبمقارنته ببقية أسهمك اليوم' : '')
       + (nRank != null ? '، وبمقارنة معتاده بمعتاد بقية أسهمك' : '')
@@ -278,16 +290,33 @@ function buildText(m, self, cross, zone, regime, d, sym, nRank) {
   };
 }
 
-function oneLine(zone, m, normal, sym, regime) {
-  const up = (m.value ?? 0) >= 0;
-  if (regime) return `وضعه طبيعي له، بس طبيعته نفسها استثنائية مقارنة ببقية أسهمك`;
-  if (zone.key === 'very_high') return `السعر أبعد عن معدله المعتاد من 95% من أيام آخر ٣ سنوات`;
-  if (zone.key === 'high')      return `السعر أبعد عن معدله المعتاد من العادة`;
-  if (zone.key === 'very_low')  return up ? `السعر أقرب لمعدله المعتاد من 95% من أيام آخر ٣ سنوات`
-                                          : `السعر تحت معدله المعتاد أكثر من 95% من أيام آخر ٣ سنوات`;
-  if (zone.key === 'low')       return `السعر ${up ? 'أقرب لمعدله' : 'تحت معدله'} المعتاد أكثر من العادة`;
-  if (zone.key === 'cross_only')return `لافت مقارنة ببقية أسهمك`;
-  return '';
+function oneLine(zone, m, normal, sym, regime, nRank, metric, rarer, totalD) {
+  const up   = (m.value ?? 0) >= 0;
+  const nUp  = normal != null && normal >= 0;
+  const absV = fmt(Math.abs(m.value));
+  const absN = normal == null ? null : fmt(Math.abs(normal));
+  const isRet = (m.key === 'ret3m');
+
+  if (regime)
+    return `السعر اليوم قريب من معتاده — لكن معتاده نفسه أعلى من ${Math.round(nRank)}% من أسهمك`;
+
+  if (zone.key === 'cross_only') return 'وضعه طبيعي له — لكنه لافت مقارنة ببقية أسهمك';
+  if (zone.key === 'normal')     return '';
+
+  if (isRet && normal != null)
+    return `السعر عادةً ${nUp ? 'يرتفع' : 'ينزل'} ${absN}% كل ٣ أشهر — هالمرة ${up ? 'ارتفع' : 'نزل'} ${absV}%`;
+
+  if (normal == null)
+    return `السعر ${up ? 'فوق' : 'تحت'} ${metric} بـ ${absV}%`;
+
+  // The sharpest case: habit and today point OPPOSITE ways — the reversal explains itself.
+  if (nUp !== up)
+    return `السعر عادةً ${nUp ? 'فوق' : 'تحت'} ${metric} — اليوم ${up ? 'فوقه' : 'تحته'} بـ ${absV}%`;
+
+  let line = `السعر عادةً ${nUp ? 'فوق' : 'تحت'} ${metric} بـ ${absN}% — اليوم بـ ${absV}%`;
+  const ratio = normal !== 0 ? Math.abs(m.value / normal) : null;
+  if (ratio && ratio >= 1.8) line += `، حوالي ${ratio.toFixed(1)} أضعاف`;
+  return line;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
