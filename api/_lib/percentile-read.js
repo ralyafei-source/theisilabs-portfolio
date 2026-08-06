@@ -1,5 +1,5 @@
 // api/_lib/percentile-read.js
-// THEISI — "وين السعر مقارنة بمعتاده؟"
+// THEISI — "وين السعر مقارنة بمستواه الطبيعي؟"
 //
 // GOLDEN SEPARATION: every number AND every Arabic sentence here is produced by
 // code from templates. Claude never writes these strings and never edits them.
@@ -169,8 +169,9 @@ function crossSectional(holdings) {
 // PART 3 — ARABIC TEMPLATES (fixed strings, variables filled — no LLM)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Descriptive, never technical. "المعتاد" is RESERVED for the habit (the `normal`
-// value) so no word does two jobs — the reference line is just "متوسطه خلال…".
+// Descriptive, never technical. The reference LINE is "متوسطه خلال…".
+// The HABIT (the `normal` value) is "مستواه الطبيعي". Never "المعتاد" — too stiff,
+// and never "سعره الطبيعي" — that reads as fair value and collides with the DCF card.
 const METRIC_AR = {
   sma50:  'متوسطه خلال آخر شهرين',
   sma200: 'متوسطه خلال آخر سنة',
@@ -205,15 +206,15 @@ function buildText(m, self, cross, zone, regime, d, sym, nRank) {
   // ── الحالة — plain finding. No term to learn, no comparative-on-comparative.
   let state;
   if (regime)
-    state = 'السعر ضمن معتاده — لكن معتاده نفسه بعيد';
+    state = `تداول ${sym} اليوم على مستواه الطبيعي — بس مستواه الطبيعي أصلاً طاير في العالي`;
   else if (zone.key === 'very_high' || zone.key === 'high')
-    state = isRet ? 'صعوده خلال ٣ أشهر خارج إيقاعه المعتاد' : 'السعر خارج نطاقه المعتاد';
+    state = isRet ? 'صعوده خلال ٣ أشهر أقوى من عادته' : 'السعر خارج مستواه الطبيعي';
   else if (isLow)
-    state = isRet ? 'حركته خلال ٣ أشهر خارج إيقاعه المعتاد' : 'السعر تحت نطاقه المعتاد';
+    state = isRet ? 'حركته خلال ٣ أشهر أضعف من عادته' : 'السعر تحت مستواه الطبيعي';
   else if (zone.key === 'cross_only')
-    state = 'وضعه طبيعي له — لكنه لافت مقارنة ببقية أسهمك';
+    state = 'السعر على مستواه الطبيعي — لكنه لافت مقارنة ببقية أسهمك';
   else
-    state = 'السعر ضمن نطاقه المعتاد';
+    state = 'السعر على مستواه الطبيعي';
 
   // ── الأرقام — HABIT first, TODAY second, rarity last. Same order every time.
   //    Position uses فوق/تحت. Movement uses يرتفع/نزل. Never mixed.
@@ -229,7 +230,7 @@ function buildText(m, self, cross, zone, regime, d, sym, nRank) {
     // the "×" line only when the habit and today point the SAME way (else it is nonsense)
     if (nUp === up && normal !== 0) {
       const ratio = Math.abs(m.value / normal);
-      if (ratio >= 1.8) numbers += ` يعني حوالي ${ratio.toFixed(1)} أضعاف المعتاد له.`;
+      if (ratio >= 1.8) numbers += ` يعني حوالي ${ratio.toFixed(1)} أضعاف مستواه الطبيعي.`;
     }
   } else {
     numbers = `السعر اليوم ${up ? 'فوق' : 'تحت'} ${metric} بـ ${absV}%.`;
@@ -245,15 +246,15 @@ function buildText(m, self, cross, zone, regime, d, sym, nRank) {
   // ── هذا يعني — two-sided, never leaning. Both readings named.
   let meaning;
   if (regime)
-    meaning = 'هذا يعني إن موقع السعر اليوم طبيعي بالنسبة لهذا السهم، لكن ما يعتبره السهم "طبيعي" بعيد عن بقية ما تملك. الطبيعي هنا محسوب على فترة كانت نفسها غير عادية.';
+    meaning = 'هذا يعني إن السعر اليوم على مستواه الطبيعي، لكن مستواه الطبيعي نفسه بعيد عن بقية ما تملك — لأنه محسوب على فترة ما كانت طبيعية.';
   else if (zone.key === 'very_high' || zone.key === 'high')
-    meaning = 'هذا يعني إن السعر خرج من نطاقه المعتاد للأعلى. يصير في المراحل القوية، ويصير كمان قبل فترات التهدئة — الرقم وحده ما يفرّق بينهما.';
+    meaning = 'هذا يعني إن السعر طلع فوق مستواه الطبيعي. يصير في المراحل القوية، ويصير كمان قبل فترات التهدئة — الرقم وحده ما يفرّق بينهما.';
   else if (isLow)
-    meaning = 'هذا يعني إن السعر خرج من نطاقه المعتاد للأسفل. يصير عند التصحيحات المؤقتة، ويصير كمان عند بداية تدهور حقيقي — الرقم وحده ما يفرّق بينهما.';
+    meaning = 'هذا يعني إن السعر نزل تحت مستواه الطبيعي. يصير عند التصحيحات المؤقتة، ويصير كمان عند بداية تدهور حقيقي — الرقم وحده ما يفرّق بينهما.';
   else if (zone.key === 'cross_only')
-    meaning = 'هذا يعني إن وضعه اليوم قريب من طبيعته، لكن طبيعته نفسها بعيدة عن بقية ما تملك.';
+    meaning = 'هذا يعني إن السعر اليوم على مستواه الطبيعي، لكن هذا المستوى بعيد عن بقية ما تملك.';
   else
-    meaning = 'هذا يعني إنه ما في شي غير معتاد في موقع السعر اليوم.';
+    meaning = 'هذا يعني إنه ما في شي غير طبيعي في موقع السعر اليوم.';
 
   // ── هذا لا يعني — name the wrong conclusion and block it. The protective line.
   let notMeaning;
@@ -271,7 +272,7 @@ function buildText(m, self, cross, zone, regime, d, sym, nRank) {
   // ── regime — the NVDA problem, stated plainly
   let regimeNote = null;
   if (regime)
-    regimeNote = `انتبه: وضع ${sym} اليوم قريب من معتاده، بس معتاده نفسه استثنائي — السعر عادةً ${nUp ? 'فوق' : 'تحت'} ${metric} بـ ${absN}%، وهذا أعلى من معتاد ${Math.round(nRank)}% من بقية أسهمك. آخر ٣ سنوات كانت فترة غير عادية لهذا السهم، فـ"المعتاد" محسوب على فترة ما كانت معتادة.`;
+    regimeNote = `انتبه: تداول ${sym} اليوم على مستواه الطبيعي، بس هذا المستوى أصلاً طاير في العالي — السعر عادةً ${nUp ? 'فوق' : 'تحت'} ${metric} بـ ${absN}%، وهذا أعلى من مستوى ${Math.round(nRank)}% من بقية أسهمك. آخر ٣ سنوات كانت فترة غير عادية لهذا السهم، فمستواه الطبيعي محسوب على فترة ما كانت طبيعية.`;
   else if (d.insufficient)
     regimeNote = `تاريخ ${sym} أقصر من ٣ سنوات (${d.n || 0} يوم)، فالمقارنة مع تاريخه غير متاحة — المعروض مقارنة ببقية أسهمك فقط.`;
 
@@ -284,7 +285,7 @@ function buildText(m, self, cross, zone, regime, d, sym, nRank) {
     one_line_ar: oneLine(zone, m, normal, sym, regime, nRank, metric, rarer, totalD),
     method_ar: 'يُحتسب بمقارنة موقع السعر اليوم بكل يوم من آخر ٣ سنوات لنفس السهم'
       + (cross != null ? '، وبمقارنته ببقية أسهمك اليوم' : '')
-      + (nRank != null ? '، وبمقارنة معتاده بمعتاد بقية أسهمك' : '')
+      + (nRank != null ? '، وبمقارنة مستواه الطبيعي بمستوى بقية أسهمك' : '')
       + '. لا يعتمد على حدود ثابتة.',
     caveat_ar: 'قياس ندرة، مو توقّع. ندرة الوضع ما تعني تغيّر الاتجاه — تحليل معلوماتي، ليست نصيحة مالية.'
   };
@@ -298,9 +299,9 @@ function oneLine(zone, m, normal, sym, regime, nRank, metric, rarer, totalD) {
   const isRet = (m.key === 'ret3m');
 
   if (regime)
-    return `السعر اليوم قريب من معتاده — لكن معتاده نفسه أعلى من ${Math.round(nRank)}% من أسهمك`;
+    return `السعر على مستواه الطبيعي — بس هذا المستوى أعلى من ${Math.round(nRank)}% من أسهمك`;
 
-  if (zone.key === 'cross_only') return 'وضعه طبيعي له — لكنه لافت مقارنة ببقية أسهمك';
+  if (zone.key === 'cross_only') return 'السعر على مستواه الطبيعي — لكنه لافت مقارنة ببقية أسهمك';
   if (zone.key === 'normal')     return '';
 
   if (isRet && normal != null)
