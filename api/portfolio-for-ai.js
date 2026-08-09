@@ -142,6 +142,53 @@ module.exports = async (req, res) => {
     }
   }
 
+  // ═══ THEISI — mode=credit  (CREDIT SPREAD INDICATOR) ═══════════════════════
+if (req.query.mode === 'credit') {
+  try {
+    const FRED = process.env.FRED_API_KEY;
+    const clamp = (n,lo,hi)=>Math.max(lo,Math.min(hi,n));
+    const fred = async (id) => {
+      if (!FRED) return [];
+      const u = `https://api.stlouisfed.org/fred/series/observations?series_id=${id}`
+              + `&api_key=${FRED}&file_type=json&sort_order=desc&limit=520`;
+      try {
+        const r = await fetch(u); if (!r.ok) return [];
+        const j = await r.json();
+        return (j.observations||[])
+          .map(o=>({date:o.date, v:Number(o.value)}))
+          .filter(x=>isFinite(x.v));            // newest-first
+      } catch { return []; }
+    };
+
+    const [hy, ig] = await Promise.all([fred('BAMLH0A0HYM2'), fred('BAMLC0A0CM')]);
+    if (!hy.length) return res.status(200).json({ error: 'credit data unavailable (set FRED_API_KEY)' });
+
+    const now   = hy[0].v;
+    const d20   = hy.length > 20  ? +(now - hy[20].v).toFixed(2)  : null;
+    const d90   = hy.length > 90  ? +(now - hy[90].v).toFixed(2)  : null;
+    const w252  = hy.slice(0, 252).map(x=>x.v);
+    const pct   = Math.round(w252.filter(v=>v < now).length / w252.length * 100); // higher = wider = stress
+    const igNow = ig.length ? ig[0].v : null;
+
+    // 0..100 stress score (higher = more credit stress)
+    const stress = clamp(Math.round(pct * 0.6 + (d20 != null ? clamp(50 + d20*40,0,100) : 50) * 0.4), 0, 100);
+    const zone    = stress < 25 ? 'Calm' : stress < 50 ? 'Normal' : stress < 75 ? 'Tightening' : 'Stress';
+    const zone_ar = stress < 25 ? 'هدوء ائتماني' : stress < 50 ? 'طبيعي' : stress < 75 ? 'ضغط متزايد' : 'ضغط ائتماني';
+    const dir_ar  = d20 == null ? null : d20 > 0.15 ? 'يتوسع' : d20 < -0.15 ? 'ينكمش' : 'مستقر';
+
+    return res.status(200).json({
+      hy_oas: +now.toFixed(2),
+      ig_oas: igNow != null ? +igNow.toFixed(2) : null,
+      change20d: d20, change90d: d90,
+      percentile252: pct,
+      stress, zone, zone_ar, direction_ar: dir_ar,
+      trend: hy.slice(0, 90).reverse().map(x=>({date:x.date, v:x.v})),
+      asOf: hy[0].date,
+      source: 'FRED ICE BofA OAS'
+    });
+  } catch (e) { return res.status(200).json({ error: e.message }); }
+}
+  
   // ══════════════════════════════════════════════════════════════════
   // FMP-ONLY MODES — placed BEFORE portfolio load so a GitHub hiccup on
   // portfolio.json can never take these down (fear gauge + macro card).
