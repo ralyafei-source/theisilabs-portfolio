@@ -10,6 +10,52 @@ const API_KEY = process.env.BRIEFING_API_KEY || 'theisilabs2026';
 const FMP_KEY = process.env.FMP_API_KEY;
 const FMP     = 'https://financialmodelingprep.com/stable';
 
+const { buildBreakpoints, percentileRead, crossSectional, normalRank } = require('./_lib/percentile-read');
+
+// ─── GitHub JSON read / write (distributions cache) ─────────────────────────
+async function ghReadJson(path) {
+  try {
+    const r = await fetch(`https://raw.githubusercontent.com/${REPO}/main/${path}?t=${Date.now()}`);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+async function ghWriteJson(path, data) {
+  const TOKEN = process.env.GITHUB_TOKEN;
+  if (!TOKEN) return false;
+  let sha = null;
+  try {
+    const c = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`,
+      { headers: { Authorization: `token ${TOKEN}`, 'User-Agent': 'theisilabs-app' } });
+    if (c.ok) sha = (await c.json()).sha;
+  } catch {}
+  const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
+    method: 'PUT',
+    headers: { Authorization: `token ${TOKEN}`, 'User-Agent': 'theisilabs-app', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: `Update ${path}`,
+      content: Buffer.from(JSON.stringify(data)).toString('base64'),
+      ...(sha && { sha })
+    })
+  });
+  return r.ok;
+}
+
+// ─── Daily closes, NEWEST FIRST (percentile-read expects this order) ────────
+// One retry — FMP rate-limits under concurrency and returns null silently.
+async function closeHistory(sym, days) {
+  const from = new Date(Date.now() - (days || 1150) * 86400000).toISOString().slice(0, 10);
+  let raw = await fmpGet(`/historical-price-eod/light?symbol=${sym}&from=${from}`);
+  if (!Array.isArray(raw) || !raw.length) {
+    await new Promise(r => setTimeout(r, 700));
+    raw = await fmpGet(`/historical-price-eod/light?symbol=${sym}&from=${from}`);
+  }
+  const rows = (Array.isArray(raw) ? raw : []).slice()
+    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  return rows.map(r => r.price ?? r.close).filter(v => v != null).map(Number);
+}
+
 // ─── FMP helper ──────────────────────────────────────────────────────────────
 async function fmpGet(path) {
   try {
@@ -48,29 +94,58 @@ module.exports = async (req, res) => {
   }
 
   // ══════════════════════════════════════════════════════════════════
+  // mode=build-distributions — weekly job (922). Writes data/distributions.json
+  // Stores ONLY percentile breakpoints + each stock's own "normal" value.
+  // Raw history is never stored. Rebuilt from scratch every run (no drift).
+  // ?syms=A,B  optional override · ?chunk=0&size=60 to split across calls
+  // ══════════════════════════════════════════════════════════════════
+  if (req.query.mode === 'build-distributions') {
+    if (key !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      let syms = (req.query.syms || '').split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+      if (!syms.length) {
+        const pf = await ghReadJson('data/portfolio.json');
+        syms = ((pf && (pf.holdings || pf.stocks)) || [])
+          .filter(h => h && h.sym && h.shares > 0)
+          .map(h => String(h.sym).toUpperCase());
+        syms = [...new Set(syms)];
+      }
+      const size  = Math.min(+req.query.size || 60, 120);
+      const chunk = +req.query.chunk || 0;
+      const slice = syms.slice(chunk * size, (chunk + 1) * size);
+      if (!slice.length) return res.status(200).json({ done: true, total: syms.length, chunk });
+
+      const existing = (chunk > 0 ? await ghReadJson('data/distributions.json') : null) || {};
+      const out = Object.assign({}, existing);
+      const failed = [];
+
+      for (let i = 0; i < slice.length; i += 8) {
+        const batch = slice.slice(i, i + 8);
+        await Promise.all(batch.map(async sym => {
+          try {
+            const closes = await closeHistory(sym);
+            if (!closes.length) { failed.push(sym); return; }
+            out[sym] = buildBreakpoints(closes);
+          } catch (e) { failed.push(sym); }
+        }));
+      }
+
+      out._meta = { updated: todayUAE(), symbols: Object.keys(out).filter(k => k[0] !== '_').length };
+      const ok = await ghWriteJson('data/distributions.json', out);
+      const more = (chunk + 1) * size < syms.length;
+      return res.status(200).json({
+        saved: ok, chunk, built: slice.length - failed.length, failed,
+        total: syms.length, next_chunk: more ? chunk + 1 : null, done: !more
+      });
+    } catch (e) {
+      return res.status(500).json({ error: 'build-distributions failed', detail: String(e).slice(0, 300) });
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════
   // FMP-ONLY MODES — placed BEFORE portfolio load so a GitHub hiccup on
   // portfolio.json can never take these down (fear gauge + macro card).
   // ══════════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════════════════
-// THEISI — mode=sentiment  v4  (6-FACTOR FEAR & GREED)
-// Drop-in REPLACEMENT for the whole `if (req.query.mode === 'sentiment')`
-// block in api/portfolio-for-ai.js. Same response shape — card needs no change.
-//
-// Why v4: v3 put 55% weight on slow "level" gauges (VIX yearly percentile +
-// 125d momentum) that read greed through any bull year, and had none of CNN's
-// fear-sensitive internals. Result: THEISI 64 vs CNN 32.
-//
-// Factors:
-//   1. Volatility  — VIX vs 50d MA (CNN method) blended with 252d percentile   20%
-//   2. Momentum    — S&P500 vs 125d avg (+10d decay, unchanged)                20%
-//   3. Safe-haven  — SPY vs TLT 20d spread (unchanged)                         20%
-//   4. Strength    — SPY 20d gap + 5d return (unchanged)                       15%
-//   5. Junk bonds  — HYG vs LQD 20d spread (credit risk appetite)              15%
-//   6. Breadth     — RSP vs SPY 20d spread (equal-weight vs cap-weight)        10%
-//
-// Sources: FMP only, same key. Two extra history fetches (HYG/LQD... RSP too = 3).
-// Test: /api/portfolio-for-ai?mode=sentiment&debug=1
-// ═══════════════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════════════
 // THEISI — mode=credit  (CREDIT SPREAD INDICATOR)  v1
@@ -116,16 +191,17 @@ module.exports = async (req, res) => {
         Math.round(pct * 0.6 + (d20 != null ? clamp(50 + d20 * 40, 0, 100) : 50) * 0.4),
         0, 100
       );
-      const zone    = stress < 25 ? 'Calm'          : stress < 50 ? 'Normal'   : stress < 75 ? 'Tightening'      : 'Stress';
-      const zone_ar = stress < 25 ? '\u0647\u062f\u0648\u0621 \u0627\u0626\u062a\u0645\u0627\u0646\u064a'
-                    : stress < 50 ? '\u0637\u0628\u064a\u0639\u064a'
-                    : stress < 75 ? '\u0636\u063a\u0637 \u0645\u062a\u0632\u0627\u064a\u062f'
-                    :               '\u0636\u063a\u0637 \u0627\u0626\u062a\u0645\u0627\u0646\u064a';
+      const zone    = stress < 25 ? 'Calm' : stress < 50 ? 'Normal' : stress < 75 ? 'Tightening' : 'Stress';
+      const zone_ar = stress < 25 ? 'هدوء ائتماني'
+                    : stress < 50 ? 'طبيعي'
+                    : stress < 75 ? 'ضغط متزايد'
+                    :               'ضغط ائتماني';
       const dir_ar  = d20 == null ? null
-                    : d20 >  0.15 ? '\u064a\u062a\u0648\u0633\u0639'
-                    : d20 < -0.15 ? '\u064a\u0646\u0643\u0645\u0634'
-                    :               '\u0645\u0633\u062a\u0642\u0631';
+                    : d20 >  0.15 ? 'يتوسع'
+                    : d20 < -0.15 ? 'ينكمش'
+                    :               'مستقر';
 
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
       return res.status(200).json({
         hy_oas: +now.toFixed(2),
         ig_oas: igNow != null ? +igNow.toFixed(2) : null,
@@ -144,6 +220,25 @@ module.exports = async (req, res) => {
     }
   }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// THEISI — mode=sentiment  v4  (6-FACTOR FEAR & GREED)
+// Drop-in REPLACEMENT for the whole `if (req.query.mode === 'sentiment')`
+// block in api/portfolio-for-ai.js. Same response shape — card needs no change.
+//
+// Why v4: v3 put 55% weight on slow "level" gauges (VIX yearly percentile +
+// 125d momentum) that read greed through any bull year, and had none of CNN's
+// fear-sensitive internals. Result: THEISI 64 vs CNN 32.
+//
+// Factors:
+//   1. Volatility  — VIX vs 50d MA (CNN method) blended with 252d percentile   20%
+//   2. Momentum    — S&P500 vs 125d avg (+10d decay, unchanged)                20%
+//   3. Safe-haven  — SPY vs TLT 20d spread (unchanged)                         20%
+//   4. Strength    — SPY 20d gap + 5d return (unchanged)                       15%
+//   5. Credit      — real HY OAS from FRED (HYG/LQD proxy as fallback)         15%
+//   6. Breadth     — RSP vs SPY 20d spread (equal-weight vs cap-weight)        10%
+//
+// Sources: FMP + Yahoo (VIX) + FRED (credit). Test: ?mode=sentiment&debug=1
+// ═══════════════════════════════════════════════════════════════════════════
   if (req.query.mode === 'sentiment') {
     try {
       const FMP = process.env.FMP_API_KEY || process.env.FMP_KEY;
@@ -246,8 +341,8 @@ module.exports = async (req, res) => {
         if (!oasByDate || !dt) return null;
         let d = new Date(dt + 'T00:00:00Z');
         for (let k = 0; k < 6; k++) {
-          const key = d.toISOString().slice(0, 10);
-          if (oasByDate[key] != null) return oasByDate[key];
+          const kk = d.toISOString().slice(0, 10);
+          if (oasByDate[kk] != null) return oasByDate[kk];
           d = new Date(d.getTime() - 86400000);
         }
         return null;
@@ -315,9 +410,8 @@ module.exports = async (req, res) => {
       }
 
       // ════════════════════════════════════════════════════════════════════════
-      // FACTOR 5 — JUNK BOND DEMAND  (HYG vs LQD, 20d) — NEW (CNN factor)
-      // Investors buying junk over investment-grade = risk appetite = greed.
-      // Spread is tight (~±3%), so scale ±3% → 0..100.
+      // FACTOR 5 — CREDIT  (real HY OAS from FRED; HYG/LQD 20d spread fallback)
+      // Wide/widening spreads = lenders pulling back = fear. Tight = risk appetite.
       // ════════════════════════════════════════════════════════════════════════
       const jb = spread20(hygSeries, lqdSeries, 0, 16.7);
       const fOas = oasScore(vixSeries.length ? vixSeries[0].date : null);
@@ -402,7 +496,7 @@ module.exports = async (req, res) => {
             s4 = clamp(Math.round(50 + gap * 6 + r5 * 4), 0, 100);
           }
         }
-        // f5: HYG-LQD 20d spread  ·  f6: RSP-SPY 20d spread
+        // f5: real HY OAS (fallback HYG-LQD 20d spread)  ·  f6: RSP-SPY 20d spread
         const _o5 = oasScore(day);
         const s5 = _o5 != null ? _o5 : spread20(hygSeries, lqdSeries, i, 16.7).f;
         const s6 = spread20(rspSeries, spySeries, i, 16.7).f;
@@ -471,6 +565,8 @@ module.exports = async (req, res) => {
           str5dRet: str5dRet != null ? +str5dRet.toFixed(2) : null,
           junkSpread: junkSpread != null ? +junkSpread.toFixed(2) : null,
           breadthSpread: breadthSpread != null ? +breadthSpread.toFixed(2) : null,
+          creditSource,
+          oasDays: oasByDate ? Object.keys(oasByDate).length : 0,
           weights: W,
           seriesLengths: { vix: vixSeries.length, spx: spxSeries.length, spy: spySeries.length, tlt: tltSeries.length, hyg: hygSeries.length, lqd: lqdSeries.length, rsp: rspSeries.length },
         };
@@ -829,14 +925,17 @@ module.exports = async (req, res) => {
       const sym = (req.query.sym || '').toString().trim().toUpperCase();
       if (!sym) return res.status(400).json({ error: 'missing sym' });
 
-      const [quoteA, profileA, kmA, ptcA, ratingA, dcfA, growthA] = await Promise.all([
+      const [quoteA, profileA, kmA, ptcA, ratingA, dcfA, growthA,
+             sma50A, sma200A] = await Promise.all([
         fmpGet(`/quote?symbol=${sym}`),
         fmpGet(`/profile?symbol=${sym}`),
         fmpGet(`/key-metrics-ttm?symbol=${sym}`),
         fmpGet(`/price-target-consensus?symbol=${sym}`),
         fmpGet(`/ratings-snapshot?symbol=${sym}`),
         fmpGet(`/discounted-cash-flow?symbol=${sym}`),
-        fmpGet(`/financial-growth?symbol=${sym}&limit=1`)
+        fmpGet(`/financial-growth?symbol=${sym}&limit=1`),
+        fmpGet(`/technical-indicators/sma?symbol=${sym}&periodLength=50&timeframe=1day&limit=1`),
+        fmpGet(`/technical-indicators/sma?symbol=${sym}&periodLength=200&timeframe=1day&limit=1`)
       ]);
 
       const q  = Array.isArray(quoteA)   ? quoteA[0]   : quoteA;
@@ -910,6 +1009,35 @@ module.exports = async (req, res) => {
           }
         });
       }
+
+      // ── Price read — "وين السعر مقارنة بمعتاده؟" (api/_lib/percentile-read.js)
+      // Runs AFTER the sanity gate so it never reads a value the gate rejected.
+      // Explore is single-symbol, so there is no cross-sectional peer set here —
+      // self-percentile only. The weekly analysis supplies crossPct.
+      try {
+        let dist = null, nRank = null, closes = [];
+        const cache = await ghReadJson('data/distributions.json');
+        if (cache && cache[sym]) {
+          dist  = cache[sym];                         // cached: NO history fetch at all
+          nRank = normalRank(sym, cache);
+          closes = await closeHistory(sym, 130);      // ~90 trading days, just for ret3m
+        } else {
+          closes = await closeHistory(sym);           // uncached: full ~3y, once
+          dist = buildBreakpoints(closes);
+          if (cache) { const tmp = Object.assign({}, cache, { [sym]: dist }); nRank = normalRank(sym, tmp); }
+        }
+        const px3m = closes[63] ?? null;
+        data.price_read = percentileRead({
+          sym,
+          price:  data.price,
+          sma50:  latest(sma50A,  'sma'),
+          sma200: latest(sma200A, 'sma'),
+          ret3m:  (data.price && px3m) ? ((data.price - px3m) / px3m) * 100 : null,
+          dist,
+          crossPct: null,      // single-symbol page has no live peer set
+          normalRank: nRank    // ...but "its normal vs their normals" still works
+        });
+      } catch (e) { data.price_read = null; }
 
       const missing = ['price','companyName'].filter(k => data[k] == null);
       const confidence = missing.length ? 'low' : (flags.length ? 'medium' : 'high');
