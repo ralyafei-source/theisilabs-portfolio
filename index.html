@@ -4421,6 +4421,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
         +'\u0633\u062a\u0638\u0647\u0631 \u0628\u0639\u062f \u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u0635\u0628\u0627\u062d\u064a.</div>');
 
   var fgCard=fearGreedCard()||'';
+  var csCard=creditCard()||'';
   var mcCard=macroCard()||'';
 
   // LEFT COLUMN: قراءة اليوم + قراءة السوق stacked, equal height
@@ -4916,6 +4917,71 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     var body='<div style="display:flex;flex-direction:column;height:100%;align-items:stretch;">'+gaugeCol+'</div>';
     return panel(secLabel('\u0645\u0632\u0627\u062c \u0627\u0644\u0633\u0648\u0642')+body,{style:'display:flex;flex-direction:column;height:100%;'});
   }
+  function creditCard(){
+    var d=window._csData; if(!d||d.hy_oas==null) return null;
+    var st=Math.max(0,Math.min(100,d.stress));
+    var col=st<25?'#19c37d':st<50?'#7cc34d':st<75?'#e5aa00':'#e5484d';
+    var dc=d.change20d==null?'var(--text3)':(d.change20d>0?'#e5484d':'#19c37d');
+    var arw=d.change20d==null?'':(d.change20d>0?'\u25b2':'\u25bc');
+    var I=function(x){return '<span dir="ltr" style="unicode-bidi:isolate;">'+x+'</span>';};
+    var sp='';
+    if(d.trend&&d.trend.length>2){
+      var vs=d.trend.map(function(x){return x.v;});
+      var mn=Math.min.apply(null,vs), mx=Math.max.apply(null,vs), rg=(mx-mn)||1;
+      var pts=vs.map(function(v,i){ return (i/(vs.length-1)*100).toFixed(1)+','+(28-(v-mn)/rg*25).toFixed(1); }).join(' ');
+      sp='<svg viewBox="0 0 100 30" preserveAspectRatio="none" dir="ltr" style="width:100%;height:38px;margin-top:9px;opacity:.9;">'
+        +'<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>';
+    }
+    var body='<div onclick="_ccCreditPopup()" style="cursor:pointer;display:flex;flex-direction:column;height:100%;">'
+      +'<div style="display:flex;align-items:baseline;gap:9px;margin:2px 0 3px;">'
+        +'<span style="font-family:'+MONO+';font-size:27px;font-weight:800;color:'+col+';line-height:1;">'+I(d.hy_oas.toFixed(2)+'%')+'</span>'
+        +(d.change20d!=null?'<span style="font-size:12px;font-weight:700;color:'+dc+';">'+I(arw+' '+Math.abs(d.change20d).toFixed(2))+'</span>':'')
+      +'</div>'
+      +'<div style="font-size:12px;font-weight:800;color:'+col+';">'+(d.zone_ar||'')
+        +(d.direction_ar?' <span style="color:var(--text3);font-weight:600;">\u00b7 '+d.direction_ar+'</span>':'')
+        +' <span style="color:var(--text3);font-size:10.5px;font-weight:400;">\u24d8</span></div>'
+      +'<div style="font-size:10.5px;color:var(--text3);margin-top:5px;line-height:1.6;">'
+        +'\u0639\u0644\u0627\u0648\u0629 \u0627\u0644\u0633\u0646\u062f\u0627\u062a \u0639\u0627\u0644\u064a\u0629 \u0627\u0644\u0645\u062e\u0627\u0637\u0631 \u0641\u0648\u0642 \u0627\u0644\u062e\u0632\u0627\u0646\u0629 \u00b7 '
+        +'\u0623\u0648\u0633\u0639 \u0645\u0646 '+I(d.percentile252+'%')+' \u0645\u0646 \u0623\u064a\u0627\u0645 \u0627\u0644\u0633\u0646\u0629</div>'
+      +sp
+      +(d.ig_oas!=null?'<div style="font-size:10.5px;color:var(--text3);margin-top:6px;">'
+        +'\u0627\u0644\u062f\u0631\u062c\u0629 \u0627\u0644\u0627\u0633\u062a\u062b\u0645\u0627\u0631\u064a\u0629 '+I(d.ig_oas.toFixed(2)+'%')+'</div>':'')
+      +'<div style="font-size:9.5px;color:var(--text3);margin-top:auto;padding-top:6px;">'+I((d.asOf||'')+' \u00b7 FRED')+'</div>'
+    +'</div>';
+    return panel(secLabel('\u0641\u0631\u0648\u0642 \u0627\u0644\u0627\u0626\u062a\u0645\u0627\u0646')+body,{style:'display:flex;flex-direction:column;height:100%;'});
+  }
+  function _ccCreditPopup(){
+    var d=window._csData; if(!d||d.hy_oas==null) return;
+    var st=d.stress;
+    var col=st<25?'#19c37d':st<50?'#7cc34d':st<75?'#e5aa00':'#e5484d';
+    var I=function(x){return '<span dir="ltr" style="unicode-bidi:isolate;">'+x+'</span>';};
+    var rows=[
+      ['\u0623\u0642\u0644 \u0645\u0646 3%','\u0647\u062f\u0648\u0621 \u2014 \u0627\u0644\u0627\u0642\u062a\u0631\u0627\u0636 \u0631\u062e\u064a\u0635 \u0648\u0627\u0644\u0645\u062e\u0627\u0637\u0631\u0629 \u0645\u0642\u0628\u0648\u0644\u0629','#19c37d',0,3],
+      ['3% \u2013 5%','\u0637\u0628\u064a\u0639\u064a','#7cc34d',3,5],
+      ['5% \u2013 7%','\u0636\u063a\u0637 \u0645\u062a\u0632\u0627\u064a\u062f \u2014 \u0627\u0644\u0633\u0648\u0642 \u064a\u0633\u0639\u0651\u0631 \u062a\u0639\u062b\u0631\u0627\u062a','#e5aa00',5,7],
+      ['\u0623\u0643\u062b\u0631 \u0645\u0646 7%','\u0636\u063a\u0637 \u0627\u0626\u062a\u0645\u0627\u0646\u064a \u2014 \u0627\u0644\u0645\u0642\u0631\u0636\u0648\u0646 \u064a\u0646\u0633\u062d\u0628\u0648\u0646','#e5484d',7,99]
+    ];
+    var v=d.hy_oas;
+    var scale=rows.map(function(r){var on=v>=r[3]&&v<r[4];
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 8px;border-radius:6px;margin:2px 0;font-size:11.5px;'+(on?('background:'+r[2]+'22;border:1px solid '+r[2]+';'):'')+'"><span style="color:'+r[2]+';font-weight:700;">'+r[1]+'</span><span style="color:var(--text3);font-family:'+MONO+';white-space:nowrap;">'+I(r[0])+'</span></div>';
+    }).join('');
+    var html='<div style="font-size:13px;color:var(--text);margin-bottom:10px;">\u0627\u0644\u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u062d\u0627\u0644\u064a\u0629: <b style="color:'+col+';">'+I(v.toFixed(2)+'%')+' \u00b7 '+(d.zone_ar||'')+'</b></div>'
+      +'<div style="font-size:11.5px;color:var(--text2);line-height:1.9;margin-bottom:12px;">\u0641\u0631\u0642 \u0627\u0644\u0627\u0626\u062a\u0645\u0627\u0646 \u0647\u0648 \u0627\u0644\u0639\u0627\u0626\u062f \u0627\u0644\u0625\u0636\u0627\u0641\u064a \u0627\u0644\u0630\u064a \u064a\u0637\u0644\u0628\u0647 \u0627\u0644\u0645\u0642\u0631\u0636\u0648\u0646 \u0645\u0642\u0627\u0628\u0644 \u0625\u0642\u0631\u0627\u0636 \u0627\u0644\u0634\u0631\u0643\u0627\u062a \u0639\u0627\u0644\u064a\u0629 \u0627\u0644\u0645\u062e\u0627\u0637\u0631 \u0628\u062f\u0644\u0627\u064b \u0645\u0646 \u0627\u0644\u062e\u0632\u0627\u0646\u0629 \u0627\u0644\u0623\u0645\u0631\u064a\u0643\u064a\u0629. \u0647\u0648 \u0645\u0642\u064a\u0627\u0633 \u0627\u0644\u062e\u0648\u0641 \u0641\u064a \u0633\u0648\u0642 \u0627\u0644\u0633\u0646\u062f\u0627\u062a\u060c \u0648\u063a\u0627\u0644\u0628\u0627\u064b \u064a\u062a\u062d\u0631\u0643 \u0642\u0628\u0644 \u0633\u0648\u0642 \u0627\u0644\u0623\u0633\u0647\u0645.</div>'
+      +'<div style="font-size:11.5px;color:var(--text2);line-height:1.9;margin-bottom:12px;">\u0627\u062a\u0633\u0627\u0639 \u0627\u0644\u0641\u0631\u0642 \u064a\u0639\u0646\u064a \u0623\u0646 \u062a\u0643\u0644\u0641\u0629 \u0627\u0644\u0627\u0642\u062a\u0631\u0627\u0636 \u062a\u0631\u062a\u0641\u0639 \u0639\u0644\u0649 \u0627\u0644\u0634\u0631\u0643\u0627\u062a \u0627\u0644\u0645\u062f\u064a\u0646\u0629 \u0648\u0627\u0644\u0646\u0627\u0634\u0626\u0629 \u2014 \u0648\u0647\u064a \u0623\u0648\u0644 \u0645\u0646 \u064a\u062a\u0623\u062b\u0631. \u0627\u0646\u0643\u0645\u0627\u0634\u0647 \u064a\u0639\u0646\u064a \u0623\u0646 \u0627\u0644\u062a\u0645\u0648\u064a\u0644 \u0645\u062a\u0627\u062d \u0648\u0627\u0644\u0634\u0647\u064a\u0629 \u0644\u0644\u0645\u062e\u0627\u0637\u0631\u0629 \u0645\u0648\u062c\u0648\u062f\u0629.</div>'
+      +'<div style="font-size:11px;color:var(--text3);margin-bottom:6px;">\u0627\u0644\u0645\u0642\u064a\u0627\u0633:</div>'+scale
+      +'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">'
+        +'<span>\u062a\u063a\u064a\u0631 20 \u064a\u0648\u0645\u0627\u064b</span><span style="font-family:'+MONO+';color:var(--text2);">'+I(d.change20d==null?'\u2014':((d.change20d>0?'+':'')+d.change20d.toFixed(2)))+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:4px;">'
+        +'<span>\u062a\u063a\u064a\u0631 90 \u064a\u0648\u0645\u0627\u064b</span><span style="font-family:'+MONO+';color:var(--text2);">'+I(d.change90d==null?'\u2014':((d.change90d>0?'+':'')+d.change90d.toFixed(2)))+'</span></div>'
+      +'<div style="font-size:10.5px;color:var(--text3);line-height:1.8;margin-top:12px;">\u0627\u0644\u0645\u0635\u062f\u0631: '+I('FRED \u00b7 ICE BofA US High Yield OAS')+'. \u0633\u064a\u0627\u0642 \u0639\u0627\u0645 \u0644\u0644\u0633\u0648\u0642\u060c \u0644\u064a\u0633 \u062e\u0627\u0635\u0627\u064b \u0628\u0623\u0633\u0647\u0645\u0643.</div>';
+    var ov=document.getElementById('ccRiskOv');
+    if(!ov){ ov=document.createElement('div'); ov.id='ccRiskOv'; ov.className='sheet-ov'; ov.onclick=function(e){ if(e.target===ov) _ccRiskClose(); }; document.body.appendChild(ov); }
+    ov.innerHTML='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;max-width:380px;width:92vw;max-height:80vh;overflow-y:auto;padding:18px;box-shadow:0 16px 48px rgba(0,0,0,.5);">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><div style="font-size:15px;font-weight:700;color:var(--text);">\u0641\u0631\u0648\u0642 \u0627\u0644\u0627\u0626\u062a\u0645\u0627\u0646</div>'
+      +'<span onclick="_ccRiskClose()" style="cursor:pointer;color:var(--text3);font-size:18px;line-height:1;">\u2715</span></div>'+html+'</div>';
+    ov.style.display='flex'; requestAnimationFrame(function(){ ov.style.opacity='1'; });
+  }
+  window._ccCreditPopup=_ccCreditPopup;
   function _ccFGPopup(){
     var d=window._fgData; if(!d||d.score==null) return;
     var sc=d.score;
@@ -4958,7 +5024,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
   function bcell(html,span){ if(!html) return ''; return '<div style="grid-column:span '+span+';min-width:0;display:flex;flex-direction:column;" class="cc-bcell">'+html+'</div>'; }
   
   var _gsSaved={}; try{ _gsSaved=JSON.parse(localStorage.getItem('theisi_cc_layout_v2')||'{}'); }catch(e){}
-  var _gsDefaults={market:{x:0,y:9,w:4,h:6},today:{x:0,y:9,w:9,h:6},opp:{x:9,y:9,w:3,h:6},review:{x:0,y:15,w:3,h:6},mc:{x:3,y:15,w:3,h:6},exposure:{x:6,y:15,w:2,h:8},pulse:{x:8,y:15,w:2,h:8},fg:{x:10,y:15,w:2,h:8},hz:{x:0,y:21,w:2,h:6},news:{x:2,y:21,w:4,h:6},movers:{x:6,y:23,w:6,h:4}};
+  var _gsDefaults={market:{x:0,y:9,w:4,h:6},today:{x:0,y:9,w:9,h:6},opp:{x:9,y:9,w:3,h:6},review:{x:0,y:15,w:3,h:6},mc:{x:3,y:15,w:3,h:6},exposure:{x:6,y:15,w:2,h:8},pulse:{x:8,y:15,w:2,h:8},fg:{x:10,y:15,w:2,h:8},hz:{x:0,y:21,w:2,h:6},news:{x:2,y:21,w:4,h:6},movers:{x:6,y:23,w:6,h:4},cs:{x:10,y:23,w:2,h:7}};
   _gsDefaults.mpulse = { x:0, y:0, w:12, h:9 };
   _gsDefaults.mpulse = { x:0, y:0, w:12, h:9 };
   function gsItem(id,html,popupTitle){
@@ -5118,6 +5184,7 @@ window.loadPulse = function(force){
     +gsItem('pulse',panel(pulse,{style:'flex:1;display:flex;flex-direction:column;background:var(--bg2);border-color:rgba(255,10,120,.25);'}))
     +gsItem('exposure',panel(exposureInner,{style:'flex:1;display:flex;flex-direction:column;'}))
     +gsItem('fg',fgCard||ccPh('مزاج السوق'))
+    +gsItem('cs',csCard||ccPh('فروق الائتمان'))
     +gsItem('mc',mcCard||ccPh('الأحداث الاقتصادية'),'\u0627\u0644\u0623\u062d\u062f\u0627\u062b \u0627\u0644\u0627\u0642\u062a\u0635\u0627\u062f\u064a\u0629')
     +gsItem('hz',hzCard,'\u0625\u0634\u0627\u0631\u0627\u062a \u0627\u0644\u0622\u0641\u0627\u0642')
     +gsItem('review',reviewSection||ccPh('ما يستحق المراجعة'),'\u0645\u0627 \u064a\u0633\u062a\u062d\u0642 \u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629')
@@ -5196,6 +5263,7 @@ function ccRefresh(){
   loadEarningsData();
   loadShariaData();
   loadFearGreed();
+  loadCredit();
   loadStockSentiment();
   loadMacro();
   snapshotToday();
@@ -5222,6 +5290,16 @@ function loadFearGreed(){
     fetch('/api/portfolio-for-ai?mode=sentiment&t='+Date.now())
       .then(function(r){return r.json();})
       .then(function(d){ if(d&&d.score!=null){ window._fgData=d; renderCommandCenter(); } })
+      .catch(function(){});
+  }catch(e){}
+}
+function loadCredit(){
+  if(window._csData || window._csTried){ return; }
+  window._csTried=true;
+  try{
+    fetch('/api/portfolio-for-ai?mode=credit&t='+Date.now())
+      .then(function(r){return r.json();})
+      .then(function(d){ if(d&&d.hy_oas!=null){ window._csData=d; renderCommandCenter(); } })
       .catch(function(){});
   }catch(e){}
 }
@@ -7317,50 +7395,6 @@ function _sigSynthesis(reads, agree, isAr){
 
 
 // ── Derived: Volatility/Risk read ──
-// ══════════ PRICE READ — "وين السعر مقارنة بمعتاده؟" ══════════
-// Renders ONLY fields computed server-side (api/_lib/percentile-read.js).
-// Every Arabic sentence is built in code, not by Claude. Nothing is invented here.
-// Collapsed by default; the four-line explanation opens on tap.
-function _prZoneColor(z){
-  return z==='very_high' ? 'var(--red,#e5484d)'
-       : z==='high'      ? 'var(--gold,#fbbf24)'
-       : z==='very_low'  ? 'var(--blue,#00c8ff)'
-       : z==='low'       ? 'var(--blue,#00c8ff)'
-       : 'var(--text3)';
-}
-function _prToggle(id){
-  var el=document.getElementById(id); if(!el) return;
-  var open = el.style.display!=='none';
-  el.style.display = open ? 'none' : 'block';
-  var b=document.getElementById(id+'-btn');
-  if(b) b.textContent = open ? 'اعرف أكثر' : 'إخفاء';
-}
-function _prRender(pr, idSuffix){
-  if(!pr || !pr.show || !pr.text) return '';
-  var t=pr.text, c=_prZoneColor(pr.zone), id='pr-body-'+(idSuffix||'lk');
-  var row=function(label,txt,color){
-    if(!txt) return '';
-    return '<div style="margin-bottom:9px;">'
-      +'<div style="font-size:10px;color:var(--text3);margin-bottom:2px;">'+label+'</div>'
-      +'<div style="font-size:12px;line-height:1.95;color:'+(color||'var(--text2)')+';">'+txt+'</div></div>';
-  };
-  return '<div dir="rtl" style="background:var(--bg2);border:1px solid var(--border);border-inline-start:3px solid '+c+';border-radius:14px;padding:13px 15px;margin-top:14px;font-family:\'Almarai\',sans-serif;">'
-    +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">'
-      +'<div style="font-size:12.5px;line-height:1.85;color:var(--text);flex:1;">\u26a1 '+t.one_line_ar+'</div>'
-      +'<button id="'+id+'-btn" onclick="_prToggle(\''+id+'\')" style="flex-shrink:0;background:none;border:1px solid var(--border);color:var(--text3);border-radius:99px;padding:3px 11px;font-size:10.5px;cursor:pointer;font-family:\'Almarai\',sans-serif;">اعرف أكثر</button>'
-    +'</div>'
-    +'<div id="'+id+'" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:11px;">'
-      +row('الحالة', t.state_ar, 'var(--text)')
-      +row('الأرقام', t.numbers_ar)
-      +row('معناها', t.meaning_ar)
-      +row('ما معناها', t.not_meaning_ar, 'var(--gold,#fbbf24)')
-      +(t.regime_ar?'<div style="background:var(--bg3);border-radius:10px;padding:9px 11px;margin-bottom:9px;font-size:11.5px;line-height:1.9;color:var(--text2);">\u26a0 '+t.regime_ar+'</div>':'')
-      +'<div style="font-size:10px;color:var(--text3);line-height:1.8;border-top:1px solid var(--border);padding-top:9px;">'
-        +t.method_ar+'<br>'+t.caveat_ar+'</div>'
-    +'</div>'
-  +'</div>';
-}
-
 function _lkRiskRead(d){
   // PEG component
   let pegRisk = 1; // 0 low, 1 med, 2 high
@@ -7782,12 +7816,6 @@ async function lookupStock() {
 
     // Prepend the decision panel above the card — AFTER innerHTML so it isn't overwritten
     document.getElementById('lookup-data-card').insertAdjacentHTML('afterbegin', decisionPanel);
-    // ── Price read, directly under the decision panel ─────────────────────
-    try{
-      var _prHtml = _prRender(d.price_read, 'lk');
-      var _dp = document.querySelector('.lk-decision-panel');
-      if(_dp && _prHtml) _dp.insertAdjacentHTML('afterend', _prHtml);
-    }catch(e){}
     // ── End Decision Dashboard Panel ─────────────────────────────────────
 
     // Render price chart into the decision panel (if API provided history)
@@ -8144,32 +8172,6 @@ function adv2VerdictChip(v){
   var m={review:['\u0645\u0631\u0627\u062c\u0639\u0629','rgba(239,68,68,.14)','#f87171'],watch:['\u0631\u0627\u0642\u0628','rgba(245,158,11,.14)','#fbbf24'],strong:['\u0642\u0648\u064a','rgba(16,185,129,.14)','#34d399'],hold:['\u0627\u062d\u062a\u0641\u0638','rgba(59,130,246,.14)','#60a5fa']}[v]||['—','var(--bg2)','var(--text2)'];
   return '<span style="font-size:10.5px;font-weight:700;border-radius:12px;padding:2px 10px;background:'+m[1]+';color:'+m[2]+';">'+m[0]+'</span>';
 }
-// Full price read for the card popup — same four lines as Explore.
-function adv2ReadFull(r){
-  if(!r || !r.show || !r.text) return '';
-  var t=r.text;
-  var row=function(l,x,c){ return x?'<div style="margin-bottom:8px;"><div style="font-size:10px;color:var(--text3);margin-bottom:2px;">'+l+'</div><div style="font-size:11.5px;line-height:1.9;color:'+(c||'var(--text2)')+';">'+x+'</div></div>':''; };
-  return '<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;">'
-    +'<div style="font-size:11.5px;font-weight:700;margin-bottom:8px;">\u0642\u0631\u0627\u0621\u0629 \u0645\u0648\u0642\u0639 \u0627\u0644\u0633\u0639\u0631</div>'
-    +row('\u0627\u0644\u062d\u0627\u0644\u0629', t.state_ar, 'var(--text)')
-    +row('\u0627\u0644\u0623\u0631\u0642\u0627\u0645', t.numbers_ar)
-    +row('\u0645\u0639\u0646\u0627\u0647\u0627', t.meaning_ar)
-    +row('\u0645\u0627 \u0645\u0639\u0646\u0627\u0647\u0627', t.not_meaning_ar, 'var(--gold,#fbbf24)')
-    +(t.regime_ar?'<div style="background:var(--bg3);border-radius:9px;padding:8px 10px;font-size:11px;line-height:1.9;color:var(--text2);margin-bottom:8px;">\u26a0 '+t.regime_ar+'</div>':'')
-    +'<div style="font-size:9.5px;color:var(--text3);line-height:1.75;">'+t.method_ar+'<br>'+t.caveat_ar+'</div>'
-  +'</div>';
-}
-// One-line price read on an advisor card. Full four-line text is in the popup.
-// Renders only what the server computed — no numbers or sentences invented here.
-function adv2ReadLine(r){
-  if(!r || !r.show || !r.text) return '';
-  var c = r.regime_flag ? 'var(--red,#e5484d)'
-        : r.zone==='very_high' ? 'var(--red,#e5484d)'
-        : r.zone==='high' ? 'var(--gold,#fbbf24)'
-        : 'var(--blue,#00c8ff)';
-  return '<div style="margin-top:7px;padding-top:7px;border-top:1px dashed var(--border);'
-    +'font-size:10.5px;line-height:1.85;color:'+c+';">\u2295 '+r.text.one_line_ar+'</div>';
-}
 function adv2StockCard(s){
   var mono="font-family:'IBM Plex Mono',monospace;direction:ltr;unicode-bidi:isolate;";
   var glc=s.glPct>=0?'#34d399':'#f87171';
@@ -8187,7 +8189,6 @@ function adv2StockCard(s){
       +'<span style="font-size:10.5px;color:var(--text3);margin-inline-start:auto;"><span style="'+mono+'">$'+Math.round(s.value/1000)+'K</span> \u00b7 '+(s.weight!=null?s.weight+'%':'')+'</span>'
     +'</div>'
     +'<div style="font-size:12px;line-height:1.95;color:var(--text2);">'+(s.thesis||'')+'</div>'
-    +adv2ReadLine(s.read)
     +(s.watch?'<div style="font-size:10.5px;color:var(--gold,#fbbf24);margin-top:6px;">\u26a1 '+s.watch+'</div>':'')
     +(tgt?'<div style="margin-top:5px;">'+tgt+'</div>':'')
   +'</div>';
@@ -8206,8 +8207,7 @@ function adv2RenderStructured(doc){
   (doc.stocks||[]).forEach(function(s){
     window._adv2CardDetail[s.sym]='<div style="font-size:12.5px;line-height:2;color:var(--text);">'
       +'<div style="margin-bottom:8px;">'+adv2VerdictChip(s.verdict)+' \u00b7 \u0623\u0633\u0628\u0627\u0628 \u0622\u0644\u064a\u0629: <span style="font-family:monospace;font-size:11px;direction:ltr;unicode-bidi:isolate;">'+(s.reasons||[]).join(', ')+'</span></div>'
-      +(s.thesis||'')+(s.watch?'<div style="color:#fbbf24;margin-top:8px;">\u26a1 '+s.watch+'</div>':'')
-      +adv2ReadFull(s.read)+'</div>';
+      +(s.thesis||'')+(s.watch?'<div style="color:#fbbf24;margin-top:8px;">\u26a1 '+s.watch+'</div>':'')+'</div>';
   });
   var order={review:0,watch:1,strong:2,hold:3};
   var stocks=(doc.stocks||[]).slice().sort(function(a,b){return (order[a.verdict]||9)-(order[b.verdict]||9)||(b.value||0)-(a.value||0);});
@@ -8229,10 +8229,7 @@ function adv2RenderStructured(doc){
   var cards='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:20px;">'+shown.map(adv2StockCard).join('')+'</div>';
   var clusters=(doc.clusters&&doc.clusters.length)?'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 15px;"><div style="font-size:12px;font-weight:700;margin-bottom:8px;">\u0627\u0644\u0645\u062c\u0645\u0648\u0639\u0627\u062a \u0627\u0644\u0645\u062a\u0631\u0627\u0628\u0637\u0629</div>'+doc.clusters.map(function(c){return '<div style="font-size:11.5px;line-height:1.9;color:var(--text2);margin-bottom:6px;"><b>'+c.name+'</b> <span style="font-family:monospace;font-size:10.5px;direction:ltr;unicode-bidi:isolate;">'+(c.syms||[]).join('\u00b7')+'</span> \u2014 $'+Math.round((c.value||0)/1000)+'K<br><span style="color:var(--text3);">'+(c.note||'')+'</span></div>';}).join('')+'</div>':'';
   var stress=(doc.stress&&doc.stress.length)?'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 15px;"><div style="font-size:12px;font-weight:700;margin-bottom:8px;">\u0627\u062e\u062a\u0628\u0627\u0631 \u0627\u0644\u0625\u062c\u0647\u0627\u062f</div>'+doc.stress.map(function(s){return '<div style="font-size:11.5px;color:var(--text2);line-height:1.9;">'+s.scenario+' \u2192 <span style="font-family:monospace;color:#f87171;direction:ltr;unicode-bidi:isolate;">-$'+Math.abs(Math.round((s.impact_usd||0)/1000))+'K</span></div>';}).join('')+(doc.hedge?'<div style="font-size:11px;color:var(--text3);margin-top:8px;">'+doc.hedge+'</div>':'')+'</div>':'';
-  var _sn=(doc.verdict&&doc.verdict.silent_note_ar)||'';
-  var summary=doc.summary?'<div style="background:var(--bg2);border:1px solid rgba(255,10,120,.25);border-radius:12px;padding:14px 16px;font-size:12.5px;line-height:2;margin-bottom:14px;">'+doc.summary
-    +(_sn?'<div style="margin-top:10px;padding-top:9px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.9;">'+_sn+'</div>':'')
-    +'</div>':'';
+  var summary=doc.summary?'<div style="background:var(--bg2);border:1px solid rgba(255,10,120,.25);border-radius:12px;padding:14px 16px;font-size:12.5px;line-height:2;margin-bottom:14px;">'+doc.summary+'</div>':'';
   var lv=doc.long_view?'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 15px;"><div style="font-size:12px;font-weight:700;margin-bottom:8px;">النظرة البعيدة — سنة+</div><div style="font-size:12px;line-height:1.95;color:var(--text2);">'+doc.long_view+'</div></div>':'';
   var hp=doc.health?'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 15px;"><div style="font-size:12px;font-weight:700;margin-bottom:8px;">صحة المحفظة</div><div style="font-size:12px;line-height:1.95;color:var(--text2);">'+doc.health+'</div></div>':'';
   box.innerHTML='<div dir="rtl" style="text-align:right;">'+strip+summary+pills+cards+'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'+clusters+stress+lv+hp+'</div></div>';
@@ -14937,27 +14934,6 @@ async function saLoadSavedInputs() {
 // ===== SA Results Viewer (read-only history tab) =====
 let saViewerDates = [], saViewerDateIdx = 0, saViewerVersions = [], saViewerVerIdx = 0;
 
-// Canonical sidebar order for the MAIN group. Enforced explicitly rather than
-// relying on where a dynamically-injected item happens to land.
-const SB_ORDER = ['command','advisor','portfolio','sa-view','lookup'];
-function sbEnforceOrder(){
-  try{
-    const nav = document.querySelector('nav');
-    if(!nav) return;
-    const sep = nav.querySelector('.sb-sep');            // main group ends here
-    const items = {};
-    nav.querySelectorAll('.sb-item').forEach(function(el){
-      const t = el.getAttribute('data-tab'); if(t) items[t] = el;
-    });
-    let anchor = null;
-    SB_ORDER.forEach(function(tab){
-      const el = items[tab]; if(!el) return;
-      if(anchor) anchor.after(el); else if(sep) nav.insertBefore(el, nav.firstChild);
-      anchor = el;
-    });
-  }catch(e){}
-}
-
 function saBuildViewerTab() {
   if (document.getElementById('tab-sa-view')) return;
   // nav item
@@ -14968,8 +14944,12 @@ function saBuildViewerTab() {
     item.setAttribute('data-tab', 'sa-view');
     item.setAttribute('onclick', "showTab('sa-view',this)");
     item.innerHTML = '<span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/><polyline points="9 14 11 16 15 12"/></svg></span><span class="sb-lbl">SA Results</span>';
-    nav.appendChild(item);
-    sbEnforceOrder();
+    const dashItem = [...nav.querySelectorAll('.sb-item')].find(el => (el.getAttribute('onclick')||'').includes("'dashboard'"));
+    if (dashItem && dashItem.nextSibling) {
+      nav.insertBefore(item, dashItem.nextSibling);
+    } else {
+      nav.appendChild(item);
+    }
   }
   // tab content
   const tab = document.createElement('div');
