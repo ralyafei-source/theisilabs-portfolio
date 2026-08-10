@@ -15651,5 +15651,290 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
 
 </div>
 
+  <!-- ═══════════════════════════════════════════════════════════════════
+     THEISI — Stock Notes (thesis + price target + free note)
+     Paste this whole block once, right before </body> in index.html.
+     Self-contained: no edits to any render function required. It watches
+     the DOM and decorates every ticker (Portfolio, AI Advisor, SA Results,
+     Explore, movers, opportunity) with a pin: view on hover, click to edit.
+     ═══════════════════════════════════════════════════════════════════ -->
+<style>
+  .tn-pin{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+    font-size:11px;line-height:1;margin-inline-start:5px;vertical-align:middle;
+    width:16px;height:16px;border-radius:5px;user-select:none;transition:opacity .12s,background .12s;}
+  .tn-pin.has{color:var(--accent,#d4af37);opacity:1;}
+  .tn-pin.empty{color:var(--muted,#8a8f98);opacity:0;background:transparent;}
+  /* faint "+" only appears when hovering the ticker, to avoid clutter */
+  .tn-host:hover .tn-pin.empty{opacity:.55;}
+  .tn-pin.empty:hover{opacity:1;background:var(--bg2,#1b1f27);}
+  .tn-pin.has:hover{background:var(--bg2,#1b1f27);}
+
+  .tn-tip{position:fixed;z-index:99999;max-width:320px;background:var(--bg1,#12151b);
+    border:1px solid var(--border,#2a2f3a);border-radius:10px;padding:11px 13px;
+    box-shadow:0 8px 28px rgba(0,0,0,.45);color:var(--text,#e6e8ec);font-size:12.5px;
+    line-height:1.7;pointer-events:none;opacity:0;transition:opacity .1s;}
+  .tn-tip.show{opacity:1;}
+  .tn-tip .tn-t-sym{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12px;
+    color:var(--accent,#d4af37);direction:ltr;unicode-bidi:isolate;}
+  .tn-tip .tn-t-row{margin-top:6px;}
+  .tn-tip .tn-t-lbl{color:var(--muted,#8a8f98);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;}
+  .tn-tip .tn-t-tgt{font-family:'IBM Plex Mono',monospace;direction:ltr;unicode-bidi:isolate;}
+  .tn-tip .tn-gap.up{color:#3fb950;} .tn-tip .tn-gap.dn{color:#f85149;}
+
+  .tn-ov{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.55);
+    display:none;align-items:center;justify-content:center;padding:18px;}
+  .tn-ov.show{display:flex;}
+  .tn-modal{width:100%;max-width:440px;background:var(--bg1,#12151b);
+    border:1px solid var(--border,#2a2f3a);border-radius:14px;padding:18px 18px 16px;}
+  .tn-modal h3{margin:0 0 2px;font-size:15px;color:var(--text,#e6e8ec);display:flex;align-items:center;gap:8px;}
+  .tn-modal h3 .s{font-family:'IBM Plex Mono',monospace;color:var(--accent,#d4af37);font-size:13px;direction:ltr;unicode-bidi:isolate;}
+  .tn-modal .tn-sub{color:var(--muted,#8a8f98);font-size:11.5px;margin:0 0 12px;}
+  .tn-field{margin-bottom:11px;}
+  .tn-field label{display:block;font-size:11px;color:var(--muted,#8a8f98);margin-bottom:4px;
+    text-transform:uppercase;letter-spacing:.04em;}
+  .tn-field textarea,.tn-field input{width:100%;box-sizing:border-box;background:var(--bg2,#1b1f27);
+    border:1px solid var(--border,#2a2f3a);border-radius:8px;color:var(--text,#e6e8ec);
+    font-size:13px;padding:8px 10px;font-family:inherit;resize:vertical;}
+  .tn-field textarea{min-height:70px;}
+  .tn-actions{display:flex;gap:8px;margin-top:14px;align-items:center;}
+  .tn-btn{border:1px solid var(--border,#2a2f3a);background:var(--bg2,#1b1f27);color:var(--text,#e6e8ec);
+    border-radius:8px;padding:8px 14px;font-size:12.5px;cursor:pointer;font-family:inherit;}
+  .tn-btn.pri{background:var(--accent,#d4af37);border-color:var(--accent,#d4af37);color:#12151b;font-weight:700;}
+  .tn-btn.del{margin-inline-end:auto;color:#f85149;border-color:transparent;background:transparent;}
+  .tn-btn:disabled{opacity:.5;cursor:default;}
+</style>
+<script>
+(function(){
+  "use strict";
+  if (window.THEISINotes) return; // idempotent
+
+  var SESSION_KEY = 'theisilabs_session';
+  // Ticker markup used across the dashboard. Structured ones are always real
+  // tickers; .adv2-tick is a loose regex-wrap, so we only pin it when the
+  // symbol is already "known" (in the portfolio or already has a note).
+  var STRUCTURED = '.hold-sym, .sym-badge, [data-sym]';
+  var LOOSE = '.adv2-tick';
+
+  var notes = {};          // { SYM: {thesis,target,note,updatedAt} }
+  var known = {};          // SYM -> true (real tickers seen in structured markup)
+  var loaded = false;
+
+  // Optional price hook: define window.THEISI_getPrice = sym => number
+  // to show the gap between price target and current price in tooltips.
+  function priceOf(sym){
+    try { if (typeof window.THEISI_getPrice === 'function') return Number(window.THEISI_getPrice(sym)); } catch(e){}
+    return null;
+  }
+
+  function token(){ try { return localStorage.getItem(SESSION_KEY) || ''; } catch(e){ return ''; } }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  function symOf(el){
+    var s = el.getAttribute && el.getAttribute('data-sym');
+    if (!s) s = (el.textContent || '').trim();
+    s = s.toUpperCase().replace(/[^A-Z0-9.\-]/g,'');
+    return s;
+  }
+  function isTicker(s){ return /^[A-Z][A-Z0-9.\-]{0,9}$/.test(s); }
+
+  // ── Load ────────────────────────────────────────────────────────
+  function load(){
+    var t = token();
+    if (!t) return Promise.resolve();
+    return fetch('/api/notes', { headers: { 'Authorization': 'Bearer ' + t } })
+      .then(function(r){ return r.ok ? r.json() : { notes:{} }; })
+      .then(function(j){ notes = (j && j.notes) || {}; loaded = true; decorateAll(); })
+      .catch(function(){});
+  }
+
+  // ── Save / delete one ticker ────────────────────────────────────
+  function save(sym, patch){
+    var t = token();
+    if (!t) return Promise.reject(new Error('not logged in'));
+    return fetch('/api/notes', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+t },
+      body: JSON.stringify(Object.assign({ sym: sym }, patch))
+    }).then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }); })
+      .then(function(res){
+        if (!res.ok) throw new Error((res.j && res.j.message) || 'save failed');
+        notes = (res.j && res.j.notes) || notes;
+        decorateAll();
+        return notes;
+      });
+  }
+
+  // ── Tooltip ─────────────────────────────────────────────────────
+  var tip = null, tipHideT = null;
+  function ensureTip(){ if(!tip){ tip=document.createElement('div'); tip.className='tn-tip'; document.body.appendChild(tip); } return tip; }
+  function tipHtml(sym, n){
+    var h = '<div class="tn-t-sym">'+esc(sym)+'</div>';
+    if (n.thesis) h += '<div class="tn-t-row">'+esc(n.thesis)+'</div>';
+    if (n.target != null){
+      var g='', cur=priceOf(sym);
+      if (cur && isFinite(cur) && cur>0){
+        var pct=((n.target-cur)/cur*100);
+        g=' <span class="tn-gap '+(pct>=0?'up':'dn')+'">('+(pct>=0?'+':'')+pct.toFixed(1)+'%)</span>';
+      }
+      h += '<div class="tn-t-row"><span class="tn-t-lbl">Target</span> <span class="tn-t-tgt">$'+(+n.target).toLocaleString()+'</span>'+g+'</div>';
+    }
+    if (n.note) h += '<div class="tn-t-row"><span class="tn-t-lbl">Note</span><br>'+esc(n.note)+'</div>';
+    return h;
+  }
+  function showTip(sym, x, y){
+    var n = notes[sym]; if(!n) return;
+    var el = ensureTip(); el.innerHTML = tipHtml(sym, n);
+    el.style.left = '-9999px'; el.style.top = '0px'; el.classList.add('show');
+    var w = el.offsetWidth, h = el.offsetHeight;
+    var left = Math.min(x + 12, window.innerWidth - w - 8);
+    var top  = (y + h + 18 > window.innerHeight) ? (y - h - 10) : (y + 14);
+    el.style.left = Math.max(8,left) + 'px'; el.style.top = Math.max(8,top) + 'px';
+  }
+  function hideTip(){ if(tip){ tip.classList.remove('show'); } }
+
+  // ── Editor modal ────────────────────────────────────────────────
+  var ov = null, fThesis, fTarget, fNote, mSym, mSymEl, saveBtn, delBtn;
+  function ensureModal(){
+    if (ov) return;
+    ov = document.createElement('div'); ov.className='tn-ov'; ov.setAttribute('dir','auto');
+    ov.innerHTML =
+      '<div class="tn-modal" role="dialog" aria-modal="true">'+
+        '<h3>📌 Note <span class="s" id="tn-m-sym"></span></h3>'+
+        '<p class="tn-sub">Private — only you see this. Shows everywhere this stock appears.</p>'+
+        '<div class="tn-field"><label>Investment thesis</label><textarea id="tn-f-thesis" placeholder="Why you own / watch it…"></textarea></div>'+
+        '<div class="tn-field"><label>Price target ($)</label><input id="tn-f-target" type="number" step="any" min="0" placeholder="e.g. 250"></div>'+
+        '<div class="tn-field"><label>Free note</label><textarea id="tn-f-note" placeholder="Reminders, levels, anything…"></textarea></div>'+
+        '<div class="tn-actions">'+
+          '<button class="tn-btn del" id="tn-del">Delete</button>'+
+          '<button class="tn-btn" id="tn-cancel">Cancel</button>'+
+          '<button class="tn-btn pri" id="tn-save">Save</button>'+
+        '</div>'+
+      '</div>';
+    document.body.appendChild(ov);
+    mSymEl = ov.querySelector('#tn-m-sym');
+    fThesis= ov.querySelector('#tn-f-thesis');
+    fTarget= ov.querySelector('#tn-f-target');
+    fNote  = ov.querySelector('#tn-f-note');
+    saveBtn= ov.querySelector('#tn-save');
+    delBtn = ov.querySelector('#tn-del');
+    ov.querySelector('#tn-cancel').onclick = closeModal;
+    ov.addEventListener('click', function(e){ if(e.target===ov) closeModal(); });
+    saveBtn.onclick = function(){
+      saveBtn.disabled=true; delBtn.disabled=true;
+      var tv = fTarget.value.trim();
+      save(mSym, { thesis:fThesis.value, note:fNote.value, target: tv===''?null:tv })
+        .then(closeModal)
+        .catch(function(e){ alert(e.message||'Save failed'); })
+        .finally(function(){ saveBtn.disabled=false; delBtn.disabled=false; });
+    };
+    delBtn.onclick = function(){
+      saveBtn.disabled=true; delBtn.disabled=true;
+      save(mSym, { delete:true })
+        .then(closeModal)
+        .catch(function(e){ alert(e.message||'Delete failed'); })
+        .finally(function(){ saveBtn.disabled=false; delBtn.disabled=false; });
+    };
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape' && ov.classList.contains('show')) closeModal(); });
+  }
+  function openModal(sym){
+    ensureModal(); hideTip();
+    mSym = sym; mSymEl.textContent = sym;
+    var n = notes[sym] || {};
+    fThesis.value = n.thesis || '';
+    fTarget.value = (n.target==null?'':n.target);
+    fNote.value   = n.note || '';
+    delBtn.style.display = notes[sym] ? '' : 'none';
+    ov.classList.add('show');
+    setTimeout(function(){ fThesis.focus(); }, 30);
+  }
+  function closeModal(){ if(ov) ov.classList.remove('show'); }
+
+  // ── Decoration ──────────────────────────────────────────────────
+  function makePin(sym){
+    var has = !!notes[sym];
+    var pin = document.createElement('span');
+    pin.className = 'tn-pin ' + (has?'has':'empty');
+    pin.setAttribute('data-tn', sym);
+    pin.textContent = has ? '📌' : '+';
+    pin.title = has ? 'View / edit note' : 'Add a note';
+    pin.addEventListener('click', function(e){ e.stopPropagation(); e.preventDefault(); openModal(sym); });
+    pin.addEventListener('mouseenter', function(e){ clearTimeout(tipHideT); if(notes[sym]) showTip(sym, e.clientX, e.clientY); });
+    pin.addEventListener('mousemove', function(e){ if(notes[sym] && tip && tip.classList.contains('show')){ tip.style.left=Math.min(e.clientX+12,window.innerWidth-tip.offsetWidth-8)+'px'; } });
+    pin.addEventListener('mouseleave', function(){ tipHideT=setTimeout(hideTip,80); });
+    return pin;
+  }
+  // Where the pin should actually be placed for a matched element.
+  // Row containers ([data-sym]) hold the symbol in an inner .sym or first <td>;
+  // pin those instead of the container (a pin as a direct <tr> child is invalid).
+  function hostFor(el){
+    try {
+      if (el.matches && el.matches('.hold-sym, .sym-badge, .adv2-tick')) return el;
+      var inner = el.querySelector && el.querySelector(':scope .sym');
+      if (inner) return inner;
+      if (el.tagName === 'TR'){ var td = el.querySelector(':scope > td'); if (td) return td; }
+    } catch(e){}
+    return el;
+  }
+  function decorate(el, sym){
+    if (!el || el.getAttribute('data-tn-done')==='1') return;
+    el.setAttribute('data-tn-done','1');
+    var host = hostFor(el);
+    host.classList.add('tn-host');
+    host.appendChild(makePin(sym));
+  }
+  function refreshPin(el, sym){
+    // keep an already-decorated element's pin in sync after a save
+    var host = hostFor(el);
+    var pin = host.querySelector('.tn-pin');
+    if (!pin) return;
+    var has = !!notes[sym];
+    pin.className = 'tn-pin ' + (has?'has':'empty');
+    pin.textContent = has ? '📌' : '+';
+    pin.title = has ? 'View / edit note' : 'Add a note';
+  }
+
+  function scan(selector, requireKnown){
+    var list = document.querySelectorAll(selector);
+    for (var i=0;i<list.length;i++){
+      var el = list[i];
+      if (el.closest('.tn-pin')) continue;               // never pin a pin
+      var sym = symOf(el);
+      if (!isTicker(sym)) continue;
+      if (!requireKnown) known[sym] = true;               // structured → trusted
+      if (requireKnown && !known[sym] && !notes[sym]) continue;
+      if (el.getAttribute('data-tn-done')==='1') { refreshPin(el, sym); continue; }
+      decorate(el, sym);
+    }
+  }
+  function decorateAll(){
+    scan(STRUCTURED, false);  // build the known set first
+    scan(LOOSE, true);        // then loose matches, gated on known/has-note
+  }
+
+  // ── React to re-renders (renderPortfolio, adv2, SA table, etc.) ──
+  var pending = null;
+  function schedule(){ if(pending) return; pending=setTimeout(function(){ pending=null; decorateAll(); }, 150); }
+  function start(){
+    load();
+    var mo = new MutationObserver(function(muts){
+      for (var i=0;i<muts.length;i++){ if(muts[i].addedNodes && muts[i].addedNodes.length){ schedule(); return; } }
+    });
+    mo.observe(document.body, { childList:true, subtree:true });
+    window.addEventListener('scroll', hideTip, true);
+  }
+  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+
+  // ── Public API (optional manual hooks) ──────────────────────────
+  window.THEISINotes = {
+    open: openModal,
+    get: function(sym){ return notes[(sym||'').toUpperCase()] || null; },
+    all: function(){ return notes; },
+    reload: load,
+    refresh: decorateAll
+  };
+})();
+</script>
+  
 </body>
 </html>
