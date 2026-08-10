@@ -787,7 +787,56 @@ module.exports = async (req, res) => {
     }
   }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// THEISI — mode=ticker-lookup  (auto-fill company name + sector in Record Trade)
+// PASTE this whole block into api/portfolio-for-ai.js, among the other
+// `if (req.query.mode === '...')` branches — right AFTER the
+// `if (req.query.mode === 'build-distributions') { ... }` block is a good spot
+// (it must be BEFORE the `const { nickname, include } = req.query;` line).
+//
+// The dashboard's onNewSym()/lookupTicker() already calls:
+//   /api/portfolio-for-ai?mode=ticker-lookup&symbol=TSLA
+// and reads { name, sector_code }. No frontend change needed.
+// Uses the fmpGet() helper already defined at the top of this file.
+// ═══════════════════════════════════════════════════════════════════════════
+  if (req.query.mode === 'ticker-lookup') {
+    const sym = (req.query.symbol || req.query.sym || '').toString().trim().toUpperCase();
+    if (!sym) return res.status(400).json({ error: 'missing symbol' });
+    try {
+      const profileA = await fmpGet(`/profile?symbol=${sym}`);
+      const p = Array.isArray(profileA) ? profileA[0] : profileA;
+      if (!p) return res.status(200).json({ symbol: sym, name: null, sector_code: null });
 
+      const name   = p.companyName || p.name || null;
+      const sector = (p.sector || '').toLowerCase();
+      const industry = (p.industry || '').toLowerCase();
+      const isFund = !!(p.isEtf || p.isFund);
+
+      // Map FMP sector/industry → the Record Trade dropdown's option values.
+      let code = 'other';
+      if (isFund || sector === 'etf') code = 'etf';
+      else if (industry.includes('semiconduct')) code = 'semis';
+      else if (sector === 'technology') code = 'tech';
+      else if (sector === 'financial services' || sector === 'financials') code = 'finance';
+      else if (sector === 'healthcare') code = 'health';
+      else if (sector === 'energy') code = 'energy';
+      else if (sector === 'consumer cyclical' || sector === 'consumer defensive') code = 'consumer';
+      else if (sector === 'industrials') code = 'industrial';
+      else if (sector === 'basic materials') code = 'other';
+
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      return res.status(200).json({
+        symbol: sym,
+        name,
+        sector_code: code,
+        sector_raw: p.sector || null,
+        price: (p.price != null ? Number(p.price) : null)
+      });
+    } catch (e) {
+      return res.status(200).json({ symbol: sym, name: null, sector_code: null, error: e.message });
+    }
+  }
+  
   const { nickname, include } = req.query;
   const wantIntelligence = include === 'intelligence';
 
