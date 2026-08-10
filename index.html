@@ -15651,7 +15651,7 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
 
 </div>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
+<!-- ═══════════════════════════════════════════════════════════════════
      THEISI — Stock Notes (thesis + price target + free note)
      Paste this whole block once, right before </body> in index.html.
      Self-contained: no edits to any render function required. It watches
@@ -15743,7 +15743,7 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
     if (!t) return Promise.resolve();
     return fetch('/api/notes', { headers: { 'Authorization': 'Bearer ' + t } })
       .then(function(r){ return r.ok ? r.json() : { notes:{} }; })
-      .then(function(j){ notes = (j && j.notes) || {}; loaded = true; decorateAll(); })
+      .then(function(j){ notes = (j && j.notes) || {}; loaded = true; decorateAll(); renderNotesTab(); })
       .catch(function(){});
   }
 
@@ -15760,6 +15760,7 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
         if (!res.ok) throw new Error((res.j && res.j.message) || 'save failed');
         notes = (res.j && res.j.notes) || notes;
         decorateAll();
+        renderNotesTab();
         return notes;
       });
   }
@@ -15911,10 +15912,84 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
     scan(LOOSE, true);        // then loose matches, gated on known/has-note
   }
 
+  // ── "📌 My Notes" tab (injected into the existing showTab nav) ────
+  var PIN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l-1 6 3 3v2H7v-2l3-3z"/><line x1="12" y1="15" x2="12" y2="21"/></svg>';
+  function injectTab(){
+    if (document.getElementById('tab-notes')) return;
+    // 1. sidebar item — placed just before Settings if present, else appended
+    var sb = document.getElementById('appSidebar');
+    if (sb && !sb.querySelector('.sb-item[data-tab=notes]')){
+      var item = document.createElement('div');
+      item.className = 'sb-item';
+      item.setAttribute('data-tab','notes');
+      item.setAttribute('onclick', "showTab('notes',this)");
+      item.innerHTML = '<span class="sb-icon">'+PIN_SVG+'</span><span class="sb-lbl">My Notes</span>';
+      var setup = sb.querySelector('.sb-item[data-tab=setup]');
+      if (setup) sb.insertBefore(item, setup); else sb.appendChild(item);
+    }
+    // 2. tab view — appended next to the other .tab-content panels
+    var anchor = document.querySelector('.tab-content');
+    var host = anchor ? anchor.parentElement : document.body;
+    var tab = document.createElement('div');
+    tab.id = 'tab-notes';
+    tab.className = 'tab-content';
+    tab.setAttribute('dir','auto');
+    tab.innerHTML =
+      '<div class="sub-pills"><div class="sub-pill" onclick="showTab(\'portfolio\',document.querySelector(\'[data-tab=portfolio]\'))">← Portfolio</div></div>'+
+      '<div style="max-width:820px;margin:0 auto;padding:6px 2px 40px;">'+
+        '<div style="display:flex;align-items:baseline;gap:10px;margin:4px 0 16px;">'+
+          '<h2 style="margin:0;font-size:19px;color:var(--text,#e6e8ec);">📌 My Notes</h2>'+
+          '<span id="tn-count" style="color:var(--muted,#8a8f98);font-size:12.5px;"></span>'+
+        '</div>'+
+        '<div id="tn-list"></div>'+
+      '</div>';
+    host.appendChild(tab);
+  }
+  function fmtDate(iso){ try{ return new Date(iso).toLocaleDateString(); }catch(e){ return ''; } }
+  function renderNotesTab(){
+    var list = document.getElementById('tn-list');
+    if (!list) return;
+    var syms = Object.keys(notes).sort();
+    var cnt = document.getElementById('tn-count');
+    if (cnt) cnt.textContent = syms.length ? (syms.length + (syms.length===1?' stock':' stocks')) : '';
+    if (!syms.length){
+      list.innerHTML = '<div style="color:var(--muted,#8a8f98);font-size:13px;padding:26px 4px;line-height:1.8;">'+
+        'No notes yet. Click the <b>+</b> next to any stock (Portfolio, AI Advisor, SA Results…) to add your first thesis or price target.</div>';
+      return;
+    }
+    var h = '';
+    for (var i=0;i<syms.length;i++){
+      var s = syms[i], n = notes[s];
+      var tgt='', cur=priceOf(s);
+      if (n.target!=null){
+        var g='';
+        if (cur && isFinite(cur) && cur>0){ var p=((n.target-cur)/cur*100); g=' <span class="tn-gap '+(p>=0?'up':'dn')+'" style="color:'+(p>=0?'#3fb950':'#f85149')+'">('+(p>=0?'+':'')+p.toFixed(1)+'%)</span>'; }
+        tgt = '<span style="font-family:\'IBM Plex Mono\',monospace;color:var(--muted,#8a8f98);font-size:12px;">Target <b style="color:var(--text,#e6e8ec)">$'+(+n.target).toLocaleString()+'</b>'+g+'</span>';
+      }
+      h += '<div class="tn-item" data-tn-sym="'+esc(s)+'" style="border:1px solid var(--border,#2a2f3a);border-radius:12px;padding:13px 15px;margin-bottom:10px;background:var(--bg1,#12151b);">'+
+        '<div style="display:flex;align-items:center;gap:10px;">'+
+          '<span style="font-family:\'IBM Plex Mono\',monospace;font-weight:700;font-size:13px;color:var(--accent,#d4af37);direction:ltr;unicode-bidi:isolate;">'+esc(s)+'</span>'+
+          tgt+
+          '<span style="margin-inline-start:auto;color:var(--muted,#8a8f98);font-size:10.5px;">'+(n.updatedAt?fmtDate(n.updatedAt):'')+'</span>'+
+        '</div>'+
+        (n.thesis?'<div style="margin-top:7px;font-size:13px;line-height:1.7;color:var(--text,#e6e8ec);">'+esc(n.thesis)+'</div>':'')+
+        (n.note?'<div style="margin-top:6px;font-size:12.5px;line-height:1.7;color:var(--text2,#aab0bb);"><span style="color:var(--muted,#8a8f98);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;">Note</span> '+esc(n.note)+'</div>':'')+
+        '<div style="display:flex;gap:8px;margin-top:11px;">'+
+          '<button class="tn-btn tn-edit" data-tn-sym="'+esc(s)+'" style="border:1px solid var(--border,#2a2f3a);background:var(--bg2,#1b1f27);color:var(--text,#e6e8ec);border-radius:7px;padding:5px 12px;font-size:11.5px;cursor:pointer;">Edit</button>'+
+          '<button class="tn-btn tn-remove" data-tn-sym="'+esc(s)+'" style="border:1px solid transparent;background:transparent;color:#f85149;border-radius:7px;padding:5px 10px;font-size:11.5px;cursor:pointer;">Delete</button>'+
+        '</div>'+
+      '</div>';
+    }
+    list.innerHTML = h;
+    list.querySelectorAll('.tn-edit').forEach(function(b){ b.onclick=function(){ openModal(b.getAttribute('data-tn-sym')); }; });
+    list.querySelectorAll('.tn-remove').forEach(function(b){ b.onclick=function(){ save(b.getAttribute('data-tn-sym'),{delete:true}).catch(function(e){alert(e.message||'Delete failed');}); }; });
+  }
+
   // ── React to re-renders (renderPortfolio, adv2, SA table, etc.) ──
   var pending = null;
   function schedule(){ if(pending) return; pending=setTimeout(function(){ pending=null; decorateAll(); }, 150); }
   function start(){
+    injectTab();
     load();
     var mo = new MutationObserver(function(muts){
       for (var i=0;i<muts.length;i++){ if(muts[i].addedNodes && muts[i].addedNodes.length){ schedule(); return; } }
