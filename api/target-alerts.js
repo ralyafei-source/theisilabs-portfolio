@@ -10,7 +10,7 @@
 //                                          or  x-api-key: <BRIEFING_API_KEY>)
 //       → scans ALL users, sends a Telegram message for each NEW escalation
 //         (far→approaching→hit), deduped via data/target-alerts-{nick}.json.
-//         Call this on a schedule (Make.com / Vercel cron).
+//         Add &debug=1 to see the exact Telegram API reply per alert.
 //
 // Trigger: within 5% of the target ("approaching") and again when it is
 // reached/crossed ("hit"). Direction (up/down target) is inferred once and
@@ -84,20 +84,28 @@ function yahooPrice(sym) {
   });
 }
 
+// Returns the ACTUAL Telegram API reply: { ok, description, error_code, status }.
 function sendTelegram(chatId, text, token) {
   return new Promise((resolve) => {
-    if (!chatId || !token) return resolve(false);
+    if (!chatId) return resolve({ ok: false, description: 'no telegram_chat_id on user' });
+    if (!token)  return resolve({ ok: false, description: 'TELEGRAM_TOKEN env not set' });
     const body = JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' });
     const req = https.request({
       hostname: 'api.telegram.org', path: `/bot${token}/sendMessage`, method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
-    }, res => { res.resume(); res.on('end', () => resolve(true)); });
-    req.on('error', () => resolve(false));
+    }, res => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => {
+        try { const j = JSON.parse(d); resolve({ ok: !!j.ok, description: j.description || null, error_code: j.error_code || null, status: res.statusCode }); }
+        catch (e) { resolve({ ok: false, description: 'unparseable telegram response', status: res.statusCode }); }
+      });
+    });
+    req.on('error', (e) => resolve({ ok: false, description: e.message }));
     req.write(body); req.end();
   });
 }
 
-// Compute the alert level for one target given a live price + remembered side.
 function evaluate(price, target, prevSide) {
   const side = prevSide || (price <= target ? 'up' : 'down');
   const distPct = Math.abs(target - price) / target * 100;
@@ -122,12 +130,12 @@ function alertMsg(nick, sym, level, price, target, distPct, thesis) {
   return m;
 }
 
-// Build the alert list for one user (and, in scan mode, send + persist state).
-async function processUser(nick, chatId, token, tgToken, doSend) {
+// Build alerts for one user; in scan mode (doSend) send Telegram + persist state.
+async function processUser(nick, chatId, token, tgToken, doSend, debug) {
   const { json: notesFile } = await ghGetJson(`data/notes-${nick}.json`, token);
   const notes = (notesFile && notesFile.notes) || {};
   const syms = Object.keys(notes).filter(s => notes[s] && notes[s].target != null);
-  if (!syms.length) return { alerts: [], sent: 0 };
+  if (!syms.length) return { alerts: [], sent: 0, debug: [] };
 
   let stateWrap = { json: null, sha: null };
   if (doSend) stateWrap = await ghGetJson(`data/target-alerts-${nick}.json`, token);
@@ -138,36 +146,41 @@ async function processUser(nick, chatId, token, tgToken, doSend) {
 
   const now = new Date().toISOString();
   const alerts = [];
+  const dbg = [];
   let sent = 0, changed = false;
 
   for (const sym of syms) {
     const price = prices[sym];
-    if (price == null) continue;
+    if (price == null) { if (debug) dbg.push({ sym, skipped: 'no price' }); continue; }
     const target = Number(notes[sym].target);
     const prev = states[sym] || null;
     const { side, level, distPct } = evaluate(price, target, prev && prev.side);
-    const dir = side === 'up' ? 'upside' : 'downside';
 
     if (level === 'approaching' || level === 'hit') {
-      alerts.push({ sym, level, price: +price.toFixed(2), target, distancePct: distPct, direction: dir, thesis: notes[sym].thesis || null });
+      alerts.push({ sym, level, price: +price.toFixed(2), target, distancePct: distPct, direction: side === 'up' ? 'upside' : 'downside', thesis: notes[sym].thesis || null });
     }
 
     if (doSend) {
       const prevLevel = (prev && prev.level) || 'far';
       const escalated = LEVEL_RANK[level] > LEVEL_RANK[prevLevel];
+      let newLevel = level, tg = null;
       if (escalated && level !== 'far') {
-        await sendTelegram(chatId, alertMsg(nick, sym, level, +price.toFixed(2), target, distPct, notes[sym].thesis), tgToken);
-        sent++;
+        tg = await sendTelegram(chatId, alertMsg(nick, sym, level, +price.toFixed(2), target, distPct, notes[sym].thesis), tgToken);
+        if (tg.ok) sent++;
+        else newLevel = prevLevel;   // send failed → don't advance, retry next run
       }
-      states[sym] = { side, level, price: +price.toFixed(2), sentAt: (escalated && level !== 'far') ? now : (prev && prev.sentAt) || null };
+      states[sym] = { side, level: newLevel, price: +price.toFixed(2), sentAt: (tg && tg.ok) ? now : (prev && prev.sentAt) || null };
       changed = true;
+      if (debug) dbg.push({ sym, price: +price.toFixed(2), target, level, prevLevel, escalated, telegram: tg });
+    } else if (debug) {
+      dbg.push({ sym, price: +price.toFixed(2), target, level });
     }
   }
 
   if (doSend && changed) {
     await ghPutJson(`data/target-alerts-${nick}.json`, { nickname: nick, updated: now, states }, stateWrap.sha, token);
   }
-  return { alerts, sent };
+  return { alerts, sent, debug: dbg };
 }
 
 module.exports = async (req, res) => {
@@ -179,6 +192,7 @@ module.exports = async (req, res) => {
   const githubToken = process.env.GITHUB_TOKEN;
   const BRIEFING_API_KEY = process.env.BRIEFING_API_KEY;
   const tgToken = process.env.TELEGRAM_TOKEN;
+  const debug = req.query.debug === '1';
 
   try {
     // ── SCAN MODE (scheduled): all users, sends Telegram ──
@@ -193,19 +207,23 @@ module.exports = async (req, res) => {
         const nick = (u.nickname || '').toLowerCase().trim();
         if (!nick) continue;
         const chatId = u.telegram_chat_id || null;
-        const r = await processUser(nick, chatId, githubToken, tgToken, !!chatId);
+        const r = await processUser(nick, chatId, githubToken, tgToken, !!chatId, debug);
         totalSent += r.sent;
-        perUser.push({ nick, alerts: r.alerts.length, sent: r.sent, telegram: !!chatId });
+        const entry = { nick, alerts: r.alerts.length, sent: r.sent, telegram: !!chatId, chatId: chatId || null };
+        if (debug) entry.detail = r.debug;
+        perUser.push(entry);
       }
-      return res.status(200).json({ ok: true, scanned: list.length, sent: totalSent, users: perUser, asOf: new Date().toISOString() });
+      return res.status(200).json({ ok: true, tgTokenSet: !!tgToken, scanned: list.length, sent: totalSent, users: perUser, asOf: new Date().toISOString() });
     }
 
     // ── DASHBOARD MODE: this user's current alerts (read-only) ──
     const user = await verifySession(req, githubToken);
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
     const nick = (user.nickname || '').toLowerCase().trim();
-    const r = await processUser(nick, null, githubToken, tgToken, false);
-    return res.status(200).json({ alerts: r.alerts, asOf: new Date().toISOString() });
+    const r = await processUser(nick, null, githubToken, tgToken, false, debug);
+    const out = { alerts: r.alerts, asOf: new Date().toISOString() };
+    if (debug) out.detail = r.debug;
+    return res.status(200).json(out);
   } catch (e) {
     console.error('target-alerts error:', e);
     return res.status(500).json({ error: e.message });
