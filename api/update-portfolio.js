@@ -1,30 +1,12 @@
 // api/update-portfolio.js
 // Handles buy/sell/add/remove trades and updates portfolio.json on GitHub
-
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const BRIEFING_API_KEY = process.env.BRIEFING_API_KEY;
 const REPO = 'ralyafei-source/theisilabs-portfolio';
 const FILE_PATH = 'data/portfolio.json';
 
-// Verify a session token belongs to a logged-in ADMIN (reads data/users.json)
-async function verifyAdminSession(sessionToken) {
-  if (!sessionToken) return null;
-  try {
-    const r = await fetch(
-      `https://api.github.com/repos/${REPO}/contents/data/users.json`,
-      { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' } }
-    );
-    if (!r.ok) return null;
-    const fileData = await r.json();
-    const users = JSON.parse(Buffer.from(fileData.content, 'base64').toString('utf8'));
-    const list = Array.isArray(users) ? users : (users.users || []);
-    const user = list.find(u => u.sessionToken === sessionToken);
-    if (!user) return null;
-    if (user.sessionExpiry && new Date(user.sessionExpiry) < new Date()) return null;
-    if (!user.isAdmin) return null;
-    return user;
-  } catch (e) { return null; }
-}
+// Shared, sessions[]-aware session validator (also renews the session).
+const { verifySession } = require('./_auth');
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -36,18 +18,16 @@ module.exports = async (req, res) => {
   // Auth: EITHER a logged-in admin session token (browser path — no secret in
   // the page source) OR the static BRIEFING_API_KEY (server-to-server only,
   // e.g. Make.com; never embed this key in any web page).
-  const bearer = (req.headers.authorization || '').replace('Bearer ', '').trim();
   const apiKey = req.headers['x-api-key'] || (req.body && req.body.api_key);
   let authorized = false;
   if (apiKey && BRIEFING_API_KEY && apiKey === BRIEFING_API_KEY) authorized = true;
-  if (!authorized && bearer) {
-    const adminUser = await verifyAdminSession(bearer);
-    if (adminUser) authorized = true;
+  if (!authorized) {
+    const user = await verifySession(req, GITHUB_TOKEN);   // sessions[]-aware shared helper
+    if (user && user.isAdmin) authorized = true;
   }
   if (!authorized) return res.status(401).json({ error: 'Unauthorized' });
 
   const { action, sym, shares, price, newStock, sec, purchaseDate } = req.body || {};
-
   if (!action || !sym) {
     return res.status(400).json({ error: 'Missing required fields: action, sym' });
   }
@@ -66,10 +46,8 @@ module.exports = async (req, res) => {
     const fileData = await getRes.json();
     const portfolio = JSON.parse(Buffer.from(fileData.content, 'base64').toString('utf8'));
     const sha = fileData.sha;
-
     const holdings = portfolio.holdings || [];
     const existingIdx = holdings.findIndex(h => h.sym === sym.toUpperCase());
-
     let result = {};
 
     if (action === 'BUY') {
@@ -152,9 +130,7 @@ module.exports = async (req, res) => {
       const err = await putRes.json();
       throw new Error(err.message);
     }
-
     return res.status(200).json({ success: true, result, total_holdings: holdings.length });
-
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
