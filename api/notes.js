@@ -1,10 +1,10 @@
 // api/notes.js
-// Per-user stock notes (investment thesis + price target + free note).
+// Per-user stock notes: investment thesis + price target + stop-loss + free note.
 // Stored at data/notes-{nickname}.json in the GitHub repo — one file per user.
-// GET  /api/notes                 → { notes: { SYM: {thesis,target,note,updatedAt}, ... } }
+// GET  /api/notes                 → { notes: { SYM: {thesis,target,stop,stopPct,note,updatedAt}, ... } }
 // POST /api/notes  body:
-//   { sym, thesis?, target?, note? }   → upsert one ticker (fields omitted are left unchanged)
-//   { sym, delete:true }               → remove one ticker
+//   { sym, thesis?, target?, stop?, stopPct?, note? }  → upsert one ticker (omitted fields unchanged)
+//   { sym, delete:true }                               → remove one ticker
 // Auth: Bearer session token (same as the rest of the app).
 
 const https = require('https');
@@ -12,7 +12,6 @@ const { verifySession } = require('./_auth');
 
 const REPO = 'ralyafei-source/theisilabs-portfolio';
 
-// ── Validation caps ────────────────────────────────────────────────
 const THESIS_CAP = 2000;
 const NOTE_CAP   = 2000;
 const SAVE_COOLDOWN_MS = 3000;
@@ -78,6 +77,14 @@ function ghWrite(path, content, sha, token) {
   });
 }
 
+function numberField(body, key, min, max, message) {
+  // Returns { set:true, value } | { clear:true } | { error }
+  if (body[key] === '' || body[key] == null) return { clear: true };
+  const n = Number(body[key]);
+  if (!Number.isFinite(n) || n < min || n > max) return { error: message };
+  return { set: true, value: n };
+}
+
 // Normalize a POST body into an action. Returns {ok, sym, patch, del} or {ok:false, message}.
 function validateBody(body) {
   if (!body || typeof body !== 'object') return { ok: false, message: 'Invalid body' };
@@ -98,15 +105,26 @@ function validateBody(body) {
     else patch.note = body.note.trim().slice(0, NOTE_CAP);
   }
   if ('target' in body) {
-    if (body.target === '' || body.target == null) patch.target = null;
-    else {
-      const n = Number(body.target);
-      if (!Number.isFinite(n) || n < 0 || n >= 1e9) return { ok: false, message: 'target must be a number 0–1,000,000,000' };
-      patch.target = n;
-    }
+    const r = numberField(body, 'target', 0, 1e9, 'target must be a number 0–1,000,000,000');
+    if (r.error) return { ok: false, message: r.error };
+    patch.target = r.clear ? null : r.value;
+  }
+  if ('stop' in body) {
+    const r = numberField(body, 'stop', 0, 1e9, 'stop must be a number 0–1,000,000,000');
+    if (r.error) return { ok: false, message: r.error };
+    patch.stop = r.clear ? null : r.value;
+  }
+  if ('stopPct' in body) {
+    const r = numberField(body, 'stopPct', 0.01, 99.99, 'stopPct must be between 0 and 100');
+    if (r.error) return { ok: false, message: r.error };
+    patch.stopPct = r.clear ? null : r.value;
   }
   if (Object.keys(patch).length === 0) return { ok: false, message: 'Nothing to save' };
   return { ok: true, sym, patch };
+}
+
+function isEmptyNote(n) {
+  return (!n.thesis) && (!n.note) && (n.target == null) && (n.stop == null) && (n.stopPct == null);
 }
 
 module.exports = async function handler(req, res) {
@@ -151,7 +169,6 @@ module.exports = async function handler(req, res) {
     const MAX_RETRIES = 2;
     let lastCode = null;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      // 1. Read fresh
       let existing = null;
       try { existing = await ghGet(filePath, githubToken); } catch (e) { existing = null; }
       let fileObj = { nickname: nick, notes: {}, lastUpdated: null };
@@ -162,7 +179,6 @@ module.exports = async function handler(req, res) {
         if (!fileObj.notes || typeof fileObj.notes !== 'object') fileObj.notes = {};
       }
 
-      // 2. Light rate limit
       if (fileObj.lastUpdated) {
         const elapsed = Date.now() - Date.parse(fileObj.lastUpdated);
         if (Number.isFinite(elapsed) && elapsed >= 0 && elapsed < SAVE_COOLDOWN_MS) {
@@ -170,28 +186,24 @@ module.exports = async function handler(req, res) {
         }
       }
 
-      // 3. Apply
       const now = new Date().toISOString();
       if (v.del) {
         delete fileObj.notes[v.sym];
       } else {
         const prev = fileObj.notes[v.sym] || {};
         const merged = { ...prev, ...v.patch, updatedAt: now };
-        // Drop the ticker entirely if everything is now empty
-        const empty = (!merged.thesis) && (!merged.note) && (merged.target == null);
-        if (empty) delete fileObj.notes[v.sym];
+        if (isEmptyNote(merged)) delete fileObj.notes[v.sym];
         else fileObj.notes[v.sym] = merged;
       }
       fileObj.nickname = nick;
       fileObj.lastUpdated = now;
 
-      // 4. Write with optimistic lock
       const w = await ghWrite(filePath, fileObj, sha, githubToken);
       lastCode = w && w._statusCode;
       if (lastCode === 200 || lastCode === 201) {
         return res.status(200).json({ ok: true, notes: fileObj.notes });
       }
-      if (lastCode === 409 || lastCode === 422) continue; // stale SHA / create race → retry
+      if (lastCode === 409 || lastCode === 422) continue;
       break;
     }
 
