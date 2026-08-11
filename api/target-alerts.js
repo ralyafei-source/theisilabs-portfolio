@@ -1,6 +1,6 @@
 // api/target-alerts.js
-// Price-target proximity alerts, driven by the per-user notes targets
-// (data/notes-{nick}.json → notes[SYM].target).
+// Price-target AND stop-loss proximity alerts, driven by the per-user notes
+// (data/notes-{nick}.json → notes[SYM].target / .stop).
 //
 // Two modes:
 //   GET /api/target-alerts                (Authorization: Bearer <session token>)
@@ -8,13 +8,12 @@
 //
 //   GET /api/target-alerts?scan=1         (Authorization: Bearer <BRIEFING_API_KEY>
 //                                          or  x-api-key: <BRIEFING_API_KEY>)
-//       → scans ALL users, sends a Telegram message for each NEW escalation
-//         (far→approaching→hit), deduped via data/target-alerts-{nick}.json.
-//         Add &debug=1 to see the exact Telegram API reply per alert.
+//       → scans ALL users, sends a Telegram message for each NEW escalation,
+//         deduped via data/target-alerts-{nick}.json. Add &debug=1 for detail.
 //
-// Trigger: within 5% of the target ("approaching") and again when it is
-// reached/crossed ("hit"). Direction (up/down target) is inferred once and
-// remembered in the state file so a target set below price also works.
+// Triggers (both within 5% and on the event):
+//   target → "approaching" (within 5%) and "hit" (reached/crossed).
+//   stop   → "approaching" (within 5% above stop) and "breach" (fell to/below stop).
 
 const https = require('https');
 const { verifySession } = require('./_auth');
@@ -22,9 +21,8 @@ const { verifySession } = require('./_auth');
 const REPO = 'ralyafei-source/theisilabs-portfolio';
 const UA   = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
 const NEAR_PCT = 5;
-const LEVEL_RANK = { far: 0, approaching: 1, hit: 2 };
+const RANK = { far: 0, approaching: 1, hit: 2, breach: 2 };
 
-// ── GitHub JSON read (returns {json, sha}; json=null when missing) ──
 function ghGetJson(path, token) {
   return new Promise((resolve) => {
     https.get({
@@ -66,7 +64,6 @@ function ghPutJson(path, content, sha, token) {
   });
 }
 
-// ── Live price from Yahoo (no key needed) ──
 function yahooPrice(sym) {
   return new Promise((resolve) => {
     https.get({
@@ -106,7 +103,8 @@ function sendTelegram(chatId, text, token) {
   });
 }
 
-function evaluate(price, target, prevSide) {
+// Target: side inferred once (up = target above price, down = below).
+function evalTarget(price, target, prevSide) {
   const side = prevSide || (price <= target ? 'up' : 'down');
   const distPct = Math.abs(target - price) / target * 100;
   let level = 'far';
@@ -115,18 +113,34 @@ function evaluate(price, target, prevSide) {
   return { side, level, distPct: +distPct.toFixed(1) };
 }
 
-function alertMsg(nick, sym, level, price, target, distPct, thesis) {
-  const name = nick.charAt(0).toUpperCase() + nick.slice(1);
-  const head = level === 'hit'
-    ? `✅ <b>${sym} وصل هدفك السعري</b>`
-    : `🎯 <b>${sym} اقترب من هدفك السعري</b>`;
-  let m = `${head}\n\n`;
-  m += `السعر الآن: <b>$${price.toLocaleString()}</b>\n`;
-  m += `هدفك: <b>$${(+target).toLocaleString()}</b>`;
+// Stop-loss: always a downside floor.
+function evalStop(price, stop) {
+  const distPct = (price - stop) / stop * 100;   // how far ABOVE the stop we are
+  let level = 'far';
+  if (price <= stop) level = 'breach';
+  else if (distPct <= NEAR_PCT) level = 'approaching';
+  return { level, distPct: +distPct.toFixed(1) };
+}
+
+function name_(nick) { return nick.charAt(0).toUpperCase() + nick.slice(1); }
+
+function targetMsg(nick, sym, level, price, target, distPct, thesis) {
+  const head = level === 'hit' ? `✅ <b>${sym} وصل هدفك السعري</b>` : `🎯 <b>${sym} اقترب من هدفك السعري</b>`;
+  let m = `${head}\n\nالسعر الآن: <b>$${price.toLocaleString()}</b>\nهدفك: <b>$${(+target).toLocaleString()}</b>`;
   if (level === 'approaching') m += ` (باقي ${distPct}%)`;
   m += `\n`;
   if (thesis) m += `\n📝 ${thesis}\n`;
-  m += `\n<i>تنبيه معلوماتي — ليست نصيحة مالية. القرار في النهاية عندك يا ${name}.</i>`;
+  m += `\n<i>تنبيه معلوماتي — ليست نصيحة مالية. القرار في النهاية عندك يا ${name_(nick)}.</i>`;
+  return m;
+}
+
+function stopMsg(nick, sym, level, price, stop, distPct, thesis) {
+  const head = level === 'breach' ? `🛑 <b>${sym} كسر وقف الخسارة</b>` : `⚠️ <b>${sym} اقترب من وقف الخسارة</b>`;
+  let m = `${head}\n\nالسعر الآن: <b>$${price.toLocaleString()}</b>\nوقف الخسارة: <b>$${(+stop).toLocaleString()}</b>`;
+  if (level === 'approaching') m += ` (فوقه بنسبة ${distPct}%)`;
+  m += `\n`;
+  if (thesis) m += `\n📝 ${thesis}\n`;
+  m += `\n<i>تنبيه معلوماتي — ليست نصيحة مالية. القرار في النهاية عندك يا ${name_(nick)}.</i>`;
   return m;
 }
 
@@ -134,7 +148,7 @@ function alertMsg(nick, sym, level, price, target, distPct, thesis) {
 async function processUser(nick, chatId, token, tgToken, doSend, debug) {
   const { json: notesFile } = await ghGetJson(`data/notes-${nick}.json`, token);
   const notes = (notesFile && notesFile.notes) || {};
-  const syms = Object.keys(notes).filter(s => notes[s] && notes[s].target != null);
+  const syms = Object.keys(notes).filter(s => notes[s] && (notes[s].target != null || notes[s].stop != null));
   if (!syms.length) return { alerts: [], sent: 0, debug: [] };
 
   let stateWrap = { json: null, sha: null };
@@ -152,29 +166,52 @@ async function processUser(nick, chatId, token, tgToken, doSend, debug) {
   for (const sym of syms) {
     const price = prices[sym];
     if (price == null) { if (debug) dbg.push({ sym, skipped: 'no price' }); continue; }
-    const target = Number(notes[sym].target);
-    const prev = states[sym] || null;
-    const { side, level, distPct } = evaluate(price, target, prev && prev.side);
+    const note = notes[sym];
+    const prev = states[sym] || {};
+    const nextState = { targetSide: prev.targetSide || null, target: prev.target || 'far', stop: prev.stop || 'far' };
+    const dRow = { sym, price: +price.toFixed(2) };
 
-    if (level === 'approaching' || level === 'hit') {
-      alerts.push({ sym, level, price: +price.toFixed(2), target, distancePct: distPct, direction: side === 'up' ? 'upside' : 'downside', thesis: notes[sym].thesis || null });
-    }
-
-    if (doSend) {
-      const prevLevel = (prev && prev.level) || 'far';
-      const escalated = LEVEL_RANK[level] > LEVEL_RANK[prevLevel];
-      let newLevel = level, tg = null;
-      if (escalated && level !== 'far') {
-        tg = await sendTelegram(chatId, alertMsg(nick, sym, level, +price.toFixed(2), target, distPct, notes[sym].thesis), tgToken);
-        if (tg.ok) sent++;
-        else newLevel = prevLevel;   // send failed → don't advance, retry next run
+    // ── TARGET ──
+    if (note.target != null) {
+      const target = Number(note.target);
+      const { side, level, distPct } = evalTarget(price, target, prev.targetSide);
+      nextState.targetSide = side;
+      if (level === 'approaching' || level === 'hit') {
+        alerts.push({ sym, kind: 'target', level, price: +price.toFixed(2), threshold: target, distancePct: distPct, direction: side === 'up' ? 'upside' : 'downside', thesis: note.thesis || null });
       }
-      states[sym] = { side, level: newLevel, price: +price.toFixed(2), sentAt: (tg && tg.ok) ? now : (prev && prev.sentAt) || null };
-      changed = true;
-      if (debug) dbg.push({ sym, price: +price.toFixed(2), target, level, prevLevel, escalated, telegram: tg });
-    } else if (debug) {
-      dbg.push({ sym, price: +price.toFixed(2), target, level });
+      if (doSend) {
+        const escalated = RANK[level] > RANK[prev.target || 'far'];
+        let newLevel = level, tg = null;
+        if (escalated && level !== 'far') {
+          tg = await sendTelegram(chatId, targetMsg(nick, sym, level, +price.toFixed(2), target, distPct, note.thesis), tgToken);
+          if (tg.ok) sent++; else newLevel = prev.target || 'far';
+        }
+        nextState.target = newLevel; changed = true;
+        if (debug) dRow.target = { target, level, prevLevel: prev.target || 'far', escalated, telegram: tg };
+      } else if (debug) dRow.target = { target, level };
     }
+
+    // ── STOP-LOSS ──
+    if (note.stop != null) {
+      const stop = Number(note.stop);
+      const { level, distPct } = evalStop(price, stop);
+      if (level === 'approaching' || level === 'breach') {
+        alerts.push({ sym, kind: 'stop', level, price: +price.toFixed(2), threshold: stop, distancePct: distPct, thesis: note.thesis || null });
+      }
+      if (doSend) {
+        const escalated = RANK[level] > RANK[prev.stop || 'far'];
+        let newLevel = level, tg = null;
+        if (escalated && level !== 'far') {
+          tg = await sendTelegram(chatId, stopMsg(nick, sym, level, +price.toFixed(2), stop, distPct, note.thesis), tgToken);
+          if (tg.ok) sent++; else newLevel = prev.stop || 'far';
+        }
+        nextState.stop = newLevel; changed = true;
+        if (debug) dRow.stop = { stop, level, prevLevel: prev.stop || 'far', escalated, telegram: tg };
+      } else if (debug) dRow.stop = { stop, level };
+    }
+
+    if (doSend) states[sym] = nextState;
+    if (debug) dbg.push(dRow);
   }
 
   if (doSend && changed) {
