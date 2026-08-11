@@ -16124,6 +16124,526 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
 })();
 </script>
 
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+     THEISI — Stock Notes (thesis + price target + stop-loss + free note)
+     Paste this whole block once, right before </body> in index.html.
+     Self-contained: no edits to any render function required. It watches
+     the DOM and decorates every ticker (Portfolio, AI Advisor, SA Results,
+     Explore, movers, opportunity) with a pin: view on hover, click to edit.
+     ═══════════════════════════════════════════════════════════════════ -->
+<style>
+  .tn-pin{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+    font-size:11px;line-height:1;margin-inline-start:5px;vertical-align:middle;
+    width:16px;height:16px;border-radius:5px;user-select:none;transition:opacity .12s,background .12s;}
+  .tn-pin.has{color:var(--accent,#d4af37);opacity:1;}
+  .tn-pin.empty{color:var(--muted,#8a8f98);opacity:0;background:transparent;}
+  .tn-host:hover .tn-pin.empty{opacity:.55;}
+  .tn-pin.empty:hover{opacity:1;background:var(--bg2,#1b1f27);}
+  .tn-pin.has:hover{background:var(--bg2,#1b1f27);}
+
+  .tn-tip{position:fixed;z-index:99999;max-width:320px;background:var(--bg1,#12151b);
+    border:1px solid var(--border,#2a2f3a);border-radius:10px;padding:11px 13px;
+    box-shadow:0 8px 28px rgba(0,0,0,.45);color:var(--text,#e6e8ec);font-size:12.5px;
+    line-height:1.7;pointer-events:none;opacity:0;transition:opacity .1s;}
+  .tn-tip.show{opacity:1;}
+  .tn-tip .tn-t-sym{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12px;
+    color:var(--accent,#d4af37);direction:ltr;unicode-bidi:isolate;}
+  .tn-tip .tn-t-row{margin-top:6px;}
+  .tn-tip .tn-t-lbl{color:var(--muted,#8a8f98);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;}
+  .tn-tip .tn-t-tgt{font-family:'IBM Plex Mono',monospace;direction:ltr;unicode-bidi:isolate;}
+  .tn-tip .tn-stop-v{font-family:'IBM Plex Mono',monospace;direction:ltr;unicode-bidi:isolate;color:#f85149;}
+  .tn-tip .tn-gap.up{color:#3fb950;} .tn-tip .tn-gap.dn{color:#f85149;}
+
+  .tn-ov{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.55);
+    display:none;align-items:center;justify-content:center;padding:18px;}
+  .tn-ov.show{display:flex;}
+  .tn-modal{width:100%;max-width:440px;background:var(--bg1,#12151b);
+    border:1px solid var(--border,#2a2f3a);border-radius:14px;padding:18px 18px 16px;max-height:92vh;overflow:auto;}
+  .tn-modal h3{margin:0 0 2px;font-size:15px;color:var(--text,#e6e8ec);display:flex;align-items:center;gap:8px;}
+  .tn-modal h3 .s{font-family:'IBM Plex Mono',monospace;color:var(--accent,#d4af37);font-size:13px;direction:ltr;unicode-bidi:isolate;}
+  .tn-modal .tn-sub{color:var(--muted,#8a8f98);font-size:11.5px;margin:0 0 12px;}
+  .tn-field{margin-bottom:11px;}
+  .tn-field label{display:block;font-size:11px;color:var(--muted,#8a8f98);margin-bottom:4px;
+    text-transform:uppercase;letter-spacing:.04em;}
+  .tn-field textarea,.tn-field input{width:100%;box-sizing:border-box;background:var(--bg2,#1b1f27);
+    border:1px solid var(--border,#2a2f3a);border-radius:8px;color:var(--text,#e6e8ec);
+    font-size:13px;padding:8px 10px;font-family:inherit;resize:vertical;}
+  .tn-field textarea{min-height:70px;}
+  .tn-two{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .tn-hint{font-size:10.5px;color:var(--muted,#8a8f98);margin-top:4px;}
+  .tn-actions{display:flex;gap:8px;margin-top:14px;align-items:center;}
+  .tn-btn{border:1px solid var(--border,#2a2f3a);background:var(--bg2,#1b1f27);color:var(--text,#e6e8ec);
+    border-radius:8px;padding:8px 14px;font-size:12.5px;cursor:pointer;font-family:inherit;}
+  .tn-btn.pri{background:var(--accent,#d4af37);border-color:var(--accent,#d4af37);color:#12151b;font-weight:700;}
+  .tn-btn.del{margin-inline-end:auto;color:#f85149;border-color:transparent;background:transparent;}
+  .tn-btn:disabled{opacity:.5;cursor:default;}
+</style>
+<script>
+(function(){
+  "use strict";
+  if (window.THEISINotes) return; // idempotent
+
+  var SESSION_KEY = 'theisilabs_session';
+  var STRUCTURED = '.hold-sym, .sym-badge, [data-sym]';
+  var LOOSE = '.adv2-tick';
+
+  var notes = {};          // { SYM: {thesis,target,stop,stopPct,note,updatedAt} }
+  var known = {};
+  var loaded = false;
+
+  function priceOf(sym){
+    try { if (typeof window.THEISI_getPrice === 'function') return Number(window.THEISI_getPrice(sym)); } catch(e){}
+    return null;
+  }
+  function token(){ try { return localStorage.getItem(SESSION_KEY) || ''; } catch(e){ return ''; } }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  function symOf(el){
+    var s = el.getAttribute && el.getAttribute('data-sym');
+    if (!s) s = (el.textContent || '').trim();
+    s = s.toUpperCase().replace(/[^A-Z0-9.\-]/g,'');
+    return s;
+  }
+  function isTicker(s){ return /^[A-Z][A-Z0-9.\-]{0,9}$/.test(s); }
+
+  // ── Load ────────────────────────────────────────────────────────
+  function load(){
+    var t = token();
+    if (!t) return Promise.resolve();
+    return fetch('/api/notes', { headers: { 'Authorization': 'Bearer ' + t } })
+      .then(function(r){ return r.ok ? r.json() : { notes:{} }; })
+      .then(function(j){ notes = (j && j.notes) || {}; loaded = true; decorateAll(); renderNotesTab(); })
+      .catch(function(){});
+  }
+
+  // ── Save one ticker ─────────────────────────────────────────────
+  function save(sym, patch){
+    var t = token();
+    if (!t) return Promise.reject(new Error('not logged in'));
+    return fetch('/api/notes', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+t },
+      body: JSON.stringify(Object.assign({ sym: sym }, patch))
+    }).then(function(r){ return r.json().then(function(j){ return { ok:r.ok, j:j }; }); })
+      .then(function(res){
+        if (!res.ok) throw new Error((res.j && res.j.message) || 'save failed');
+        notes = (res.j && res.j.notes) || notes;
+        decorateAll();
+        renderNotesTab();
+        return notes;
+      });
+  }
+
+  // Fetch a live-ish price for the % stop helper (uses the existing lookup API).
+  function fetchPrice(sym){
+    return fetch('/api/portfolio-for-ai?mode=lookup&sym=' + encodeURIComponent(sym))
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){ return (j && j.data && j.data.price != null) ? Number(j.data.price) : null; })
+      .catch(function(){ return null; });
+  }
+
+  // ── Tooltip ─────────────────────────────────────────────────────
+  var tip = null, tipHideT = null;
+  function ensureTip(){ if(!tip){ tip=document.createElement('div'); tip.className='tn-tip'; document.body.appendChild(tip); } return tip; }
+  function tipHtml(sym, n){
+    var h = '<div class="tn-t-sym">'+esc(sym)+'</div>';
+    if (n.thesis) h += '<div class="tn-t-row">'+esc(n.thesis)+'</div>';
+    if (n.target != null){
+      var g='', cur=priceOf(sym);
+      if (cur && isFinite(cur) && cur>0){
+        var pct=((n.target-cur)/cur*100);
+        g=' <span class="tn-gap '+(pct>=0?'up':'dn')+'">('+(pct>=0?'+':'')+pct.toFixed(1)+'%)</span>';
+      }
+      h += '<div class="tn-t-row"><span class="tn-t-lbl">🎯 Target</span> <span class="tn-t-tgt">$'+(+n.target).toLocaleString()+'</span>'+g+'</div>';
+    }
+    if (n.stop != null){
+      var sp = n.stopPct ? ' (−'+n.stopPct+'%)' : '';
+      h += '<div class="tn-t-row"><span class="tn-t-lbl">🛑 Stop</span> <span class="tn-stop-v">$'+(+n.stop).toLocaleString()+sp+'</span></div>';
+    }
+    if (n.note) h += '<div class="tn-t-row"><span class="tn-t-lbl">Note</span><br>'+esc(n.note)+'</div>';
+    return h;
+  }
+  function showTip(sym, x, y){
+    var n = notes[sym]; if(!n) return;
+    var el = ensureTip(); el.innerHTML = tipHtml(sym, n);
+    el.style.left = '-9999px'; el.style.top = '0px'; el.classList.add('show');
+    var w = el.offsetWidth, h = el.offsetHeight;
+    var left = Math.min(x + 12, window.innerWidth - w - 8);
+    var top  = (y + h + 18 > window.innerHeight) ? (y - h - 10) : (y + 14);
+    el.style.left = Math.max(8,left) + 'px'; el.style.top = Math.max(8,top) + 'px';
+  }
+  function hideTip(){ if(tip){ tip.classList.remove('show'); } }
+
+  // ── Editor modal ────────────────────────────────────────────────
+  var ov=null, fThesis, fTarget, fStop, fStopPct, fNote, mSym, mSymEl, saveBtn, delBtn, stopHint, _pctTimer=null;
+  function ensureModal(){
+    if (ov) return;
+    ov = document.createElement('div'); ov.className='tn-ov'; ov.setAttribute('dir','auto');
+    ov.innerHTML =
+      '<div class="tn-modal" role="dialog" aria-modal="true">'+
+        '<h3>📌 Note <span class="s" id="tn-m-sym"></span></h3>'+
+        '<p class="tn-sub">Private — only you see this. Shows everywhere this stock appears, and drives your alerts.</p>'+
+        '<div class="tn-field"><label>Investment thesis</label><textarea id="tn-f-thesis" placeholder="Why you own / watch it…"></textarea></div>'+
+        '<div class="tn-field"><label>🎯 Price target ($)</label><input id="tn-f-target" type="number" step="any" min="0" placeholder="e.g. 250"></div>'+
+        '<div class="tn-field"><label>🛑 Stop-loss</label>'+
+          '<div class="tn-two">'+
+            '<input id="tn-f-stop" type="number" step="any" min="0" placeholder="Stop price ($)">'+
+            '<input id="tn-f-stoppct" type="number" step="any" min="0" max="99" placeholder="or % below">'+
+          '</div>'+
+          '<div class="tn-hint" id="tn-stop-hint">Enter a stop price, or a % below the current price and I\'ll fill the price.</div>'+
+        '</div>'+
+        '<div class="tn-field"><label>Free note</label><textarea id="tn-f-note" placeholder="Reminders, levels, anything…"></textarea></div>'+
+        '<div class="tn-actions">'+
+          '<button class="tn-btn del" id="tn-del">Delete</button>'+
+          '<button class="tn-btn" id="tn-cancel">Cancel</button>'+
+          '<button class="tn-btn pri" id="tn-save">Save</button>'+
+        '</div>'+
+      '</div>';
+    document.body.appendChild(ov);
+    mSymEl  = ov.querySelector('#tn-m-sym');
+    fThesis = ov.querySelector('#tn-f-thesis');
+    fTarget = ov.querySelector('#tn-f-target');
+    fStop   = ov.querySelector('#tn-f-stop');
+    fStopPct= ov.querySelector('#tn-f-stoppct');
+    fNote   = ov.querySelector('#tn-f-note');
+    stopHint= ov.querySelector('#tn-stop-hint');
+    saveBtn = ov.querySelector('#tn-save');
+    delBtn  = ov.querySelector('#tn-del');
+    ov.querySelector('#tn-cancel').onclick = closeModal;
+    ov.addEventListener('click', function(e){ if(e.target===ov) closeModal(); });
+
+    // % → price helper
+    fStopPct.addEventListener('input', function(){
+      var pct = parseFloat(fStopPct.value);
+      clearTimeout(_pctTimer);
+      if (!(pct > 0 && pct < 100)) return;
+      _pctTimer = setTimeout(function(){
+        stopHint.textContent = 'Getting current price for ' + mSym + '…';
+        fetchPrice(mSym).then(function(p){
+          if (p && isFinite(p) && p > 0){
+            var stopP = Math.round(p * (1 - pct/100) * 100) / 100;
+            fStop.value = stopP;
+            stopHint.textContent = '−' + pct + '% of $' + p.toLocaleString() + ' = stop $' + stopP.toLocaleString();
+          } else {
+            stopHint.textContent = "Couldn't fetch price — type the stop price directly.";
+          }
+        });
+      }, 500);
+    });
+    fStop.addEventListener('input', function(){ if (document.activeElement === fStop) fStopPct.value=''; });
+
+    saveBtn.onclick = function(){
+      saveBtn.disabled=true; delBtn.disabled=true;
+      var tv = fTarget.value.trim();
+      var sv = fStop.value.trim();
+      var pv = fStopPct.value.trim();
+      save(mSym, {
+        thesis: fThesis.value, note: fNote.value,
+        target: tv===''?null:tv,
+        stop:   sv===''?null:sv,
+        stopPct:(sv!=='' && pv!=='')?pv:null   // keep % only as a label alongside a stop price
+      }).then(closeModal)
+        .catch(function(e){ alert(e.message||'Save failed'); })
+        .finally(function(){ saveBtn.disabled=false; delBtn.disabled=false; });
+    };
+    delBtn.onclick = function(){
+      saveBtn.disabled=true; delBtn.disabled=true;
+      save(mSym, { delete:true }).then(closeModal)
+        .catch(function(e){ alert(e.message||'Delete failed'); })
+        .finally(function(){ saveBtn.disabled=false; delBtn.disabled=false; });
+    };
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape' && ov.classList.contains('show')) closeModal(); });
+  }
+  function openModal(sym){
+    ensureModal(); hideTip();
+    mSym = sym; mSymEl.textContent = sym;
+    var n = notes[sym] || {};
+    fThesis.value = n.thesis || '';
+    fTarget.value = (n.target==null?'':n.target);
+    fStop.value   = (n.stop==null?'':n.stop);
+    fStopPct.value= (n.stopPct==null?'':n.stopPct);
+    fNote.value   = n.note || '';
+    stopHint.textContent = "Enter a stop price, or a % below the current price and I'll fill the price.";
+    delBtn.style.display = notes[sym] ? '' : 'none';
+    ov.classList.add('show');
+    setTimeout(function(){ fThesis.focus(); }, 30);
+  }
+  function closeModal(){ if(ov) ov.classList.remove('show'); }
+
+  // ── "📌 My Notes" tab ────────────────────────────────────────────
+  var PIN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l-1 6 3 3v2H7v-2l3-3z"/><line x1="12" y1="15" x2="12" y2="21"/></svg>';
+  function injectTab(){
+    if (document.getElementById('tab-notes')) return;
+    var sb = document.getElementById('appSidebar');
+    if (sb && !sb.querySelector('.sb-item[data-tab=notes]')){
+      var item = document.createElement('div');
+      item.className = 'sb-item';
+      item.setAttribute('data-tab','notes');
+      item.setAttribute('onclick', "showTab('notes',this)");
+      item.innerHTML = '<span class="sb-icon">'+PIN_SVG+'</span><span class="sb-lbl">My Notes</span>';
+      var setup = sb.querySelector('.sb-item[data-tab=setup]');
+      if (setup) sb.insertBefore(item, setup); else sb.appendChild(item);
+    }
+    var anchor = document.querySelector('.tab-content');
+    var host = anchor ? anchor.parentElement : document.body;
+    var tab = document.createElement('div');
+    tab.id = 'tab-notes';
+    tab.className = 'tab-content';
+    tab.setAttribute('dir','auto');
+    tab.innerHTML =
+      '<div class="sub-pills"><div class="sub-pill" onclick="showTab(\'portfolio\',document.querySelector(\'[data-tab=portfolio]\'))">← Portfolio</div></div>'+
+      '<div style="max-width:820px;margin:0 auto;padding:6px 2px 40px;">'+
+        '<div style="display:flex;align-items:baseline;gap:10px;margin:4px 0 16px;">'+
+          '<h2 style="margin:0;font-size:19px;color:var(--text,#e6e8ec);">📌 My Notes</h2>'+
+          '<span id="tn-count" style="color:var(--muted,#8a8f98);font-size:12.5px;"></span>'+
+        '</div>'+
+        '<div id="tn-list"></div>'+
+      '</div>';
+    host.appendChild(tab);
+  }
+  function fmtDate(iso){ try{ return new Date(iso).toLocaleDateString(); }catch(e){ return ''; } }
+  function renderNotesTab(){
+    var list = document.getElementById('tn-list');
+    if (!list) return;
+    var syms = Object.keys(notes).sort();
+    var cnt = document.getElementById('tn-count');
+    if (cnt) cnt.textContent = syms.length ? (syms.length + (syms.length===1?' stock':' stocks')) : '';
+    if (!syms.length){
+      list.innerHTML = '<div style="color:var(--muted,#8a8f98);font-size:13px;padding:26px 4px;line-height:1.8;">'+
+        'No notes yet. Click the <b>+</b> next to any stock (Portfolio, AI Advisor, SA Results…) to add your first thesis, target or stop-loss.</div>';
+      return;
+    }
+    var h = '';
+    for (var i=0;i<syms.length;i++){
+      var s = syms[i], n = notes[s];
+      var chips = '';
+      if (n.target != null){
+        var g='', cur=priceOf(s);
+        if (cur && isFinite(cur) && cur>0){ var p=((n.target-cur)/cur*100); g=' <span style="color:'+(p>=0?'#3fb950':'#f85149')+'">('+(p>=0?'+':'')+p.toFixed(1)+'%)</span>'; }
+        chips += '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:var(--muted,#8a8f98);margin-inline-end:12px;">🎯 <b style="color:var(--text,#e6e8ec)">$'+(+n.target).toLocaleString()+'</b>'+g+'</span>';
+      }
+      if (n.stop != null){
+        var sp = n.stopPct ? ' (−'+n.stopPct+'%)' : '';
+        chips += '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:var(--muted,#8a8f98);">🛑 <b style="color:#f85149">$'+(+n.stop).toLocaleString()+'</b>'+sp+'</span>';
+      }
+      h += '<div class="tn-item" style="border:1px solid var(--border,#2a2f3a);border-radius:12px;padding:13px 15px;margin-bottom:10px;background:var(--bg1,#12151b);">'+
+        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'+
+          '<span style="font-family:\'IBM Plex Mono\',monospace;font-weight:700;font-size:13px;color:var(--accent,#d4af37);direction:ltr;unicode-bidi:isolate;">'+esc(s)+'</span>'+
+          chips+
+          '<span style="margin-inline-start:auto;color:var(--muted,#8a8f98);font-size:10.5px;">'+(n.updatedAt?fmtDate(n.updatedAt):'')+'</span>'+
+        '</div>'+
+        (n.thesis?'<div style="margin-top:7px;font-size:13px;line-height:1.7;color:var(--text,#e6e8ec);">'+esc(n.thesis)+'</div>':'')+
+        (n.note?'<div style="margin-top:6px;font-size:12.5px;line-height:1.7;color:var(--text2,#aab0bb);"><span style="color:var(--muted,#8a8f98);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;">Note</span> '+esc(n.note)+'</div>':'')+
+        '<div style="display:flex;gap:8px;margin-top:11px;">'+
+          '<button class="tn-btn tn-edit" data-tn-sym="'+esc(s)+'" style="border:1px solid var(--border,#2a2f3a);background:var(--bg2,#1b1f27);color:var(--text,#e6e8ec);border-radius:7px;padding:5px 12px;font-size:11.5px;cursor:pointer;">Edit</button>'+
+          '<button class="tn-btn tn-remove" data-tn-sym="'+esc(s)+'" style="border:1px solid transparent;background:transparent;color:#f85149;border-radius:7px;padding:5px 10px;font-size:11.5px;cursor:pointer;">Delete</button>'+
+        '</div>'+
+      '</div>';
+    }
+    list.innerHTML = h;
+    list.querySelectorAll('.tn-edit').forEach(function(b){ b.onclick=function(){ openModal(b.getAttribute('data-tn-sym')); }; });
+    list.querySelectorAll('.tn-remove').forEach(function(b){ b.onclick=function(){ save(b.getAttribute('data-tn-sym'),{delete:true}).catch(function(e){alert(e.message||'Delete failed');}); }; });
+  }
+
+  // ── Decoration ──────────────────────────────────────────────────
+  function makePin(sym){
+    var has = !!notes[sym];
+    var pin = document.createElement('span');
+    pin.className = 'tn-pin ' + (has?'has':'empty');
+    pin.setAttribute('data-tn', sym);
+    pin.textContent = has ? '📌' : '+';
+    pin.title = has ? 'View / edit note' : 'Add a note';
+    pin.addEventListener('click', function(e){ e.stopPropagation(); e.preventDefault(); openModal(sym); });
+    pin.addEventListener('mouseenter', function(e){ clearTimeout(tipHideT); if(notes[sym]) showTip(sym, e.clientX, e.clientY); });
+    pin.addEventListener('mousemove', function(e){ if(notes[sym] && tip && tip.classList.contains('show')){ tip.style.left=Math.min(e.clientX+12,window.innerWidth-tip.offsetWidth-8)+'px'; } });
+    pin.addEventListener('mouseleave', function(){ tipHideT=setTimeout(hideTip,80); });
+    return pin;
+  }
+  function hostFor(el){
+    try {
+      if (el.matches && el.matches('.hold-sym, .sym-badge, .adv2-tick')) return el;
+      var inner = el.querySelector && el.querySelector(':scope .sym');
+      if (inner) return inner;
+      if (el.tagName === 'TR'){ var td = el.querySelector(':scope > td'); if (td) return td; }
+    } catch(e){}
+    return el;
+  }
+  function decorate(el, sym){
+    if (!el || el.getAttribute('data-tn-done')==='1') return;
+    el.setAttribute('data-tn-done','1');
+    var host = hostFor(el);
+    host.classList.add('tn-host');
+    host.appendChild(makePin(sym));
+  }
+  function refreshPin(el, sym){
+    var host = hostFor(el);
+    var pin = host.querySelector('.tn-pin');
+    if (!pin) return;
+    var has = !!notes[sym];
+    // don't stomp an alert highlight applied by theisi-target-alerts.js
+    if (pin.classList.contains('tn-target') || pin.classList.contains('tn-stop')) return;
+    pin.className = 'tn-pin ' + (has?'has':'empty');
+    pin.textContent = has ? '📌' : '+';
+    pin.title = has ? 'View / edit note' : 'Add a note';
+  }
+  function scan(selector, requireKnown){
+    var listEls = document.querySelectorAll(selector);
+    for (var i=0;i<listEls.length;i++){
+      var el = listEls[i];
+      if (el.closest('.tn-pin')) continue;
+      var sym = symOf(el);
+      if (!isTicker(sym)) continue;
+      if (!requireKnown) known[sym] = true;
+      if (requireKnown && !known[sym] && !notes[sym]) continue;
+      if (el.getAttribute('data-tn-done')==='1') { refreshPin(el, sym); continue; }
+      decorate(el, sym);
+    }
+  }
+  function decorateAll(){ scan(STRUCTURED, false); scan(LOOSE, true); }
+
+  // ── React to re-renders ─────────────────────────────────────────
+  var pending = null;
+  function schedule(){ if(pending) return; pending=setTimeout(function(){ pending=null; decorateAll(); }, 150); }
+  function start(){
+    injectTab();
+    load();
+    var mo = new MutationObserver(function(muts){
+      for (var i=0;i<muts.length;i++){ if(muts[i].addedNodes && muts[i].addedNodes.length){ schedule(); return; } }
+    });
+    mo.observe(document.body, { childList:true, subtree:true });
+    window.addEventListener('scroll', hideTip, true);
+  }
+  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+
+  // ── Public API ──────────────────────────────────────────────────
+  window.THEISINotes = {
+    open: openModal,
+    get: function(sym){ return notes[(sym||'').toUpperCase()] || null; },
+    all: function(){ return notes; },
+    reload: load,
+    refresh: decorateAll
+  };
+})();
+</script>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+     THEISI — Price-Target & Stop-Loss Alerts (dashboard)
+     Paste this whole block before </body>, AFTER the theisi-notes.js block.
+     Polls /api/target-alerts, shows a banner for stocks near/at a target
+     (gold) or a stop-loss (red), and highlights the matching note pin.
+     Telegram is handled server-side by the scheduled scan; this is the in-app half.
+     ═══════════════════════════════════════════════════════════════════ -->
+<style>
+  #tgt-banner{position:fixed;z-index:99998;top:14px;inset-inline-end:14px;width:330px;max-width:calc(100vw - 28px);
+    background:var(--bg1,#12151b);border:1px solid var(--border,#2a2f3a);border-radius:12px;
+    box-shadow:0 10px 30px rgba(0,0,0,.5);overflow:hidden;display:none;font-size:13px;color:var(--text,#e6e8ec);}
+  #tgt-banner.show{display:block;}
+  #tgt-banner .tgt-hd{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg2,#1b1f27);
+    border-bottom:1px solid var(--border,#2a2f3a);font-weight:700;font-size:12.5px;}
+  #tgt-banner .tgt-hd .x{margin-inline-start:auto;cursor:pointer;color:var(--muted,#8a8f98);
+    width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+  #tgt-banner .tgt-hd .x:hover{background:var(--bg3,#232833);color:var(--text,#e6e8ec);}
+  #tgt-banner .tgt-row{display:flex;align-items:center;gap:9px;padding:9px 12px;border-bottom:1px solid var(--border,#2a2f3a);cursor:pointer;}
+  #tgt-banner .tgt-row:last-child{border-bottom:none;}
+  #tgt-banner .tgt-row:hover{background:var(--bg2,#1b1f27);}
+  #tgt-banner .tgt-sym{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12.5px;direction:ltr;unicode-bidi:isolate;}
+  #tgt-banner .tgt-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
+  #tgt-banner .tgt-badge.hit{background:rgba(63,185,80,.16);color:#3fb950;}
+  #tgt-banner .tgt-badge.approaching{background:rgba(212,175,55,.16);color:var(--accent,#d4af37);}
+  #tgt-banner .tgt-badge.breach{background:rgba(248,81,73,.18);color:#f85149;}
+  #tgt-banner .tgt-badge.stopnear{background:rgba(248,81,73,.12);color:#f85149;}
+  #tgt-banner .tgt-meta{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted,#8a8f98);direction:ltr;unicode-bidi:isolate;text-align:end;}
+  /* pin highlights */
+  .tn-pin.tn-target{color:var(--accent,#d4af37)!important;opacity:1!important;animation:tnPulseGold 1.6s ease-in-out infinite;}
+  .tn-pin.tn-stop{color:#f85149!important;opacity:1!important;animation:tnPulseRed 1.6s ease-in-out infinite;}
+  @keyframes tnPulseGold{0%,100%{box-shadow:0 0 0 0 rgba(212,175,55,0);}50%{box-shadow:0 0 0 4px rgba(212,175,55,.22);}}
+  @keyframes tnPulseRed{0%,100%{box-shadow:0 0 0 0 rgba(248,81,73,0);}50%{box-shadow:0 0 0 4px rgba(248,81,73,.25);}}
+</style>
+<script>
+(function(){
+  "use strict";
+  if (window.THEISITargets) return;
+  var SESSION_KEY = 'theisilabs_session';
+  var POLL_MS = 10 * 60 * 1000;
+  var lastShownKey = '';
+
+  function token(){ try { return localStorage.getItem(SESSION_KEY) || ''; } catch(e){ return ''; } }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  var banner;
+  function ensureBanner(){
+    if (banner) return banner;
+    banner = document.createElement('div'); banner.id = 'tgt-banner';
+    document.body.appendChild(banner);
+    return banner;
+  }
+  function hide(){ if (banner) banner.classList.remove('show'); }
+
+  function highlightPins(alerts){
+    document.querySelectorAll('.tn-pin.tn-target, .tn-pin.tn-stop').forEach(function(p){
+      p.classList.remove('tn-target','tn-stop');
+    });
+    alerts.forEach(function(a){
+      document.querySelectorAll('.tn-pin[data-tn="'+a.sym+'"]').forEach(function(p){
+        if (a.kind === 'stop'){ p.classList.add('tn-stop'); p.textContent = '🛑'; }
+        else { p.classList.add('tn-target'); p.textContent = '🎯'; }
+      });
+    });
+  }
+
+  function rowFor(a){
+    var badge, meta;
+    if (a.kind === 'stop'){
+      if (a.level === 'breach'){ badge='<span class="tgt-badge breach">stop hit</span>'; meta='$'+a.price.toLocaleString()+' ≤ $'+(+a.threshold).toLocaleString(); }
+      else { badge='<span class="tgt-badge stopnear">stop near</span>'; meta=a.distancePct+'% above · $'+(+a.threshold).toLocaleString(); }
+    } else {
+      if (a.level === 'hit'){ badge='<span class="tgt-badge hit">target hit</span>'; meta='$'+a.price.toLocaleString()+' / $'+(+a.threshold).toLocaleString(); }
+      else { badge='<span class="tgt-badge approaching">near</span>'; meta=a.distancePct+'% away · $'+(+a.threshold).toLocaleString(); }
+    }
+    return '<div class="tgt-row" data-sym="'+esc(a.sym)+'">'+
+      '<span class="tgt-sym">'+esc(a.sym)+'</span>'+badge+
+      '<span class="tgt-meta">'+esc(meta)+'</span></div>';
+  }
+
+  function render(alerts){
+    if (!alerts || !alerts.length){ hide(); highlightPins([]); return; }
+    // order: stop breach → target hit → stop near → target near
+    var order = { 'stop:breach':0, 'target:hit':1, 'stop:approaching':2, 'target:approaching':3 };
+    alerts.sort(function(a,b){
+      var ra=order[a.kind+':'+a.level]!=null?order[a.kind+':'+a.level]:9;
+      var rb=order[b.kind+':'+b.level]!=null?order[b.kind+':'+b.level]:9;
+      if (ra!==rb) return ra-rb;
+      return (a.distancePct||0)-(b.distancePct||0);
+    });
+    var b = ensureBanner();
+    b.innerHTML = '<div class="tgt-hd">🔔 Alerts ('+alerts.length+')<span class="x" title="Dismiss">✕</span></div>'+
+      alerts.map(rowFor).join('');
+    b.querySelector('.x').onclick = hide;
+    b.querySelectorAll('.tgt-row').forEach(function(r){
+      r.onclick = function(){ var s=r.getAttribute('data-sym'); if (window.THEISINotes && THEISINotes.open) THEISINotes.open(s); };
+    });
+    var key = alerts.map(function(a){return a.kind+':'+a.sym+':'+a.level;}).sort().join('|');
+    if (key !== lastShownKey){ lastShownKey = key; b.classList.add('show'); }
+    highlightPins(alerts);
+  }
+
+  function check(){
+    var t = token(); if (!t) return;
+    fetch('/api/target-alerts', { headers: { 'Authorization': 'Bearer ' + t } })
+      .then(function(r){ return r.ok ? r.json() : { alerts: [] }; })
+      .then(function(j){ render((j && j.alerts) || []); })
+      .catch(function(){});
+  }
+
+  function start(){ setTimeout(check, 1500); setInterval(check, POLL_MS); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+
+  window.THEISITargets = { check: check };
+})();
+</script>
   
 </body>
 </html>
