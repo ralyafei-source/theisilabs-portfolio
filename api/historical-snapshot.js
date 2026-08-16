@@ -9,7 +9,7 @@ const REPO         = 'ralyafei-source/theisilabs-portfolio';
 const FMP_KEY      = process.env.FMP_API_KEY;
 const FMP          = 'https://financialmodelingprep.com/stable';
 const UA           = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
-const API_KEY      = process.env.BRIEFING_API_KEY || 'theisilabs2026';
+const API_KEY      = process.env.BRIEFING_API_KEY;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
 // ─── Local OHLC cache (loaded once per cold start) ───────────────────────────
@@ -300,7 +300,7 @@ module.exports = async (req, res) => {
 
   const authHeader = req.headers['authorization'] || '';
   const key = authHeader.replace('Bearer ', '').trim();
-  if (key && key !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+  if (key !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
 
   const { date, format } = req.query;
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date))
