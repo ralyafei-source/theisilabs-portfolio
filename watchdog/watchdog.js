@@ -9,7 +9,7 @@
  *   · five `?mode=` calls in 922 silently fell through to a plain-text response
  *     — the universe/scoring subsystem has been dead since 2026-06-17
  *   · deep-read threw a TypeError swallowed by a try/catch — dead ~6 weeks
- *   · 977 has been reading June news since June
+ *   · a 977 route silently stopped committing its output in June
  *   · the SA workbook went 13 days stale with nothing complaining
  * Uptime checks would have reported all four as healthy. Artifact assertions do not.
  *
@@ -91,7 +91,11 @@ function newestDated(names, prefix) {
 
 // ── 1. Daily pipeline produced today's artifacts ───────────────────────────
 async function checkDaily() {
-  const today = uaeDate();
+  // Check the last cycle that SHOULD have completed, not the wall-clock date.
+  // 922 runs 03:00 and 977 07:00 UAE; before ~08:00 today's cycle isn't done, so
+  // a manual run at 00:50 would otherwise false-alarm on files that aren't due yet.
+  const uaeHour = Number(new Date(Date.now() + UAE_OFFSET_MS).toISOString().slice(11, 13));
+  const today = uaeHour < 8 ? uaeDate(1) : uaeDate();
   // the file wraps its payload: {current:{date,status,ready_for_consumers},recent_healthy:[]}
   const raw0 = await raw('data/system/collector-status.json');
   const status = (raw0 && raw0.current) || raw0;
@@ -124,21 +128,35 @@ async function checkFreshness() {
       sa.ageDays !== null && sa.ageDays <= 7,
       sa.latest ? `latest ${sa.latest} · ${sa.ageDays}d old (warn >7, fail >14)` : 'none found');
 
-  // THE F6 CHECK. 977 reads data/news.json, which is NOT what 922 writes.
-  // Its articles were dated 11-12 June while the pipeline wrote current news
-  // to data/market/news-{date}.json every day.
-  const legacy = await raw('data/news.json');
-  const items = Array.isArray(legacy) ? legacy : (legacy && (legacy.articles || legacy.news || legacy.items)) || [];
-  // this file stores "11 Jun 2026", not ISO — Date.parse handles both
-  const stamps = items.map(a => a.publishedAt || a.time || a.date || a.date_ar).filter(Boolean);
-  const ms = stamps.map(s => Date.parse(String(s))).filter(n => !isNaN(n));
-  const newestMs = ms.length ? Math.max(...ms) : null;
-  const newest = newestMs ? new Date(newestMs).toISOString().slice(0, 10) : null;
-  const age = newest ? daysBetween(newest, uaeDate()) : null;
-  add(FAIL, 'the news file 977 reads is current',
-      age !== null && age <= 2,
-      age === null ? `could not date ${items.length} articles — check the feed 977 consumes`
-                   : `newest article ${newest} · ${age}d old`);
+  // CORRECTED 2026-08-16 after reading the 977 blueprint. The brief (M51->M11)
+  // and the dashboard (index.html) BOTH read data/market/news-{date}.json — the
+  // fresh feed 922 writes. The earlier belief that 977 consumed the stale
+  // data/news.json was wrong: that file is an orphan (977 Route 0 writes it,
+  // nothing live reads it). So the check that matters is that TODAY's real feed
+  // exists — already covered by checkDaily — plus a low-severity note if the
+  // orphan is still lying around, since a future edit could wire it back in.
+  // The brief reads news-{date}. checkDaily already asserts TODAY strictly (it
+  // runs post-pipeline); here we only confirm the feed is RECENT, so running the
+  // watchdog before 922's daily run doesn't false-alarm. A 2-day gap is real trouble.
+  let feedFound = null;
+  for (let o = 0; o <= 2 && !feedFound; o++) {
+    const d = uaeDate(o);
+    const f = await raw(`data/market/news-${d}.json`);
+    const a = Array.isArray(f) ? f : (f && (f.news || f.items)) || [];
+    if (a.length) feedFound = { date: d, n: a.length };
+  }
+  add(FAIL, 'the news feed the brief reads is present within 2 days',
+      !!feedFound,
+      feedFound ? `news-${feedFound.date}.json · ${feedFound.n} items` : 'no news feed in the last 3 days');
+
+  const orphan = await raw('data/news.json');
+  if (orphan) {
+    const st = (Array.isArray(orphan) ? orphan : []).map(a => Date.parse(String(a.time || a.date || '')))
+                 .filter(n => !isNaN(n));
+    const oldest = st.length ? daysBetween(new Date(Math.max(...st)).toISOString().slice(0,10), uaeDate()) : null;
+    add(WARN, 'orphan data/news.json is gone or nobody reads it',
+        false, `still present, ${oldest ?? '?'}d stale — written by 977 Route 0, read by nothing live; safe to delete`);
+  }
 
   const dists = await raw('data/distributions.json');
   const meta = dists && dists._meta;
