@@ -1,0 +1,54 @@
+# .github/workflows/theisi-watchdog.yml
+#
+# Runs in GitHub Actions ON PURPOSE — not on the local node, not on Vercel.
+# A monitor that shares a failure domain with what it monitors is not a monitor:
+# the 5080 sleeps, and a Vercel cron cannot report that Vercel crons stopped.
+# Actions is free, always on, and independent of both.
+#
+# Silence means healthy. Telegram fires only when something is wrong.
+
+name: THEISI watchdog
+
+on:
+  schedule:
+    # 04:17 UTC = 08:17 UAE — after 922 (03:00) and 977 (07:00) have both run.
+    # Off-minute deliberately: every scheduler on the planet fires at :00.
+    - cron: '17 4 * * *'
+  workflow_dispatch:        # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: read            # least privilege — it only reads
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run invariant checks
+        env:
+          # supplied automatically by Actions; lifts the GitHub API rate limit
+          # from 60/hr (which silently 403s) to 1000/hr
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node watchdog/watchdog.js
+
+      # keep the machine-readable result even when the job fails
+      - name: Save report
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node watchdog/watchdog.js --json > watchdog-report.json || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: watchdog-report
+          path: watchdog-report.json
+          retention-days: 30
