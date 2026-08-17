@@ -4690,6 +4690,39 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     h=h.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(); if(!h) return null;
     return panel(secLabel('\u0631\u0627\u062f\u0627\u0631 \u0627\u0644\u0645\u062e\u0627\u0637\u0631')+'<div style="font-size:12px;line-height:1.8;color:var(--text2);">'+h.slice(0,200)+'\u2026</div><div style="font-size:10.5px;color:var(--text3);margin-top:8px;">\u062a\u062d\u0644\u064a\u0644 \u0623\u0633\u0628\u0648\u0639\u064a</div>'+door('\u0641\u062a\u062d \u0627\u0644\u062a\u062d\u0644\u064a\u0644','advisor'));
   }
+  // ---- Risk engine card (from data/risk-{nick}-{date}.json, via api/risk.js) ----
+  function riskEngineCard(){
+    var R=window._riskEngData; if(!R) return null;
+    var K=R.correlation||{}, C=R.concentration||{};
+    var hasCorr = K.effective_independent_bets!=null;
+    var parts='';
+    if(hasCorr){
+      parts+='<div style="display:flex;gap:16px;margin-bottom:12px;">'
+        +'<div><div style="font-size:10.5px;color:var(--text3);">رهانات مستقلة فعلية</div><div style="font-size:24px;font-weight:800;font-family:'+MONO+';color:'+AC+';">'+K.effective_independent_bets+'</div><div style="font-size:10px;color:var(--text3);">من '+R.holdings+' سهم</div></div>'
+        +'<div><div style="font-size:10.5px;color:var(--text3);">نسبة التنويع</div><div style="font-size:24px;font-weight:800;font-family:'+MONO+';color:var(--text);">'+(K.diversification_ratio!=null?K.diversification_ratio:'—')+'</div><div style="font-size:10px;color:var(--text3);">بيتا '+(K.measured_beta_vs_spy!=null?K.measured_beta_vs_spy:(C.portfolio_beta_24m!=null?C.portfolio_beta_24m:'—'))+'</div></div>'
+        +'</div>';
+      if(K.top_risk_contributors&&K.top_risk_contributors.length){
+        parts+='<div style="font-size:10.5px;color:var(--text3);margin-bottom:4px;">أكبر مساهمي المخاطر</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">'
+          +K.top_risk_contributors.slice(0,6).map(function(c){return '<span style="font-size:10.5px;font-family:'+MONO+';background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:2px 7px;">'+c.sym+' '+c.pct_of_risk+'%</span>';}).join('')+'</div>';
+      }
+      if(K.correlation_clusters&&K.correlation_clusters.length){
+        var big=K.correlation_clusters[0]||[];
+        parts+='<div style="font-size:10.5px;color:var(--text3);line-height:1.7;margin-bottom:10px;">تتحرك معاً: <span style="color:var(--text2);">'+big.slice(0,10).join(' · ')+(big.length>10?' …':'')+'</span></div>';
+      }
+    } else {
+      parts+='<div style="font-size:11.5px;color:var(--text3);line-height:1.9;margin-bottom:10px;">'+(C.effective_positions!=null?(C.effective_positions+' مراكز فعّالة · '):'')+(C.effective_sectors!=null?(C.effective_sectors+' قطاعات · '):'')+'بيتا '+(C.portfolio_beta_24m!=null?C.portfolio_beta_24m:'—')+'</div>';
+    }
+    var exits=R.exits||[]; var po=exits.filter(function(e){return e.played_out;});
+    if(po.length){
+      parts+='<div style="font-size:10.5px;color:var(--text3);margin-bottom:4px;">أطروحات نضجت</div>'
+        +po.slice(0,4).map(function(e){return '<div style="font-size:11.5px;padding:4px 0;border-bottom:1px solid var(--border);"><span style="color:#e5aa00;font-weight:700;font-family:'+MONO+';">'+ccShariaMark(e.sym)+e.sym+'</span> <span style="color:var(--text3);font-size:10.5px;">'+(e.gain!=null?('+'+e.gain+'% · '):'')+'نضجت</span></div>';}).join('');
+    } else if(exits.length){
+      parts+='<div style="font-size:11px;color:var(--text3);">'+exits.length+' سهم تحت المراقبة</div>';
+    }
+    var asof=R.as_of?('<div style="font-size:10px;color:var(--text3);margin-top:8px;">قراءة '+R.as_of+'</div>'):'';
+    return panel(secLabel('قراءة المخاطر')+parts+asof);
+  }
+
   function fairCard(){ try{ var rows=(typeof _parseWeeklyFairValueRows==='function')?_parseWeeklyFairValueRows(P.weekly.fairvalue||''):[]; if(!rows||!rows.length) return null;
     var list=rows.slice(0,4).map(function(r){var dcf=(r.dcfPct!=null)?(r.dcfPct+'%'):'\u2014'; return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;"><span style="color:var(--text);font-weight:600;">'+clean(r.sym)+'</span><span style="color:var(--text2);font-family:'+MONO+';">\u2248 '+dcf+'</span></div>';}).join('');
     return panel(secLabel('\u0646\u0638\u0631\u0629 \u0627\u0644\u0642\u064a\u0645\u0629 \u0627\u0644\u0645\u0642\u062f\u0651\u0631\u0629')+list+'<div style="font-size:10.5px;color:var(--text3);margin-top:8px;">\u062a\u062d\u0644\u064a\u0644 \u0623\u0633\u0628\u0648\u0639\u064a</div>'+door('\u0641\u062a\u062d \u0627\u0644\u062a\u062d\u0644\u064a\u0644','advisor')); }catch(e){ return null; } }
@@ -5042,7 +5075,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
   }
   window._ccFGPopup=_ccFGPopup;
   var hzCard='<div class="cc-analysis-scroll" style="max-height:250px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;">'+panel(hzInner,{style:'display:flex;flex-direction:column;'})+'</div>';
-  var analysisCards=[panel(positionsInner),earningsCard()||ccPh('الأرباح القادمة'),riskCard()||ccPh('رادار المخاطر'),divCard()||ccPh('التوزيعات'),rangeCard()||ccPh('المدى ٥٢ أسبوعاً')]
+  var analysisCards=[panel(positionsInner),earningsCard()||ccPh('الأرباح القادمة'),riskCard()||ccPh('رادار المخاطر'),riskEngineCard()||ccPh('قراءة المخاطر'),divCard()||ccPh('التوزيعات'),rangeCard()||ccPh('المدى ٥٢ أسبوعاً')]
     .map(function(c){return '<div class="cc-analysis-scroll" style="max-height:250px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;">'+c+'</div>';});
   /* hzCard placed in bento */
   var analysisSection='';
@@ -5279,7 +5312,7 @@ window.loadPulse = function(force){
 }
 function ccRefresh(){
   // force a full re-fetch (clear caches + guards)
-  window._hzData=null; window._riskData=null; window._riskTried=false; window._divData=null; window._divTried=false; window._histData=null; window._histTried=false; window._briefData=null; window._briefTried=false; window._earnData=null; window._earnTried=false; window._shariaSetCC=null; window._shariaTried=false;
+  window._hzData=null; window._riskData=null; window._riskTried=false; window._riskEngData=null; window._riskEngTried=false; window._divData=null; window._divTried=false; window._histData=null; window._histTried=false; window._briefData=null; window._briefTried=false; window._earnData=null; window._earnTried=false; window._shariaSetCC=null; window._shariaTried=false;
   renderCommandCenter();
   saFetch({loadBuckets:true})
     .then(function(r){return r.json();})
@@ -5293,6 +5326,7 @@ function ccRefresh(){
     .then(function(d){ window._newsFeed=d; renderCommandCenter(); }).catch(function(){});
   
   loadRiskData();
+  loadRiskEngine();
   loadDivData();
   loadHistoryData();
   loadBriefData();
@@ -5491,6 +5525,27 @@ function loadRiskData(){
   }catch(e){}
 }
 
+// Risk engine output (api/risk.js writes data/risk-{nick}-{date}.json weekly).
+// Fetches the latest available file (walks back up to 10 days). Goes through the
+// resilient fetch interceptor, so a raw-CDN outage falls back to /api/gh.
+function loadRiskEngine(){
+  if(window._riskEngData || window._riskEngTried){ return; }
+  window._riskEngTried=true;
+  try{
+    var nick='rashed'; try{ nick=(localStorage.getItem('theisilabs_nick')||'rashed').toLowerCase().trim()||'rashed'; }catch(e){}
+    var base='https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/risk-'+nick+'-';
+    (async function(){
+      for(var o=0;o<10;o++){
+        var ds=new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10);
+        try{
+          var r=await fetch(base+ds+'.json?t='+Date.now());
+          if(r.ok){ var d=await r.json(); if(d&&d.concentration){ window._riskEngData=d; renderCommandCenter(); return; } }
+        }catch(e){}
+      }
+    })();
+  }catch(e){}
+}
+
 function showTab(name,el){
   if(name==='dashboard') setTimeout(function(){ if(typeof initLiveData==='function') initLiveData(); },100);
   if(name==='portfolio') setTimeout(function(){
@@ -5518,6 +5573,7 @@ function showTab(name,el){
       // fetch analysis (loadAnalysis re-renders CC when done)
       if(typeof loadAnalysis==='function' && (typeof analysisData==='undefined' || !analysisData)) loadAnalysis();
       if(typeof loadRiskData==='function') loadRiskData();
+      if(typeof loadRiskEngine==='function') loadRiskEngine();
       if(typeof loadDivData==='function') loadDivData();
       if(typeof loadHistoryData==='function') loadHistoryData();
       if(typeof loadBriefData==='function') loadBriefData();
@@ -14824,6 +14880,7 @@ function saHandleExcel(input){
     // refresh CC caches so the new risk/div data loads
     try{ window._riskData=null; window._riskTried=false; window._divData=null; window._divTried=false; window._hzData=null;
       if(typeof loadRiskData==='function') loadRiskData();
+      if(typeof loadRiskEngine==='function') loadRiskEngine();
       if(typeof loadDivData==='function') loadDivData();
     }catch(_){}
     try{
