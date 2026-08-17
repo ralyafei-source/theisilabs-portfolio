@@ -4712,62 +4712,62 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     var det='';
     det+='<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:2px;">'
       +'<span style="font-size:44px;font-weight:800;font-family:'+MONO+';color:'+AC+';line-height:1;">'+(eib!=null?eib:'—')+'</span>'
-      +'<span style="font-size:13px;color:var(--text2);">رهانات مستقلة فعلية<br><span style="color:var(--text3);font-size:12px;">من '+N+' اسم — نصف التنويع وهمي</span></span></div>';
+      +'<span style="font-size:13px;color:var(--text2);">مراكز مستقلة حقيقية<br><span style="color:var(--text3);font-size:12px;">من أصل '+N+' اسم — نص تنويعك وهمي</span></span></div>';
     det+=pips(9);
-    det+='<div style="font-size:11px;color:var(--text3);margin:2px 0 10px;">كل مربّع = اسم · المضيء = رهان مستقل فعلي بعد طيّ الأسماء المترابطة</div>';
-    det+='<div style="font-size:11.5px;color:var(--text2);line-height:1.85;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:16px;">هذه القراءة تكشف ما لا تُظهره قائمة المراكز: كم رهاناً مستقلاً تملك فعلاً، أي الأسماء تقود المخاطر، وأيها يتحرك معاً. تملك 49 اسماً لكن كثيراً منها يصعد ويهبط سويّاً — فتنوّعك الحقيقي أقل مما يبدو.</div>';
+    det+='<div style="font-size:11px;color:var(--text3);margin:2px 0 10px;">كل مربّع = اسم · والمضيء = مركز مستقل فعلاً بعد دمج الأسماء المترابطة</div>';
+    det+='<div style="font-size:11.5px;color:var(--text2);line-height:1.85;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:16px;">هذي القراءة تبيّن لك اللي ما تكشفه قائمة مراكزك: كم مركز مستقل تملك فعلاً، أي الأسماء تقود المخاطرة، وأيها يتحرك مع بعض. عندك '+N+' اسم، لكن كثير منها يصعد ويهبط سوا — فتنويعك الحقيقي أقل مما يبدو.</div>';
     function tile(v,l){ return '<div style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:11px;padding:11px;"><div style="font-size:22px;font-weight:800;font-family:'+MONO+';color:var(--text);">'+v+'</div><div style="font-size:10.5px;color:var(--text3);margin-top:3px;line-height:1.4;">'+l+'</div></div>'; }
     det+='<div style="display:flex;gap:8px;margin-bottom:16px;">'
-      +tile(C.effective_positions!=null?C.effective_positions:'—','مراكز فعّالة من '+N)
-      +tile(C.effective_sectors!=null?C.effective_sectors:'—','قطاعات فعّالة')
+      +tile(C.effective_positions!=null?C.effective_positions:'—','مراكزك الفعلية (من '+N+')')
+      +tile(C.effective_sectors!=null?C.effective_sectors:'—','قطاعاتك الفعلية')
       +tile((K.measured_beta_vs_spy!=null?K.measured_beta_vs_spy:(beta!=null?beta:'—')),'بيتا المحفظة')+'</div>';
-    det+='<div style="font-size:11px;color:var(--text3);line-height:1.75;margin:-4px 0 16px;">«الفعّالة» تقيس تنوّعك الحقيقي بعد مراعاة تركّز الأوزان: كلما قلّت عن العدد الاسمي (49 اسماً، 11 قطاعاً) زاد التركّز. البيتا تقيس حساسية محفظتك لحركة السوق — أعلى من 1 يعني تحرّكاً أعنف من السوق.</div>';
+    det+='<div style="font-size:11px;color:var(--text3);line-height:1.75;margin:-4px 0 16px;">«الفعلية» تعني عددك الحقيقي بعد حساب تركّز الأوزان: كل ما قلّ عن العدد الظاهري ('+N+' اسم، 11 قطاع) زاد تركّزك. أما البيتا فتقيس حساسية محفظتك لحركة السوق — فوق 1 يعني تتحرك أعنف من السوق.</div>';
     if(K.diversification_ratio!=null||K.avg_pairwise_correlation!=null||K.annualized_portfolio_vol_pct!=null){
       det+='<div style="display:flex;gap:18px;font-size:12px;color:var(--text2);margin-bottom:16px;flex-wrap:wrap;">'
         +(K.diversification_ratio!=null?'<span>نسبة التنويع <b style="font-family:'+MONO+';color:var(--text);">'+K.diversification_ratio+'</b></span>':'')
         +(K.avg_pairwise_correlation!=null?'<span>متوسط الارتباط <b style="font-family:'+MONO+';color:var(--text);">'+K.avg_pairwise_correlation+'</b></span>':'')
-        +(K.annualized_portfolio_vol_pct!=null?'<span>تقلّب سنوي <b style="font-family:'+MONO+';color:var(--text);">'+K.annualized_portfolio_vol_pct+'%</b></span>':'')+'</div>';
-      det+='<div style="font-size:11px;color:var(--text3);line-height:1.75;margin:-6px 0 16px;">نسبة التنويع فوق 1 تعني أن التنويع يخفّض تقلّب محفظتك (أعلى = أفضل) · متوسط الارتباط قريب من الصفر أفضل، والقريب من 1 يعني أن الأسماء تتحرك معاً · التقلّب السنوي هو حجم تذبذب المحفظة المتوقع خلال سنة.</div>';
+        +(K.annualized_portfolio_vol_pct!=null?'<span>التقلّب السنوي <b style="font-family:'+MONO+';color:var(--text);">'+K.annualized_portfolio_vol_pct+'%</b></span>':'')+'</div>';
+      det+='<div style="font-size:11px;color:var(--text3);line-height:1.75;margin:-6px 0 16px;">نسبة التنويع فوق 1 تعني أن التنويع يخفّف تقلّب محفظتك (كل ما زادت، كان أفضل) · ومتوسط الارتباط الأقرب للصفر أفضل، والأقرب لـ 1 يعني أن الأسماء تتحرك مع بعض · والتقلّب السنوي هو حجم تذبذب محفظتك المتوقع خلال سنة.</div>';
     }
     var rc=K.top_risk_contributors||[];
     if(rc.length){
       var mx=Math.max.apply(null,rc.map(function(c){return c.pct_of_risk||0;}))||1;
-      det+='<div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:3px;">أكبر مساهمي المخاطر</div>'
-        +'<div style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:10px;">النسبة = حصة كل اسم من إجمالي تقلّب المحفظة (وليست من قيمته). كلما طال الشريط، كان الاسم أكثر تأثيراً في تحرّكات محفظتك صعوداً وهبوطاً.</div>'
+      det+='<div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:3px;">أكبر مصادر المخاطرة</div>'
+        +'<div style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:10px;">النسبة تمثّل حصة كل اسم من إجمالي تقلّب محفظتك (مو من قيمته). كل ما طال الشريط، زاد تأثير الاسم في صعود محفظتك وهبوطها.</div>'
         +rc.slice(0,8).map(function(c){ var w=Math.round((c.pct_of_risk/mx)*100);
           return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="width:52px;font-size:11.5px;font-family:'+MONO+';color:var(--text);flex:none;">'+c.sym+'</span><div style="flex:1;height:8px;background:var(--bg3);border-radius:6px;overflow:hidden;"><div style="height:100%;width:'+w+'%;background:'+AC+';border-radius:6px;"></div></div><span style="width:44px;text-align:left;font-size:11px;font-family:'+MONO+';color:var(--text2);flex:none;">'+c.pct_of_risk+'%</span></div>';
         }).join('')+'<div style="height:16px;"></div>';
     }
     var cl=K.correlation_clusters||[];
     if(cl.length){
-      det+='<div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:3px;">تتحرك معاً (عناقيد الارتباط)</div>'
-        +'<div style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:10px;">الأسماء داخل العنقود الواحد تصعد وتهبط سويّاً، فهي عملياً رهان واحد لا عدّة رهانات. العنقود الأكبر هو تركّزك الحقيقي المخفي خلف عدد الأسماء.</div>'
+      det+='<div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:3px;">تتحرك مع بعض (مجموعات مترابطة)</div>'
+        +'<div style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:10px;">الأسماء داخل المجموعة الوحدة تصعد وتهبط سوا، فهي عملياً مركز واحد مو عدة مراكز. وأكبر مجموعة هي تركّزك الحقيقي المخفي وراء عدد الأسماء.</div>'
         +cl.slice(0,4).map(function(g,i){ return '<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:8px 10px;margin-bottom:6px;font-size:11.5px;line-height:1.7;"><span style="color:'+(i===0?AC:'var(--text3)')+';font-weight:700;">'+g.length+' أسماء · </span><span style="color:var(--text2);font-family:'+MONO+';">'+g.slice(0,14).join(' · ')+(g.length>14?' …':'')+'</span></div>'; }).join('')+'<div style="height:16px;"></div>';
     }
     var sc=R.scenarios||[];
     if(sc.length){
-      det+='<div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:3px;">سيناريوهات الهبوط (تقديري بالبيتا)</div>'
-        +'<div style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:10px;">تقدير تقريبي لأثر هبوط السوق على محفظتك اعتماداً على البيتا — ليس تنبؤاً. في الهبوط الحاد قد يكون الأثر أكبر لأن الارتباطات ترتفع وتهبط الأسهم عالية البيتا أكثر.</div>'
+      det+='<div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:3px;">سيناريوهات الهبوط (تقدير بالبيتا)</div>'
+        +'<div style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:10px;">تقدير تقريبي لأثر هبوط السوق على محفظتك بالاعتماد على البيتا — مو تنبؤ. في الهبوط الحاد قد يكون الأثر أكبر، لأن الارتباطات ترتفع وتهبط الأسهم عالية البيتا أكثر.</div>'
         +sc.map(function(s){ var lbl=(s.market_move_pct===-30)?'هبوط التقنية −30%':('السوق '+s.market_move_pct+'%');
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;"><span style="color:var(--text2);">'+lbl+'</span><span style="font-family:'+MONO+';color:#F87171;font-weight:600;">'+(s.beta_implied_book_pct!=null?s.beta_implied_book_pct+'% ':'')+'('+usd(s.beta_implied_book_usd)+')</span></div>';
         }).join('')+'<div style="height:16px;"></div>';
     }
     var ex=R.exits||[], po=ex.filter(function(e){return e.played_out;});
     if(po.length||ex.length){
-      det+='<div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:3px;">إشارات نضج الأطروحة</div>'
-        +'<div style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:10px;">أسهم ربحت كثيراً وأصبحت ممتدة وغالية — السبب الذي جعلها شراءً لم يعد يصفها. ليست توصية بيع، بل تنبيه للمراجعة. المميّزة بالذهبي نضجت أطروحتها؛ «تحت المراقبة» تقترب.</div>'
-        +po.map(function(e){ var f=(e.flags||[]).filter(function(x){return x.key==='thesis_played_out';})[0];
-          return '<div style="border:1px solid #FBBF24;background:rgba(251,191,36,.08);border-radius:10px;padding:9px 11px;margin-bottom:6px;"><span style="font-family:'+MONO+';font-weight:700;color:#FBBF24;">'+ccShariaMark(e.sym)+e.sym+'</span> <span style="font-size:11px;color:var(--text3);">· أطروحة نضجت</span><div style="font-size:11.5px;color:var(--text2);margin-top:4px;line-height:1.7;">'+(f?f.ar:'')+'</div></div>'; }).join('');
+      det+='<div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:3px;">إشارات نضج قصة السهم</div>'
+        +'<div style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:10px;">أسهم ربحت كثير وصارت ممتدة وغالية — السبب اللي خلاها شراء ما عاد ينطبق عليها. مو توصية بيع، بس تنبيه للمراجعة. المميّزة بالذهبي نضجت قصتها، و«تحت المراقبة» تقترب.</div>'
+        +po.map(function(e){ var rn='نضجت القصة: مكسب '+(e.gain!=null?e.gain+'%':'')+'، ممتد، وما عاد رخيص — السبب اللي خلاه شراء ما عاد ينطبق عليه. القرار عندك يا صديقي.';
+          return '<div style="border:1px solid #FBBF24;background:rgba(251,191,36,.08);border-radius:10px;padding:9px 11px;margin-bottom:6px;"><span style="font-family:'+MONO+';font-weight:700;color:#FBBF24;">'+ccShariaMark(e.sym)+e.sym+'</span> <span style="font-size:11px;color:var(--text3);">· نضجت القصة</span><div style="font-size:11.5px;color:var(--text2);margin-top:4px;line-height:1.7;">'+rn+'</div></div>'; }).join('');
       var watch=ex.filter(function(e){return !e.played_out;});
       if(watch.length){ det+='<div style="font-size:11.5px;color:var(--text3);margin-top:4px;line-height:1.95;">تحت المراقبة: '+watch.slice(0,12).map(function(e){return '<span style="font-family:'+MONO+';color:var(--text2);">'+e.sym+'</span>'+(e.gain!=null?(' <span style="font-size:10px;">('+(e.gain>=0?'+':'')+e.gain+'%)</span>'):'');}).join(' · ')+'</div>'; }
       det+='<div style="height:14px;"></div>';
     }
-    if(R.caveat_ar){ det+='<div style="font-size:11px;color:var(--text3);line-height:1.8;border-top:1px solid var(--border);padding-top:12px;">'+R.caveat_ar+' — القرار في النهاية عندك.</div>'; }
+    det+='<div style="font-size:11px;color:var(--text3);line-height:1.8;border-top:1px solid var(--border);padding-top:12px;">أرقام تعرّض معلوماتية — البيتا مو تنبؤ، وفي الهبوط الحاد ترتفع الارتباطات وتهبط الأسهم عالية البيتا أكثر. القرار في النهاية عندك.</div>';
     window._ccReadStore=window._ccReadStore||{};
     window._ccReadStore['risksum']={title:'قراءة المخاطر',html:det,wide:true};
     // ===== COMPACT (bento tile) =====
     var compact=secLabel('قراءة المخاطر')
-      +'<div style="display:flex;align-items:baseline;gap:8px;margin:2px 0;"><span style="font-size:36px;font-weight:800;font-family:'+MONO+';color:'+AC+';line-height:1;">'+(eib!=null?eib:'—')+'</span><span style="font-size:11.5px;color:var(--text3);line-height:1.35;">رهانات<br>مستقلة<br>من '+N+'</span></div>'
+      +'<div style="display:flex;align-items:baseline;gap:8px;margin:2px 0;"><span style="font-size:36px;font-weight:800;font-family:'+MONO+';color:'+AC+';line-height:1;">'+(eib!=null?eib:'—')+'</span><span style="font-size:11.5px;color:var(--text3);line-height:1.35;">مراكز<br>مستقلة<br>من '+N+'</span></div>'
       +pips(7)
       +'<div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.7;">'+(topC?('أعمق تعرّض: <b style="color:var(--text2);font-family:'+MONO+';">'+topC.sym+' '+topC.pct_of_risk+'%</b>'):'')+(beta!=null?(' · بيتا <b style="color:var(--text2);font-family:'+MONO+';">'+beta+'</b>'):'')+'</div>'
       +'<div style="font-size:10.5px;color:'+AC+';margin-top:auto;padding-top:10px;">التفاصيل الكاملة ←</div>';

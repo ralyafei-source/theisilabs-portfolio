@@ -103,7 +103,7 @@ function exitSignals(r) {
   const played_out = bigWinner && hot && noLongerCheap;
   if (played_out)
     add('thesis_played_out', 'review',
-        `أطروحة نضجت: مكسب ${(gain*100).toFixed(0)}%، ممتد، ولم يعد رخيصاً — الشيء الذي جعله شراءً لم يعد يصفه. القرار عندك.`,
+        `نضجت القصة: مكسب ${(gain*100).toFixed(0)}%، ممتد، وما عاد رخيص — السبب اللي خلاه شراء ما عاد ينطبق عليه. القرار عندك يا صديقي.`,
         `Thesis matured: +${(gain*100).toFixed(0)}%, extended, no longer cheap — the reason it was a buy no longer describes it. Your call.`);
 
   return { sym, gain: gain != null ? +(gain*100).toFixed(0) : null,
@@ -219,7 +219,7 @@ function buildReport(holdings, closes, saRaw, meta = {}) {
     })),
     sector_weights: Object.fromEntries(Object.entries(sec).sort((a, b) => b[1]-a[1]).map(([s, w]) => [s, +(w*100).toFixed(1)])),
     exits,
-    caveat_ar: 'أرقام تعرّض معلوماتية — بيتا ليست تنبؤاً، وفي الهبوط الحاد ترتفع الارتباطات وتهبط الأسهم عالية البيتا أكثر.'
+    caveat_ar: 'أرقام تعرّض معلوماتية — البيتا مو تنبؤ، وفي الهبوط الحاد ترتفع الارتباطات وتهبط الأسهم عالية البيتا أكثر. القرار في النهاية عندك.'
   };
 }
 
