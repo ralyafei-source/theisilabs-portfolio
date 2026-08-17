@@ -1,0 +1,543 @@
+{
+  "as_of": "2026-08-17",
+  "sa_date": "2026-08-16",
+  "holdings": 49,
+  "total_value": 582107,
+  "concentration": {
+    "effective_positions": 22.9,
+    "effective_sectors": 2.9,
+    "top_sector": "Information Technology",
+    "top_sector_pct": 56.7,
+    "portfolio_beta_24m": 1.67
+  },
+  "correlation": {
+    "names_with_history": 49,
+    "effective_independent_bets": 8.8,
+    "diversification_ratio": 2.08,
+    "avg_pairwise_correlation": 0.19,
+    "annualized_portfolio_vol_pct": 27.4,
+    "measured_beta_vs_spy": 1.75,
+    "top_risk_contributors": [
+      {
+        "sym": "AEHR",
+        "pct_of_risk": 18.1
+      },
+      {
+        "sym": "MSFT",
+        "pct_of_risk": 8.9
+      },
+      {
+        "sym": "TEAM",
+        "pct_of_risk": 5.3
+      },
+      {
+        "sym": "PONY",
+        "pct_of_risk": 5.2
+      },
+      {
+        "sym": "ONTO",
+        "pct_of_risk": 5
+      },
+      {
+        "sym": "CRDO",
+        "pct_of_risk": 4.6
+      },
+      {
+        "sym": "SVM",
+        "pct_of_risk": 4.5
+      },
+      {
+        "sym": "AMZN",
+        "pct_of_risk": 4
+      }
+    ],
+    "correlation_clusters": [
+      [
+        "AEHR",
+        "BTBT",
+        "CRDO",
+        "DY",
+        "IBIT",
+        "IONQ",
+        "MU",
+        "MYRG",
+        "NVDA",
+        "ONTO",
+        "QQQ",
+        "SERV",
+        "SMH",
+        "SNDK",
+        "SPUS",
+        "SPY",
+        "VGT",
+        "VICR",
+        "VOO"
+      ],
+      [
+        "ADBE",
+        "CRM",
+        "IOT",
+        "TEAM"
+      ],
+      [
+        "B",
+        "NEM",
+        "SVM"
+      ],
+      [
+        "AMZN",
+        "GOOGL"
+      ]
+    ]
+  },
+  "scenarios": [
+    {
+      "market_move_pct": -10,
+      "beta_implied_book_pct": -17,
+      "beta_implied_book_usd": -97491
+    },
+    {
+      "market_move_pct": -20,
+      "beta_implied_book_pct": -33,
+      "beta_implied_book_usd": -194983
+    },
+    {
+      "market_move_pct": -30,
+      "beta_implied_book_pct": -50,
+      "beta_implied_book_usd": -292474
+    }
+  ],
+  "sector_weights": {
+    "Information Technology": 56.7,
+    "U.S. Equity": 8.7,
+    "Consumer Discretionary": 7.5,
+    "Health Care": 6.1,
+    "Energy": 4.4,
+    "Industrials": 4.2,
+    "Materials": 4,
+    "Communication Services": 3,
+    "Sector Equity": 2.7,
+    "Financials": 2.3,
+    "Alternative": 0.3
+  },
+  "exits": [
+    {
+      "sym": "TEAM",
+      "gain": 76,
+      "off_high_pct": -12,
+      "flags": [
+        {
+          "key": "extended_vs_trend",
+          "severity": "watch",
+          "ar": "السعر أعلى من متوسط 200 يوم بـ 50% — ممتد عن اتجاهه الطويل",
+          "en": "+50% above its 200-day trend — extended"
+        },
+        {
+          "key": "overbought",
+          "severity": "watch",
+          "ar": "مؤشر القوة النسبية 79 — تشبّع شرائي",
+          "en": "RSI 79 — overbought"
+        },
+        {
+          "key": "revisions_down",
+          "severity": "watch",
+          "ar": "المحللون يخفّضون التقديرات (مراجعات D)",
+          "en": "analysts cutting estimates (revisions D)"
+        },
+        {
+          "key": "thesis_played_out",
+          "severity": "review",
+          "ar": "أطروحة نضجت: مكسب 76%، ممتد، ولم يعد رخيصاً — الشيء الذي جعله شراءً لم يعد يصفه. القرار عندك.",
+          "en": "Thesis matured: +76%, extended, no longer cheap — the reason it was a buy no longer describes it. Your call."
+        }
+      ],
+      "played_out": true,
+      "watch_count": 4
+    },
+    {
+      "sym": "IONQ",
+      "gain": -22,
+      "off_high_pct": -45,
+      "flags": [
+        {
+          "key": "valuation_stretched",
+          "severity": "watch",
+          "ar": "التقييم ممتد (D)",
+          "en": "valuation stretched (D)"
+        },
+        {
+          "key": "revisions_down",
+          "severity": "watch",
+          "ar": "المحللون يخفّضون التقديرات (مراجعات D+)",
+          "en": "analysts cutting estimates (revisions D+)"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 2
+    },
+    {
+      "sym": "MPC",
+      "gain": 36,
+      "off_high_pct": -1,
+      "flags": [
+        {
+          "key": "extended_vs_trend",
+          "severity": "watch",
+          "ar": "السعر أعلى من متوسط 200 يوم بـ 56% — ممتد عن اتجاهه الطويل",
+          "en": "+56% above its 200-day trend — extended"
+        },
+        {
+          "key": "at_52w_high",
+          "severity": "watch",
+          "ar": "قرب أعلى سعر خلال سنة",
+          "en": "at its 52-week high"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 2
+    },
+    {
+      "sym": "OSCR",
+      "gain": 13,
+      "off_high_pct": -2,
+      "flags": [
+        {
+          "key": "extended_vs_trend",
+          "severity": "watch",
+          "ar": "السعر أعلى من متوسط 200 يوم بـ 69% — ممتد عن اتجاهه الطويل",
+          "en": "+69% above its 200-day trend — extended"
+        },
+        {
+          "key": "at_52w_high",
+          "severity": "watch",
+          "ar": "قرب أعلى سعر خلال سنة",
+          "en": "at its 52-week high"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 2
+    },
+    {
+      "sym": "SVM",
+      "gain": 18,
+      "off_high_pct": -24,
+      "flags": [
+        {
+          "key": "valuation_stretched",
+          "severity": "watch",
+          "ar": "التقييم ممتد (D-)",
+          "en": "valuation stretched (D-)"
+        },
+        {
+          "key": "revisions_down",
+          "severity": "watch",
+          "ar": "المحللون يخفّضون التقديرات (مراجعات D-)",
+          "en": "analysts cutting estimates (revisions D-)"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 2
+    },
+    {
+      "sym": "AAPL",
+      "gain": 66,
+      "off_high_pct": -11,
+      "flags": [
+        {
+          "key": "valuation_stretched",
+          "severity": "watch",
+          "ar": "التقييم ممتد (F، PEG 3.2)",
+          "en": "valuation stretched (F)"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "AEHR",
+      "gain": 59,
+      "off_high_pct": -9,
+      "flags": [
+        {
+          "key": "extended_vs_trend",
+          "severity": "watch",
+          "ar": "السعر أعلى من متوسط 200 يوم بـ 134% — ممتد عن اتجاهه الطويل",
+          "en": "+134% above its 200-day trend — extended"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "BTBT",
+      "gain": -61,
+      "off_high_pct": -65,
+      "flags": [
+        {
+          "key": "revisions_down",
+          "severity": "watch",
+          "ar": "المحللون يخفّضون التقديرات (مراجعات D-)",
+          "en": "analysts cutting estimates (revisions D-)"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "CRDO",
+      "gain": 99,
+      "off_high_pct": -16,
+      "flags": [
+        {
+          "key": "extended_vs_trend",
+          "severity": "watch",
+          "ar": "السعر أعلى من متوسط 200 يوم بـ 52% — ممتد عن اتجاهه الطويل",
+          "en": "+52% above its 200-day trend — extended"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "MU",
+      "gain": 462,
+      "off_high_pct": -23,
+      "flags": [
+        {
+          "key": "extended_vs_trend",
+          "severity": "watch",
+          "ar": "السعر أعلى من متوسط 200 يوم بـ 76% — ممتد عن اتجاهه الطويل",
+          "en": "+76% above its 200-day trend — extended"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "MXL",
+      "gain": 21,
+      "off_high_pct": -34,
+      "flags": [
+        {
+          "key": "extended_vs_trend",
+          "severity": "watch",
+          "ar": "السعر أعلى من متوسط 200 يوم بـ 94% — ممتد عن اتجاهه الطويل",
+          "en": "+94% above its 200-day trend — extended"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "NTLA",
+      "gain": -35,
+      "off_high_pct": -58,
+      "flags": [
+        {
+          "key": "valuation_stretched",
+          "severity": "watch",
+          "ar": "التقييم ممتد (D+)",
+          "en": "valuation stretched (D+)"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "ONTO",
+      "gain": 85,
+      "off_high_pct": -14,
+      "flags": [
+        {
+          "key": "extended_vs_trend",
+          "severity": "watch",
+          "ar": "السعر أعلى من متوسط 200 يوم بـ 44% — ممتد عن اتجاهه الطويل",
+          "en": "+44% above its 200-day trend — extended"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "QQQ",
+      "gain": 66,
+      "off_high_pct": -2,
+      "flags": [
+        {
+          "key": "at_52w_high",
+          "severity": "watch",
+          "ar": "قرب أعلى سعر خلال سنة",
+          "en": "at its 52-week high"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "SERV",
+      "gain": -66,
+      "off_high_pct": -73,
+      "flags": [
+        {
+          "key": "valuation_stretched",
+          "severity": "watch",
+          "ar": "التقييم ممتد (D+)",
+          "en": "valuation stretched (D+)"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "SEZL",
+      "gain": 42,
+      "off_high_pct": -34,
+      "flags": [
+        {
+          "key": "extended_vs_trend",
+          "severity": "watch",
+          "ar": "السعر أعلى من متوسط 200 يوم بـ 38% — ممتد عن اتجاهه الطويل",
+          "en": "+38% above its 200-day trend — extended"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "SMH",
+      "gain": 132,
+      "off_high_pct": -13,
+      "flags": [
+        {
+          "key": "extended_vs_trend",
+          "severity": "watch",
+          "ar": "السعر أعلى من متوسط 200 يوم بـ 27% — ممتد عن اتجاهه الطويل",
+          "en": "+27% above its 200-day trend — extended"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "SMMT",
+      "gain": -28,
+      "off_high_pct": -56,
+      "flags": [
+        {
+          "key": "valuation_stretched",
+          "severity": "watch",
+          "ar": "التقييم ممتد (D)",
+          "en": "valuation stretched (D)"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "SNDK",
+      "gain": -26,
+      "off_high_pct": -30,
+      "flags": [
+        {
+          "key": "extended_vs_trend",
+          "severity": "watch",
+          "ar": "السعر أعلى من متوسط 200 يوم بـ 82% — ممتد عن اتجاهه الطويل",
+          "en": "+82% above its 200-day trend — extended"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "SPUS",
+      "gain": 20,
+      "off_high_pct": -1,
+      "flags": [
+        {
+          "key": "at_52w_high",
+          "severity": "watch",
+          "ar": "قرب أعلى سعر خلال سنة",
+          "en": "at its 52-week high"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "SPY",
+      "gain": 49,
+      "off_high_pct": 0,
+      "flags": [
+        {
+          "key": "at_52w_high",
+          "severity": "watch",
+          "ar": "قرب أعلى سعر خلال سنة",
+          "en": "at its 52-week high"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "VGT",
+      "gain": 64,
+      "off_high_pct": -3,
+      "flags": [
+        {
+          "key": "at_52w_high",
+          "severity": "watch",
+          "ar": "قرب أعلى سعر خلال سنة",
+          "en": "at its 52-week high"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "VISN",
+      "gain": -28,
+      "off_high_pct": -44,
+      "flags": [
+        {
+          "key": "revisions_down",
+          "severity": "watch",
+          "ar": "المحللون يخفّضون التقديرات (مراجعات D)",
+          "en": "analysts cutting estimates (revisions D)"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "VOO",
+      "gain": 23,
+      "off_high_pct": 0,
+      "flags": [
+        {
+          "key": "at_52w_high",
+          "severity": "watch",
+          "ar": "قرب أعلى سعر خلال سنة",
+          "en": "at its 52-week high"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    },
+    {
+      "sym": "YOU",
+      "gain": -20,
+      "off_high_pct": -34,
+      "flags": [
+        {
+          "key": "valuation_stretched",
+          "severity": "watch",
+          "ar": "التقييم ممتد (D+)",
+          "en": "valuation stretched (D+)"
+        }
+      ],
+      "played_out": false,
+      "watch_count": 1
+    }
+  ],
+  "caveat_ar": "أرقام تعرّض معلوماتية — بيتا ليست تنبؤاً، وفي الهبوط الحاد ترتفع الارتباطات وتهبط الأسهم عالية البيتا أكثر."
+}
