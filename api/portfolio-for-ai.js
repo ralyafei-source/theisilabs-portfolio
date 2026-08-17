@@ -86,10 +86,16 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
 
-  // Auth check
+  // Auth check.
+  // Public market-data modes carry NO private data (or only data already public
+  // in the repo), so the dashboard may call them from the browser without the
+  // server-only BRIEFING_API_KEY. The default portfolio-text output and any
+  // write/build mode still require the key.
+  const PUBLIC_MODES = new Set(['credit','sentiment','macro','stock-sentiment','ticker-lookup','lookup','lookup-analysis']);
+  const isPublicRead = PUBLIC_MODES.has(req.query.mode) || req.query.format === 'earnings';
   const authHeader = req.headers['authorization'] || '';
   const key = authHeader.replace('Bearer ', '').trim();
-  if (key !== API_KEY) {
+  if (!isPublicRead && key !== API_KEY) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
