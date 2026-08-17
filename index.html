@@ -4695,7 +4695,7 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
   // "illusion of diversification" (N names vs effective independent bets);
   // clicking opens the full read. Detail registered under _ccReadStore['risksum'].
   function riskEngineCard(){
-    var R=window._riskEngData; if(!R) return ccPh('قراءة المخاطر');
+    var R=window._riskEngData; if(!R) return ccPh('مخاطر المحفظة');
     var K=R.correlation||{}, C=R.concentration||{};
     var N=R.holdings||0;
     var eib=(K.effective_independent_bets!=null)?K.effective_independent_bets:null;
@@ -4710,6 +4710,11 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     }
     // ===== DETAIL (popup) =====
     var det='';
+    var asof=R.as_of||'';
+    det+='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-bottom:14px;">'
+      +'<div style="font-size:11px;color:var(--text3);line-height:1.7;">'+(asof?('آخر تحليل: <b style="font-family:'+MONO+';color:var(--text2);">'+asof+'</b><br>'):'')+'<span>يُحدَّث تلقائياً كل أسبوع (الأحد)</span></div>'
+      +'<button onclick="window._riskRunNow(this)" style="font-size:11px;font-weight:700;color:#fff;background:'+AC+';border:none;border-radius:8px;padding:7px 13px;cursor:pointer;font-family:inherit;white-space:nowrap;">تحديث الآن</button>'
+      +'</div>';
     det+='<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:2px;">'
       +'<span style="font-size:44px;font-weight:800;font-family:'+MONO+';color:'+AC+';line-height:1;">'+(eib!=null?eib:'—')+'</span>'
       +'<span style="font-size:13px;color:var(--text2);">مراكز مستقلة حقيقية<br><span style="color:var(--text3);font-size:12px;">من أصل '+N+' اسم — نص تنويعك وهمي</span></span></div>';
@@ -4764,13 +4769,13 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     }
     det+='<div style="font-size:11px;color:var(--text3);line-height:1.8;border-top:1px solid var(--border);padding-top:12px;">أرقام تعرّض معلوماتية — البيتا مو تنبؤ، وفي الهبوط الحاد ترتفع الارتباطات وتهبط الأسهم عالية البيتا أكثر. القرار في النهاية عندك.</div>';
     window._ccReadStore=window._ccReadStore||{};
-    window._ccReadStore['risksum']={title:'قراءة المخاطر',html:det,wide:true};
+    window._ccReadStore['risksum']={title:'مخاطر المحفظة',html:det,wide:true};
     // ===== COMPACT (bento tile) =====
-    var compact=secLabel('قراءة المخاطر')
+    var compact=secLabel('مخاطر المحفظة')
       +'<div style="display:flex;align-items:baseline;gap:8px;margin:2px 0;"><span style="font-size:36px;font-weight:800;font-family:'+MONO+';color:'+AC+';line-height:1;">'+(eib!=null?eib:'—')+'</span><span style="font-size:11.5px;color:var(--text3);line-height:1.35;">مراكز<br>مستقلة<br>من '+N+'</span></div>'
       +pips(7)
       +'<div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.7;">'+(topC?('أعمق تعرّض: <b style="color:var(--text2);font-family:'+MONO+';">'+topC.sym+' '+topC.pct_of_risk+'%</b>'):'')+(beta!=null?(' · بيتا <b style="color:var(--text2);font-family:'+MONO+';">'+beta+'</b>'):'')+'</div>'
-      +'<div style="font-size:10.5px;color:'+AC+';margin-top:auto;padding-top:10px;">التفاصيل الكاملة ←</div>';
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:10px;gap:8px;"><span style="font-size:9.5px;color:var(--text3);font-family:'+MONO+';">'+(R.as_of?('تحليل '+R.as_of):'')+'</span><span style="font-size:10.5px;color:'+AC+';white-space:nowrap;">التفاصيل الكاملة ←</span></div>';
     return panel('<div onclick="window._ccCardOpen(\'risksum\',event)" style="cursor:pointer;flex:1;display:flex;flex-direction:column;min-height:0;">'+compact+'</div>',{style:'flex:1;display:flex;flex-direction:column;'});
   }
 
@@ -5144,10 +5149,16 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
   // ── BENTO ASSEMBLY (desktop 12-col; mobile stacks via CSS) ──
   function bcell(html,span){ if(!html) return ''; return '<div style="grid-column:span '+span+';min-width:0;display:flex;flex-direction:column;" class="cc-bcell">'+html+'</div>'; }
   
+  // One-time: seat the risk card between التعرض والتركيز and نبض المحفظة → row order
+  // exposure(6) · risksum(8) · pulse(10). Guarded by a separate flag so it runs once
+  // and never overrides the user's later drags.
+  try{ if(!localStorage.getItem('theisi_riskrow_v1')){ var _rl=JSON.parse(localStorage.getItem('theisi_cc_layout_v2')||'null');
+    if(_rl && _rl.pulse){ _rl.exposure={x:6,y:15,w:2,h:8}; _rl.risksum={x:8,y:15,w:2,h:8}; _rl.pulse={x:10,y:15,w:2,h:8}; localStorage.setItem('theisi_cc_layout_v2', JSON.stringify(_rl)); }
+    localStorage.setItem('theisi_riskrow_v1','1'); } }catch(e){}
   var _gsSaved={}; try{ _gsSaved=JSON.parse(localStorage.getItem('theisi_cc_layout_v2')||'{}'); }catch(e){}
-  var _gsDefaults={market:{x:0,y:9,w:4,h:6},today:{x:0,y:9,w:9,h:6},opp:{x:9,y:9,w:3,h:6},review:{x:0,y:15,w:3,h:6},mc:{x:3,y:15,w:3,h:6},exposure:{x:6,y:15,w:2,h:8},pulse:{x:8,y:15,w:2,h:8},fg:{x:8,y:0,w:2,h:9},hz:{x:0,y:21,w:2,h:6},news:{x:2,y:21,w:4,h:6},movers:{x:6,y:23,w:6,h:4},cs:{x:10,y:0,w:2,h:9}};
+  var _gsDefaults={market:{x:0,y:9,w:4,h:6},today:{x:0,y:9,w:9,h:6},opp:{x:9,y:9,w:3,h:6},review:{x:0,y:15,w:3,h:6},mc:{x:3,y:15,w:3,h:6},exposure:{x:6,y:15,w:2,h:8},pulse:{x:10,y:15,w:2,h:8},fg:{x:8,y:0,w:2,h:9},hz:{x:0,y:21,w:2,h:6},news:{x:2,y:21,w:4,h:6},movers:{x:6,y:23,w:6,h:4},cs:{x:10,y:0,w:2,h:9}};
   _gsDefaults.mpulse = { x:0, y:0, w:8, h:9 };_gsDefaults.mpulse = { x:0, y:0, w:8, h:9 };
-  _gsDefaults.risksum = { x:10, y:15, w:2, h:8 };
+  _gsDefaults.risksum = { x:8, y:15, w:2, h:8 };
   function gsItem(id,html,popupTitle){
     if(!html) return '';
     var p=_gsSaved[id]; if(p&&(p.w==null||p.w<2)) p=null;
@@ -5598,6 +5609,26 @@ function loadRiskEngine(){
     })();
   }catch(e){}
 }
+
+// Manual risk analysis run (the «تحديث الآن» button in the risk popup). Uses the
+// user's session token; api/risk.js verifies it and runs for that user only.
+window._riskRunNow=function(btn){
+  try{
+    var nick='rashed'; try{ nick=(localStorage.getItem('theisilabs_nick')||'rashed').toLowerCase().trim()||'rashed'; }catch(e){}
+    var tok=''; try{ tok=localStorage.getItem('theisilabs_session')||''; }catch(e){}
+    if(btn){ btn.disabled=true; btn.textContent='جارٍ التحليل…'; btn.style.opacity='0.7'; }
+    fetch('/api/risk?nick='+encodeURIComponent(nick),{ headers: tok?{'Authorization':'Bearer '+tok}:{} })
+      .then(function(r){ return r.json().catch(function(){ return {}; }); })
+      .then(function(d){
+        var ok=d&&d.ok>0;
+        if(btn){ btn.textContent= ok?'✓ تم التحليل':'تعذّر — أعد المحاولة'; }
+        window._riskEngData=null; window._riskEngTried=false;
+        if(typeof loadRiskEngine==='function') loadRiskEngine();
+        setTimeout(function(){ if(window._ccReadClose) window._ccReadClose(); }, ok?1400:2800);
+      })
+      .catch(function(){ if(btn){ btn.disabled=false; btn.style.opacity='1'; btn.textContent='تعذّر — أعد المحاولة'; } });
+  }catch(e){}
+};
 
 function showTab(name,el){
   if(name==='dashboard') setTimeout(function(){ if(typeof initLiveData==='function') initLiveData(); },100);

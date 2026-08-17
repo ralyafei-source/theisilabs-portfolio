@@ -98,20 +98,40 @@ async function runOne(nick) {
            beta: report.concentration.portfolio_beta_24m, exits: report.exits.length };
 }
 
+// A logged-in user may manually refresh their OWN read: verify their session
+// token against users.json and return their nickname (or null).
+async function verifySessionNick(token) {
+  try {
+    const usersData = await ghRead('data/users.json');
+    const list = Array.isArray(usersData) ? usersData : ((usersData && usersData.users) || []);
+    const now = new Date();
+    const user = list.find(u => (u.sessions || []).some(s =>
+      s.sessionToken === token && (!s.sessionExpiry || new Date(s.sessionExpiry) > now)));
+    return user ? String(user.nickname || user.nick || '').toLowerCase() : null;
+  } catch (e) { return null; }
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST')
     return res.status(405).json({ error: 'Method not allowed' });
-  if (CRON_SECRET) {
-    const auth = (req.headers.authorization || '').replace('Bearer ', '').trim();
-    if (auth !== CRON_SECRET) return res.status(401).json({ error: 'Unauthorized' });
-  }
+
+  // Auth: Vercel Cron carries the CRON_SECRET; a logged-in user may manually
+  // refresh their own read with their session token.
+  const bearer = (req.headers.authorization || '').replace('Bearer ', '').trim();
+  const isCron = !!CRON_SECRET && bearer === CRON_SECRET;
+  let sessionNick = null;
+  if (!isCron && bearer) sessionNick = await verifySessionNick(bearer);
+  if (CRON_SECRET && !isCron && !sessionNick) return res.status(401).json({ error: 'Unauthorized' });
   if (!GITHUB_TOKEN) return res.status(500).json({ error: 'GITHUB_TOKEN missing' });
 
-  // ?nick=foo runs just one; otherwise users.json + rashed
+  // nick selection: a manual (session) user runs only their own; cron/secret runs all (or ?nick=)
   const only = (req.query && req.query.nick) || (req.body && req.body.nick) || null;
   let nicks;
-  if (only) nicks = [String(only).toLowerCase()];
-  else {
+  if (sessionNick && !isCron) {
+    nicks = [sessionNick];
+  } else if (only) {
+    nicks = [String(only).toLowerCase()];
+  } else {
     const usersData = await ghRead('data/users.json');
     const list = Array.isArray(usersData) ? usersData : ((usersData && usersData.users) || []);
     nicks = Array.from(new Set(['rashed', ...list.map(u => String(u.nickname || u.nick || '').toLowerCase()).filter(Boolean)]));
