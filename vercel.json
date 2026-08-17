@@ -32,6 +32,9 @@
     },
     "api/cron-distributions.js": {
       "maxDuration": 300
+    },
+    "api/risk.js": {
+      "maxDuration": 300
     }
   },
   "crons": [
@@ -42,6 +45,10 @@
     {
       "path": "/api/cron-distributions",
       "schedule": "0 1 * * 0"
+    },
+    {
+      "path": "/api/risk",
+      "schedule": "0 3 * * 0"
     }
   ]
 }
