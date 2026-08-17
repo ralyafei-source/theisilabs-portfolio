@@ -12980,33 +12980,54 @@ async function loadUserPortfolio(token, isAdmin, nickname) {
   _portfolioLoading = true;
   try {
     if (isAdmin) {
-      // Load admin portfolio live from GitHub portfolio.json (holdings schema)
-      try {
-        const r = await fetch('https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/portfolio.json?t='+Date.now());
-        if (r.ok) {
-          const data = await r.json();
-          const holdings = data.holdings || [];
-          stocks.length = 0;
-          holdings.forEach(h => {
-            stocks.push({
-              sym: h.sym,
-              en: h.en || h.name || h.sym,
-              ar: h.ar || h.name_ar || h.sym,
-              cost: h.cost || 0,
-              price: h.price || h.cost || 0,
-              mv: h.mv || (h.shares * (h.price || h.cost || 0)),
-              gl: h.gl || 0,
-              sec: h.sec || h.sector || 'tech',
-              shares: h.shares || 0,
-              _shares: h.shares || 0,
-              purchaseDate: h.purchaseDate || ''
-            });
+      // Load admin portfolio (holdings schema). Primary source: our own
+      // /api/user-portfolio endpoint, which reads via the GitHub *API* — a
+      // reliable path. Fallback: the raw CDN (kept for resilience). Both are
+      // retried so a momentary GitHub hiccup no longer blanks the portfolio.
+      const applyHoldings = (holdings) => {
+        stocks.length = 0;
+        (holdings || []).forEach(h => {
+          stocks.push({
+            sym: h.sym,
+            en: h.en || h.name || h.sym,
+            ar: h.ar || h.name_ar || h.sym,
+            cost: h.cost || 0,
+            price: h.price || h.cost || 0,
+            mv: h.mv || (h.shares * (h.price || h.cost || 0)),
+            gl: h.gl || 0,
+            sec: h.sec || h.sector || 'tech',
+            shares: h.shares || 0,
+            _shares: h.shares || 0,
+            purchaseDate: h.purchaseDate || ''
           });
-          renderPortfolio();
-          fetchLivePrices();
-          return;
-        }
-      } catch(e) { console.error('Admin portfolio load error:', e); }
+        });
+        renderPortfolio();
+        fetchLivePrices();
+      };
+      // 1) primary: our API (server-side GitHub API read), 2 attempts
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const r = await fetch('/api/user-portfolio', { headers: { 'Authorization': 'Bearer ' + token } });
+          if (r.ok) {
+            const j = await r.json();
+            const holdings = (j.portfolio && (j.portfolio.holdings || j.portfolio.stocks)) || [];
+            if (holdings.length) { applyHoldings(holdings); return; }
+          }
+        } catch(e) { console.error('Admin API load error:', e); }
+        await new Promise(res => setTimeout(res, 500));
+      }
+      // 2) fallback: raw CDN, 3 attempts with backoff
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const r = await fetch('https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/portfolio.json?t='+Date.now(), { cache: 'no-store' });
+          if (r.ok) {
+            const data = await r.json();
+            if ((data.holdings || []).length) { applyHoldings(data.holdings); return; }
+          }
+        } catch(e) { console.error('Admin raw load error:', e); }
+        await new Promise(res => setTimeout(res, 600));
+      }
+      console.error('Admin portfolio load failed on all sources');
       return;
     }
 
