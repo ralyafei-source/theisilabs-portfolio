@@ -16447,7 +16447,7 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
   function liveHoldings(){
     var arr=[]; try{ arr=(stocks||[]); }catch(e){ arr=[]; }
     return arr.map(function(s){
-      return { sym:s.sym, sec:s.sec||s.sector||'', mv:(s.mv||0),
+      return { sym:s.sym, sec:s.sec||s.sector||'', mv:(s.mv||0), price:(s.price||s.cost||0),
         gl:(s.gl!=null?s.gl:((s.price-s.cost)/s.cost*100)) };
     }).filter(function(h){ return h.mv>0; });
   }
@@ -16470,16 +16470,34 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
   }
   var _H, _RM, _SA, _TGT, _TOTAL, _tgtAED, ov;
 
-  // Analyst room-to-target from the latest weekly structured analysis
-  // (generate-analysis v3 → FMP price-target-consensus). sym -> {gap, target}.
-  function targetMap(){
-    var m={}; try{ var d=window._adv2Doc; if(d && Array.isArray(d.stocks)){
-      d.stocks.forEach(function(s){ if(s && s.sym && (s.gapPct!=null || s.target!=null))
-        m[String(s.sym).toUpperCase()]={ gap:(s.gapPct!=null?+s.gapPct:null), target:(s.target!=null?+s.target:null) }; });
+  // Analyst room-to-target. Primary source: /api/price-targets (FMP consensus,
+  // ALL holdings). Fallback: the weekly structured analysis (reviewed subset).
+  // sym -> { target, gapWeekly }. gap% is computed from the LIVE price at render.
+  function targetMap(apiTargets){
+    var m={};
+    try{ var d=window._adv2Doc; if(d && Array.isArray(d.stocks)){
+      d.stocks.forEach(function(s){
+        if(s && s.sym){ m[String(s.sym).toUpperCase()]={ target:(s.target!=null?+s.target:null), gapWeekly:(s.gapPct!=null?+s.gapPct:null) }; }
+      });
     } }catch(e){}
+    if(apiTargets){ Object.keys(apiTargets).forEach(function(k){
+      var t=apiTargets[k]; if(t && t.target!=null){ m[k]=m[k]||{}; m[k].target=+t.target; }
+    }); }
     return m;
   }
+  async function fetchTargets(syms){
+    try{
+      var q=encodeURIComponent(syms.join(','));
+      var r=await fetch('/api/price-targets?symbols='+q+'&t='+Date.now());
+      if(r.ok){ var j=await r.json(); return j.targets||{}; }
+    }catch(e){}
+    return null;
+  }
 
+  function tgtOf(h){ var tg=_TGT[h.sym.toUpperCase()]; return (tg&&tg.target!=null)?tg.target:null; }
+  function gapOf(h){ var tg=_TGT[h.sym.toUpperCase()]; if(!tg) return null;
+    if(tg.target!=null && h.price>0) return (tg.target-h.price)/h.price*100;
+    return (tg.gapWeekly!=null?tg.gapWeekly:null); }
   function qColor(q){ return q==null?'var(--text3)': q>=4?'var(--green)': q>=3?'var(--gold)':'var(--red)'; }
   function flagsHtml(h){
     var f='';
@@ -16496,7 +16514,7 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
     if(filt.watch && _RM.watch[h.sym]) return true;
     if(filt.loss && h.gl<=-20) return true;
     if(filt.c1 && _RM.big[h.sym]) return true;
-    if(filt.up){ var tg=_TGT[h.sym.toUpperCase()]; if(tg&&tg.gap!=null&&tg.gap>0) return true; }
+    if(filt.up){ var g=gapOf(h); if(g!=null&&g>0) return true; }
     return false;
   }
   function targetUSD(){ return _tgtAED/AED; }
@@ -16510,17 +16528,16 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
       else if(sortKey==='gl'){av=a.gl;bv=b.gl;}
       else if(sortKey==='q'){av=(_SA[a.sym.toUpperCase()]==null?-1:_SA[a.sym.toUpperCase()]); bv=(_SA[b.sym.toUpperCase()]==null?-1:_SA[b.sym.toUpperCase()]);}
       else if(sortKey==='risk'){av=(_RM.riskPct[a.sym]||-1); bv=(_RM.riskPct[b.sym]||-1);}
-      else if(sortKey==='gap'){ var ga=_TGT[a.sym.toUpperCase()], gb=_TGT[b.sym.toUpperCase()]; av=(ga&&ga.gap!=null?ga.gap:-9999); bv=(gb&&gb.gap!=null?gb.gap:-9999); }
+      else if(sortKey==='gap'){ var ga=gapOf(a), gb=gapOf(b); av=(ga!=null?ga:-9999); bv=(gb!=null?gb:-9999); }
       return (av-bv)*sortDir;
     });
     var html='';
     rows.forEach(function(h){
       var q=_SA[h.sym.toUpperCase()], rp=_RM.riskPct[h.sym];
-      var tg=_TGT[h.sym.toUpperCase()];
-      var gap=(tg&&tg.gap!=null)?tg.gap:null;
+      var gap=gapOf(h), tgt=tgtOf(h);
       var gapCell = gap==null
         ? '<span style="color:var(--text3)">—</span>'
-        : '<span style="color:'+(gap>0?'var(--green)':'var(--red)')+';font-weight:700;">'+(gap>0?'+':'')+gap.toFixed(0)+'%</span>'+(tg.target!=null?'<div style="font-size:10px;color:var(--text3)">هدف $'+Math.round(tg.target)+'</div>':'');
+        : '<span style="color:'+(gap>0?'var(--green)':'var(--red)')+';font-weight:700;">'+(gap>0?'+':'')+gap.toFixed(0)+'%</span>'+(tgt!=null?'<div style="font-size:10px;color:var(--text3)">هدف $'+Math.round(tgt)+'</div>':'');
       var pct=(h.mv/_TOTAL*100).toFixed(1);
       var t=trim[h.sym]||0, raised=h.mv*t/100;
       var dim=!matchFilt(h);
@@ -16586,7 +16603,8 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
     if((!window._adv2Doc || !Array.isArray(window._adv2Doc.stocks)) && typeof adv2Fetch==='function'){
       try{ var wd=await adv2Fetch('weekly'); if(wd && Array.isArray(wd.stocks)) window._adv2Doc=wd; }catch(e){}
     }
-    _RM = riskMaps(); _SA = saMap(); _TGT = targetMap();
+    var apiT=null; try{ apiT=await fetchTargets(_H.map(function(h){return h.sym;})); }catch(e){}
+    _RM = riskMaps(); _SA = saMap(); _TGT = targetMap(apiT);
     _TOTAL = _H.reduce(function(a,h){return a+h.mv;},0);
     _tgtAED = Math.round(_TOTAL*AED*0.5/1000)*1000; // sensible default: ~half, rounded to 1000 AED
     trim = {}; filt={}; sortKey='mv'; sortDir=-1;
