@@ -16891,17 +16891,49 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
       Array.prototype.forEach.call(els, function(el){ ['title','placeholder','aria-label'].forEach(function(a){ var v=el.getAttribute(a); if(v&&hasAr(v)){ var t=tr(v); if(t!==v) el.setAttribute(a,t); } }); });
     }catch(e){}
   }
+  // ---- API fallback: translate leftover Arabic (AI prose) once, cache in browser ----
+  var TRC=null;
+  function loadCache(){ if(TRC) return TRC; try{ TRC=JSON.parse(localStorage.getItem('theisi_tr_en')||'{}'); }catch(e){ TRC={}; } return TRC; }
+  function saveCache(){ try{ localStorage.setItem('theisi_tr_en', JSON.stringify(TRC)); }catch(e){} }
+  function hh(s){ var h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return 'k'+h+'_'+s.length; }
+  async function apiFetch(list){
+    for(var i=0;i<list.length;i+=40){
+      var chunk=list.slice(i,i+40);
+      try{
+        var r=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texts:chunk,target:'en'})});
+        var j=await r.json();
+        if(j&&Array.isArray(j.translations)){ chunk.forEach(function(s,k){ var en=j.translations[k]; if(en&&en!==s) TRC[hh(s)]=en; }); }
+      }catch(e){}
+    }
+    saveCache();
+  }
+  function applyCache(nodes){ nodes.forEach(function(n){ var t=n.nodeValue.trim(); if(!t) return; var en=TRC[hh(t)]; if(en){ n.nodeValue=n.nodeValue.replace(t,en); } }); }
+  function collectAr(root){ var nodes=[]; try{ var w=document.createTreeWalker(root||document.body,NodeFilter.SHOW_TEXT,null),n; while(n=w.nextNode()){ var t=n.nodeValue.trim(); if(t.length>=4 && hasAr(t)) nodes.push(n); } }catch(e){} return nodes; }
+  var _apiTimer=null;
+  async function apiSweep(){
+    if(typeof lang==='undefined'||lang!=='en') return;
+    loadCache();
+    var nodes=collectAr(document.body); if(!nodes.length) return;
+    applyCache(nodes);                                  // apply anything already cached
+    var uniq=Array.from(new Set(collectAr(document.body).map(function(n){return n.nodeValue.trim();}).filter(function(t){return hasAr(t)&&!TRC[hh(t)];})));
+    if(!uniq.length) return;
+    await apiFetch(uniq);
+    applyCache(collectAr(document.body));               // apply freshly translated
+  }
+  function scheduleApiSweep(){ if(_apiTimer) clearTimeout(_apiTimer); _apiTimer=setTimeout(apiSweep,700); }
+
   var obs = new MutationObserver(function(muts){
     if(typeof lang==='undefined' || lang!=='en') return;
     for(var i=0;i<muts.length;i++){ var m=muts[i];
       if(m.addedNodes) for(var j=0;j<m.addedNodes.length;j++){ var nd=m.addedNodes[j];
         if(nd.nodeType===1) sweep(nd); else if(nd.nodeType===3) sweepNode(nd); }
     }
+    scheduleApiSweep();
   });
   window.theisiEN = {
-    on:function(){ if(!LONGKEYS) build(); sweep(document.body); try{ obs.observe(document.body,{childList:true,subtree:true}); }catch(e){} },
-    off:function(){ try{ obs.disconnect(); }catch(e){} },
-    sweep:sweep, tr:tr, dict:EN
+    on:function(){ if(!LONGKEYS) build(); sweep(document.body); try{ obs.observe(document.body,{childList:true,subtree:true}); }catch(e){} scheduleApiSweep(); },
+    off:function(){ try{ obs.disconnect(); }catch(e){} if(_apiTimer) clearTimeout(_apiTimer); },
+    sweep:sweep, tr:tr, dict:EN, apiSweep:apiSweep
   };
 
   // Hook the language toggle. On EN: sweep + observe. On AR: stop + re-render CC to restore Arabic.
