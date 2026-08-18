@@ -16705,5 +16705,168 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
 })();
 </script>
 
+<!-- ============================================================================
+     ENGLISH UI LAYER — translate the whole dashboard to English on EN toggle.
+     Dictionary + templated rules + a MutationObserver sweep so re-rendered and
+     popup content is translated too. Arabic stays the source of truth; switching
+     back to AR re-renders. AI narrative is handled separately (bilingual source).
+     ============================================================================ -->
+<script>
+(function(){
+  // Arabic phrase -> English. Exact-node match is applied first (safe for short
+  // words); longer keys (>=6 chars) also run as substring replacements.
+  var EN = {
+    // top bar / status
+    'المحفظة مباشرة':'Portfolio live','جاري جلب المؤشرات الحقيقية…':'Fetching live indicators…',
+    'جاري تحليل السوق…':'Analyzing the market…','↻ تحديث':'↻ Refresh','تحديث':'Refresh',
+    'مصادر تحليل':'analysis sources','أخبار':'News','📰 أخبار':'📰 News',
+    // command center cards
+    'قراءة اليوم':"Today's Read",'آخر تحليل:':'Last analysis:','آخر تحليل':'Last analysis',
+    'نبض المحفظة':'Portfolio Pulse','منذ التكلفة':'since cost','منذ الشراء':'since purchase',
+    'التعرض والتركيز':'Exposure & Concentration','الرعاية الصحية':'Healthcare','التقنية':'Technology',
+    'التعدين':'Mining','الطاقة':'Energy','الصناعة':'Industrials','أخرى':'Other','مالية':'Financials',
+    'أكبر مركز':'Largest position','عدد المراكز':'Positions count','مزاج السوق':'Market Mood',
+    'خوف':'Fear','جشع':'Greed','من السنة':'of the year','من أيام السنة':'of the year',
+    'فروق الائتمان':'Credit Spreads','هدوء ائتماني':'Credit calm','مستقر':'stable',
+    'علاوة السندات عالية المخاطر فوق الخزانة · أوسع من':'High-yield premium over Treasuries · wider than',
+    'الدرجة الاستثمارية':'Investment grade','الأحداث الاقتصادية':'Economic Events',
+    'تقرير الوظائف':'Jobs Report','مؤشر أسعار المستهلك (CPI) — التضخم':'Consumer Price Index (CPI) — Inflation',
+    'قرار الفائدة — الاحتياطي الفيدرالي (FOMC)':'Rate Decision — Federal Reserve (FOMC)',
+    'حدث مؤثر · الخط = اقتراب الموعد':'Impactful event · bar = approaching date',
+    'إشارات الآفاق':'Horizon Signals','طويل المدى':'Long term','متوسط المدى':'Mid term','قصير المدى':'Short term',
+    'عرض كل الإشارات ←':'View all signals ←','ما يستحق المراجعة':'Worth reviewing',
+    'تركّز القطاع':'Sector concentration','تركّز مركز':'Position concentration','تعارض آفاق':'Horizon conflict',
+    'ملاءة مالية':'Solvency','التوزيعات':'Distributions','عائد مرجّح':'Weighted yield','عدد الموزّعين':'Payers count',
+    'أعلى العوائد':'Top yields','عرض التوزيعات ←':'View distributions ←','المدى (52 أسبوع)':'Range (52 weeks)',
+    'الموقع بين القاع والقمة':'Position between low and high','عرض المراكز ←':'View positions ←',
+    'جميع الأرقام تقديرية وتتضمن هامش خطأ واسعاً، ولا تُعد نصيحة استثمارية.':'All figures are estimates with a wide margin of error and are not investment advice.',
+    'أخبار تمس محفظتك':'News affecting your portfolio','فرصة يراها التقييم':'Opportunity the rating sees',
+    'من قائمة متابعتك':'from your watchlist',
+    // nav / misc
+    'تحليل ثيسي اليوم':"THEISI's Analysis Today",'محفظتي':'My Portfolio','جديد':'New','وضع التجربة':'Demo mode',
+    'مائل للإيجاب (٦٥+)':'Leaning positive (65+)','محايد (٤٥–٦٤)':'Neutral (45–64)','حذر (أقل من ٤٥)':'Cautious (under 45)',
+    'جديد = غير مملوك':'New = not owned','قراءة الآفاق':'Horizon read',
+    // advisor
+    'متصل — يعلم كل شيء عن محفظتك':'Online — knows everything about your portfolio',
+    'يعرف محفظتك + تحليلات اليوم + الأسبوعي + الشهري':'Knows your portfolio + daily, weekly & monthly analyses',
+    'مستشار محفظتك الذكي':'Your smart portfolio advisor',
+    'اسألني أي شيء — عن مراكزك، التحليلات، أو القرارات':'Ask me anything — your positions, analyses, or decisions',
+    'للقراءة فقط — لتشغيل تحليل جديد افتح صفحة SA Pro':'Read-only — to run a new analysis open the SA Pro page',
+    'قراءة تحليلية':'Analytical read','تحديث القراءة ↻':'Refresh read ↻',
+    'عند الحاجة — قبل أي قرار كبير':'When needed — before any big decision','تحليل سهم محدد':'Analyze a specific stock',
+    'عند الحاجة':'When needed','🤖 حلّل وأعطني قرار الأسبوع':"🤖 Analyze & give me the week's call",
+    'تحليل Seeking Alpha PRO':'Seeking Alpha PRO analysis','📊 الملخص التنفيذي':'📊 Executive summary',
+    '🔴 تحذيرات':'🔴 Warnings','🟢 أسهمك القوية':'🟢 Your strong stocks','💰 قرار الكاش':'💰 Cash decision',
+    '🆕 فرص جديدة':'🆕 New opportunities','⚡ تعارضات':'⚡ Conflicts',
+    // telegram
+    'النشرة الصباحية على تيليجرام':'Morning brief on Telegram',
+    'لتصلك نشرتك الصباحية الخاصة على تيليجرام كل يوم:':'To get your personal morning brief on Telegram every day:',
+    'معرّف المحادثة (Chat ID)':'Chat ID','حفظ وإرسال رسالة تجريبية':'Save & send a test message',
+    // risk popup (مخاطر المحفظة)
+    'مخاطر المحفظة':'Portfolio Risk','مراكز مستقلة حقيقية':'True independent positions',
+    'كل مربّع = اسم · والمضيء = مركز مستقل فعلاً بعد دمج الأسماء المترابطة':'Each square = a name · lit = a truly independent position after merging correlated names',
+    'مراكزك الفعلية':'Your effective positions','قطاعاتك الفعلية':'Your effective sectors','بيتا المحفظة':'Portfolio beta',
+    'نسبة التنويع':'Diversification ratio','متوسط الارتباط':'Avg correlation','التقلّب السنوي':'Annualized volatility',
+    'أكبر مصادر المخاطرة':'Largest risk sources','تتحرك مع بعض (مجموعات مترابطة)':'Move together (correlated groups)',
+    'سيناريوهات الهبوط (تقدير بالبيتا)':'Drawdown scenarios (beta-implied)','إشارات نضج قصة السهم':'Story-maturity signals',
+    'تحت المراقبة:':'On watch:','يُحدَّث تلقائياً كل أسبوع (الأحد)':'Auto-updates weekly (Sunday)','تحديث الآن':'Refresh now',
+    'أعمق تعرّض:':'Deepest exposure:','التفاصيل الكاملة ←':'Full details ←',
+    // market pulse
+    'نبض السوق الآن':'Market Pulse Now','إغلاق':'Close','خلال الجلسة':'Intraday','ماذا يعني':'What it means',
+    'تعذّر تحميل نبض السوق. جرّب التحديث.':"Couldn't load market pulse. Try refresh.",
+    // trim planner
+    '🎯 مخطط التقليص':'🎯 Trim Planner','🎯 مخطط التقليص إلى هدف نقدي':'🎯 Trim Planner — to a cash target',
+    'حدّد المبلغ اللي تبي محفظتك توصله — الأداة ترتّب بياناتك وإشاراتك، والقرار عندك.':'Set the amount you want your portfolio to reach — the tool organizes your data and signals; the decision is yours.',
+    'ليست نصيحة مالية.':'Not financial advice.','الهدف · Target':'Target','درهم':'AED','دولار':'USD',
+    'المحفظة الحالية · Current':'Current portfolio','المطلوب تحريره · Raise':'Cash to raise','نقد محرَّر':'Cash raised',
+    'متبقٍّ للهدف':'Remaining to target','المحفظة بعد التقليص':'Portfolio after trim','مراكز مبقاة':'Positions kept',
+    'التقدّم للهدف:':'Progress to target:','· وزن أكبر عنقود مترابط بعد التقليص:':'· largest correlated-cluster weight after trim:',
+    'تجاوزت الهدف':'Target exceeded','عدسة:':'Lens:','مخاطرة%':'Risk%','ربح/خسارة':'P&L','صعود محللون':'Analyst upside',
+    'تمييز:':'Highlight:','نضجت':'Matured','مراقبة':'Watch','خاسرة':'Losing','عنقود':'Cluster','مجال صعود':'Has upside',
+    'تقليص متناسب':'Proportional trim','مسح':'Clear','إشارات':'Signals','تقليص → نقد':'Trim → cash','كل':'All','خسارة':'Loss',
+    // portfolio table + generic
+    'الرمز':'Symbol','الاسم':'Name','القطاع':'Sector','القيمة':'Value','الربح/الخسارة':'Gain/Loss','الحالة':'Status',
+    'التاريخ':'Date','مراجعة':'Review','قوي':'Strong','راقب':'Watch','الكل':'All','اليوم':'Today','رابحة':'gainers',
+    'المجموعات المترابطة':'Correlated groups','اختبار الإجهاد':'Stress test','النظرة البعيدة — سنة+':'Long view — 1yr+',
+    'صحة المحفظة':'Portfolio health','تاريخ الشراء غير مُسجّل':'Purchase date not recorded','ورقة مالية':'securities'
+  };
+
+  // Templated rules (numbers + Arabic units). Applied before substring dict.
+  var RULES = [
+    [/منذ الشراء:\s*/g,'since purchase: '],
+    [/بعد\s*([\d٠-٩]+)\s*يوم/g,'in $1 days'],
+    [/قبل\s*([\d٠-٩]+)\s*(?:أيام|يوم)/g,'$1 days ago'],
+    [/([\d٠-٩][\d٠-٩,\.]*)\s*مركز\b/g,'$1 positions'],
+    [/([\d٠-٩][\d٠-٩,\.]*)\s*رابحة/g,'$1 gainers'],
+    [/([\d٠-٩][\d٠-٩,\.]*)\s*خاسرة/g,'$1 losing'],
+    [/من\s*([\d٠-٩]+)\s*اسم/g,'of $1 names'],
+    [/([\d٠-٩]+)\s*أسماء/g,'$1 names'],
+    [/([\d٠-٩]+)\s*يوم\b/g,'$1 days'],
+    [/([\d٠-٩]+)\s*أسبوع/g,'$1 weeks'],
+    [/مستشار\s+([A-Za-z][A-Za-z0-9_]*)/g,"$1's Advisor"],
+    [/هدف\s*\$/g,'target $'],
+    [/·\s*اليوم\b/g,'· Today'],
+    [/آخر تحليل/g,'Last analysis'],
+    [/ورقة مالية\s*—/g,'securities —'],
+    [/القرار في النهاية عندك(?:\s*يا\s*[^\.،<]+)?/g,'the decision is ultimately yours'],
+    [/القرار عندك يا صديقي/g,'the decision is yours, friend']
+  ];
+
+  var LONGKEYS = null;
+  function build(){ LONGKEYS = Object.keys(EN).filter(function(k){return k.length>=6;}).sort(function(a,b){return b.length-a.length;}); }
+  function hasAr(s){ return /[؀-ۿ]/.test(s); }
+  function tr(s){
+    if(!s) return s;
+    var t=s.trim();
+    if(EN[t]!=null){ return s.replace(t, EN[t]); }         // exact node (safe for short words)
+    var out=s;
+    for(var i=0;i<RULES.length;i++) out=out.replace(RULES[i][0], RULES[i][1]);
+    if(LONGKEYS) for(var j=0;j<LONGKEYS.length;j++){ var k=LONGKEYS[j]; if(out.indexOf(k)>=0) out=out.split(k).join(EN[k]); }
+    return out;
+  }
+  function sweepNode(n){ if(n.nodeValue && hasAr(n.nodeValue)){ var t=tr(n.nodeValue); if(t!==n.nodeValue) n.nodeValue=t; } }
+  function sweep(root){
+    root=root||document.body; if(!root) return;
+    try{
+      var w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+      var n, list=[]; while(n=w.nextNode()) list.push(n);
+      list.forEach(sweepNode);
+      var els = (root.querySelectorAll?root.querySelectorAll('[title],[placeholder],[aria-label]'):[]);
+      Array.prototype.forEach.call(els, function(el){ ['title','placeholder','aria-label'].forEach(function(a){ var v=el.getAttribute(a); if(v&&hasAr(v)){ var t=tr(v); if(t!==v) el.setAttribute(a,t); } }); });
+    }catch(e){}
+  }
+  var obs = new MutationObserver(function(muts){
+    if(typeof lang==='undefined' || lang!=='en') return;
+    for(var i=0;i<muts.length;i++){ var m=muts[i];
+      if(m.addedNodes) for(var j=0;j<m.addedNodes.length;j++){ var nd=m.addedNodes[j];
+        if(nd.nodeType===1) sweep(nd); else if(nd.nodeType===3) sweepNode(nd); }
+    }
+  });
+  window.theisiEN = {
+    on:function(){ if(!LONGKEYS) build(); sweep(document.body); try{ obs.observe(document.body,{childList:true,subtree:true}); }catch(e){} },
+    off:function(){ try{ obs.disconnect(); }catch(e){} },
+    sweep:sweep, tr:tr, dict:EN
+  };
+
+  // Hook the language toggle. On EN: sweep + observe. On AR: stop + re-render CC to restore Arabic.
+  function hook(){
+    if(typeof window.setLang!=='function'){ return setTimeout(hook,200); }
+    if(window.__setLangWrapped) return; window.__setLangWrapped=true;
+    var orig=window.setLang;
+    window.setLang=function(l,btn){
+      var r=orig.apply(this,arguments);
+      try{
+        if(l==='en'){ setTimeout(function(){ window.theisiEN.on(); }, 30); }
+        else { window.theisiEN.off(); if(typeof renderCommandCenter==='function'){ try{ renderCommandCenter(); }catch(e){} } }
+      }catch(e){}
+      return r;
+    };
+    // if the app already booted in English, translate now
+    try{ if(typeof lang!=='undefined' && lang==='en') window.theisiEN.on(); }catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',hook); else hook();
+})();
+</script>
+
 </body>
 </html>
