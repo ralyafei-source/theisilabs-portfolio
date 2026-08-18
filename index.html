@@ -6053,8 +6053,9 @@ async function loadBriefing(){
     html+=`</div>`;
   }
 
-  // 3. TWO COLUMNS: news (left) + dates (right)
-  const hasNews=(window._themedNews&&window._themedNews.themes&&window._themedNews.themes.length>0)||(d.news&&d.news.length>0);
+  // 3. Dates column only. News now lives in the dedicated full-width "News affecting
+  //    your portfolio" section at the top of the Portfolio tab (no duplicate here).
+  const hasNews=false;
   const hasDates=d.dates&&d.dates.length>0;
   if(hasNews||hasDates){
     html+=`<div class="brief-row">`;
