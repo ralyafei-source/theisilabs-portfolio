@@ -5345,7 +5345,13 @@ window.loadPulse = function(force){
     body: JSON.stringify({ mode:'pulse', nickname: nick, forceRefresh: !!force })
   })
   .then(function(r){ return r.json(); })
-  .then(function(d){ window._mpulse = d; window._mpApply(d); })
+  .then(function(d){
+    // Guard against a stale EMPTY cached pulse (no narrative / all-null indices):
+    // force one refresh instead of rendering "+null%".
+    var empty = !d || (!d.what && (!d.market || d.market.every(function(m){return m.dayPct==null;})));
+    if(empty && !force && !window._mpEmptyRetry){ window._mpEmptyRetry=true; return window.loadPulse(true); }
+    window._mpulse = d; window._mpApply(d);
+  })
   .catch(function(){ window._mpApply({error:true}); });
 };
   var bento='<div class="grid-stack" id="ccBento">'
