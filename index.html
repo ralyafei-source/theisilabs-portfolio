@@ -12026,6 +12026,9 @@ async function deleteStock(sym) {
 applyTranslations();
 renderPortfolio();
 renderNews();
+// Ensure the Portfolio-tab news fills even if initLiveData is slow/gated: load now,
+// and retry once shortly after if it hasn't populated.
+try{ if(typeof loadLiveNews==='function'){ loadLiveNews(); setTimeout(function(){ try{ if(typeof newsItems==='undefined'||!newsItems.length) loadLiveNews(); }catch(e){} }, 3500); } }catch(e){}
 loadBriefing();
 loadTxFromStorage();
 fetchLivePrices();
