@@ -16468,7 +16468,17 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
       var s=String(r.symbol||r.sym||'').toUpperCase(); if(s) m[s]=parseFloat(r['Quant Rating']||r['Quant']||'')||null; }); } }catch(e){}
     return m;
   }
-  var _H, _RM, _SA, _TOTAL, _tgtAED, ov;
+  var _H, _RM, _SA, _TGT, _TOTAL, _tgtAED, ov;
+
+  // Analyst room-to-target from the latest weekly structured analysis
+  // (generate-analysis v3 → FMP price-target-consensus). sym -> {gap, target}.
+  function targetMap(){
+    var m={}; try{ var d=window._adv2Doc; if(d && Array.isArray(d.stocks)){
+      d.stocks.forEach(function(s){ if(s && s.sym && (s.gapPct!=null || s.target!=null))
+        m[String(s.sym).toUpperCase()]={ gap:(s.gapPct!=null?+s.gapPct:null), target:(s.target!=null?+s.target:null) }; });
+    } }catch(e){}
+    return m;
+  }
 
   function qColor(q){ return q==null?'var(--text3)': q>=4?'var(--green)': q>=3?'var(--gold)':'var(--red)'; }
   function flagsHtml(h){
@@ -16486,6 +16496,7 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
     if(filt.watch && _RM.watch[h.sym]) return true;
     if(filt.loss && h.gl<=-20) return true;
     if(filt.c1 && _RM.big[h.sym]) return true;
+    if(filt.up){ var tg=_TGT[h.sym.toUpperCase()]; if(tg&&tg.gap!=null&&tg.gap>0) return true; }
     return false;
   }
   function targetUSD(){ return _tgtAED/AED; }
@@ -16499,11 +16510,17 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
       else if(sortKey==='gl'){av=a.gl;bv=b.gl;}
       else if(sortKey==='q'){av=(_SA[a.sym.toUpperCase()]==null?-1:_SA[a.sym.toUpperCase()]); bv=(_SA[b.sym.toUpperCase()]==null?-1:_SA[b.sym.toUpperCase()]);}
       else if(sortKey==='risk'){av=(_RM.riskPct[a.sym]||-1); bv=(_RM.riskPct[b.sym]||-1);}
+      else if(sortKey==='gap'){ var ga=_TGT[a.sym.toUpperCase()], gb=_TGT[b.sym.toUpperCase()]; av=(ga&&ga.gap!=null?ga.gap:-9999); bv=(gb&&gb.gap!=null?gb.gap:-9999); }
       return (av-bv)*sortDir;
     });
     var html='';
     rows.forEach(function(h){
       var q=_SA[h.sym.toUpperCase()], rp=_RM.riskPct[h.sym];
+      var tg=_TGT[h.sym.toUpperCase()];
+      var gap=(tg&&tg.gap!=null)?tg.gap:null;
+      var gapCell = gap==null
+        ? '<span style="color:var(--text3)">—</span>'
+        : '<span style="color:'+(gap>0?'var(--green)':'var(--red)')+';font-weight:700;">'+(gap>0?'+':'')+gap.toFixed(0)+'%</span>'+(tg.target!=null?'<div style="font-size:10px;color:var(--text3)">هدف $'+Math.round(tg.target)+'</div>':'');
       var pct=(h.mv/_TOTAL*100).toFixed(1);
       var t=trim[h.sym]||0, raised=h.mv*t/100;
       var dim=!matchFilt(h);
@@ -16512,6 +16529,7 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
         +'<td style="padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;font-family:'+"'IBM Plex Mono',monospace"+';">'+usd(h.mv)+'<div style="font-size:10px;color:var(--text3)">'+pct+'%</div></td>'
         +'<td style="padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;font-family:'+"'IBM Plex Mono',monospace"+';color:'+(h.gl>=0?'var(--green)':'var(--red)')+';">'+(h.gl>=0?'+':'')+h.gl.toFixed(0)+'%</td>'
         +'<td style="padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;font-family:'+"'IBM Plex Mono',monospace"+';font-weight:700;color:'+qColor(q)+';">'+(q==null?'—':q)+'</td>'
+        +'<td style="padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;font-family:'+"'IBM Plex Mono',monospace"+';">'+gapCell+'</td>'
         +'<td style="padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;font-family:'+"'IBM Plex Mono',monospace"+';color:var(--text2);">'+(rp!=null?rp+'%':'·')+'</td>'
         +'<td style="padding:7px 8px;border-bottom:1px solid var(--line);">'+flagsHtml(h)+'</td>'
         +'<td style="padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">'
@@ -16564,7 +16582,11 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
     if(!_H.length){ alert('لا توجد محفظة محمّلة بعد.'); return; }
     // ensure SA grades loaded (best-effort)
     if(!window._saGrades && typeof saGradesFetch==='function'){ try{ window._saGrades=await saGradesFetch(); }catch(e){} }
-    _RM = riskMaps(); _SA = saMap();
+    // ensure the weekly structured analysis is loaded for analyst targets (best-effort)
+    if((!window._adv2Doc || !Array.isArray(window._adv2Doc.stocks)) && typeof adv2Fetch==='function'){
+      try{ var wd=await adv2Fetch('weekly'); if(wd && Array.isArray(wd.stocks)) window._adv2Doc=wd; }catch(e){}
+    }
+    _RM = riskMaps(); _SA = saMap(); _TGT = targetMap();
     _TOTAL = _H.reduce(function(a,h){return a+h.mv;},0);
     _tgtAED = Math.round(_TOTAL*AED*0.5/1000)*1000; // sensible default: ~half, rounded to 1000 AED
     trim = {}; filt={}; sortKey='mv'; sortDir=-1;
@@ -16607,12 +16629,14 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
         +'<button class="tp-sort" data-k="risk" style="'+chipCss(false)+'">مخاطرة%</button>'
         +'<button class="tp-sort" data-k="gl" style="'+chipCss(false)+'">ربح/خسارة</button>'
         +'<button class="tp-sort" data-k="q" style="'+chipCss(false)+'">Quant</button>'
+        +'<button class="tp-sort" data-k="gap" style="'+chipCss(false)+'">صعود محللون</button>'
         +'<span style="width:1px;height:18px;background:var(--line);margin:0 4px;"></span>'
         +'<span style="font-size:11px;color:var(--text3)">تمييز:</span>'
         +'<button class="tp-filt" data-f="played" style="'+chipCss(false)+'">نضجت</button>'
         +'<button class="tp-filt" data-f="watch" style="'+chipCss(false)+'">مراقبة</button>'
         +'<button class="tp-filt" data-f="loss" style="'+chipCss(false)+'">خاسرة</button>'
         +'<button class="tp-filt" data-f="c1" style="'+chipCss(false)+'">عنقود</button>'
+        +'<button class="tp-filt" data-f="up" style="'+chipCss(false)+'" title="مجال صعود موجب حتى هدف المحللين">مجال صعود</button>'
         +'<span style="width:1px;height:18px;background:var(--line);margin:0 4px;"></span>'
         +'<button id="tp-prop" style="'+chipCss(false)+'border-color:var(--gold);color:var(--gold);">تقليص متناسب</button>'
         +'<button id="tp-clear" style="'+chipCss(false)+'">مسح</button>'
@@ -16623,12 +16647,13 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
           +'<th class="tp-th" data-k="mv" style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);cursor:pointer;">القيمة</th>'
           +'<th class="tp-th" data-k="gl" style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);cursor:pointer;">ربح/خسارة</th>'
           +'<th class="tp-th" data-k="q" style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);cursor:pointer;">Quant</th>'
+          +'<th class="tp-th" data-k="gap" style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);cursor:pointer;" title="مجال الصعود حتى هدف المحللين">صعود محللون</th>'
           +'<th class="tp-th" data-k="risk" style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);cursor:pointer;">مخاطرة%</th>'
           +'<th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);">إشارات</th>'
           +'<th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);">تقليص → نقد</th>'
         +'</tr></thead><tbody id="tpBody"></tbody></table></div>'
       +'<div style="font-size:11px;color:var(--text3);line-height:1.9;border-top:1px solid var(--line);margin-top:14px;padding-top:12px;">'
-        +'الإشارات محسوبة من محرّك المخاطر وتقييمات SA — <b style="color:var(--text2)">تنبيه للمراجعة، ليست توصية بيع</b>. مساهمة المخاطرة = حصة السهم من تقلّب محفظتك. «عنقود» = يتحرك مع مجموعة مترابطة. سعر الصرف الثابت <span style="font-family:'+mono+'">1 USD = 3.6725 AED</span>.<br><b style="color:var(--text2)">Not financial advice.</b> THEISI ينظّم بياناتك لتقرّر بنفسك.'
+        +'الإشارات محسوبة من محرّك المخاطر وتقييمات SA — <b style="color:var(--text2)">تنبيه للمراجعة، ليست توصية بيع</b>. مساهمة المخاطرة = حصة السهم من تقلّب محفظتك. «عنقود» = يتحرك مع مجموعة مترابطة. <b style="color:var(--text2)">صعود محللون</b> = الفرق بين السعر الحالي ومتوسط هدف المحللين (إجماع FMP) من آخر تحليل أسبوعي — اتجاه لا تنبؤ، وقد لا يشمل كل الأسهم. سعر الصرف الثابت <span style="font-family:'+mono+'">1 USD = 3.6725 AED</span>.<br><b style="color:var(--text2)">Not financial advice.</b> THEISI ينظّم بياناتك لتقرّر بنفسك.'
         +(_RM.asof?('<br><span style="font-family:'+mono+';color:var(--text3)">بيانات المخاطر: '+_RM.asof+'</span>'):'')
       +'</div>'
     +'</div></div>';
