@@ -16713,6 +16713,17 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
      ============================================================================ -->
 <script>
 (function(){
+  // Keep the top bar and left sidebar in the English (LTR) arrangement in BOTH
+  // languages — never mirror them when the document switches to RTL for Arabic.
+  try{
+    var _st=document.createElement('style'); _st.id='theisi-ltr-chrome';
+    // Pin the shell (top bar + the sidebar/main flex row) to LTR so the sidebar
+    // never jumps to the right; keep Arabic text inside the main content RTL.
+    _st.textContent='#appTopbar,#appTopbar *,#appBody{direction:ltr !important;}'
+      +'[dir="rtl"] #appMain{direction:rtl !important;}';
+    (document.head||document.documentElement).appendChild(_st);
+  }catch(e){}
+
   // Arabic phrase -> English. Exact-node match is applied first (safe for short
   // words); longer keys (>=6 chars) also run as substring replacements.
   var EN = {
