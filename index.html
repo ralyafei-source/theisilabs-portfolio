@@ -2122,6 +2122,28 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:18px;}.hstat-
     </div>
     <button onclick="ccRefresh()" style="font-size:10.5px;padding:5px 11px;border-radius:6px;background:var(--bg2);color:var(--text2);border:0.5px solid var(--border);cursor:pointer;">↻ تحديث</button>
   </div>
+
+  <!-- RUN & REFRESH — all analysis triggers in one place -->
+  <style>#cc-actions .cc-act-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-family:inherit;font-size:12px;padding:7px 12px;border-radius:8px;cursor:pointer;transition:.12s;white-space:nowrap;}#cc-actions .cc-act-btn:hover{border-color:var(--accent);color:var(--text);}#cc-actions .cc-act-btn:disabled{opacity:.5;cursor:default;}</style>
+  <div class="card" id="cc-actions" dir="ltr" style="margin-bottom:12px;padding:12px 14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+      <div class="card-title" style="margin:0;" data-en="Run &amp; Refresh" data-ar="التشغيل والتحديث">التشغيل والتحديث</div>
+      <button onclick="ccReanalyzeAll(this)" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;" data-en="⚡ Re-analyze everything" data-ar="⚡ إعادة تحليل كل شيء">⚡ إعادة تحليل كل شيء</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="cc-act-btn" onclick="try{fetchLivePrices()}catch(e){}"><span data-en="↻ Prices" data-ar="↻ الأسعار">↻ الأسعار</span></button>
+      <button class="cc-act-btn" onclick="try{window._riskRunNow&&window._riskRunNow(this)}catch(e){}"><span data-en="⚡ Risk" data-ar="⚡ المخاطر">⚡ المخاطر</span></button>
+      <button class="cc-act-btn" onclick="ccRunGen('weekly',this)"><span data-en="⚡ Weekly analysis" data-ar="⚡ تحليل أسبوعي">⚡ تحليل أسبوعي</span></button>
+      <button class="cc-act-btn" onclick="ccRunGen('monthly',this)"><span data-en="⚡ Monthly analysis" data-ar="⚡ تحليل شهري">⚡ تحليل شهري</span></button>
+      <button class="cc-act-btn" onclick="try{window.loadPulse&&window.loadPulse(true)}catch(e){}"><span data-en="↻ Market pulse" data-ar="↻ نبض السوق">↻ نبض السوق</span></button>
+      <button class="cc-act-btn" onclick="try{loadOpportunities(true)}catch(e){}"><span data-en="↻ Opportunity" data-ar="↻ الفرصة">↻ الفرصة</span></button>
+      <button class="cc-act-btn" onclick="try{loadBriefing()}catch(e){}"><span data-en="↻ Today's read" data-ar="↻ قراءة اليوم">↻ قراءة اليوم</span></button>
+      <button class="cc-act-btn" onclick="try{loadLiveNews()}catch(e){}"><span data-en="↻ News" data-ar="↻ الأخبار">↻ الأخبار</span></button>
+      <button class="cc-act-btn" onclick="try{showTab('sa-intel')}catch(e){}"><span data-en="📊 SA upload" data-ar="📊 رفع SA">📊 رفع SA</span></button>
+    </div>
+    <div id="cc-act-status" style="font-size:11px;color:var(--text3);margin-top:8px;min-height:14px;"></div>
+  </div>
+
   <div id="cc-grid" dir="rtl" style="display:grid;grid-template-columns:minmax(0,1fr);gap:10px;text-align:right;min-width:0;">
     <div style="padding:40px;text-align:center;color:var(--text3);grid-column:1/-1;">جارٍ التحميل…</div>
   </div>
@@ -16455,6 +16477,39 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
 
   window.THEISITargets = { check: check };
 })();
+</script>
+
+<!-- Command-tab Run & Refresh helpers -->
+<script>
+  function ccActStatus(msg){ var e=document.getElementById('cc-act-status'); if(e) e.textContent=msg||''; }
+  window.ccRunGen = async function(type,btn){
+    var nick=''; try{ nick=(localStorage.getItem('theisilabs_nick')||'').toLowerCase().trim(); }catch(e){}
+    var tok=''; try{ tok=localStorage.getItem('theisilabs_session')||''; }catch(e){}
+    if(!nick){ ccActStatus('سجّل الدخول أولاً · Sign in first'); return false; }
+    if(btn){ btn.disabled=true; btn.style.opacity=.6; }
+    ccActStatus((type==='weekly'?'جارٍ التحليل الأسبوعي':'جارٍ التحليل الشهري')+'… (2-5 min)');
+    var ok=false;
+    try{
+      var r=await fetch('/api/generate-analysis',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({nickname:nick,type:type})});
+      var d=await r.json(); ok=!!(d&&d.success);
+      ccActStatus(ok?('✓ '+(type==='weekly'?'التحليل الأسبوعي':'التحليل الشهري')+' اكتمل'):('تعذّر: '+((d&&d.error)||'')));
+      if(ok&&typeof adv2Load==='function'){ try{ adv2Load(type); }catch(e){} }
+    }catch(e){ ccActStatus('خطأ: '+e.message); }
+    if(btn){ btn.disabled=false; btn.style.opacity=1; }
+    return ok;
+  };
+  window.ccReanalyzeAll = async function(btn){
+    if(btn){ btn.disabled=true; btn.style.opacity=.6; }
+    try{ if(typeof fetchLivePrices==='function'){ ccActStatus('تحديث الأسعار · Prices…'); await fetchLivePrices(); } }catch(e){}
+    try{ if(window._riskRunNow){ ccActStatus('تحليل المخاطر · Risk…'); window._riskRunNow(); } }catch(e){}
+    try{ if(window.loadPulse){ ccActStatus('نبض السوق · Pulse…'); window.loadPulse(true); } }catch(e){}
+    try{ if(typeof loadOpportunities==='function'){ ccActStatus('الفرص · Opportunity…'); loadOpportunities(true); } }catch(e){}
+    try{ if(typeof loadLiveNews==='function'){ loadLiveNews(); } }catch(e){}
+    try{ if(typeof loadBriefing==='function'){ loadBriefing(); } }catch(e){}
+    await window.ccRunGen('weekly',null);
+    ccActStatus('✓ اكتمل — الأسبوعي/المخاطر/الأسعار/النبض محدّثة. SA يتطلب رفع ملف من تبويب «رفع SA». · Done — SA needs a workbook upload.');
+    if(btn){ btn.disabled=false; btn.style.opacity=1; }
+  };
 </script>
 
 <!-- ============================================================================
