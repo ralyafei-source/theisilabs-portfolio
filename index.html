@@ -2259,6 +2259,20 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:18px;}.hstat-
     </div>
   </div>
 
+<!-- NEWS affecting your portfolio — full width, two balanced columns, above the grid -->
+<style>
+  #newsList.p-news-cols{column-count:2;column-gap:26px;}
+  #newsList.p-news-cols .news-item{break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid;}
+  @media(max-width:760px){#newsList.p-news-cols{column-count:1;}}
+</style>
+<div class="card" style="margin-bottom:16px;">
+  <div class="section-hdr" style="margin-bottom:10px;">
+    <div class="section-title" style="font-size:18px;" id="p-news-title" data-en="News affecting your portfolio" data-ar="أخبار تمس محفظتك">أخبار تمس محفظتك</div>
+  </div>
+  <div id="newsList" class="p-news-cols"></div>
+  <div id="p-news-empty" style="font-size:12px;color:var(--text3);padding:6px 0;">—</div>
+</div>
+
 <div class="p-grid" style="display:grid;grid-template-columns:minmax(260px,1fr) minmax(0,2.2fr);gap:14px;align-items:start;"><div class="p-rail" style="min-width:0;"><!-- AI BRIEFING — structured, full width, no news -->
   <div class="card p-brief-card" style="margin-bottom:16px;">
     <div class="section-hdr" style="margin-bottom:14px;">
@@ -5818,6 +5832,9 @@ function renderNews(){
   const isAr=lang==='ar';
   const box=document.getElementById('newsList');
   if(!box)return;
+  const emptyEl=document.getElementById('p-news-empty');
+  if(emptyEl) emptyEl.style.display=(newsItems&&newsItems.length)?'none':'block';
+  if(emptyEl && (!newsItems||!newsItems.length)) emptyEl.textContent=isAr?'لا توجد أخبار حالياً.':'No news right now.';
   box.innerHTML=newsItems.map(n=>{
     const symsHtml=(n.syms||[]).map(s=>`<span class="news-sym">${s}</span>`).join('');
     const hasUrl=n.url&&n.url!=='#';
