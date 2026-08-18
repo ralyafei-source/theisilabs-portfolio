@@ -4270,6 +4270,7 @@ function ccPh(title){
     window._ccReadStore={};
     window._ccReadOpen=function(key){
       var d=window._ccReadStore[key]; if(!d) return;
+      window._ccOpenKey=key;
       if(d.html){ window._ccHtmlPopup(d.title,d.html,d.wide); return; }
       window._ccReadPopup(d.title,d.brief,d.detail);
     };
@@ -4321,6 +4322,7 @@ function ccPh(title){
       ov.style.display='flex'; requestAnimationFrame(function(){ ov.classList.add('in'); });
     };
     window._ccReadClose=function(){
+      window._ccOpenKey=null;
       var ov=document.getElementById('ccReadOv');
       if(ov){ ov.classList.remove('in'); setTimeout(function(){ ov.style.display='none'; },200); }
     };
@@ -5296,6 +5298,18 @@ function mpRenderHtml(d){
 
 window._mpulse = window._mpulse || null;
 
+// Sync BOTH the live tile (#mpBody) AND the click-through popup store. The popup
+// reads _ccReadStore['mpulse'].html; gsItem only ever seeds it with the build-time
+// skeleton, so without this the popup opens blank/stuck-loading. Also live-refresh
+// the popup if it's already open on this card.
+window._mpApply = function(d){
+  var b = document.getElementById('mpBody'); if(b) b.innerHTML = mpRenderHtml(d);
+  window._ccReadStore = window._ccReadStore || {};
+  window._ccReadStore['mpulse'] = { title:'نبض السوق الآن', html: mpRenderHtml(d), wide:true };
+  var ov = document.getElementById('ccReadOv');
+  if(ov && ov.style.display!=='none' && window._ccOpenKey==='mpulse'){ try{ window._ccHtmlPopup('نبض السوق الآن', mpRenderHtml(d), true); }catch(e){} }
+};
+
 // Auto-load: polls up to 10s for the card to appear in the DOM, then fills it.
 // If cached data already exists (tab re-entry), it renders instantly first.
 (function mpAutoInit(){
@@ -5304,7 +5318,7 @@ window._mpulse = window._mpulse || null;
     var el = document.getElementById('mpBody');
     if(el){
       clearInterval(t);
-      if(window._mpulse){ el.innerHTML = mpRenderHtml(window._mpulse); }
+      if(window._mpulse){ window._mpApply(window._mpulse); }
       else { window.loadPulse(false); }
     } else if(++tries > 40){ clearInterval(t); }
   }, 250);
@@ -5320,8 +5334,8 @@ window.loadPulse = function(force){
     body: JSON.stringify({ mode:'pulse', nickname: nick, forceRefresh: !!force })
   })
   .then(function(r){ return r.json(); })
-  .then(function(d){ window._mpulse = d; var b=document.getElementById('mpBody'); if(b) b.innerHTML = mpRenderHtml(d); })
-  .catch(function(){ var b=document.getElementById('mpBody'); if(b) b.innerHTML = mpRenderHtml({error:true}); });
+  .then(function(d){ window._mpulse = d; window._mpApply(d); })
+  .catch(function(){ window._mpApply({error:true}); });
 };
   var bento='<div class="grid-stack" id="ccBento">'
     +gsItem('today',panel(todayInner,{style:'flex:1;display:flex;flex-direction:column;min-height:0;'}))
