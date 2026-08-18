@@ -2280,10 +2280,11 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:18px;}.hstat-
         <div class="section-title" id="p-all-stocks">All Holdings</div>
         <div class="section-sub" id="p-sub">Loading securities...</div>
       </div>
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-outline" onclick="filterP('all')" id="btn-all" style="font-size:12px;padding:7px 12px;">All</button>
         <button class="btn btn-outline" onclick="filterP('gain')" id="btn-gain" style="font-size:12px;padding:7px 12px;">Gainers</button>
         <button class="btn btn-outline" onclick="filterP('loss')" id="btn-loss" style="font-size:12px;padding:7px 12px;">Losers</button>
+        <button class="btn" onclick="window.openTrimPlanner&&window.openTrimPlanner()" id="btn-trim" style="font-size:12px;padding:7px 12px;background:var(--accent);color:#fff;border:none;" title="مخطط الوصول لهدف نقدي">🎯 مخطط التقليص</button>
       </div>
     </div>
     <div style="overflow-x:auto;" class="p-table-scroll">
@@ -16428,6 +16429,238 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
   window.THEISITargets = { check: check };
 })();
 </script>
-  
+
+<!-- ============================================================================
+     TRIM PLANNER — reach-a-cash-target tool (multi-user, live data)
+     Reads each user's own `stocks` + window._riskEngData + window._saGrades.
+     THEISI principle: organizes the user's data + analysis signals; never
+     recommends buy/sell. The user sets the target and the trims; it only sums.
+     ============================================================================ -->
+<script>
+(function(){
+  var AED = 3.6725; // fixed USD peg
+  var trim = {};    // sym -> percent 0..100
+  var sortKey='mv', sortDir=-1, filt={};
+  var usd=function(n){ return '$'+Math.round(n).toLocaleString('en-US'); };
+  var aed=function(n){ return Math.round(n*AED).toLocaleString('en-US')+' AED'; };
+
+  function liveHoldings(){
+    var arr=[]; try{ arr=(stocks||[]); }catch(e){ arr=[]; }
+    return arr.map(function(s){
+      return { sym:s.sym, sec:s.sec||s.sector||'', mv:(s.mv||0),
+        gl:(s.gl!=null?s.gl:((s.price-s.cost)/s.cost*100)) };
+    }).filter(function(h){ return h.mv>0; });
+  }
+  function riskMaps(){
+    var R=(window._riskEngData||{}), K=(R.correlation||{}), C=(R.concentration||{});
+    var riskPct={}; (K.top_risk_contributors||[]).forEach(function(c){ riskPct[c.sym]=c.pct_of_risk; });
+    // largest correlation cluster = the "hidden concentration" highlight
+    var cl=(K.correlation_clusters||[]).slice().sort(function(a,b){return b.length-a.length;});
+    var bigSet={}; if(cl[0]) cl[0].forEach(function(s){ bigSet[s]=1; });
+    var played={}, watch={};
+    (R.exits||[]).forEach(function(e){ if(e.played_out) played[e.sym]=(e.gain!=null?e.gain:true); else watch[e.sym]=1; });
+    return { riskPct:riskPct, big:bigSet, played:played, watch:watch,
+      beta:C.portfolio_beta_24m, eff:K.effective_independent_bets, asof:R.as_of,
+      bigLen:(cl[0]?cl[0].length:0) };
+  }
+  function saMap(){
+    var m={}; try{ var d=window._saGrades; if(d){ [].concat(d.stocks||[],d.etfs||[]).forEach(function(r){
+      var s=String(r.symbol||r.sym||'').toUpperCase(); if(s) m[s]=parseFloat(r['Quant Rating']||r['Quant']||'')||null; }); } }catch(e){}
+    return m;
+  }
+  var _H, _RM, _SA, _TOTAL, _tgtAED, ov;
+
+  function qColor(q){ return q==null?'var(--text3)': q>=4?'var(--green)': q>=3?'var(--gold)':'var(--red)'; }
+  function flagsHtml(h){
+    var f='';
+    if(_RM.played[h.sym]!=null) f+='<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;margin-inline-start:3px;background:rgba(251,191,36,.14);color:var(--gold);">نضجت</span>';
+    if(_RM.watch[h.sym]) f+='<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;margin-inline-start:3px;background:rgba(0,200,255,.12);color:var(--blue);">مراقبة</span>';
+    if(_RM.big[h.sym]) f+='<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;margin-inline-start:3px;background:rgba(148,120,255,.16);color:#b7a6ff;">عنقود</span>';
+    if(h.gl<=-20) f+='<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;margin-inline-start:3px;background:rgba(248,113,113,.13);color:var(--red);">خسارة</span>';
+    return f||'<span style="color:var(--text3)">—</span>';
+  }
+  function matchFilt(h){
+    var keys=Object.keys(filt).filter(function(k){return filt[k];});
+    if(!keys.length) return true;
+    if(filt.played && _RM.played[h.sym]!=null) return true;
+    if(filt.watch && _RM.watch[h.sym]) return true;
+    if(filt.loss && h.gl<=-20) return true;
+    if(filt.c1 && _RM.big[h.sym]) return true;
+    return false;
+  }
+  function targetUSD(){ return _tgtAED/AED; }
+  function raiseNeeded(){ return Math.max(0, _TOTAL - targetUSD()); }
+
+  function renderRows(){
+    var tb=document.getElementById('tpBody'); if(!tb) return;
+    var rows=_H.slice().sort(function(a,b){
+      var av,bv;
+      if(sortKey==='mv'){av=a.mv;bv=b.mv;}
+      else if(sortKey==='gl'){av=a.gl;bv=b.gl;}
+      else if(sortKey==='q'){av=(_SA[a.sym.toUpperCase()]==null?-1:_SA[a.sym.toUpperCase()]); bv=(_SA[b.sym.toUpperCase()]==null?-1:_SA[b.sym.toUpperCase()]);}
+      else if(sortKey==='risk'){av=(_RM.riskPct[a.sym]||-1); bv=(_RM.riskPct[b.sym]||-1);}
+      return (av-bv)*sortDir;
+    });
+    var html='';
+    rows.forEach(function(h){
+      var q=_SA[h.sym.toUpperCase()], rp=_RM.riskPct[h.sym];
+      var pct=(h.mv/_TOTAL*100).toFixed(1);
+      var t=trim[h.sym]||0, raised=h.mv*t/100;
+      var dim=!matchFilt(h);
+      html+='<tr style="opacity:'+(dim?'.32':'1')+';'+(t>0?'background:rgba(255,10,120,.06);':'')+'">'
+        +'<td style="padding:7px 8px;border-bottom:1px solid var(--line);"><span style="font-family:'+"'IBM Plex Mono',monospace"+';font-weight:700;direction:ltr;unicode-bidi:isolate;">'+h.sym+'</span></td>'
+        +'<td style="padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;font-family:'+"'IBM Plex Mono',monospace"+';">'+usd(h.mv)+'<div style="font-size:10px;color:var(--text3)">'+pct+'%</div></td>'
+        +'<td style="padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;font-family:'+"'IBM Plex Mono',monospace"+';color:'+(h.gl>=0?'var(--green)':'var(--red)')+';">'+(h.gl>=0?'+':'')+h.gl.toFixed(0)+'%</td>'
+        +'<td style="padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;font-family:'+"'IBM Plex Mono',monospace"+';font-weight:700;color:'+qColor(q)+';">'+(q==null?'—':q)+'</td>'
+        +'<td style="padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;font-family:'+"'IBM Plex Mono',monospace"+';color:var(--text2);">'+(rp!=null?rp+'%':'·')+'</td>'
+        +'<td style="padding:7px 8px;border-bottom:1px solid var(--line);">'+flagsHtml(h)+'</td>'
+        +'<td style="padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap;">'
+          +'<button class="tp-all" data-sym="'+h.sym+'" style="background:var(--bg3);border:1px solid var(--line);color:var(--text3);font-size:10px;border-radius:5px;padding:1px 5px;cursor:pointer;font-family:inherit;">كل</button> '
+          +'<input type="range" min="0" max="100" step="5" value="'+t+'" data-sym="'+h.sym+'" style="width:90px;vertical-align:middle;accent-color:var(--accent);"> '
+          +'<span class="tp-tv" data-sym="'+h.sym+'" style="font-family:'+"'IBM Plex Mono',monospace"+';font-size:11px;color:var(--text2);">'+t+'% · '+usd(raised)+'</span>'
+        +'</td></tr>';
+    });
+    tb.innerHTML=html;
+    // bind
+    tb.querySelectorAll('input[type=range][data-sym]').forEach(function(el){
+      el.oninput=function(){ trim[el.dataset.sym]=+el.value;
+        var h=_H.find(function(x){return x.sym===el.dataset.sym;});
+        var tv=tb.querySelector('.tp-tv[data-sym="'+el.dataset.sym+'"]');
+        if(tv) tv.textContent=el.value+'% · '+usd(h.mv*el.value/100);
+        el.closest('tr').style.background=(+el.value>0?'rgba(255,10,120,.06)':'');
+        updateSummary();
+      };
+    });
+    tb.querySelectorAll('.tp-all[data-sym]').forEach(function(b){
+      b.onclick=function(){ trim[b.dataset.sym]=100; renderRows(); updateSummary(); };
+    });
+  }
+
+  function updateSummary(){
+    var raised=0, kept=0, keptBig=0;
+    _H.forEach(function(h){ var r=h.mv*(trim[h.sym]||0)/100; raised+=r; var remain=h.mv-r;
+      if((trim[h.sym]||0)<100) kept++; if(_RM.big[h.sym]) keptBig+=remain; });
+    var after=_TOTAL-raised, need=raiseNeeded(), rem=need-raised;
+    function set(id,html){ var e=document.getElementById(id); if(e) e.innerHTML=html; }
+    set('tp-raised', usd(raised)+' <small style="color:var(--text2);font-size:11px">'+aed(raised)+'</small>');
+    set('tp-rem', (rem>0? '<span style="color:var(--gold)">'+usd(rem)+'</span>' : '<span style="color:var(--green)">تم ✓</span>'));
+    set('tp-after', usd(after)+' <small style="color:var(--text2);font-size:11px">'+aed(after)+'</small>');
+    set('tp-kept', kept+' <small style="color:var(--text2);font-size:11px">/ '+_H.length+'</small>');
+    var prog=need>0?Math.min(100, raised/need*100):100;
+    var bar=document.getElementById('tp-bar'); if(bar) bar.style.width=prog.toFixed(1)+'%';
+    var c1=(keptBig/Math.max(1,after)*100);
+    set('tp-note','التقدّم للهدف: <b style="font-family:'+"'IBM Plex Mono',monospace"+'">'+prog.toFixed(0)+'%</b>'
+      + (_RM.bigLen&&after>0?(' · وزن أكبر عنقود مترابط بعد التقليص: <b style="font-family:'+"'IBM Plex Mono',monospace"+'">'+c1.toFixed(0)+'%</b>'):'')
+      + (raised>need*1.001?' · <span style="color:var(--red)">تجاوزت الهدف</span>':''));
+    // header math
+    set('tp-cur', usd(_TOTAL)+' <small style="color:var(--text2);font-size:11px">'+aed(_TOTAL)+'</small>');
+    set('tp-raiseneed', usd(need)+' <small style="color:var(--text2);font-size:11px">'+(need>0?(need/_TOTAL*100).toFixed(1)+'%':'')+'</small>');
+  }
+
+  function close(){ if(ov){ ov.style.opacity='0'; setTimeout(function(){ if(ov&&ov.parentNode) ov.parentNode.removeChild(ov); ov=null; },180); } }
+
+  window.openTrimPlanner = async function(){
+    _H = liveHoldings();
+    if(!_H.length){ alert('لا توجد محفظة محمّلة بعد.'); return; }
+    // ensure SA grades loaded (best-effort)
+    if(!window._saGrades && typeof saGradesFetch==='function'){ try{ window._saGrades=await saGradesFetch(); }catch(e){} }
+    _RM = riskMaps(); _SA = saMap();
+    _TOTAL = _H.reduce(function(a,h){return a+h.mv;},0);
+    _tgtAED = Math.round(_TOTAL*AED*0.5/1000)*1000; // sensible default: ~half, rounded to 1000 AED
+    trim = {}; filt={}; sortKey='mv'; sortDir=-1;
+
+    ov=document.createElement('div');
+    ov.id='tpOv';
+    ov.style.cssText='position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;opacity:0;transition:opacity .18s;direction:rtl;';
+    ov.onclick=function(e){ if(e.target===ov) close(); };
+    var mono="'IBM Plex Mono',monospace";
+    ov.innerHTML=
+    '<div style="background:var(--bg2);border:1px solid var(--border,var(--line));border-radius:16px;max-width:1000px;width:100%;margin:auto;box-shadow:0 24px 70px rgba(0,0,0,.6);">'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 20px 12px;border-bottom:1px solid var(--border,var(--line));">'
+      +'<div><div style="font-size:16px;font-weight:800;">🎯 مخطط التقليص إلى هدف نقدي</div>'
+      +'<div style="font-size:12px;color:var(--text2);margin-top:3px;">حدّد المبلغ اللي تبي محفظتك توصله — الأداة ترتّب بياناتك وإشاراتك، والقرار عندك. <span style="color:var(--text3)">ليست نصيحة مالية.</span></div></div>'
+      +'<button id="tp-x" style="background:var(--bg3);border:none;color:var(--text2);font-size:17px;line-height:1;border-radius:9px;width:32px;height:32px;cursor:pointer;font-family:inherit;flex:none;">✕</button>'
+    +'</div>'
+    +'<div style="padding:16px 20px;">'
+      +'<div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:14px;">'
+        +'<div><div style="font-size:11px;color:var(--text3);margin-bottom:4px;">الهدف · Target</div>'
+          +'<div style="display:flex;align-items:center;gap:6px;"><input id="tp-target" type="number" step="1000" value="'+_tgtAED+'" style="width:150px;background:var(--bg3);border:1px solid var(--accent);color:var(--text);font-family:'+mono+';font-size:15px;font-weight:700;border-radius:8px;padding:7px 10px;text-align:left;">'
+          +'<select id="tp-cur-sel" style="background:var(--bg3);border:1px solid var(--line);color:var(--text2);font-family:inherit;font-size:12px;border-radius:8px;padding:7px 8px;"><option value="AED">AED درهم</option><option value="USD">USD دولار</option></select></div></div>'
+        +'<div style="flex:1;min-width:160px;"><div style="font-size:11px;color:var(--text3);">المحفظة الحالية · Current</div><div id="tp-cur" style="font-size:18px;font-weight:800;font-family:'+mono+';"></div></div>'
+        +'<div style="flex:1;min-width:160px;"><div style="font-size:11px;color:var(--text3);">المطلوب تحريره · Raise</div><div id="tp-raiseneed" style="font-size:18px;font-weight:800;font-family:'+mono+';color:var(--accent);"></div></div>'
+      +'</div>'
+      // sticky summary
+      +'<div style="background:var(--bg3);border:1px solid var(--accent);border-radius:12px;padding:12px 14px;margin-bottom:14px;">'
+        +'<div style="display:flex;flex-wrap:wrap;gap:18px;justify-content:space-between;">'
+          +'<div><div style="font-size:11px;color:var(--text3)">نقد محرَّر</div><div id="tp-raised" style="font-size:17px;font-weight:800;font-family:'+mono+'">$0</div></div>'
+          +'<div><div style="font-size:11px;color:var(--text3)">متبقٍّ للهدف</div><div id="tp-rem" style="font-size:17px;font-weight:800;font-family:'+mono+'">—</div></div>'
+          +'<div><div style="font-size:11px;color:var(--text3)">المحفظة بعد التقليص</div><div id="tp-after" style="font-size:17px;font-weight:800;font-family:'+mono+'">—</div></div>'
+          +'<div><div style="font-size:11px;color:var(--text3)">مراكز مبقاة</div><div id="tp-kept" style="font-size:17px;font-weight:800;font-family:'+mono+'">—</div></div>'
+        +'</div>'
+        +'<div style="height:9px;background:var(--bg2);border-radius:6px;overflow:hidden;margin-top:10px;"><div id="tp-bar" style="height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--blue,#00c8ff));border-radius:6px;transition:width .2s;"></div></div>'
+        +'<div id="tp-note" style="font-size:11px;color:var(--text2);margin-top:6px;"></div>'
+      +'</div>'
+      // controls
+      +'<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;">'
+        +'<span style="font-size:11px;color:var(--text3)">عدسة:</span>'
+        +'<button class="tp-sort" data-k="mv" style="'+chipCss(true)+'">القيمة</button>'
+        +'<button class="tp-sort" data-k="risk" style="'+chipCss(false)+'">مخاطرة%</button>'
+        +'<button class="tp-sort" data-k="gl" style="'+chipCss(false)+'">ربح/خسارة</button>'
+        +'<button class="tp-sort" data-k="q" style="'+chipCss(false)+'">Quant</button>'
+        +'<span style="width:1px;height:18px;background:var(--line);margin:0 4px;"></span>'
+        +'<span style="font-size:11px;color:var(--text3)">تمييز:</span>'
+        +'<button class="tp-filt" data-f="played" style="'+chipCss(false)+'">نضجت</button>'
+        +'<button class="tp-filt" data-f="watch" style="'+chipCss(false)+'">مراقبة</button>'
+        +'<button class="tp-filt" data-f="loss" style="'+chipCss(false)+'">خاسرة</button>'
+        +'<button class="tp-filt" data-f="c1" style="'+chipCss(false)+'">عنقود</button>'
+        +'<span style="width:1px;height:18px;background:var(--line);margin:0 4px;"></span>'
+        +'<button id="tp-prop" style="'+chipCss(false)+'border-color:var(--gold);color:var(--gold);">تقليص متناسب</button>'
+        +'<button id="tp-clear" style="'+chipCss(false)+'">مسح</button>'
+      +'</div>'
+      +'<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12.5px;">'
+        +'<thead><tr style="color:var(--text3);font-size:11px;">'
+          +'<th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);">Sym</th>'
+          +'<th class="tp-th" data-k="mv" style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);cursor:pointer;">القيمة</th>'
+          +'<th class="tp-th" data-k="gl" style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);cursor:pointer;">ربح/خسارة</th>'
+          +'<th class="tp-th" data-k="q" style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);cursor:pointer;">Quant</th>'
+          +'<th class="tp-th" data-k="risk" style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);cursor:pointer;">مخاطرة%</th>'
+          +'<th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);">إشارات</th>'
+          +'<th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);">تقليص → نقد</th>'
+        +'</tr></thead><tbody id="tpBody"></tbody></table></div>'
+      +'<div style="font-size:11px;color:var(--text3);line-height:1.9;border-top:1px solid var(--line);margin-top:14px;padding-top:12px;">'
+        +'الإشارات محسوبة من محرّك المخاطر وتقييمات SA — <b style="color:var(--text2)">تنبيه للمراجعة، ليست توصية بيع</b>. مساهمة المخاطرة = حصة السهم من تقلّب محفظتك. «عنقود» = يتحرك مع مجموعة مترابطة. سعر الصرف الثابت <span style="font-family:'+mono+'">1 USD = 3.6725 AED</span>.<br><b style="color:var(--text2)">Not financial advice.</b> THEISI ينظّم بياناتك لتقرّر بنفسك.'
+        +(_RM.asof?('<br><span style="font-family:'+mono+';color:var(--text3)">بيانات المخاطر: '+_RM.asof+'</span>'):'')
+      +'</div>'
+    +'</div></div>';
+    document.body.appendChild(ov);
+    requestAnimationFrame(function(){ ov.style.opacity='1'; });
+
+    document.getElementById('tp-x').onclick=close;
+    var tin=document.getElementById('tp-target'), csel=document.getElementById('tp-cur-sel');
+    function readTarget(){ var v=parseFloat(tin.value)||0; _tgtAED=(csel.value==='USD')?(v*AED):v; updateSummary(); }
+    tin.oninput=readTarget;
+    csel.onchange=function(){ // convert displayed value to selected currency
+      if(csel.value==='USD'){ tin.step=1000; tin.value=Math.round(_tgtAED/AED); }
+      else { tin.step=1000; tin.value=Math.round(_tgtAED); }
+      readTarget();
+    };
+    ov.querySelectorAll('.tp-sort,.tp-th').forEach(function(b){
+      b.onclick=function(){ var k=b.dataset.k; if(sortKey===k) sortDir*=-1; else {sortKey=k;sortDir=-1;}
+        ov.querySelectorAll('.tp-sort').forEach(function(x){ x.style.cssText=chipCss(x.dataset.k===sortKey); });
+        renderRows(); };
+    });
+    ov.querySelectorAll('.tp-filt').forEach(function(b){
+      b.onclick=function(){ var f=b.dataset.f; filt[f]=!filt[f]; b.style.cssText=chipCss(!!filt[f]); renderRows(); };
+    });
+    document.getElementById('tp-prop').onclick=function(){ var need=raiseNeeded(); var p=_TOTAL>0?Math.round(need/_TOTAL*100):0; _H.forEach(function(h){ trim[h.sym]=p; }); renderRows(); updateSummary(); };
+    document.getElementById('tp-clear').onclick=function(){ _H.forEach(function(h){ trim[h.sym]=0; }); renderRows(); updateSummary(); };
+    document.addEventListener('keydown',function esc(e){ if(e.key==='Escape'){ close(); document.removeEventListener('keydown',esc);} });
+
+    renderRows(); updateSummary();
+  };
+  function chipCss(on){ return 'background:'+(on?'var(--accent)':'var(--bg3)')+';border:1px solid '+(on?'var(--accent)':'var(--line)')+';color:'+(on?'#fff':'var(--text2)')+';font-family:inherit;font-size:12px;padding:5px 11px;border-radius:8px;cursor:pointer;'; }
+})();
+</script>
+
 </body>
 </html>
