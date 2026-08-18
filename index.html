@@ -16896,31 +16896,39 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
   function loadCache(){ if(TRC) return TRC; try{ TRC=JSON.parse(localStorage.getItem('theisi_tr_en')||'{}'); }catch(e){ TRC={}; } return TRC; }
   function saveCache(){ try{ localStorage.setItem('theisi_tr_en', JSON.stringify(TRC)); }catch(e){} }
   function hh(s){ var h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return 'k'+h+'_'+s.length; }
+  var _apiBusy=false;
   async function apiFetch(list){
-    for(var i=0;i<list.length;i+=40){
-      var chunk=list.slice(i,i+40);
+    for(var i=0;i<list.length;i+=12){                   // small chunks to stay under the function timeout
+      var chunk=list.slice(i,i+12);
       try{
         var r=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texts:chunk,target:'en'})});
         var j=await r.json();
-        if(j&&Array.isArray(j.translations)){ chunk.forEach(function(s,k){ var en=j.translations[k]; if(en&&en!==s) TRC[hh(s)]=en; }); }
+        if(j&&Array.isArray(j.translations)){ chunk.forEach(function(s,k){ var en=j.translations[k]; if(en&&en!==s) TRC[hh(s)]=en; }); saveCache(); applyCache(collectAr(document.body)); }
       }catch(e){}
     }
-    saveCache();
   }
   function applyCache(nodes){ nodes.forEach(function(n){ var t=n.nodeValue.trim(); if(!t) return; var en=TRC[hh(t)]; if(en){ n.nodeValue=n.nodeValue.replace(t,en); } }); }
-  function collectAr(root){ var nodes=[]; try{ var w=document.createTreeWalker(root||document.body,NodeFilter.SHOW_TEXT,null),n; while(n=w.nextNode()){ var t=n.nodeValue.trim(); if(t.length>=4 && hasAr(t)) nodes.push(n); } }catch(e){} return nodes; }
-  var _apiTimer=null;
+  function visible(n){ try{ var el=n.parentElement; return !!(el && el.getClientRects && el.getClientRects().length); }catch(e){ return false; } }
+  function collectAr(root){ var nodes=[]; try{ var w=document.createTreeWalker(root||document.body,NodeFilter.SHOW_TEXT,null),n; while(n=w.nextNode()){ var t=n.nodeValue.trim(); if(t.length>=4 && hasAr(t) && visible(n)) nodes.push(n); } }catch(e){} return nodes; }
   async function apiSweep(){
-    if(typeof lang==='undefined'||lang!=='en') return;
+    if(typeof lang==='undefined'||lang!=='en'||_apiBusy) return;
     loadCache();
     var nodes=collectAr(document.body); if(!nodes.length) return;
     applyCache(nodes);                                  // apply anything already cached
     var uniq=Array.from(new Set(collectAr(document.body).map(function(n){return n.nodeValue.trim();}).filter(function(t){return hasAr(t)&&!TRC[hh(t)];})));
     if(!uniq.length) return;
-    await apiFetch(uniq);
+    _apiBusy=true;
+    try{ await apiFetch(uniq); }catch(e){}
+    _apiBusy=false;
     applyCache(collectAr(document.body));               // apply freshly translated
   }
-  function scheduleApiSweep(){ if(_apiTimer) clearTimeout(_apiTimer); _apiTimer=setTimeout(apiSweep,700); }
+  var _apiLast=0, _apiTimer=null;
+  function scheduleApiSweep(){                            // throttle (not debounce) so constant ticker mutations can't starve it
+    var now=(window.performance&&performance.now)?performance.now():0;
+    if(_apiTimer) return;
+    var wait=Math.max(0, 3500-(now-_apiLast));
+    _apiTimer=setTimeout(function(){ _apiTimer=null; _apiLast=(window.performance&&performance.now)?performance.now():0; apiSweep(); }, wait);
+  }
 
   var obs = new MutationObserver(function(muts){
     if(typeof lang==='undefined' || lang!=='en') return;
@@ -16949,6 +16957,13 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
       }catch(e){}
       return r;
     };
+    // re-sweep when the user switches tabs (display toggles don't fire childList mutations)
+    if(typeof window.showTab==='function' && !window.__showTabWrapped){
+      window.__showTabWrapped=true; var _os=window.showTab;
+      window.showTab=function(){ var r=_os.apply(this,arguments);
+        try{ if(typeof lang!=='undefined' && lang==='en'){ window.theisiEN.sweep(document.body); scheduleApiSweep(); } }catch(e){}
+        return r; };
+    }
     // if the app already booted in English, translate now
     try{ if(typeof lang!=='undefined' && lang==='en') window.theisiEN.on(); }catch(e){}
   }
