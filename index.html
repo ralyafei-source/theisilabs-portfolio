@@ -16788,7 +16788,31 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
     'الرمز':'Symbol','الاسم':'Name','القطاع':'Sector','القيمة':'Value','الربح/الخسارة':'Gain/Loss','الحالة':'Status',
     'التاريخ':'Date','مراجعة':'Review','قوي':'Strong','راقب':'Watch','الكل':'All','اليوم':'Today','رابحة':'gainers',
     'المجموعات المترابطة':'Correlated groups','اختبار الإجهاد':'Stress test','النظرة البعيدة — سنة+':'Long view — 1yr+',
-    'صحة المحفظة':'Portfolio health','تاريخ الشراء غير مُسجّل':'Purchase date not recorded','ورقة مالية':'securities'
+    'صحة المحفظة':'Portfolio health','تاريخ الشراء غير مُسجّل':'Purchase date not recorded','ورقة مالية':'securities',
+    // pulse/portfolio labels
+    'مراكز':'positions','مستقلة':'independent','مراكز مستقلة':'independent positions','مستقلة':'independent',
+    'بيتا':'beta','· بيتا':'· beta','· مستقر':'· stable','حساسية السوق':'Market sensitivity','حساسية السوق (بيتا)':'Market sensitivity (beta)',
+    'حركة المراكز':'Position moves','حركة المراكز · اليوم':'Position moves · Today','حركة المراكز · منذ الشراء':'Position moves · since purchase',
+    'أكبر 5 مراكز':'Top 5 positions','السهم':'Stock','الوزن':'Weight','الأداء':'Performance','عرض جميع المراكز ←':'View all positions ←',
+    'الأرباح القادمة':'Upcoming earnings','ثابت':'flat','مراجعات ↓':'downgrades ↓','مراجعات ↑':'upgrades ↑','تجاوز':'beat','دون':'below','مطابق':'in line',
+    'فتح التحليل ←':'Open analysis ←','رادار المخاطر':'Risk radar','أعمدة':'Bars','رادار':'Radar','أعلى تقلباً من السوق':'more volatile than market',
+    'الانخفاض عن القمة':'Drawdown from high','الملاءة (ألتمان Z)':'Solvency (Altman Z)','الدولارية، مع':'in dollars, with',
+    'مرتفع يشير إلى':'high indicates','ذروة شراء':'overbought','تراجع ملحوظ مع':'notable drop with','إيقاف رسائل تيليجرام':'Stop Telegram messages',
+    // lookup / explore / SA pro
+    'بحث سهم':'Stock search','بحث':'Search','جاري جلب البيانات المالية…':'Fetching financial data…','تحليل الذكاء الاصطناعي':'AI analysis',
+    'أكبر خطر':'Biggest risk','هدف':'Target','أسهم الرقائق والتوصيل':'Chip & delivery stocks','صناديق المؤشرات':'Index funds',
+    'أسهم قرب الأرباح':'Stocks near earnings','اختبار دقة النظام':'System accuracy test','فرص':'Opportunities','فرص السوق':'Market opportunities',
+    'جاري التحميل...':'Loading...','↺ تحديث':'↺ Refresh','زخم':'Momentum','الأفضل ملاءمةً':'Best fit','لم يُحدَّث بعد':'Not updated yet',
+    'اكتمال البيانات':'Data completeness','ملف Excel (المحفظة)':'Excel file (portfolio)','المبلغ المتاح':'Available amount',
+    'المبلغ المتاح للاستثمار':'Amount available to invest','المدخلات الأسبوعية — كل أحد':'Weekly inputs — every Sunday',
+    'ملف Excel — المحفظة الكاملة':'Excel file — full portfolio','أسبوعي':'Weekly','شهري':'Monthly','رفع ملف Excel':'Upload Excel file',
+    'رفع ملف الكون (Universe)':'Upload Universe file','المدخلات الشهرية':'Monthly inputs','Alpha Picks (شهري)':'Alpha Picks (monthly)',
+    'Alpha Picks — الاختيارات الشهرية':'Alpha Picks — monthly picks','PRO Quant Portfolio — الـ 30 سهم':'PRO Quant Portfolio — 30 stocks',
+    'Exclusive Coverage — فرص مخفية':'Exclusive Coverage — hidden opportunities','Stocks by Quant — أفضل 50 سهم':'Stocks by Quant — top 50 stocks',
+    'Upgrades — أسهمك':'Upgrades — your stocks','Upgrades — السوق':'Upgrades — market','Upgrades & Downgrades — أسهمك':'Upgrades & Downgrades — your stocks',
+    // bilingual tab labels — drop the Arabic half in EN
+    'Transactions | العمليات':'Transactions','Horizon | الآفاق':'Horizon','Alerts | التنبيهات':'Alerts','Stock Lookup — بحث سهم':'Stock Lookup',
+    'العمليات':'Operations','الآفاق':'Horizon','التنبيهات':'Alerts'
   };
 
   // Templated rules (numbers + Arabic units). Applied before substring dict.
@@ -16809,7 +16833,12 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
     [/آخر تحليل/g,'Last analysis'],
     [/ورقة مالية\s*—/g,'securities —'],
     [/القرار في النهاية عندك(?:\s*يا\s*[^\.،<]+)?/g,'the decision is ultimately yours'],
-    [/القرار عندك يا صديقي/g,'the decision is yours, friend']
+    [/القرار عندك يا صديقي/g,'the decision is yours, friend'],
+    [/^من\s*([\d٠-٩]+)$/g,'of $1'],
+    [/([\d٠-٩]+)\s*في خطر/g,'$1 at risk'],
+    [/خلال\s*([\d٠-٩]+)\s*أيام/g,'within $1 days'],
+    [/تحليل\s*(\d{4}-\d{2}-\d{2})/g,'analysis $1'],
+    [/تركّز\s+(?=[A-Za-z])/g,''] // "تركّز Technology" → "Technology" (label already shows sector in EN)
   ];
 
   var LONGKEYS = null;
