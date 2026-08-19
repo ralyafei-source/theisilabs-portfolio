@@ -4276,7 +4276,7 @@ function ccPh(title){
   stocks.forEach(function(s){ if(s.dayCh!=null && s.shares!=null){ dayDollar+=Number(s.dayCh)*s.shares; haveDay=true; } });
   var dayPct=(haveDay&&total>0)?(dayDollar/(total-dayDollar)*100):null;
   function metricChip(label,val,pos){ var c=val==null?'var(--text3)':(pos?'#19c37d':'#e5484d'); return '<div style="text-align:center;"><div style="font-size:10.5px;color:var(--text3);margin-bottom:2px;">'+label+'</div><div style="font-size:13px;font-weight:700;font-family:'+MONO+';color:'+c+';">'+(val==null?'\u2014':((pos?'+':'')+val.toFixed(2)+'%'))+'</div></div>'; }
-  var metricsRow='<div style="display:flex;gap:14px;flex:0 0 auto;align-items:flex-end;">'
+  var metricsRow='<div style="display:flex;gap:14px;flex:0 0 auto;align-items:flex-end;justify-content:flex-end;">'
     +(dayPct!=null?metricChip('\u0627\u0644\u064a\u0648\u0645',dayPct,dayPct>=0):'')
     +(totalRet!=null?metricChip('\u0645\u0646\u0630 \u0627\u0644\u062a\u0643\u0644\u0641\u0629',totalRet,totalRet>=0):'')
     +'</div>';
@@ -4304,13 +4304,18 @@ function ccPh(title){
       +'</div>';
     }
   }catch(e){}
-  var pulse=
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
-      +secLabel('\u0646\u0628\u0636 \u0627\u0644\u0645\u062d\u0641\u0638\u0629')+'</div>'
-    +'<div class="cc-hero-val" style="font-size:34px;font-weight:800;color:var(--text);font-family:'+MONO+';line-height:1;letter-spacing:-1px;">'+((typeof privacyOn!=='undefined'&&privacyOn)?'$ \u2022\u2022\u2022\u2022':('\u2248 $'+Math.round(total/1000)+'K'))+'</div>'
-    +'<div style="display:flex;gap:10px;margin-top:6px;font-size:11px;color:var(--text2);">'
-      +'<span>'+stocks.length+' \u0645\u0631\u0643\u0632</span><span style="color:var(--text3);">\u00b7</span><span>'+winners+' \u0631\u0627\u0628\u062d\u0629</span></div>'
-    +'<div style="display:flex;align-items:flex-start;gap:14px;margin-top:6px;flex:1;min-height:0;">'+retLine+(sparkline||'<div style="flex:1"></div>')+'</div>';
+  var _pHeroVal=((typeof privacyOn!=='undefined'&&privacyOn)?'$ \u2022\u2022\u2022\u2022':('\u2248 $'+Math.round(total/1000)+'K'));
+  var _pTextCol='<div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;">'
+      +secLabel('\u0646\u0628\u0636 \u0627\u0644\u0645\u062d\u0641\u0638\u0629')
+      +'<div><div class="cc-hero-val" style="font-size:30px;font-weight:800;color:var(--text);font-family:'+MONO+';line-height:1;letter-spacing:-1px;text-align:right;">'+_pHeroVal+'</div>'
+        +'<div style="display:flex;gap:8px;margin-top:6px;font-size:11px;color:var(--text2);justify-content:flex-end;"><span>'+stocks.length+' \u0645\u0631\u0643\u0632</span><span style="color:var(--text3);">\u00b7</span><span>'+winners+' \u0631\u0627\u0628\u062d\u0629</span></div></div>'
+      +retLine
+    +'</div>';
+  var pulse = sparkline
+    // Two columns: trend fills full card height on the left (50%), text on the right.
+    ? '<div style="display:flex;gap:12px;height:100%;align-items:stretch;">'+_pTextCol+'<div style="flex:0 0 50%;min-width:0;display:flex;">'+sparkline+'</div></div>'
+    // No history yet \u2192 simple stacked text.
+    : _pTextCol;
 
   // ── popup helper (shared by both read cards) ──────────────────────────────
   if(!window._ccReadPopup){
