@@ -5228,13 +5228,14 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
       _cs.pulse={x:9,y:9,w:3,h:6}; _cs.opp={x:10,y:15,w:2,h:8};
       localStorage.setItem('theisi_cc_layout_v2', JSON.stringify(_cs)); }
     localStorage.setItem('theisi_cardswap_v1','1'); } }catch(e){}
-  // One-time: swap نبض المحفظة ⇄ قراءة اليوم on their shared row.
-  try{ if(!localStorage.getItem('theisi_cardswap_v2')){ var _c2=JSON.parse(localStorage.getItem('theisi_cc_layout_v2')||'null');
-    if(_c2){ _c2.today={x:9,y:9,w:3,h:6}; _c2.pulse={x:0,y:9,w:9,h:6};
-      localStorage.setItem('theisi_cc_layout_v2', JSON.stringify(_c2)); }
-    localStorage.setItem('theisi_cardswap_v2','1'); } }catch(e){}
+  // One-time: swap نبض المحفظة ⇄ قراءة اليوم LOCATION while keeping each card's own
+  // width — pulse stays narrow (w3) but moves left, today stays wide (w9) moves right.
+  try{ if(!localStorage.getItem('theisi_cardswap_v3')){ var _c3=JSON.parse(localStorage.getItem('theisi_cc_layout_v2')||'null');
+    if(_c3){ _c3.pulse={x:0,y:9,w:3,h:6}; _c3.today={x:3,y:9,w:9,h:6};
+      localStorage.setItem('theisi_cc_layout_v2', JSON.stringify(_c3)); }
+    localStorage.setItem('theisi_cardswap_v3','1'); } }catch(e){}
   var _gsSaved={}; try{ _gsSaved=JSON.parse(localStorage.getItem('theisi_cc_layout_v2')||'{}'); }catch(e){}
-  var _gsDefaults={market:{x:0,y:9,w:4,h:6},today:{x:9,y:9,w:3,h:6},opp:{x:10,y:15,w:2,h:8},review:{x:0,y:15,w:3,h:6},mc:{x:3,y:15,w:3,h:6},exposure:{x:6,y:15,w:2,h:8},pulse:{x:0,y:9,w:9,h:6},fg:{x:0,y:0,w:2,h:9},hz:{x:0,y:21,w:2,h:6},news:{x:2,y:21,w:4,h:6},movers:{x:6,y:23,w:6,h:4},cs:{x:2,y:0,w:2,h:9}};
+  var _gsDefaults={market:{x:0,y:9,w:4,h:6},today:{x:3,y:9,w:9,h:6},opp:{x:10,y:15,w:2,h:8},review:{x:0,y:15,w:3,h:6},mc:{x:3,y:15,w:3,h:6},exposure:{x:6,y:15,w:2,h:8},pulse:{x:0,y:9,w:3,h:6},fg:{x:0,y:0,w:2,h:9},hz:{x:0,y:21,w:2,h:6},news:{x:2,y:21,w:4,h:6},movers:{x:6,y:23,w:6,h:4},cs:{x:2,y:0,w:2,h:9}};
   _gsDefaults.mpulse = { x:4, y:0, w:8, h:9 };
   _gsDefaults.risksum = { x:8, y:15, w:2, h:8 };
   function gsItem(id,html,popupTitle){
