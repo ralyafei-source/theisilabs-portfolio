@@ -54,6 +54,25 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/10.3.1/gridstack-all.min.js"></script>
 <style>
 .grid-stack{direction:ltr;}
+/* Mobile (1-column): lay the bento out as a flex column in the recommended READING
+   order instead of GridStack's grid-position stacking (which scatters clubbed cards). */
+@media(max-width:1100px){
+  #ccBento{display:flex!important;flex-direction:column!important;height:auto!important;}
+  #ccBento>.grid-stack-item{position:relative!important;left:auto!important;top:auto!important;width:100%!important;margin:0 0 12px 0!important;}
+  #ccBento>.grid-stack-item[gs-id="mpulse"]{order:1!important;}
+  #ccBento>.grid-stack-item[gs-id="fg"]{order:2!important;}
+  #ccBento>.grid-stack-item[gs-id="cs"]{order:3!important;}
+  #ccBento>.grid-stack-item[gs-id="pulse"]{order:4!important;}
+  #ccBento>.grid-stack-item[gs-id="today"]{order:5!important;}
+  #ccBento>.grid-stack-item[gs-id="exposure"]{order:6!important;}
+  #ccBento>.grid-stack-item[gs-id="risksum"]{order:7!important;}
+  #ccBento>.grid-stack-item[gs-id="review"]{order:8!important;}
+  #ccBento>.grid-stack-item[gs-id="mc"]{order:9!important;}
+  #ccBento>.grid-stack-item[gs-id="opp"]{order:10!important;}
+  #ccBento>.grid-stack-item[gs-id="news"]{order:11!important;}
+  #ccBento>.grid-stack-item[gs-id="movers"]{order:12!important;}
+  #ccBento>.grid-stack-item[gs-id="hz"]{order:13!important;}
+}
 .grid-stack-item-content{overflow:hidden;scrollbar-width:none;direction:rtl;display:flex;flex-direction:column;}
 .grid-stack-item-content::-webkit-scrollbar{display:none;}
 .grid-stack-item-content>div{flex:1;display:flex;flex-direction:column;min-height:0;}
