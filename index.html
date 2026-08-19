@@ -4292,14 +4292,15 @@ function ccPh(title){
       var pts=H.map(function(p,i){ var x=(i/(H.length-1))*W; var y=pad+(1-((p.value-mn)/rng))*(Hh-2*pad); return x.toFixed(1)+','+y.toFixed(1); }).join(' ');
       var up=vals[vals.length-1]>=vals[0];
       var col=up?'#19c37d':'#e5484d';
-      // Filled area chart, sits in the empty horizontal space beside the return metrics.
-      sparkline='<div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;">'
-        +'<svg viewBox="0 0 '+W+' '+Hh+'" preserveAspectRatio="none" style="width:100%;height:44px;display:block;overflow:visible;">'
-          +'<defs><linearGradient id="pulseGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+col+'" stop-opacity="0.32"/><stop offset="1" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs>'
+      // Filled area chart, taller \u2014 fills the empty vertical gap, sits beside the return metrics.
+      // "N \u064a\u0648\u0645" overlays the chart corner so the chart itself can be tall without overflowing.
+      sparkline='<div style="flex:1 1 auto;min-width:0;position:relative;display:flex;flex-direction:column;justify-content:flex-end;">'
+        +'<span style="position:absolute;bottom:2px;inset-inline-start:2px;font-size:9.5px;color:var(--text3);pointer-events:none;">'+H.length+' \u064a\u0648\u0645</span>'
+        +'<svg viewBox="0 0 '+W+' '+Hh+'" preserveAspectRatio="none" style="width:100%;height:56px;display:block;overflow:visible;">'
+          +'<defs><linearGradient id="pulseGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+col+'" stop-opacity="0.35"/><stop offset="1" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs>'
           +'<polygon points="0,'+Hh+' '+pts+' '+W+','+Hh+'" fill="url(#pulseGrad)" stroke="none"/>'
           +'<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'
         +'</svg>'
-        +'<div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:start;">'+H.length+' \u064a\u0648\u0645</div>'
       +'</div>';
     }
   }catch(e){}
@@ -4307,9 +4308,9 @@ function ccPh(title){
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
       +secLabel('\u0646\u0628\u0636 \u0627\u0644\u0645\u062d\u0641\u0638\u0629')+'</div>'
     +'<div class="cc-hero-val" style="font-size:34px;font-weight:800;color:var(--text);font-family:'+MONO+';line-height:1;letter-spacing:-1px;">'+((typeof privacyOn!=='undefined'&&privacyOn)?'$ \u2022\u2022\u2022\u2022':('\u2248 $'+Math.round(total/1000)+'K'))+'</div>'
-    +'<div style="display:flex;gap:10px;margin-top:10px;font-size:11px;color:var(--text2);">'
+    +'<div style="display:flex;gap:10px;margin-top:7px;font-size:11px;color:var(--text2);">'
       +'<span>'+stocks.length+' \u0645\u0631\u0643\u0632</span><span style="color:var(--text3);">\u00b7</span><span>'+winners+' \u0631\u0627\u0628\u062d\u0629</span></div>'
-    +'<div style="display:flex;align-items:flex-end;gap:14px;margin-top:12px;">'+retLine+(sparkline||'<div style="flex:1"></div>')+'</div>';
+    +'<div style="display:flex;align-items:flex-end;gap:14px;margin-top:8px;">'+retLine+(sparkline||'<div style="flex:1"></div>')+'</div>';
 
   // ── popup helper (shared by both read cards) ──────────────────────────────
   if(!window._ccReadPopup){
