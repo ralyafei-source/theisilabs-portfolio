@@ -9,7 +9,9 @@
 
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" id="viewportMeta">
+<script>/* Apply saved "Desktop view" preference before layout to avoid a flash. */
+(function(){try{if(localStorage.getItem('theisi_view_mode')==='pc'){var m=document.getElementById('viewportMeta');if(m)m.setAttribute('content','width=1280');}}catch(e){}})();</script>
 <title>Financial Intelligence Dashboard</title>
 <script>
 /* THEISI resilient loader — installed first, before any other script.
@@ -2045,6 +2047,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:18px;}.hstat-
     <button class="tb-btn" onclick="togglePrivacy()" title="Privacy" aria-label="Privacy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
     <div class="tb-ltog"><button class="lang-btn" id="langBtn" onclick="setLang('en',this)">EN</button><button class="lang-btn active" id="langBtnAr" onclick="setLang('ar',this)">عربي</button></div>
     <button class="tb-btn" id="modebtn" onclick="toggleMode()" aria-label="Theme"><span id="modeicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span></button>
+    <button class="tb-btn" id="viewModeBtn" onclick="toggleViewMode()" title="عرض الكمبيوتر" aria-label="Desktop view" style="display:none;"><span id="viewModeIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span></button>
   </div>
 </header>
 <div id="appBody">
@@ -17286,6 +17289,36 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
       if(document.querySelector('.grid-stack-item[gs-id=\"mpulse\"]')||document.getElementById('cc-actions')){ clearInterval(iv); setTimeout(startModal,800); }
       else if(tries>40){ clearInterval(iv); } },300); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',maybeAuto); else maybeAuto();
+})();
+</script>
+
+<!-- ============================================================================
+     DESKTOP / MOBILE VIEW TOGGLE — lets phone users switch to the full PC layout
+     by forcing the viewport to a fixed 1280px width (media queries then treat it
+     as desktop). Button shows only on small/touch devices; choice persists.
+     ============================================================================ -->
+<script>
+(function(){
+  var MON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>';
+  var PHONE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><line x1="10" y1="18" x2="14" y2="18"/></svg>';
+  window.setViewMode=function(mode){
+    var m=document.getElementById('viewportMeta'); if(!m) return;
+    m.setAttribute('content', mode==='pc' ? 'width=1280' : 'width=device-width, initial-scale=1.0');
+    try{ localStorage.setItem('theisi_view_mode', mode); }catch(e){}
+    var btn=document.getElementById('viewModeBtn'), ic=document.getElementById('viewModeIcon');
+    var ar=(typeof lang!=='undefined'&&lang==='ar');
+    if(btn){ btn.title=(mode==='pc')?(ar?'عرض الجوال':'Mobile view'):(ar?'عرض الكمبيوتر':'Desktop view'); btn.classList.toggle('active', mode==='pc'); }
+    if(ic){ ic.innerHTML=(mode==='pc')?PHONE:MON; }
+  };
+  window.toggleViewMode=function(){ var cur='auto'; try{cur=localStorage.getItem('theisi_view_mode')||'auto';}catch(e){} window.setViewMode(cur==='pc'?'auto':'pc'); };
+  function initView(){
+    var btn=document.getElementById('viewModeBtn'); if(!btn) return;
+    var small=false; try{ small=(window.screen&&window.screen.width<=820)||(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches); }catch(e){}
+    btn.style.display= small?'inline-flex':'none';
+    var mode='auto'; try{ mode=localStorage.getItem('theisi_view_mode')||'auto'; }catch(e){}
+    window.setViewMode(mode);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initView); else initView();
 })();
 </script>
 
