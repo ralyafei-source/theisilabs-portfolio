@@ -17244,8 +17244,11 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
     setTimeout(function(){
       var els=(Array.isArray(s.sel)?s.sel:[s.sel]).map(function(x){return document.querySelector(x);}).filter(Boolean);
       if(!els.length){ clearSpotlight(); centerPop(); return; }
-      els[0].scrollIntoView({block:'center',behavior:'smooth'});
-      setTimeout(function(){ spotlight(els.map(function(e){return e.getBoundingClientRect();})); }, 320);
+      els[0].scrollIntoView({block:'center',behavior:'auto'});
+      // Instant scroll (not smooth) so the rect is measured after the page has settled,
+      // then re-measure once more in case layout shifts (long sections far down the page).
+      var _paint=function(){ spotlight(els.map(function(e){return e.getBoundingClientRect();})); };
+      setTimeout(_paint, 120); setTimeout(_paint, 380);
     }, delay);
   }
   function go(d){ cur+=d; if(cur<0)cur=0; if(cur>=STEPS.length){ end(); return; } render(); }
