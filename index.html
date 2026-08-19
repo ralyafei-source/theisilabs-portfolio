@@ -4276,11 +4276,11 @@ function ccPh(title){
   stocks.forEach(function(s){ if(s.dayCh!=null && s.shares!=null){ dayDollar+=Number(s.dayCh)*s.shares; haveDay=true; } });
   var dayPct=(haveDay&&total>0)?(dayDollar/(total-dayDollar)*100):null;
   function metricChip(label,val,pos){ var c=val==null?'var(--text3)':(pos?'#19c37d':'#e5484d'); return '<div style="text-align:center;"><div style="font-size:10.5px;color:var(--text3);margin-bottom:2px;">'+label+'</div><div style="font-size:13px;font-weight:700;font-family:'+MONO+';color:'+c+';">'+(val==null?'\u2014':((pos?'+':'')+val.toFixed(2)+'%'))+'</div></div>'; }
-  var metricsRow='<div style="display:flex;gap:14px;justify-content:flex-start;margin-top:10px;">'
+  var metricsRow='<div style="display:flex;gap:14px;flex:0 0 auto;align-items:flex-end;">'
     +(dayPct!=null?metricChip('\u0627\u0644\u064a\u0648\u0645',dayPct,dayPct>=0):'')
     +(totalRet!=null?metricChip('\u0645\u0646\u0630 \u0627\u0644\u062a\u0643\u0644\u0641\u0629',totalRet,totalRet>=0):'')
     +'</div>';
-  var retLine = metricsRow;
+  var retLine = metricsRow;  // combined with the sparkline into a bottom row below
   // real sparkline from value history (only if >=2 points)
   var sparkline='';
   try{
@@ -4288,12 +4288,19 @@ function ccPh(title){
     if(H && H.length>=2){
       var vals=H.map(function(p){return p.value;});
       var mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals);
-      var rng=(mx-mn)||1, W=180, Hh=34;
-      var pts=H.map(function(p,i){ var x=(i/(H.length-1))*W; var y=Hh-((p.value-mn)/rng)*Hh; return x.toFixed(1)+','+y.toFixed(1); }).join(' ');
+      var rng=(mx-mn)||1, W=180, Hh=48, pad=4;
+      var pts=H.map(function(p,i){ var x=(i/(H.length-1))*W; var y=pad+(1-((p.value-mn)/rng))*(Hh-2*pad); return x.toFixed(1)+','+y.toFixed(1); }).join(' ');
       var up=vals[vals.length-1]>=vals[0];
       var col=up?'#19c37d':'#e5484d';
-      sparkline='<svg viewBox="0 0 '+W+' '+Hh+'" preserveAspectRatio="none" style="width:100%;max-width:200px;height:34px;flex:0 0 34px;margin-top:8px;display:block;"><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>'
-        +'<div style="font-size:10.5px;color:var(--text3);">'+H.length+' \u064a\u0648\u0645</div>';
+      // Filled area chart, sits in the empty horizontal space beside the return metrics.
+      sparkline='<div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;">'
+        +'<svg viewBox="0 0 '+W+' '+Hh+'" preserveAspectRatio="none" style="width:100%;height:44px;display:block;overflow:visible;">'
+          +'<defs><linearGradient id="pulseGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+col+'" stop-opacity="0.32"/><stop offset="1" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs>'
+          +'<polygon points="0,'+Hh+' '+pts+' '+W+','+Hh+'" fill="url(#pulseGrad)" stroke="none"/>'
+          +'<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'
+        +'</svg>'
+        +'<div style="font-size:10px;color:var(--text3);margin-top:3px;text-align:start;">'+H.length+' \u064a\u0648\u0645</div>'
+      +'</div>';
     }
   }catch(e){}
   var pulse=
@@ -4302,8 +4309,7 @@ function ccPh(title){
     +'<div class="cc-hero-val" style="font-size:34px;font-weight:800;color:var(--text);font-family:'+MONO+';line-height:1;letter-spacing:-1px;">'+((typeof privacyOn!=='undefined'&&privacyOn)?'$ \u2022\u2022\u2022\u2022':('\u2248 $'+Math.round(total/1000)+'K'))+'</div>'
     +'<div style="display:flex;gap:10px;margin-top:10px;font-size:11px;color:var(--text2);">'
       +'<span>'+stocks.length+' \u0645\u0631\u0643\u0632</span><span style="color:var(--text3);">\u00b7</span><span>'+winners+' \u0631\u0627\u0628\u062d\u0629</span></div>'
-    +retLine
-    +sparkline;
+    +'<div style="display:flex;align-items:flex-end;gap:14px;margin-top:12px;">'+retLine+(sparkline||'<div style="flex:1"></div>')+'</div>';
 
   // ── popup helper (shared by both read cards) ──────────────────────────────
   if(!window._ccReadPopup){
