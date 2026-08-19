@@ -4292,7 +4292,7 @@ function ccPh(title){
       var pts=H.map(function(p,i){ var x=(i/(H.length-1))*W; var y=Hh-((p.value-mn)/rng)*Hh; return x.toFixed(1)+','+y.toFixed(1); }).join(' ');
       var up=vals[vals.length-1]>=vals[0];
       var col=up?'#19c37d':'#e5484d';
-      sparkline='<svg viewBox="0 0 '+W+' '+Hh+'" style="width:100%;max-width:200px;height:34px;margin-top:10px;display:block;"><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>'
+      sparkline='<svg viewBox="0 0 '+W+' '+Hh+'" preserveAspectRatio="none" style="width:100%;max-width:200px;height:34px;flex:0 0 34px;margin-top:8px;display:block;"><polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>'
         +'<div style="font-size:10.5px;color:var(--text3);">'+H.length+' \u064a\u0648\u0645</div>';
     }
   }catch(e){}
