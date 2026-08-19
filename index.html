@@ -4389,7 +4389,7 @@ function ccPh(title){
           var _dd=(window._dailyBrief&&window._dailyBrief.generated_at)||'';
 var _ds='';
 if(_dd){var rd=new Date(_dd);if(!isNaN(rd)){var tm=new Date();tm.setHours(0,0,0,0);var rm=new Date(rd);rm.setHours(0,0,0,0);var days=Math.round((tm-rm)/86400000);var age=days<=0?'اليوم':days===1?'أمس':('قبل '+days+' أيام');_ds='<div style="font-size:10.5px;color:'+(days>=2?'var(--rose)':'var(--text3)')+';margin-top:6px;'+(days>=2?'font-weight:700;':'')+'">آخر تحليل: '+rd.toISOString().slice(0,10)+' · '+age+'</div>';}}
-return '<div onclick="window._ccReadOpen(\'today\')" style="cursor:pointer;"><div style="font-size:13px;line-height:1.85;color:var(--text);display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;">'+dc+'</div>'+_ds+'</div>'; })()
+return '<div onclick="window._ccReadOpen(\'today\')" style="cursor:pointer;flex:1;display:flex;flex-direction:column;min-height:0;"><div class="cc-analysis-scroll" style="font-size:13px;line-height:1.85;color:var(--text);flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:pre-line;">'+dc+'</div>'+_ds+'</div>'; })()
       : '<div style="font-size:12px;color:var(--text3);padding:8px 0;">\u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u064a\u0648\u0645 \u063a\u064a\u0631 \u0645\u062a\u0627\u062d\u0629 \u062d\u0627\u0644\u064a\u0627\u064b.</div>');
 
   // C) Horizon Signals (top-1 long / mid / short)
@@ -5228,8 +5228,13 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
       _cs.pulse={x:9,y:9,w:3,h:6}; _cs.opp={x:10,y:15,w:2,h:8};
       localStorage.setItem('theisi_cc_layout_v2', JSON.stringify(_cs)); }
     localStorage.setItem('theisi_cardswap_v1','1'); } }catch(e){}
+  // One-time: swap نبض المحفظة ⇄ قراءة اليوم on their shared row.
+  try{ if(!localStorage.getItem('theisi_cardswap_v2')){ var _c2=JSON.parse(localStorage.getItem('theisi_cc_layout_v2')||'null');
+    if(_c2){ _c2.today={x:9,y:9,w:3,h:6}; _c2.pulse={x:0,y:9,w:9,h:6};
+      localStorage.setItem('theisi_cc_layout_v2', JSON.stringify(_c2)); }
+    localStorage.setItem('theisi_cardswap_v2','1'); } }catch(e){}
   var _gsSaved={}; try{ _gsSaved=JSON.parse(localStorage.getItem('theisi_cc_layout_v2')||'{}'); }catch(e){}
-  var _gsDefaults={market:{x:0,y:9,w:4,h:6},today:{x:0,y:9,w:9,h:6},opp:{x:10,y:15,w:2,h:8},review:{x:0,y:15,w:3,h:6},mc:{x:3,y:15,w:3,h:6},exposure:{x:6,y:15,w:2,h:8},pulse:{x:9,y:9,w:3,h:6},fg:{x:0,y:0,w:2,h:9},hz:{x:0,y:21,w:2,h:6},news:{x:2,y:21,w:4,h:6},movers:{x:6,y:23,w:6,h:4},cs:{x:2,y:0,w:2,h:9}};
+  var _gsDefaults={market:{x:0,y:9,w:4,h:6},today:{x:9,y:9,w:3,h:6},opp:{x:10,y:15,w:2,h:8},review:{x:0,y:15,w:3,h:6},mc:{x:3,y:15,w:3,h:6},exposure:{x:6,y:15,w:2,h:8},pulse:{x:0,y:9,w:9,h:6},fg:{x:0,y:0,w:2,h:9},hz:{x:0,y:21,w:2,h:6},news:{x:2,y:21,w:4,h:6},movers:{x:6,y:23,w:6,h:4},cs:{x:2,y:0,w:2,h:9}};
   _gsDefaults.mpulse = { x:4, y:0, w:8, h:9 };
   _gsDefaults.risksum = { x:8, y:15, w:2, h:8 };
   function gsItem(id,html,popupTitle){
