@@ -1,0 +1,251 @@
+{
+  "type": "weekly",
+  "schema": 2,
+  "date": "2026-08-19",
+  "nickname": "ahmed",
+  "as_of": {
+    "prices": "2026-08-19",
+    "sa": "2026-08-16",
+    "news": "2026-08-19"
+  },
+  "verdict": {
+    "total_value": 19481,
+    "holdings": 12,
+    "tech_concentration_pct": 24.9,
+    "review_count": 0,
+    "watch_count": 1,
+    "strong_count": 0,
+    "watch_capped": false,
+    "silent_count": 11,
+    "silent_value": 16774,
+    "cut_count": 0,
+    "cut_value": 0,
+    "cut_syms": [],
+    "not_shown_count": 11,
+    "stress_tech_minus20": 970,
+    "biggest_risk": "اقتراب إعلان أرباح CRM خلال أقل من أسبوع مع وجود السعر في منطقة نادرة فوق متوسطه التاريخي يُشكّل أعلى نقطة مخاطرة في المحفظة هذا الأسبوع.",
+    "silent_note_ar": "و11 سهم تم فحصها وما ظهرت فيها إشارات هذا الأسبوع"
+  },
+  "summary": "بيانات المحفظة محدّثة بأسعار 2026-08-19 وتقييمات Seeking Alpha بتاريخ 2026-08-16. السهم الوحيد المعروض هذا الأسبوع هو CRM الذي سجّل ارتفاعاً يومياً بـ 2.71% ليستقر عند 196.14 دولار، رغم تراجع طفيف أسبوعي بـ 0.67%، وتبقى نسبة الربح منذ الشراء عند 4.3%. تتركّز المحفظة في قطاع التقنية بنسبة 24.9% من إجمالي قيمتها البالغة 19,481 دولاراً، مع الإشارة إلى أن سيناريو انخفاض التقنية 20% سيُلقي بضغط مقداره 970 دولاراً. أخبار الأسبوع تُلقي بظلالها على المشهد التقني عموماً، لا سيما تحليل الذكاء الاصطناعي المتعلق بعمالقة مثل MSFT وAMZN وMETA، وهي عوامل قد تنعكس على أجواء القطاع الذي ينتمي إليه CRM.",
+  "stocks": [
+    {
+      "sym": "CRM",
+      "price": 196.14,
+      "glPct": 4.3,
+      "dayPct": 2.71,
+      "weekPct": -0.67,
+      "value": 2707,
+      "weight": 13.9,
+      "quant": 3.43,
+      "V": "D",
+      "G": "D+",
+      "P": "A+",
+      "M": "C",
+      "R": "B",
+      "rsi": 60.5,
+      "earnDays": 7,
+      "target": null,
+      "gapPct": null,
+      "sector": "Information Technology",
+      "verdict": "watch",
+      "reasons": [
+        "earnings<=14d"
+      ],
+      "strong": false,
+      "read": {
+        "show": true,
+        "sym": "CRM",
+        "zone": "very_high",
+        "direction": "up",
+        "driver": "sma50",
+        "value": 13.53,
+        "normal": -1.32,
+        "self_pct": 95,
+        "cross_pct": 83,
+        "normal_rank": 18,
+        "days_rarer": 37,
+        "days_total": 740,
+        "regime_flag": false,
+        "window_days": 789,
+        "insufficient": false,
+        "text": {
+          "state_ar": "السعر خارج مستواه الطبيعي",
+          "numbers_ar": "السعر عادةً تحت متوسطه خلال آخر شهرين بـ 1.3% — اليوم فوقه بـ 13.5%. وهذا صار في 37 يوم فقط من آخر 740. ومقارنة ببقية أسهمك اليوم، CRM أعلى من 83% منها على نفس المقياس.",
+          "meaning_ar": "هذا يعني إن السعر طلع فوق مستواه الطبيعي. يصير في المراحل القوية، ويصير كمان قبل فترات التهدئة — الرقم وحده ما يفرّق بينهما.",
+          "not_meaning_ar": "هذا لا يعني إن الاتجاه تغيّر. خروج السعر فوق متوسطه شي وصفي — ما يثبت إن النزول انتهى.",
+          "regime_ar": null,
+          "one_line_ar": "السعر عادةً تحت متوسطه خلال آخر شهرين — اليوم فوقه بـ 13.5%",
+          "method_ar": "يُحتسب بمقارنة موقع السعر اليوم بكل يوم من آخر ٣ سنوات لنفس السهم، وبمقارنته ببقية أسهمك اليوم، وبمقارنة مستواه الطبيعي بمستوى بقية أسهمك. لا يعتمد على حدود ثابتة.",
+          "caveat_ar": "قياس ندرة، مو توقّع. ندرة الوضع ما تعني تغيّر الاتجاه — تحليل معلوماتي، ليست نصيحة مالية."
+        },
+        "computed_at": "2026-08-19T10:13:08.572Z"
+      },
+      "thesis": "CRM يحمل حكم 'مراقبة' بسبب اقتراب موعد إعلان الأرباح خلال 7 أيام، وهو حدث يرفع مستوى عدم اليقين بصرف النظر عن الاتجاه. تقييماته تُظهر تبايناً لافتاً: التسعير A+ والزخم B تقابلهما درجات ضعيفة في القيمة D والنمو D+، مما يعني أن السوق يدفع ثمناً مرتفعاً مقارنة بالأساسيات. السعر اليوم يقف فوق متوسطه خلال آخر شهرين بـ 13.5%، وهي حالة نادرة تحققت في 37 يوماً فقط من أصل 740، دون أن يعني ذلك بالضرورة تغيّراً في الاتجاه — وهدف المحللين غير متوفر في البيانات المقدمة.",
+      "watch": "نتائج الأرباح المرتقبة خلال 7 أيام، وما إذا كان السعر يحافظ على موقعه فوق متوسط الـ50 يوماً بعد الإعلان"
+    }
+  ],
+  "clusters": [
+    {
+      "name": "التقنية المعتمدة على الذكاء الاصطناعي",
+      "syms": [
+        "CRM"
+      ],
+      "note": "CRM ينتمي لقطاع تقنية المعلومات وتشكّل حصته 13.9% من المحفظة، وأي تحوّل في معنويات قطاع الذكاء الاصطناعي — كما تُشير أخبار الأسبوع حول توسّع MSFT وAMZN وMETA — قد ينعكس على تقييم أسهم البرمجيات المؤسسية كـ CRM التي تعتمد على هذا الموجة تسويقياً وتقييمياً",
+      "value": 2707
+    }
+  ],
+  "hedge": "تركّز قيمة 2,707 دولار في CRM ضمن محفظة إجمالها 19,481 دولار مع اقتراب الأرباح يجعل الانكشاف على حدث ثنائي الاتجاه ملموساً؛ متابعة مستوى الـ RSI عند 60.5 قرب منطقة التشبع قد تُعطي إشارة مبكرة حال بدأ الزخم بالتراجع قبل الإعلان أو بعده.",
+  "price_reads": [
+    {
+      "sym": "NVO",
+      "zone": "normal",
+      "driver": "sma200",
+      "value": -1.62,
+      "normal": -17.15,
+      "self": 72,
+      "cross": 92,
+      "nrank": 0,
+      "regime": false,
+      "price": 45.71
+    },
+    {
+      "sym": "CRM",
+      "zone": "very_high",
+      "driver": "sma50",
+      "value": 13.53,
+      "normal": -1.32,
+      "self": 95,
+      "cross": 83,
+      "nrank": 18,
+      "regime": false,
+      "price": 196.14
+    },
+    {
+      "sym": "GRAB",
+      "zone": "normal",
+      "driver": "sma50",
+      "value": -3.89,
+      "normal": null,
+      "self": null,
+      "cross": 42,
+      "nrank": null,
+      "regime": false,
+      "price": 3.45
+    },
+    {
+      "sym": "ADBE",
+      "zone": "very_high",
+      "driver": "sma50",
+      "value": 14.07,
+      "normal": -2.7,
+      "self": 99,
+      "cross": 92,
+      "nrank": 13,
+      "regime": false,
+      "price": 263.14
+    },
+    {
+      "sym": "BABA",
+      "zone": "normal",
+      "driver": "sma50",
+      "value": 12.53,
+      "normal": null,
+      "self": null,
+      "cross": 75,
+      "nrank": null,
+      "regime": false,
+      "price": 128.15
+    },
+    {
+      "sym": "TTD",
+      "zone": "cross_only",
+      "driver": "sma50",
+      "value": -24.9,
+      "normal": null,
+      "self": null,
+      "cross": 0,
+      "nrank": null,
+      "regime": false,
+      "price": 13.42
+    },
+    {
+      "sym": "NICE",
+      "zone": "normal",
+      "driver": "sma200",
+      "value": -6.3,
+      "normal": null,
+      "self": null,
+      "cross": 67,
+      "nrank": null,
+      "regime": false,
+      "price": 99.56
+    },
+    {
+      "sym": "OPTT",
+      "zone": "cross_only",
+      "driver": "sma50",
+      "value": -15.85,
+      "normal": null,
+      "self": null,
+      "cross": 8,
+      "nrank": null,
+      "regime": false,
+      "price": 0.188
+    },
+    {
+      "sym": "ORCL",
+      "zone": "normal",
+      "driver": "sma50",
+      "value": -4.27,
+      "normal": null,
+      "self": null,
+      "cross": 33,
+      "nrank": null,
+      "regime": false,
+      "price": 142.79
+    },
+    {
+      "sym": "MSTR",
+      "zone": "normal",
+      "driver": "sma50",
+      "value": -7.71,
+      "normal": null,
+      "self": null,
+      "cross": 17,
+      "nrank": null,
+      "regime": false,
+      "price": 92.52
+    },
+    {
+      "sym": "BMNR",
+      "zone": "normal",
+      "driver": "sma200",
+      "value": -21.68,
+      "normal": null,
+      "self": null,
+      "cross": 25,
+      "nrank": null,
+      "regime": false,
+      "price": 18.28
+    },
+    {
+      "sym": "TEM",
+      "zone": "normal",
+      "driver": "sma50",
+      "value": -4.32,
+      "normal": null,
+      "self": null,
+      "cross": 25,
+      "nrank": null,
+      "regime": false,
+      "price": 49.36
+    }
+  ],
+  "stress": [
+    {
+      "scenario": "تصحيح تقنية -20%",
+      "impact_usd": -970
+    }
+  ],
+  "generated": "2026-08-19T10:13:38.569Z"
+}
