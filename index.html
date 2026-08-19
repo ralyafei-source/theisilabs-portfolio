@@ -4294,9 +4294,9 @@ function ccPh(title){
       var col=up?'#19c37d':'#e5484d';
       // Filled area chart, ~half the card tall, anchored to the bottom-left. Explicit height so
       // it can't collapse; "N \u064a\u0648\u0645" sits in the faded bottom corner.
-      sparkline='<div style="flex:1 1 auto;min-width:0;height:100%;position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-self:stretch;">'
+      sparkline='<div style="width:100%;height:90px;flex:0 0 90px;position:relative;display:flex;flex-direction:column;justify-content:flex-end;">'
         +'<span style="position:absolute;bottom:2px;inset-inline-start:2px;font-size:9.5px;color:var(--text3);pointer-events:none;">'+H.length+' \u064a\u0648\u0645</span>'
-        +'<svg viewBox="0 0 '+W+' '+Hh+'" preserveAspectRatio="none" style="width:100%;height:100%;min-height:40px;display:block;overflow:visible;">'
+        +'<svg viewBox="0 0 '+W+' '+Hh+'" preserveAspectRatio="none" style="width:100%;height:100%;display:block;overflow:visible;">'
           +'<defs><linearGradient id="pulseGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+col+'" stop-opacity="0.35"/><stop offset="1" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs>'
           +'<polygon points="0,'+Hh+' '+pts+' '+W+','+Hh+'" fill="url(#pulseGrad)" stroke="none"/>'
           +'<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>'
@@ -4313,7 +4313,7 @@ function ccPh(title){
     +'</div>';
   var pulse = sparkline
     // Two columns: trend fills full card height on the left (50%), text on the right.
-    ? '<div style="display:flex;gap:12px;height:100%;align-items:stretch;">'+_pTextCol+'<div style="flex:0 0 50%;min-width:0;display:flex;">'+sparkline+'</div></div>'
+    ? '<div style="display:flex;gap:12px;height:100%;align-items:stretch;">'+_pTextCol+'<div style="flex:0 0 56%;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;">'+sparkline+'</div></div>'
     // No history yet \u2192 simple stacked text.
     : _pTextCol;
 
