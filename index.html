@@ -2120,7 +2120,10 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:18px;}.hstat-
         <div id="cc-progress" style="display:flex;align-items:center;gap:6px;"></div>
       </div>
     </div>
-    <button onclick="ccRefresh()" style="font-size:10.5px;padding:5px 11px;border-radius:6px;background:var(--bg2);color:var(--text2);border:0.5px solid var(--border);cursor:pointer;">↻ تحديث</button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button onclick="window.theisiTour&&window.theisiTour.start()" id="cc-tourbtn" style="font-size:11px;padding:6px 12px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:700;" data-en="🎓 Take the tour" data-ar="🎓 خذ الجولة">🎓 خذ الجولة</button>
+      <button onclick="ccRefresh()" style="font-size:10.5px;padding:5px 11px;border-radius:6px;background:var(--bg2);color:var(--text2);border:0.5px solid var(--border);cursor:pointer;">↻ تحديث</button>
+    </div>
   </div>
 
   <!-- RUN & REFRESH — all analysis triggers in one place -->
@@ -17050,6 +17053,155 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
     try{ if(typeof lang!=='undefined' && lang==='en') window.theisiEN.on(); }catch(e){}
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',hook); else hook();
+})();
+</script>
+
+<!-- ============================================================================
+     IN-APP GUIDED TOUR — coach-marks over the real Command Center cards.
+     Teaches the reading ORDER (6 chapters), clubs related cards with a group
+     spotlight, and ends with a 3-minute daily routine. Bilingual (uses `lang`).
+     ============================================================================ -->
+<script>
+(function(){
+  var AC='var(--accent)';
+  var css='#tt-ov{position:fixed;inset:0;z-index:100000;display:none}#tt-ov.on{display:block}'
+    +'#tt-hole{position:absolute;border-radius:12px;box-shadow:0 0 0 9999px rgba(6,7,10,.82);transition:all .3s cubic-bezier(.4,0,.2,1);pointer-events:none;border:2px solid '+AC+'}'
+    +'#tt-pop{position:absolute;max-width:360px;width:min(360px,92vw);background:var(--bg2);border:1px solid '+AC+';border-radius:14px;padding:16px 17px;box-shadow:0 20px 60px rgba(0,0,0,.6);transition:all .3s cubic-bezier(.4,0,.2,1);font-family:inherit}'
+    +'#tt-pop .tt-chap{font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px}#tt-pop .tt-chap b{color:'+AC+'}'
+    +'#tt-pop h3{font-size:16px;font-weight:800;margin:0 0 3px;line-height:1.25;color:var(--text)}#tt-pop .tt-arn{font-size:12px;color:var(--text3);margin-bottom:9px}'
+    +'#tt-pop .tt-body{font-size:13px;line-height:1.7;color:var(--text2);margin-bottom:10px}'
+    +'#tt-pop .tt-ben{font-size:12.5px;line-height:1.6;color:var(--text);background:rgba(255,10,120,.08);border-inline-start:3px solid '+AC+';border-radius:8px;padding:9px 11px;margin-bottom:10px}#tt-pop .tt-ben b{color:'+AC+'}'
+    +'#tt-pop .tt-con{font-size:12px;line-height:1.6;color:var(--blue,#00c8ff);margin-bottom:12px}#tt-pop .tt-con b{color:var(--blue,#00c8ff)}'
+    +'#tt-pop .tt-nav{display:flex;align-items:center;justify-content:space-between;gap:8px}#tt-pop .tt-prog{font-size:11px;color:var(--text3);font-family:monospace}'
+    +'#tt-pop .tt-btns{display:flex;gap:7px}#tt-pop .tt-btns button{border-radius:8px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg3);color:var(--text2)}#tt-pop .tt-btns button.tt-next{background:'+AC+';color:#fff;border-color:'+AC+'}'
+    +'#tt-pop .tt-skip{position:absolute;top:12px;inset-inline-end:14px;background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer}'
+    +'#tt-modal{position:fixed;inset:0;z-index:100001;background:rgba(6,7,10,.86);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px}#tt-modal.on{display:flex}'
+    +'#tt-modal .m{background:var(--bg2);border:1px solid var(--border);border-radius:18px;max-width:560px;width:100%;padding:26px;text-align:center;max-height:92vh;overflow-y:auto}'
+    +'#tt-modal .m h2{font-size:20px;font-weight:800;margin-bottom:10px}#tt-modal .m p{color:var(--text2);font-size:14px;line-height:1.7;margin-bottom:14px}'
+    +'#tt-modal .m .go{background:'+AC+';color:#fff;border:none;border-radius:10px;padding:12px 26px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}#tt-modal .m .later{display:block;margin:12px auto 0;background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer}'
+    +'#tt-modal .rt{text-align:start;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin:2px 0 12px}#tt-modal .rt h4{font-size:12px;color:'+AC+';margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em}#tt-modal .rt ol{margin:0;padding-inline-start:20px}#tt-modal .rt li{font-size:12.5px;line-height:1.65;color:var(--text2);margin:5px 0}#tt-modal .rt li b{color:var(--text)}'
+    +'#tt-modal .disc{font-size:11px;color:var(--text3);border-top:1px solid var(--border);padding-top:12px;margin-top:8px;line-height:1.6}';
+  var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
+
+  var ov=document.createElement('div'); ov.id='tt-ov';
+  ov.innerHTML='<div id="tt-hole"></div><div id="tt-pop">'
+    +'<button class="tt-skip" id="tt-skip"></button>'
+    +'<div class="tt-chap" id="tt-chap"></div><h3 id="tt-title"></h3><div class="tt-arn" id="tt-arn"></div>'
+    +'<div class="tt-body" id="tt-body"></div><div class="tt-ben" id="tt-ben"></div><div class="tt-con" id="tt-con"></div>'
+    +'<div class="tt-nav"><span class="tt-prog" id="tt-prog"></span><div class="tt-btns"><button id="tt-back"></button><button class="tt-next" id="tt-next"></button></div></div></div>';
+  document.body.appendChild(ov);
+  var modal=document.createElement('div'); modal.id='tt-modal';
+  modal.innerHTML='<div class="m"><div style="font-family:Montserrat,sans-serif;font-weight:800;font-size:26px;margin-bottom:6px">THE<b style="color:'+AC+'">I</b>SI</div><h2 id="tt-mtitle"></h2><p id="tt-mbody"></p><div id="tt-mrt"></div><button class="go" id="tt-mgo"></button><button class="later" id="tt-mlater"></button><div class="disc" id="tt-mdisc"></div></div>';
+  document.body.appendChild(modal);
+
+  function AR(){ return (typeof lang!=='undefined'&&lang==='ar'); }
+  var CH_EN=["","Read the market","Read the market","How it hits you","How it hits you","Your true exposure","What deserves attention","Look outward","Act, then refresh","Act, then refresh"];
+  var CH_AR=["","اقرأ السوق","اقرأ السوق","كيف ينعكس عليك","كيف ينعكس عليك","تعرّضك الحقيقي","ما يستحق الانتباه","انظر للخارج","نفّذ ثم حدّث","نفّذ ثم حدّث"];
+  var STEPS=[
+    {sel:null,chn:0,en:{t:"Welcome — read the board top-down",b:"The value of THEISI is the ORDER you read it: the market first, then how it lands on you, then your risk, then what to act on. Let's walk it — it becomes a 3-minute daily habit.",be:"<b>Why order matters:</b> a number means little alone — its meaning comes from what you read just before it.",co:""},
+      ar:{t:"مرحباً — اقرأ اللوحة من الأعلى للأسفل",b:"قيمة ثيسي في ترتيب قراءتها: السوق أولاً، ثم كيف ينعكس عليك، ثم مخاطرك، ثم ما تتصرّف بناءً عليه. خلّنا نمشيها — تصير عادة يومية في ٣ دقائق.",be:"<b>لماذا الترتيب مهم:</b> الرقم وحده لا يعني الكثير — معناه يأتي مما قرأته قبله.",co:""}},
+    {sel:'.grid-stack-item[gs-id="mpulse"]',chn:1,en:{t:"Start here: Market Pulse Now",arn:"نبض السوق الآن",b:"Your first read every day. Indices show direction; the sentence tells you WHY, tied to the names you own.",be:"<b>Benefit:</b> you grasp today's market in one read — the frame for everything else.",co:"→ Next: check the market's <b>mood</b> — calm or fearful?"},
+      ar:{t:"ابدأ هنا: نبض السوق الآن",b:"قراءتك الأولى كل يوم. المؤشرات تعطيك الاتجاه؛ والجملة تخبرك لماذا، مربوطاً بأسمائك.",be:"<b>الفائدة:</b> تفهم سوق اليوم بقراءة واحدة — إطار لكل ما تبقّى.",co:"→ التالي: افحص <b>مزاج</b> السوق — هادئ أم خائف؟"}},
+    {sel:['.grid-stack-item[gs-id="fg"]','.grid-stack-item[gs-id="cs"]'],chn:1,en:{t:"The two fears — read together",arn:"مزاج السوق + فروق الائتمان",b:"Market Mood is the CROWD's emotion. Credit Spreads is the bond market's cold read of risk. The signal is when they disagree: greed on the gauge while credit quietly widens = sentiment and the smart money out of sync — caution.",be:"<b>Benefit:</b> two lenses on the same fear — reading both catches warnings either alone would miss.",co:"→ You've read the weather. Next: how it lands on <b>your</b> money."},
+      ar:{t:"الخوفان — اقرأهما معاً",b:"مزاج السوق مشاعر الجموع. وفروق الائتمان قراءة سوق السندات الباردة للمخاطرة. الإشارة حين يختلفان: جشع على المؤشر بينما تتّسع فروق الائتمان بهدوء = المشاعر والأموال الذكية غير متوافقة — حذر.",be:"<b>الفائدة:</b> عدستان على الخوف نفسه — قراءتهما معاً تلتقط تحذيرات تفوت كلاً منهما وحده.",co:"→ قرأت الطقس. التالي: كيف ينعكس على <b>أموالك</b>."}},
+    {sel:'.grid-stack-item[gs-id="pulse"]',chn:2,en:{t:"Your value — the personal mirror",arn:"نبض المحفظة",b:"The market moved; here's what it did to YOU. Compare to Market Pulse: market down 1% but you down 2% means your mix amplified it.",be:"<b>Benefit:</b> a five-second morning health check — and a first clue if you're riskier than the market.",co:"→ Want the story behind the number? Next: <b>Today's Read</b>."},
+      ar:{t:"قيمتك — المرآة الشخصية",b:"السوق تحرّك؛ وهنا أثره عليك. قارنها بنبض السوق: هبط السوق ١٪ وهبطتَ ٢٪ يعني مزيجك ضخّم الحركة.",be:"<b>الفائدة:</b> فحص صحّة صباحي في خمس ثوانٍ — وأول مؤشّر إن كنت أخطر من السوق.",co:"→ تبي القصة خلف الرقم؟ التالي: <b>قراءة اليوم</b>."}},
+    {sel:'.grid-stack-item[gs-id="today"]',chn:2,en:{t:"Today's Read — the bridge",arn:"قراءة اليوم",b:"An AI brief that stitches the day's market, your holdings, and the analysis flags into one plain-language story.",be:"<b>Benefit:</b> the narrative behind your numbers, personalized — nothing important passes unexplained.",co:"→ Next chapter: how <b>concentrated and fragile</b> are you really?"},
+      ar:{t:"قراءة اليوم — الجسر",b:"ملخص بالذكاء الاصطناعي يجمع سوق اليوم ومراكزك وإشارات التحليل في قصة واحدة بلغة واضحة.",be:"<b>الفائدة:</b> السرد خلف أرقامك ومخصّص لك — لا يمرّ مهم بلا تفسير.",co:"→ الفصل التالي: كم أنت <b>مركّز وهشّ</b> فعلاً؟"}},
+    {sel:['.grid-stack-item[gs-id="exposure"]','.grid-stack-item[gs-id="risksum"]'],chn:3,en:{t:"Concentration × fragility",arn:"التعرض + مخاطر المحفظة",b:"Exposure shows WHERE your money sits. Portfolio Risk shows how many genuinely INDEPENDENT bets you hold after merging names that move together — 55 tickers can behave like ~9.",be:"<b>Benefit:</b> your true diversification, not the illusion of a long ticker list — the most under-appreciated view here.",co:"→ Next: what specifically needs a second look, and when."},
+      ar:{t:"التركّز × الهشاشة",b:"التعرّض يُظهر أين تجلس أموالك. ومخاطر المحفظة كم مركزاً مستقلاً حقاً تملك بعد دمج الأسماء المترابطة — ٥٥ سهماً قد تتصرّف كأنها ٩.",be:"<b>الفائدة:</b> تنويعك الحقيقي، لا وهم قائمة طويلة — أكثر عرض يُستهان به هنا.",co:"→ التالي: ما الذي يحتاج نظرة ثانية، ومتى."}},
+    {sel:['.grid-stack-item[gs-id="review"]','.grid-stack-item[gs-id="mc"]'],chn:4,en:{t:"Triage: your flags × the calendar",arn:"ما يستحق المراجعة + الأحداث الاقتصادية",b:"Worth Reviewing = internal flags. Economic Events = external catalysts coming. Cross them: a flagged name with earnings or CPI next week is where attention belongs first.",be:"<b>Benefit:</b> you review in priority order instead of reacting to the loudest headline.",co:"→ You've triaged what you own. Next: look beyond it."},
+      ar:{t:"الفرز: إشاراتك × التقويم",b:"«ما يستحق المراجعة» إشارات داخلية. و«الأحداث الاقتصادية» محفّزات خارجية قادمة. اعبرهما: اسم مُشار إليه وله أرباح أو تضخّم الأسبوع القادم أولى بانتباهك.",be:"<b>الفائدة:</b> تراجع بترتيب أولويات بدل التفاعل مع أعلى عنوان.",co:"→ فرزت ما تملك. التالي: انظر أبعد."}},
+    {sel:['.grid-stack-item[gs-id="opp"]','.grid-stack-item[gs-id="news"]'],chn:5,en:{t:"Outward radar: opportunity × news",arn:"الفرصة + الأخبار",b:"News explains WHY your names moved (backward). Opportunity points to a top-rated name you don't own (forward), labelled by source. Together: your research feed — neither is a 'buy'.",be:"<b>Benefit:</b> a filtered radar — only news that touches your names, ideas screened by grades you trust.",co:"→ Now, when you decide to act…"},
+      ar:{t:"رادار للخارج: الفرصة + الأخبار",b:"الأخبار تفسّر لماذا تحرّكت أسماؤك (للخلف). والفرصة تشير لاسم عالي التقييم لا تملكه (للأمام) بوسم للمصدر. معاً تغذية بحثك — ولا واحدة أمر بالشراء.",be:"<b>الفائدة:</b> رادار مُصفّى — فقط أخبار تمسّ أسماءك، وأفكار بنفس التقييمات التي تثق بها.",co:"→ الآن، حين تُقرّر أن تتصرّف…"}},
+    {sel:'#btn-trim',tab:'portfolio',chn:6,en:{t:"Trim Planner — reading becomes action",arn:"مخطط التقليص",b:"Set a cash target; every holding appears with value, gain/loss, risk contribution, correlation cluster, analyst upside and flags, live-summing what you'd raise. Everything you read comes together in one decision view.",be:"<b>Benefit:</b> rebalance or raise cash with the whole board in front of you — you choose, it does the math.",co:"→ After you trade, one habit closes the loop."},
+      ar:{t:"مخطط التقليص — القراءة تصير فعلاً",b:"حدّد هدفاً نقدياً؛ يظهر كل مركز بقيمته وربحه ومساهمته في المخاطرة وعنقوده ومجال صعوده وإشاراته، مع جمع مباشر لما ستحرّره. كل ما قرأته يجتمع في عرض قرار واحد.",be:"<b>الفائدة:</b> توازن أو ترفع نقداً واللوحة كاملة أمامك — أنت تختار وهي تحسب.",co:"→ بعد التنفيذ، عادة تُغلق الحلقة."}},
+    {sel:'#cc-actions',tab:'command',chn:6,en:{t:"Run & Refresh — close the loop",arn:"التشغيل والتحديث",b:"After you buy or sell, re-run the analyses so every number reflects your new holdings. 'Re-analyze everything' refreshes the whole board at once.",be:"<b>Benefit:</b> your reading is only as good as your data — one click keeps the board honest.",co:"→ That's the full daily loop."},
+      ar:{t:"التشغيل والتحديث — أغلق الحلقة",b:"بعد أي شراء أو بيع، أعد التحليلات ليعكس كل رقم مراكزك الجديدة. «إعادة تحليل كل شيء» يحدّث اللوحة دفعة واحدة.",be:"<b>الفائدة:</b> قراءتك بجودة بياناتك — ضغطة واحدة تُبقي اللوحة صادقة.",co:"→ تلك هي الحلقة اليومية الكاملة."}}
+  ];
+  var TOTAL_CH=6, cur=0;
+
+  function $(id){return document.getElementById(id);}
+  function showTabSafe(t){ try{ if(typeof showTab==='function'){ var el=document.querySelector('.sb-item[data-tab="'+t+'"]'); showTab(t, el||undefined); } }catch(e){} }
+  function curTab(){ var a=document.querySelector('.tab-content.active'); return a?a.id.replace('tab-',''):''; }
+  function unionRect(els){var l=1e9,t=1e9,r=-1e9,b=-1e9;els.forEach(function(e){var q=e.getBoundingClientRect();l=Math.min(l,q.left);t=Math.min(t,q.top);r=Math.max(r,q.right);b=Math.max(b,q.bottom);});return {left:l,top:t,right:r,bottom:b,width:r-l,height:b-t};}
+  function clampX(x,w){return Math.min(Math.max(10,x),window.innerWidth-w-10);}
+  function clampY(y,h){return Math.min(Math.max(10,y),window.innerHeight-h-10);}
+
+  function place(r){
+    var hole=$('tt-hole'),pop=$('tt-pop'),pad=8;
+    hole.style.opacity='1';hole.style.left=(r.left-pad)+'px';hole.style.top=(r.top-pad)+'px';hole.style.width=(r.width+pad*2)+'px';hole.style.height=(r.height+pad*2)+'px';
+    pop.style.opacity='1';var pw=pop.offsetWidth,ph=pop.offsetHeight,gap=16,left,top;
+    if(window.innerHeight-r.bottom>ph+gap+20){top=r.bottom+gap;left=clampX(r.left,pw);}
+    else if(r.top>ph+gap+20){top=r.top-ph-gap;left=clampX(r.left,pw);}
+    else if(window.innerWidth-r.right>pw+gap){left=r.right+gap;top=clampY(r.top,ph);}
+    else {left=r.left-pw-gap;if(left<10)left=10;top=clampY(r.top,ph);}
+    pop.style.left=left+'px';pop.style.top=top+'px';
+  }
+  function render(){
+    var s=STEPS[cur],c=s[AR()?'ar':'en'];
+    var chName=(AR()?CH_AR:CH_EN)[cur];
+    $('tt-chap').innerHTML=s.chn>0?((AR()?'الفصل ':'Chapter ')+s.chn+'/'+TOTAL_CH+' · <b>'+chName+'</b>'):(AR()?'ابدأ':'Start');
+    $('tt-title').textContent=c.t; $('tt-arn').textContent=(!AR()&&c.arn)?c.arn:'';
+    $('tt-body').innerHTML=c.b; $('tt-ben').innerHTML=c.be;
+    var con=$('tt-con'); con.innerHTML=c.co||''; con.style.display=c.co?'block':'none';
+    $('tt-prog').textContent=(cur+1)+' / '+STEPS.length;
+    $('tt-back').textContent=AR()?'السابق':'Back'; $('tt-back').style.visibility=cur===0?'hidden':'visible';
+    $('tt-next').textContent=(cur===STEPS.length-1)?(AR()?'إنهاء ✓':'Finish ✓'):(AR()?'التالي':'التالي');
+    $('tt-next').textContent=(cur===STEPS.length-1)?(AR()?'إنهاء ✓':'Finish ✓'):(AR()?'التالي':'Next');
+    $('tt-skip').textContent=AR()?'تخطّي ✕':'Skip ✕';
+    // tab switch if needed
+    if(s.tab && curTab()!==s.tab){ showTabSafe(s.tab); }
+    var delay=(s.tab&&curTab()!==s.tab)?600:60;
+    if(!s.sel){ $('tt-hole').style.opacity='0';$('tt-hole').style.width='0';$('tt-hole').style.height='0';
+      var pop=$('tt-pop');pop.style.opacity='0';setTimeout(function(){pop.style.left=(window.innerWidth/2-pop.offsetWidth/2)+'px';pop.style.top=Math.max(20,window.innerHeight/2-pop.offsetHeight/2)+'px';pop.style.opacity='1';},40);
+      return; }
+    setTimeout(function(){
+      var els=(Array.isArray(s.sel)?s.sel:[s.sel]).map(function(x){return document.querySelector(x);}).filter(Boolean);
+      if(!els.length){ // element missing — center the pop
+        $('tt-hole').style.opacity='0';var pop=$('tt-pop');pop.style.left=(window.innerWidth/2-pop.offsetWidth/2)+'px';pop.style.top='80px';pop.style.opacity='1';return; }
+      els[0].scrollIntoView({block:'center',behavior:'smooth'});
+      setTimeout(function(){ place(unionRect(els)); }, 300);
+    }, delay);
+  }
+  function go(d){ cur+=d; if(cur<0)cur=0; if(cur>=STEPS.length){ end(); return; } render(); }
+  function start(){ closeModal(); cur=0; showTabSafe('command'); setTimeout(function(){ $('tt-ov').classList.add('on'); render(); }, 200); }
+  function end(){ $('tt-ov').classList.remove('on'); try{ localStorage.setItem('theisi_tour_seen','1'); }catch(e){} finishModal(); }
+
+  // modal (start + finish)
+  var MODAL={ start:{en:{t:"Your dashboard, as a reading routine",b:"A 3-minute guided tour that teaches the ORDER to read the board — and how each card changes the meaning of the next.",go:"Start the tour →",later:"Maybe later",rt:"",disc:"Informational only — not financial advice. Every figure is directional with a wide margin of error. The decision is always yours."},
+    ar:{t:"لوحتك كروتين قراءة",b:"جولة موجّهة في ٣ دقائق تعلّمك ترتيب قراءة اللوحة — وكيف يغيّر كل مكوّن معنى الذي يليه.",go:"ابدأ الجولة →",later:"لاحقاً",rt:"",disc:"معلومات للاطلاع فقط — ليست نصيحة مالية. كل رقم اتجاهي بهامش خطأ واسع. القرار دائماً قرارك."}},
+    finish:{en:{t:"You're all set 🎉",b:"You've learned the reading order. Make it a habit:",go:"Restart",later:"Close",
+      rt:"<div class='rt'><h4>Your 3-minute daily routine</h4><ol><li>Read <b>Market Pulse</b> — the big picture &amp; why.</li><li>Check the <b>two fears</b> — Mood vs Credit; watch for disagreement.</li><li>Glance <b>Portfolio Pulse</b> &amp; <b>Today's Read</b>.</li><li>Weekly: scan <b>Exposure + Risk</b> — true diversification.</li><li>Triage <b>Worth Reviewing × Events</b>.</li><li>After any trade: <b>Run &amp; Refresh</b>.</li></ol></div>",
+      disc:"THEISI — we connect the dots so you see what matters and decide for yourself."},
+    ar:{t:"جاهز تماماً 🎉",b:"تعلّمت ترتيب القراءة. اجعلها عادة:",go:"إعادة",later:"إغلاق",
+      rt:"<div class='rt'><h4>روتينك اليومي في ٣ دقائق</h4><ol><li>اقرأ <b>نبض السوق</b> — الصورة الكبيرة ولماذا.</li><li>افحص <b>الخوفين</b> — المزاج مقابل الائتمان.</li><li>ألقِ نظرة على <b>نبض المحفظة</b> و<b>قراءة اليوم</b>.</li><li>أسبوعياً: <b>التعرّض + المخاطر</b>.</li><li>افرز <b>ما يستحق المراجعة × الأحداث</b>.</li><li>بعد أي صفقة: <b>التشغيل والتحديث</b>.</li></ol></div>",
+      disc:"ثيسي — نربط النقاط لتُدرك ما يهم وتُقرّر بنفسك."}} };
+  var mode='start';
+  function renderModal(){ var m=MODAL[mode][AR()?'ar':'en'];
+    $('tt-mtitle').textContent=m.t; $('tt-mbody').textContent=m.b; $('tt-mrt').innerHTML=m.rt||'';
+    $('tt-mgo').textContent=m.go; $('tt-mlater').textContent=m.later; $('tt-mdisc').textContent=m.disc; }
+  function startModal(){ mode='start'; renderModal(); $('tt-modal').classList.add('on'); }
+  function finishModal(){ mode='finish'; renderModal(); $('tt-modal').classList.add('on'); }
+  function closeModal(){ $('tt-modal').classList.remove('on'); }
+
+  $('tt-next').onclick=function(){go(1);}; $('tt-back').onclick=function(){go(-1);}; $('tt-skip').onclick=end;
+  $('tt-mgo').onclick=start; $('tt-mlater').onclick=closeModal;
+  window.addEventListener('resize',function(){ if($('tt-ov').classList.contains('on')) render(); });
+  document.addEventListener('keydown',function(e){ if(!$('tt-ov').classList.contains('on'))return; if(e.key==='ArrowRight'||e.key==='Enter')go(1); if(e.key==='ArrowLeft')go(-1); if(e.key==='Escape')end(); });
+
+  window.theisiTour={ start:startModal, run:start, render:function(){ if($('tt-ov').classList.contains('on')) render(); if($('tt-modal').classList.contains('on')) renderModal(); } };
+
+  // re-render tour text when language toggles
+  var _sl=window.setLang;
+  if(typeof _sl==='function'){ window.setLang=function(){ var r=_sl.apply(this,arguments); try{ window.theisiTour.render(); }catch(e){} return r; }; }
+
+  // auto-show once for first-time users (after the command center has rendered)
+  function maybeAuto(){ try{ if(localStorage.getItem('theisi_tour_seen')) return; }catch(e){}
+    var tries=0,iv=setInterval(function(){ tries++;
+      if(document.querySelector('.grid-stack-item[gs-id="mpulse"]')||document.getElementById('cc-actions')){ clearInterval(iv); setTimeout(startModal,800); }
+      else if(tries>40){ clearInterval(iv); } },300); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',maybeAuto); else maybeAuto();
 })();
 </script>
 
