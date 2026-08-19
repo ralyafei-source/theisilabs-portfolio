@@ -17123,7 +17123,8 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
     +'#tt-modal .m h2{font-size:20px;font-weight:800;margin-bottom:10px}#tt-modal .m p{color:var(--text2);font-size:14px;line-height:1.8;margin-bottom:14px}'
     +'#tt-modal .m .go{background:'+AC+';color:#fff;border:none;border-radius:10px;padding:12px 26px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}#tt-modal .m .later{display:block;margin:12px auto 0;background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer}'
     +'#tt-modal .rt{text-align:start;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin:2px 0 12px}#tt-modal .rt h4{font-size:12px;color:'+AC+';margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em}#tt-modal .rt ol{margin:0;padding-inline-start:20px}#tt-modal .rt li{font-size:12.5px;line-height:1.8;color:var(--text2);margin:5px 0}#tt-modal .rt li b{color:var(--text)}'
-    +'#tt-modal .disc{font-size:11px;color:var(--text3);border-top:1px solid var(--border);padding-top:12px;margin-top:8px;line-height:1.7}';
+    +'#tt-modal .disc{font-size:11px;color:var(--text3);border-top:1px solid var(--border);padding-top:12px;margin-top:8px;line-height:1.7}'
+    +'@media(max-width:640px){#tt-pop{max-width:none;width:calc(100vw - 20px);max-height:56vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}#tt-pop .tt-nav{position:sticky;bottom:-16px;background:var(--bg2);padding:8px 0 2px;margin-top:4px;}}';
   var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
 
   var ov=document.createElement('div'); ov.id='tt-ov';
@@ -17214,6 +17215,9 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
     var u={left:1e9,top:1e9,right:-1e9,bottom:-1e9};
     rects.forEach(function(r){ u.left=Math.min(u.left,r.left);u.top=Math.min(u.top,r.top);u.right=Math.max(u.right,r.right);u.bottom=Math.max(u.bottom,r.bottom); });
     var pop=$('tt-pop'); pop.style.opacity='1'; var pw=pop.offsetWidth, ph=pop.offsetHeight, gap=16, left, top;
+    // Mobile: dock the popover to the bottom; the target has been scrolled to the top (in render),
+    // so the highlighted card stays visible in the clear space above the popover.
+    if(window.innerWidth<=640){ pop.style.left='10px'; pop.style.top=Math.max(8,window.innerHeight-ph-12)+'px'; return; }
     if(window.innerHeight-u.bottom>ph+gap+20){ top=u.bottom+gap; left=clampX(u.left,pw); }
     else if(u.top>ph+gap+20){ top=u.top-ph-gap; left=clampX(u.left,pw); }
     else if(window.innerWidth-u.right>pw+gap){ left=u.right+gap; top=clampY(u.top,ph); }
@@ -17247,7 +17251,10 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
     setTimeout(function(){
       var els=(Array.isArray(s.sel)?s.sel:[s.sel]).map(function(x){return document.querySelector(x);}).filter(Boolean);
       if(!els.length){ clearSpotlight(); centerPop(); return; }
-      els[0].scrollIntoView({block:'center',behavior:'auto'});
+      var _mob=window.innerWidth<=640;
+      if(_mob){ try{ els[0].style.scrollMarginTop='60px'; }catch(e){} }
+      // Mobile: bring the target to the TOP (popover docks at the bottom); desktop: center it.
+      els[0].scrollIntoView({block:_mob?'start':'center',behavior:'auto'});
       // Instant scroll (not smooth) so the rect is measured after the page has settled,
       // then re-measure once more in case layout shifts (long sections far down the page).
       var _paint=function(){ spotlight(els.map(function(e){return e.getBoundingClientRect();})); };
