@@ -52,9 +52,12 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/10.3.1/gridstack-all.min.js"></script>
 <style>
 .grid-stack{direction:ltr;}
-.grid-stack-item-content{overflow-y:auto;overflow-x:hidden;scrollbar-width:none;direction:rtl;display:flex;flex-direction:column;}
+.grid-stack-item-content{overflow:hidden;scrollbar-width:none;direction:rtl;display:flex;flex-direction:column;}
 .grid-stack-item-content::-webkit-scrollbar{display:none;}
 .grid-stack-item-content>div{flex:1;display:flex;flex-direction:column;min-height:0;}
+/* Card frame stays fixed; the panel's content scrolls inside it. */
+.grid-stack-item-content .cc-panel{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none;}
+.grid-stack-item-content .cc-panel::-webkit-scrollbar{display:none;}
 .grid-stack-item>.ui-resizable-handle{opacity:.25;}
 .gs-reset{cursor:pointer;color:var(--text3);font-size:10.5px;text-decoration:underline;}
 
@@ -4194,7 +4197,7 @@ function renderCommandCenter(){
   function money(v){ return _PRIV?'$ \u2022\u2022\u2022':('$'+Math.round(v/1000)+'K'); }
   var AC='var(--accent,#FF0A78)';
   function door(label, tab){ return '<div onclick="showTab(\''+tab+'\',document.querySelector(\'[data-tab='+tab+']\'))" style="cursor:pointer;display:flex;align-items:center;gap:5px;color:'+AC+';font-size:11px;font-weight:600;margin-top:12px;">'+label+' \u2190</div>'; }
-  function panel(inner, opts){ opts=opts||{}; return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:'+(opts.pad||'18px')+';'+(opts.style||'')+'">'+inner+'</div>'; }
+  function panel(inner, opts){ opts=opts||{}; return '<div class="cc-panel" style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:'+(opts.pad||'18px')+';'+(opts.style||'')+'">'+inner+'</div>'; }
   function secLabel(t, icon){ return '<div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:9px;display:flex;align-items:center;gap:7px;justify-content:flex-start;">'+(icon||'')+'<span>'+t+'</span></div>'; }
 function ccPh(title){
   return panel(
