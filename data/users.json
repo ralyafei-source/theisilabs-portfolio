@@ -1,59 +1,66 @@
 [
-  {
-    "id": "admin-rashed-001",
-    "nickname": "rashed",
-    "pinVerifier": "v2:c18a0cbdbb15fcb00a2794511e038ade17bfa8af54daec039f8271e41bc59906",
-    "needsPinSetup": false,
-    "failedAttempts": 0,
-    "lockoutUntil": null,
-    "isAdmin": true,
-    "portfolioFile": "portfolio.json",
-    "createdAt": "2026-05-29T00:00:00Z",
-    "tier": "deep",
-    "telegram_chat_id": "1365815413",
-    "sessions": [
-      {
-        "tokenHash": "a4de82d0b9c09e8fa7bdb5a194c863b945d7e4ca7e44142c770cb5a68b59afbb",
-        "sessionExpiry": "2026-11-18T16:12:24.405Z"
-      }
-    ]
-  },
-  {
-    "id": "efccbada4cf82964",
-    "nickname": "tester",
-    "pinVerifier": "v2:ce65b881cfe45ec7e5146783d3e801e712f203ac32eac2e4bd224aed54aa53b9",
-    "needsPinSetup": false,
-    "failedAttempts": 0,
-    "lockoutUntil": null,
-    "isAdmin": false,
-    "portfolioFile": "portfolio-tester.json",
-    "createdAt": "2026-05-29T16:19:35.392Z",
-    "tier": "fast",
-    "sessions": []
-  },
-  {
-    "id": "63b38cbbaf6edf13",
-    "nickname": "asma",
-    "pinVerifier": "v2:c6ad98d2e71b9a948f55d09357380a17903687f9e3dd7c5f0600d6af13038179",
-    "needsPinSetup": false,
-    "failedAttempts": 0,
-    "lockoutUntil": null,
-    "isAdmin": false,
-    "portfolioFile": "portfolio-asma.json",
-    "createdAt": "2026-05-29T21:38:31.613Z",
-    "tier": "fast",
-    "sessions": []
-  },
-  {
-    "id": "fde1a22c99364312",
-    "nickname": "ahmed",
-    "needsPinSetup": false,
-    "failedAttempts": 0,
-    "lockoutUntil": null,
-    "isAdmin": false,
-    "portfolioFile": "portfolio-ahmed.json",
-    "createdAt": "2026-06-05T14:34:09.375Z",
-    "tier": "deep",
-    "sessions": []
-  }
+    {
+        "id":  "admin-rashed-001",
+        "nickname":  "rashed",
+        "pinVerifier":  "v2:c18a0cbdbb15fcb00a2794511e038ade17bfa8af54daec039f8271e41bc59906",
+        "needsPinSetup":  false,
+        "failedAttempts":  0,
+        "lockoutUntil":  null,
+        "isAdmin":  true,
+        "portfolioFile":  "portfolio.json",
+        "createdAt":  "2026-05-29T00:00:00Z",
+        "tier":  "deep",
+        "telegram_chat_id":  "1365815413",
+        "sessions":  [
+                         {
+                             "tokenHash":  "a4de82d0b9c09e8fa7bdb5a194c863b945d7e4ca7e44142c770cb5a68b59afbb",
+                             "sessionExpiry":  "2026-11-18T16:12:24.405Z"
+                         }
+                     ]
+    },
+    {
+        "id":  "efccbada4cf82964",
+        "nickname":  "tester",
+        "pinVerifier":  "v2:ce65b881cfe45ec7e5146783d3e801e712f203ac32eac2e4bd224aed54aa53b9",
+        "needsPinSetup":  false,
+        "failedAttempts":  0,
+        "lockoutUntil":  null,
+        "isAdmin":  false,
+        "portfolioFile":  "portfolio-tester.json",
+        "createdAt":  "2026-05-29T16:19:35.392Z",
+        "tier":  "fast",
+        "sessions":  [
+
+                     ]
+    },
+    {
+        "id":  "63b38cbbaf6edf13",
+        "nickname":  "asma",
+        "pinVerifier":  "v2:c6ad98d2e71b9a948f55d09357380a17903687f9e3dd7c5f0600d6af13038179",
+        "needsPinSetup":  false,
+        "failedAttempts":  0,
+        "lockoutUntil":  null,
+        "isAdmin":  false,
+        "portfolioFile":  "portfolio-asma.json",
+        "createdAt":  "2026-05-29T21:38:31.613Z",
+        "tier":  "fast",
+        "sessions":  [
+
+                     ]
+    },
+    {
+        "id":  "fde1a22c99364312",
+        "nickname":  "ahmed",
+        "needsPinSetup":  false,
+        "failedAttempts":  0,
+        "lockoutUntil":  null,
+        "isAdmin":  false,
+        "portfolioFile":  "portfolio-ahmed.json",
+        "createdAt":  "2026-06-05T14:34:09.375Z",
+        "tier":  "deep",
+        "sessions":  [
+
+                     ],
+        "pinVerifier":  "v2:62b7105ff2a797c7496ca69b5327523519b62ac44a7c18ca44f113b73385a961"
+    }
 ]
