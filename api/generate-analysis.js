@@ -180,6 +180,7 @@ async function callClaude(prompt) {
 
 const { percentileRead, crossSectional, normalRank } = require('./_lib/percentile-read');
 
+const { guardNarrative } = require('./_lib/narrative-guard');
 const { findSession } = require('./_lib/pin');
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -324,6 +325,13 @@ module.exports = async function handler(req, res) {
         price_reads: readLog,        // ALL holdings, incl. ones not shown — for future testing
         stress:[{scenario:'تصحيح تقنية -20%', impact_usd:-portfolioStats.stress_tech_minus20}],
         generated:new Date().toISOString() };
+      // Golden Separation, enforced instead of requested. Every number in the
+      // Arabic prose is traced back to a field code computed. 'warn' records and
+      // saves; flip GUARD_MODE=block once it has run clean for a few weeks.
+      doc.guard = guardNarrative(doc, process.env.GUARD_MODE || 'warn');
+      if (!doc.guard.ok && doc.guard.mode === 'block') {
+        return res.status(422).json({ error:'narrative gate failed', guard:doc.guard });
+      }
       const filePath=`data/analysis-weekly-${nickname}-${today}.json`;
       const ok=await ghWrite(filePath, doc);
       if(!ok) return res.status(500).json({ error:'Failed to save analysis' });
@@ -399,6 +407,10 @@ module.exports = async function handler(req, res) {
         stocks:stocksOut, clusters:[], hedge:'', stress:[],
         regime_notes: regimeNotes,   // long-horizon only — no short-horizon percentile in monthly
         generated:new Date().toISOString() };
+      doc.guard = guardNarrative(doc, process.env.GUARD_MODE || 'warn');
+      if (!doc.guard.ok && doc.guard.mode === 'block') {
+        return res.status(422).json({ error:'narrative gate failed', guard:doc.guard });
+      }
       const filePath=`data/analysis-monthly-${nickname}-${today.slice(0,7)}.json`;
       const ok=await ghWrite(filePath, doc);
       if(!ok) return res.status(500).json({ error:'Failed to save analysis' });
