@@ -161,9 +161,14 @@ async function checkFreshness() {
   const dists = await raw('data/distributions.json');
   const meta = dists && dists._meta;
   const built = meta && (meta.built || meta.date || meta.updated);
-  add(WARN, 'distributions rebuilt within 8 days',
-      !!built && daysBetween(String(built).slice(0, 10), uaeDate()) <= 8,
-      built ? `built ${String(built).slice(0, 10)}` : 'no _meta timestamp');
+  // The Sunday cron rebuilds this. A WARN sat here for two weeks in Aug 2026
+  // while the cron 401'd on every run, so age is now escalated: >8d warns (one
+  // missed Sunday could be a blip), >15d fails (two misses means it is broken).
+  const distAge = built ? daysBetween(String(built).slice(0, 10), uaeDate()) : null;
+  add(WARN, 'distributions rebuilt within 8 days', distAge != null && distAge <= 8,
+      built ? `built ${String(built).slice(0, 10)} · ${distAge}d old` : 'no _meta timestamp');
+  add(FAIL, 'distributions cron has not missed two Sundays', distAge != null && distAge <= 15,
+      built ? `${distAge}d old (fail >15 — the weekly cron is not running)` : 'no _meta timestamp');
 }
 
 // ── 3. The weekly report's own accounting closes ───────────────────────────
@@ -207,10 +212,43 @@ async function checkWeekly() {
 async function checkSecurity() {
   const users = await raw('data/users.json');
   const list = Array.isArray(users) ? users : (users && users.users) || [];
-  const live = list.filter(u => (u.sessionToken && String(u.sessionToken).length > 0) ||
-                                (Array.isArray(u.sessions) && u.sessions.length > 0));
-  add(FAIL, 'no session tokens committed to the repo', live.length === 0,
-      live.length ? `${live.length} of ${list.length} users carry a session token` : `${list.length} users clean`);
+
+  // A populated sessions[] is NORMAL now — entries hold only tokenHash. What must
+  // never appear is a REPLAYABLE value: a legacy top-level sessionToken, or a
+  // session entry still carrying the raw token.
+  const plaintext = list.filter(u =>
+    (u.sessionToken && String(u.sessionToken).length > 0) ||
+    (Array.isArray(u.sessions) && u.sessions.some(s => s && s.sessionToken)));
+  add(FAIL, 'no plaintext session tokens committed to the repo', plaintext.length === 0,
+      plaintext.length ? `${plaintext.length} of ${list.length} users carry a raw token`
+                       : `${list.length} users clean (sessions store tokenHash only)`);
+
+  // Every session entry must actually be hashed, not merely missing the old field.
+  const unhashed = list.flatMap(u => (u.sessions || []).filter(s => !s || !s.tokenHash));
+  add(FAIL, 'every stored session is hashed', unhashed.length === 0,
+      unhashed.length ? `${unhashed.length} session entries lack tokenHash` : 'all sessions hashed');
+
+  // pinHash was SHA-256(pin + a salt public in index.html), compared literally —
+  // the stored value WAS the credential. It must never come back.
+  const withPinHash = list.filter(u => 'pinHash' in u);
+  add(FAIL, 'no pinHash field on any user', withPinHash.length === 0,
+      withPinHash.length ? `${withPinHash.length} users carry the replayable pinHash field`
+                         : `${list.length} users clean`);
+
+  // Verifiers are safe to publish but must be well formed; absent = fail-closed
+  // (that user simply cannot log in), which is acceptable, so it is not an error.
+  const V = /^v2:[0-9a-f]{64}$/;
+  const malformed = list.filter(u => u.pinVerifier != null && !V.test(String(u.pinVerifier)));
+  add(FAIL, 'every pinVerifier is well formed', malformed.length === 0,
+      malformed.length ? `${malformed.length} malformed (expected v2:<64 hex>)`
+                       : `${list.filter(u => u.pinVerifier).length} set, ${list.filter(u => !u.pinVerifier).length} fail-closed`);
+
+  // Identical verifiers mean two users share a PIN — or a paste error copied one
+  // user's value over another's, which is how a real mix-up showed up in Aug 2026.
+  const vs = list.map(u => u.pinVerifier).filter(Boolean);
+  const dupes = vs.length - new Set(vs).size;
+  add(FAIL, 'no two users share a pinVerifier', dupes === 0,
+      dupes ? `${dupes} duplicate verifier value(s)` : 'all distinct');
 
   for (const f of ['api/portfolio-for-ai.js', 'api/historical-snapshot.js']) {
     const src = await raw(f);
@@ -222,6 +260,20 @@ async function checkSecurity() {
     add(FAIL, `${f} auth does not fail open`, !failsOpen,
         failsOpen ? 'pattern `if (key && key !== API_KEY)` lets a request with no key through'
                   : 'strict key comparison');
+  }
+
+  // Cron endpoints must authenticate on CRON_SECRET, which Vercel sends as
+  // `Authorization: Bearer <value>`. `x-vercel-cron` is NOT a real Vercel header
+  // (the documented one is x-vercel-cron-schedule) and is client-settable, so
+  // gating on it both let anyone in AND made every real cron run 401.
+  for (const f of ['api/cron-distributions.js', 'api/cron-weekly.js', 'api/risk.js']) {
+    const src = await raw(f);
+    if (typeof src !== 'string') { add(WARN, `${f} readable`, false, 'not fetched'); continue; }
+    const badHeader = /headers\s*\[\s*['"]x-vercel-cron['"]\s*\]/.test(src);
+    add(FAIL, `${f} does not trust the x-vercel-cron header`, !badHeader,
+        badHeader ? 'gates on a client-settable header' : 'no x-vercel-cron gate');
+    add(FAIL, `${f} authenticates cron via CRON_SECRET`, src.includes('CRON_SECRET'),
+        src.includes('CRON_SECRET') ? 'CRON_SECRET referenced' : 'no CRON_SECRET check');
   }
 }
 
