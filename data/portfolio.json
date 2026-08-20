@@ -46,7 +46,7 @@
       "sym": "SCHD",
       "name": "Schwab US Dividend Equity ETF",
       "name_ar": "شواب للأسهم الموزّعة",
-      "shares": 600.0,
+      "shares": 600,
       "cost": 34.1487,
       "sector": "etf",
       "purchaseDate": "2026-08-10"
@@ -55,7 +55,7 @@
       "sym": "CRM",
       "name": "Salesforce",
       "name_ar": "سيلزفورس",
-      "shares": 100.0,
+      "shares": 100,
       "cost": 239.45,
       "sector": "tech",
       "purchaseDate": "2026-06-16"
@@ -64,7 +64,7 @@
       "sym": "META",
       "name": "Meta Platforms, Inc.",
       "name_ar": "META",
-      "shares": 35.0,
+      "shares": 35,
       "cost": 594.9386,
       "sector": "other",
       "purchaseDate": "2026-08-10"
@@ -109,7 +109,7 @@
       "sym": "SPY",
       "name": "SPDR S&P 500",
       "name_ar": "SPDR S&P 500",
-      "shares": 21.0,
+      "shares": 21,
       "cost": 521.19,
       "sector": "etf",
       "purchaseDate": "2026-06-16"
@@ -154,7 +154,7 @@
       "sym": "ZTS",
       "name": "Zoetis",
       "name_ar": "زويتس",
-      "shares": 150.0,
+      "shares": 150,
       "cost": 74.85,
       "sector": "bio",
       "purchaseDate": "2026-08-13"
@@ -172,7 +172,7 @@
       "sym": "MTSI",
       "name": "MACOM Technology",
       "name_ar": "ماكوم تكنولوجي",
-      "shares": 40.0,
+      "shares": 40,
       "cost": 299.175,
       "sector": "tech",
       "purchaseDate": "2026-08-11"
@@ -199,7 +199,7 @@
       "sym": "PLTR",
       "name": "Palantir",
       "name_ar": "بالانتير",
-      "shares": 50.0,
+      "shares": 50,
       "cost": 23.41,
       "sector": "tech",
       "purchaseDate": "2026-06-16"
@@ -253,7 +253,7 @@
       "sym": "BTBT",
       "name": "Bit Digital",
       "name_ar": "بت ديجيتال",
-      "shares": 5000.0,
+      "shares": 5000,
       "cost": 4.03,
       "sector": "spec",
       "purchaseDate": "2026-06-16"
@@ -325,7 +325,7 @@
       "sym": "MVST",
       "name": "Microvast",
       "name_ar": "مايكروفاست",
-      "shares": 6093.0,
+      "shares": 6093,
       "cost": 4.58,
       "sector": "industrials",
       "purchaseDate": "2026-06-16"
@@ -352,7 +352,7 @@
       "sym": "YOU",
       "name": "Clear Secure",
       "name_ar": "كلير سكيور",
-      "shares": 100.0,
+      "shares": 100,
       "cost": 56.592,
       "sector": "tech",
       "purchaseDate": "2026-07-01"
@@ -379,7 +379,7 @@
       "sym": "ZTO",
       "name": "ZTO Express",
       "name_ar": "زد تي أو إكسبريس",
-      "shares": 150.0,
+      "shares": 150,
       "cost": 22.9747,
       "sector": "industrials",
       "purchaseDate": "2026-07-01"
@@ -388,7 +388,7 @@
       "sym": "APP",
       "name": "AppLovin",
       "name_ar": "آب لوفن",
-      "shares": 10.0,
+      "shares": 10,
       "cost": 325.435,
       "sector": "tech",
       "purchaseDate": "2026-08-11"
@@ -442,35 +442,17 @@
       "sym": "SMH",
       "name": "VanEck Semiconductor",
       "name_ar": "فان إيك أشباه الموصلات",
-      "shares": 4.0,
+      "shares": 4,
       "cost": 253.47,
       "sector": "etf",
       "purchaseDate": "2026-06-16"
     },
     {
-      "sym": "IBIT",
-      "name": "iShares Bitcoin",
-      "name_ar": "آي شيرز بيتكوين",
-      "shares": 56.45,
-      "cost": 35.43,
-      "sector": "spec",
-      "purchaseDate": "2026-06-16"
-    },
-    {
-      "sym": "TEAM",
-      "name": "Atlassian",
-      "name_ar": "أطلاسيان",
-      "shares": 11.9467,
-      "cost": 92.1172,
-      "sector": "tech",
-      "purchaseDate": "2026-06-25"
-    },
-    {
       "sym": "MXL",
       "name": "MaxLinear",
       "name_ar": "ماكس لينير",
-      "shares": 20.0,
-      "cost": 70.0,
+      "shares": 20,
+      "cost": 70,
       "sector": "tech",
       "purchaseDate": "2026-06-16"
     },
@@ -478,17 +460,35 @@
       "sym": "NVO",
       "name": "Novo Nordisk",
       "name_ar": "نوفو نورديسك",
-      "shares": 5.0,
+      "shares": 5,
       "cost": 55.01,
       "sector": "bio",
       "purchaseDate": "2026-06-16"
+    },
+    {
+      "sym": "GEV",
+      "name": "GE Vernova",
+      "name_ar": "جي إي فيرنوفا",
+      "shares": 25,
+      "cost": 944.25,
+      "sector": "energy",
+      "purchaseDate": "2026-08-20"
+    },
+    {
+      "sym": "BSX",
+      "name": "Boston Scientific",
+      "name_ar": "بوسطن ساينتيفيك",
+      "shares": 100,
+      "cost": 50.43,
+      "sector": "bio",
+      "purchaseDate": "2026-08-20"
     }
   ],
   "meta": {
     "holdings_count": 53,
     "broker": "Wio Invest",
-    "last_updated": "2026-08-19",
-    "updated": "2026-08-19",
+    "last_updated": "2026-08-20",
+    "updated": "2026-08-20",
     "source": "Wio transaction export (netted, avg-cost)"
   }
 }
