@@ -1,3 +1,4 @@
+const { findSession } = require('./_lib/pin');
 // api/analysis.js
 // Supports 3 analysis types: daily, weekly, monthly
 // Supports per-user analysis via optional nickname param
@@ -66,7 +67,7 @@ async function verifySession(sessionToken) {
     if (!r.ok) return null;
     const file = await r.json();
     const users = JSON.parse(Buffer.from(file.content, 'base64').toString());
-    const user = users.find(u => u.sessionToken === sessionToken);
+    const user = users.find(u => findSession(u, sessionToken));
     if (!user) return null;
     if (new Date(user.sessionExpiry) < new Date()) return null;
     return user;

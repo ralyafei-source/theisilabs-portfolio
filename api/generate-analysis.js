@@ -34,11 +34,11 @@ async function verifyAccess(sessionToken) {
   const list = Array.isArray(usersData) ? usersData : (usersData.users || []);
 
   const user = list.find(u =>
-    (u.sessions || []).some(s => s.sessionToken === sessionToken)
+    findSession(u, sessionToken)
   );
   if (!user) return null;
 
-  const session = user.sessions.find(s => s.sessionToken === sessionToken);
+  const session = findSession(user, sessionToken);
   if (new Date(session.sessionExpiry) < new Date()) return null;
 
   return user;
@@ -180,6 +180,7 @@ async function callClaude(prompt) {
 
 const { percentileRead, crossSectional, normalRank } = require('./_lib/percentile-read');
 
+const { findSession } = require('./_lib/pin');
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');

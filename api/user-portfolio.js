@@ -1,5 +1,6 @@
 const https = require('https');
 
+const { findSession } = require('./_lib/pin');
 const REPO = 'ralyafei-source/theisilabs-portfolio';
 
 // ── Profile field whitelist (extend here to add fields later) ──────────────
@@ -146,9 +147,9 @@ async function ghCreate(path, content, token) {
 async function verifySession(sessionToken, githubToken) {
   const usersFile = await ghGet('data/users.json', githubToken);
   const users = JSON.parse(Buffer.from(usersFile.content, 'base64').toString());
-  const user = users.find(u => (u.sessions || []).some(s => s.sessionToken === sessionToken));
+  const user = users.find(u => findSession(u, sessionToken));
   if (!user) return null;
-  const session = user.sessions.find(s => s.sessionToken === sessionToken);
+  const session = findSession(user, sessionToken);
   if (new Date(session.sessionExpiry) < new Date()) return null;
   return user;
 }

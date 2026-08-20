@@ -1,3 +1,4 @@
+const { findSession } = require('./_lib/pin');
 const BRIEFING_API_KEY = process.env.BRIEFING_API_KEY;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const REPO = 'ralyafei-source/theisilabs-portfolio';
@@ -38,7 +39,7 @@ async function verifySession(sessionToken) {
     if (!r.ok) return null;
     const file = await r.json();
     const users = JSON.parse(Buffer.from(file.content, 'base64').toString());
-    const user = users.find(u => u.sessionToken === sessionToken);
+    const user = users.find(u => findSession(u, sessionToken));
     if (!user) return null;
     if (new Date(user.sessionExpiry) < new Date()) return null;
     return user;

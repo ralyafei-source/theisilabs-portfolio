@@ -1,3 +1,4 @@
+const { findSession } = require('./_lib/pin');
 // api/sa-grades.js
 // Stores SA grades in data/sa-grades.json on GitHub. Upsert + delete + replace.
 // Keyed by symbol. Mirrors update-portfolio.js auth + GitHub read/write pattern.
@@ -18,7 +19,7 @@ async function verifyAdminSession(sessionToken) {
     const fileData = await r.json();
     const users = JSON.parse(Buffer.from(fileData.content, 'base64').toString('utf8'));
     const list = Array.isArray(users) ? users : (users.users || []);
-    const user = list.find(u => u.sessionToken === sessionToken);
+    const user = list.find(u => findSession(u, sessionToken));
     if (!user) return null;
     if (user.sessionExpiry && new Date(user.sessionExpiry) < new Date()) return null;
     if (!user.isAdmin) return null;

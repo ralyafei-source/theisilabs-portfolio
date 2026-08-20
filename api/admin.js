@@ -1,5 +1,6 @@
 const https = require('https');
 const crypto = require('crypto');
+const { tokenHash, findSession } = require('./_lib/pin');
 
 const REPO = 'ralyafei-source/theisilabs-portfolio';
 
@@ -88,7 +89,7 @@ async function ghReadRaw(path) {
 async function verifyAdmin(sessionToken, githubToken) {
   const usersFile = await ghGet('data/users.json', githubToken);
   const users = JSON.parse(Buffer.from(usersFile.content, 'base64').toString());
-  const user = users.find(u => u.sessionToken === sessionToken && u.isAdmin);
+  const user = users.find(u => u.isAdmin && findSession(u, sessionToken));
   if (!user || new Date(user.sessionExpiry) < new Date()) return null;
   return { user, users, usersFile };
 }
@@ -107,12 +108,7 @@ function generateTempPin() {
   return String(Math.floor(1000 + Math.random() * 9000));
 }
 
-async function hashPin(pin) {
-  const hash = crypto.createHash('sha256');
-  const PIN_SALT = process.env.PIN_SALT || 'theisi-pin-salt-v1';
-  hash.update(pin + PIN_SALT);
-  return hash.digest('hex');
-}
+// hashPin() removed — PIN verifiers are derived server-side in api/_lib/pin.js
 
 function buildPrompt(type, portfolioText, marketText) {
   const today = new Date().toISOString().slice(0, 10);
@@ -426,10 +422,12 @@ module.exports = async function handler(req, res) {
         const idx = users.findIndex(u => u.nickname.toLowerCase() === nickname.toLowerCase());
         if (idx === -1) return res.status(404).json({ error: 'User not found' });
         const tempPin = generateTempPin();
-        users[idx].pinHash = await hashPin(tempPin);
+        delete users[idx].pinHash;        // legacy public-equivalent credential
+        delete users[idx].pinVerifier;    // next login sets a fresh one
         users[idx].failedAttempts = 0;
         users[idx].lockoutUntil = null;
-        users[idx].sessionToken = null;
+        delete users[idx].sessionToken;
+        users[idx].sessions = [];         // revoke every device
         users[idx].needsPinSetup = true;
         await ghPut('data/users.json', users, usersFile.sha, githubToken);
         return res.status(200).json({ success: true, tempPin });
@@ -452,7 +450,8 @@ module.exports = async function handler(req, res) {
         if (users[idx].isAdmin) return res.status(400).json({ error: 'Cannot block admin' });
         users[idx].isBlocked = true;
         users[idx].blockReason = reason || 'Blocked by admin';
-        users[idx].sessionToken = null;
+        delete users[idx].sessionToken;
+        users[idx].sessions = [];
         await ghPut('data/users.json', users, usersFile.sha, githubToken);
         return res.status(200).json({ success: true });
       }

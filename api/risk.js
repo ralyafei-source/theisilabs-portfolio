@@ -25,6 +25,7 @@ const BENCH        = 'SPY';
 
 const { holdingsFromWorkbook, buildReport } = require('./_lib/risk-core');
 
+const { findSession } = require('./_lib/pin');
 const uaeDate = () => new Date(Date.now() + 4 * 3600000).toISOString().slice(0, 10);
 
 async function ghRead(path) {
@@ -104,9 +105,7 @@ async function verifySessionNick(token) {
   try {
     const usersData = await ghRead('data/users.json');
     const list = Array.isArray(usersData) ? usersData : ((usersData && usersData.users) || []);
-    const now = new Date();
-    const user = list.find(u => (u.sessions || []).some(s =>
-      s.sessionToken === token && (!s.sessionExpiry || new Date(s.sessionExpiry) > now)));
+    const user = list.find(u => findSession(u, token));
     return user ? String(user.nickname || user.nick || '').toLowerCase() : null;
   } catch (e) { return null; }
 }

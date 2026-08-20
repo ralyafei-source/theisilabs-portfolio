@@ -3,6 +3,7 @@
 // Routes via ?action=login | signup | me | set-telegram
 
 const crypto = require('crypto');
+const { pinVerifier, tokenHash, checkPin, findSession, pepperReady } = require('./_lib/pin');
 
 const REPO = 'ralyafei-source/theisilabs-portfolio';
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
@@ -89,24 +90,31 @@ function getLockoutMinutes(attempts) {
   if (attempts <= 3) return 0;
   return (attempts - 3) * 5;
 }
+// Returns { raw, record }. `raw` goes to the client ONCE and is never stored;
+// `record` (hash + expiry) is what lands in the public users.json.
 function newSession() {
+  const raw = generateToken();
   return {
-    sessionToken: generateToken(),
-    sessionExpiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    raw,
+    record: {
+      tokenHash: tokenHash(raw),
+      sessionExpiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    }
   };
 }
 function pushSession(user, session) {
-  user.sessions = (user.sessions || []).filter(s => new Date(s.sessionExpiry) > new Date());
-  user.sessions.push(session);
+  user.sessions = (user.sessions || [])
+    .filter(s => s && s.tokenHash && new Date(s.sessionExpiry) > new Date());
+  user.sessions.push(session.record);
   while (user.sessions.length > 3) user.sessions.shift();
+  delete user.sessionToken;   // drop the legacy plaintext field if present
 }
 // Resolve the caller's session token -> user object (or null)
 function findBySession(users, sessionToken) {
-  const user = users.find(u => (u.sessions || []).some(s => s.sessionToken === sessionToken));
-  if (!user) return null;
-  const session = user.sessions.find(s => s.sessionToken === sessionToken);
-  if (new Date(session.sessionExpiry) < new Date()) return null;
-  return user;
+  for (const u of users) {
+    if (findSession(u, sessionToken)) return u;
+  }
+  return null;
 }
 function bearer(req) {
   return (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
@@ -118,6 +126,10 @@ function bearer(req) {
 async function handleLogin(req, res, token) {
   const { nickname, pinHash } = req.body || {};
   if (!nickname || !pinHash) return res.status(400).json({ error: 'Missing nickname or PIN' });
+  if (!pepperReady()) {
+    console.error('PIN_PEPPER missing or too short — refusing all logins');
+    return res.status(503).json({ error: 'Auth not configured' });
+  }
 
   const usersFile = await ghGet('data/users.json', token);
   const users = ghDecode(usersFile);
@@ -134,7 +146,8 @@ async function handleLogin(req, res, token) {
 
   // First-time PIN setup
   if (user.needsPinSetup) {
-    user.pinHash = pinHash;
+    user.pinVerifier = pinVerifier(user.nickname, pinHash);
+    delete user.pinHash;               // legacy plaintext-equivalent field
     user.needsPinSetup = false;
     user.failedAttempts = 0;
     user.lockoutUntil = null;
@@ -142,7 +155,7 @@ async function handleLogin(req, res, token) {
     pushSession(user, session);
     await ghPut('data/users.json', users, usersFile.sha, token);
     return res.status(200).json({
-      token: session.sessionToken,
+      token: session.raw,
       nickname: user.nickname,
       isAdmin: user.isAdmin || false,
       firstLogin: true
@@ -150,7 +163,7 @@ async function handleLogin(req, res, token) {
   }
 
   // Wrong PIN
-  if (user.pinHash !== pinHash) {
+  if (!checkPin(user, pinHash)) {
     user.failedAttempts = (user.failedAttempts || 0) + 1;
     const attempts = user.failedAttempts;
     const lockoutMins = getLockoutMinutes(attempts);
@@ -180,7 +193,7 @@ async function handleLogin(req, res, token) {
   await ghPut('data/users.json', users, usersFile.sha, token);
 
   return res.status(200).json({
-    token: session.sessionToken,
+    token: session.raw,
     nickname: user.nickname,
     isAdmin: user.isAdmin || false
   });
@@ -194,6 +207,10 @@ async function handleSignup(req, res, token) {
   if (!inviteCode || !nickname || !pinHash) return res.status(400).json({ error: 'Missing required fields' });
   if (!/^[a-zA-Z0-9_]{3,20}$/.test(nickname)) {
     return res.status(400).json({ error: 'Nickname must be 3-20 characters, letters/numbers/underscores only' });
+  }
+  if (!pepperReady()) {
+    console.error('PIN_PEPPER missing or too short — refusing signup');
+    return res.status(503).json({ error: 'Auth not configured' });
   }
 
   const codesFile = await ghGet('data/invite-codes.json', token);
@@ -216,9 +233,9 @@ async function handleSignup(req, res, token) {
   const newUser = {
     id: generateId(),
     nickname: nick,
-    pinHash,
+    pinVerifier: pinVerifier(nick, pinHash),
     needsPinSetup: false,
-    sessions: [session],
+    sessions: [session.record],
     failedAttempts: 0,
     lockoutUntil: null,
     isAdmin: false,
@@ -244,7 +261,7 @@ async function handleSignup(req, res, token) {
     console.error('portfolio create failed (non-fatal):', e.message);
   }
 
-  return res.status(200).json({ token: session.sessionToken, nickname: nick, isAdmin: false });
+  return res.status(200).json({ token: session.raw, nickname: nick, isAdmin: false });
 }
 
 // ══════════════════════════════════════════

@@ -8,6 +8,7 @@
 // (only when the expiry would move by ~a day or more) to avoid GitHub churn.
 
 const https = require('https');
+const { tokenHash, findSession } = require('./_lib/pin');
 const REPO = 'ralyafei-source/theisilabs-portfolio';
 
 const SESSION_DAYS       = 90;
@@ -65,10 +66,12 @@ async function verifySession(req, githubToken) {
   try {
     const usersFile = await ghGet('data/users.json', githubToken);
     const users = JSON.parse(Buffer.from(usersFile.content, 'base64').toString());
-    const user = users.find(u => (u.sessions || []).some(s => s.sessionToken === sessionToken));
+    let user = null, session = null;
+    for (const u of users) {
+      const s = findSession(u, sessionToken);
+      if (s) { user = u; session = s; break; }
+    }
     if (!user) return null;
-    const session = user.sessions.find(s => s.sessionToken === sessionToken);
-    if (new Date(session.sessionExpiry) < new Date()) return null;
 
     // ── Sliding renewal — keeps active users signed in indefinitely ──
     try {
