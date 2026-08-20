@@ -357,24 +357,33 @@ module.exports = async (req, res) => {
       // ════════════════════════════════════════════════════════════════════════
       // FACTOR 1 — VOLATILITY  (v4: CNN method blended with yearly percentile)
       // CNN scores VIX vs its OWN 50-day MA — spikes above trend = fear even
-      // when the absolute level is low. We blend that (60%) with the old
-      // 252d percentile (40%) so both regime and shock register.
+      // when the absolute level is low.
+      //
+      // v5 (2026-08-20): the 40% 252-day-percentile blend is REMOVED. The two
+      // components routinely disagree and the average cancelled the signal: on
+      // 2026-08-20 VIX sat at the 21st percentile of its year (calm -> 79) while
+      // trading 3.85% ABOVE its 50-day MA (fear -> 44). The blend printed 58 and
+      // the fear vanished. CNN scores this factor on the 50-day MA alone, and
+      // matching that definition removed +14 points of standing bias here.
+      // vixPct252 is still COMPUTED and returned, because the card displays it —
+      // it just no longer feeds the score.
       // ════════════════════════════════════════════════════════════════════════
       let fVol = null, vixPct252 = null, vixGap50 = null;
       if (vixNow != null && vixSeries.length) {
         const closes = vixSeries.map(x => x.v);
         const w252 = closes.slice(0, 252);
         const below = w252.filter(v => v < vixNow).length;
-        vixPct252 = below / w252.length;                        // 0..1
-        const pctScore = clamp(Math.round((1 - vixPct252) * 100), 0, 100);
+        vixPct252 = below / w252.length;                        // 0..1, display only
         const ma50 = sma(closes, 50);
-        let cnnScore = null;
         if (ma50) {
           vixGap50 = (vixNow - ma50) / ma50 * 100;              // e.g. +18% above 50d
           // ±30% gap → full range, inverted (above MA = fear)
-          cnnScore = clamp(Math.round(50 - vixGap50 * 1.67), 0, 100);
+          fVol = clamp(Math.round(50 - vixGap50 * 1.67), 0, 100);
+        } else {
+          // No 50-day MA yet (short series). Fall back to the percentile rather
+          // than dropping the factor, so the composite keeps all six inputs.
+          fVol = clamp(Math.round((1 - vixPct252) * 100), 0, 100);
         }
-        fVol = cnnScore != null ? Math.round(cnnScore * 0.6 + pctScore * 0.4) : pctScore;
       }
 
       // ════════════════════════════════════════════════════════════════════════
@@ -463,18 +472,20 @@ module.exports = async (req, res) => {
       for (let i = N - 1; i >= 0; i--) {
         const day = vixSeries[i].date;
 
-        // f1: VIX vs trailing 50d MA (60%) + trailing 252d percentile (40%)
+        // f1: VIX vs trailing 50d MA (v5 — same definition as the live factor
+        // above; if these two ever diverge the 90-day line steps at the join)
         let s1 = null;
         const vTrail = vixSeries.slice(i).map(x => x.v);
         const vNow = vixSeries[i].v;
         if (vTrail.length && isFinite(vNow)) {
-          const w252 = vTrail.slice(0, 252);
-          const below = w252.filter(v => v < vNow).length;
-          const pctScore = clamp(Math.round((1 - below / w252.length) * 100), 0, 100);
           const ma50 = sma(vTrail, 50);
-          s1 = ma50
-            ? Math.round(clamp(Math.round(50 - ((vNow - ma50) / ma50 * 100) * 1.67), 0, 100) * 0.6 + pctScore * 0.4)
-            : pctScore;
+          if (ma50) {
+            s1 = clamp(Math.round(50 - ((vNow - ma50) / ma50 * 100) * 1.67), 0, 100);
+          } else {
+            const w252 = vTrail.slice(0, 252);
+            const below = w252.filter(v => v < vNow).length;
+            s1 = clamp(Math.round((1 - below / w252.length) * 100), 0, 100);
+          }
         }
         // f2: SPX vs trailing 125d avg (+10d decay)
         let s2 = null;
@@ -548,7 +559,7 @@ module.exports = async (req, res) => {
         trend,
         weekAgoScore,
         asOf: new Date().toISOString().slice(0, 10),
-        method: '6-factor (VIX 20% · momentum 20% · safe-haven 20% · strength 15% · credit 15% · breadth 10%)',
+        method: 'v5 6-factor (VIX vs 50d MA 20% · momentum 20% · safe-haven 20% · strength 15% · credit 15% · breadth 10%)',
         creditSource,
         factors: {
           volatility: fVol,
@@ -561,6 +572,24 @@ module.exports = async (req, res) => {
         cnn,
         vsCNN: cnn ? (score - cnn.score) : null,
       };
+      // ── Drift stamp (once per UAE day) ──────────────────────────────────
+      // The v3 gauge ran ~30 points above CNN for weeks with nothing comparing
+      // them. CNN's live score is already in this response, so record the pair
+      // and let the watchdog assert the gap. Throttled to one write per day:
+      // this mode is public and browser-called, so it must not write per request.
+      try {
+        if (cnn && cnn.score != null && process.env.GITHUB_TOKEN) {
+          const today = todayUAE();
+          const prev = await ghReadJson('data/system/sentiment-status.json');
+          if (!prev || prev.asOf !== today) {
+            await ghWriteJson('data/system/sentiment-status.json', {
+              asOf: today, score, cnn: cnn.score, gap: score - cnn.score,
+              factors: resp.factors, method: resp.method
+            });
+          }
+        }
+      } catch (e) { console.error('sentiment stamp failed (non-fatal):', e.message); }
+
       if (debug) {
         resp.debug = {
           vixNow, vixPct252,

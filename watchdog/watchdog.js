@@ -158,6 +158,20 @@ async function checkFreshness() {
         false, `still present, ${oldest ?? '?'}d stale — written by 977 Route 0, read by nothing live; safe to delete`);
   }
 
+  // ── Price alerts liveness (scenario 5827323) ──────────────────────────────
+  // The per-user state file is written only when a level CHANGES, so its age is
+  // not a liveness signal — a quiet week looks exactly like a dead scenario.
+  // api/target-alerts.js stamps this heartbeat on every scan instead. Make
+  // disables a scenario after 3 consecutive errors without telling anyone, which
+  // is precisely what this is here to catch.
+  const hb = await raw('data/system/alerts-status.json');
+  const hbAt = hb && hb.last_scan;
+  const hbAgeH = hbAt ? Math.round((Date.now() - Date.parse(hbAt)) / 3600000) : null;
+  add(FAIL, 'price alerts scenario ran in the last 25 hours',
+      hbAgeH != null && hbAgeH <= 25,
+      hbAt ? `last scan ${hbAt} · ${hbAgeH}h ago · scanned=${hb.scanned} sent=${hb.sent}`
+           : 'no heartbeat file — deploy the target-alerts heartbeat, or the scenario is dead');
+
   const dists = await raw('data/distributions.json');
   const meta = dists && dists._meta;
   const built = meta && (meta.built || meta.date || meta.updated);
@@ -204,6 +218,23 @@ async function checkWeekly() {
     add(FAIL, 'narrative gate passed on the latest weekly', doc.guard.ok === true,
         `mode=${doc.guard.mode} violations=${(doc.guard.violations || []).length}`);
   }
+}
+
+// ── 3b. Fear & Greed has not silently drifted from CNN ─────────────────────
+// The v3 gauge sat ~30 points above CNN for weeks because nothing compared them.
+// The endpoint already fetches CNN's live score, so the check is nearly free.
+// This is a WARN, not a FAIL: THEISI is portfolio-flavoured and is SUPPOSED to
+// differ a little. A persistent >15 means the formula has drifted, not the market.
+async function checkSentiment() {
+  const s = await raw('data/system/sentiment-status.json');
+  if (!s || s.score == null || s.cnn == null) {
+    add(WARN, 'fear & greed vs CNN is being recorded', false,
+        'no data/system/sentiment-status.json — 977 is not stamping the comparison');
+    return;
+  }
+  const gap = Math.abs(Number(s.score) - Number(s.cnn));
+  add(WARN, 'fear & greed within 15 points of CNN', gap <= 15,
+      `THEISI ${s.score} vs CNN ${s.cnn} · gap ${gap} (asOf ${s.asOf || '?'})`);
 }
 
 // ── 4. Security regressions ────────────────────────────────────────────────
@@ -282,6 +313,7 @@ async function main() {
   await checkDaily();
   await checkFreshness();
   await checkWeekly();
+  await checkSentiment();
   await checkSecurity();
 
   const failures = results.filter(r => !r.ok && r.severity === FAIL);
