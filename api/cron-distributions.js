@@ -13,8 +13,13 @@ module.exports = async (req, res) => {
 
   if (!API_KEY) return res.status(500).json({ error: 'BRIEFING_API_KEY not set' });
 
-  // Allow manual runs from a browser with ?key=... ; cron calls need no key.
-  const isCron = !!req.headers['x-vercel-cron'];
+    // Vercel Cron sends `Authorization: Bearer <CRON_SECRET>` when CRON_SECRET is
+  // set on the project. There is no `x-vercel-cron` header — the documented one
+  // is `x-vercel-cron-schedule` — and a client-settable header must never
+  // authorize on its own. Manual runs still work with ?key=<BRIEFING_API_KEY>.
+  const CRON_SECRET = process.env.CRON_SECRET || '';
+  const bearer = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+  const isCron = !!CRON_SECRET && bearer === CRON_SECRET;
   if (!isCron && req.query.key !== API_KEY) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
