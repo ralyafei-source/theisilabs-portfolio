@@ -250,6 +250,27 @@ module.exports = async (req, res) => {
         if (debug) entry.detail = r.debug;
         perUser.push(entry);
       }
+      // ── Heartbeat ───────────────────────────────────────────────────────
+      // data/target-alerts-{nick}.json is written ONLY when a level changes, so
+      // its age says nothing about liveness: a quiet week with no escalations is
+      // indistinguishable from a dead scenario. Make disables a scenario after 3
+      // consecutive errors, silently — exactly the failure this system keeps
+      // hitting. So stamp an unconditional heartbeat every scan and let the
+      // watchdog assert its age.
+      try {
+        const hbPath = 'data/system/alerts-status.json';
+        const prev = await ghGetJson(hbPath, githubToken);
+        await ghPutJson(hbPath, {
+          last_scan: new Date().toISOString(),
+          scanned: list.length,
+          sent: totalSent,
+          telegram_configured: list.filter(u => u.telegram_chat_id).length,
+          ok: true
+        }, prev && prev.sha, githubToken);
+      } catch (e) {
+        console.error('alerts heartbeat write failed (non-fatal):', e.message);
+      }
+
       return res.status(200).json({ ok: true, tgTokenSet: !!tgToken, scanned: list.length, sent: totalSent, users: perUser, asOf: new Date().toISOString() });
     }
 
