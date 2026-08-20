@@ -215,9 +215,13 @@ async function checkSecurity() {
   for (const f of ['api/portfolio-for-ai.js', 'api/historical-snapshot.js']) {
     const src = await raw(f);
     if (typeof src !== 'string') { add(WARN, `${f} readable`, false, 'not fetched'); continue; }
-    add(FAIL, `${f} has no hardcoded key fallback`, !src.includes("'theisilabs2026'"), 'literal fallback');
-    add(FAIL, `${f} auth does not fail open`, !/if\s*\(\s*key\s*&&\s*key\s*!==\s*API_KEY\s*\)/.test(src),
-        'pattern `if (key && key !== API_KEY)` lets a request with no key through');
+        const hasLiteral = src.includes("'theisilabs2026'");
+    add(FAIL, `${f} has no hardcoded key fallback`, !hasLiteral,
+        hasLiteral ? 'literal fallback present' : 'env only');
+    const failsOpen = /if\s*\(\s*key\s*&&\s*key\s*!==\s*API_KEY\s*\)/.test(src);
+    add(FAIL, `${f} auth does not fail open`, !failsOpen,
+        failsOpen ? 'pattern `if (key && key !== API_KEY)` lets a request with no key through'
+                  : 'strict key comparison');
   }
 }
 
