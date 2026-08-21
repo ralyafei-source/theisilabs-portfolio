@@ -13,8 +13,8 @@
 > including the ones Dispatch spawns from a phone — read the repo and `CLAUDE.md`. They cannot
 > see project docs. Anything written only in the project is invisible to the agent doing the work.
 >
-> Last substantive revision: **2026-08-20** (security audit, F&G v5, narrative guard, watchdog
-> 13→30 checks). Watchdog at that point: 30 checks, 0 failures, 1 warning.
+> Last substantive revision: **2026-08-21** (portfolio-input check, watchdog 30→38 checks).
+> Watchdog at that point: 38 checks, 0 failures, 2 warnings.
 
 ---
 
@@ -78,7 +78,8 @@ week's news) go to `unverified` and do NOT gate. **Ships in `warn`** — set `GU
 after a few clean weeks. A gate that fires on launch day gets disabled.
 
 LIMIT: it checks prose against computed fields. It CANNOT catch bad input — correct arithmetic
-on a wrong share count passes cleanly. See §8.
+on a wrong share count passes cleanly. That gap is now covered from the other side by the
+portfolio-input check in §7 (2026-08-21), which validates the INPUT rather than the prose.
 
 ## 5. AUTH & CREDENTIALS — v2 model (2026-08-20)
 
@@ -166,7 +167,7 @@ trustworthy for indices.
 - `data/opportunities/today.json` and `data/news.json`: DELETED (the dashboard reads
   `data/market/news-{date}.json`).
 
-## 7. WATCHDOG (`watchdog/watchdog.js` — GitHub Actions, 30 checks, 04:17 UTC daily)
+## 7. WATCHDOG (`watchdog/watchdog.js` — GitHub Actions, 38 checks, 04:17 UTC daily)
 
 Runs in Actions deliberately: a monitor sharing a failure domain with what it monitors is not a
 monitor. Silence means healthy.
@@ -182,6 +183,26 @@ Design notes worth preserving:
   check and produced a confident wrong diagnosis before the code was read.
 - distributions escalates: >8d WARN, >15d FAIL. It sat at WARN for two weeks while the cron 401'd.
 - F&G drift is WARN not FAIL above 15 points: THEISI is portfolio-flavoured and SHOULD differ.
+- **Portfolio-input check (2026-08-21)** closes the §8 gap: the narrative guard checks prose
+  against computed fields, so correct arithmetic on a wrong share count passed cleanly. Two
+  tiers, both tuned against ALL 101 commit pairs in the portfolio files' history:
+  **FAIL** when shares move ≥1.5x while `shares*cost` stays within 10% — the split/units-error
+  signature, ZERO historical hits, and no real trade does it (a buy adds book value; a sell
+  removes it and leaves cost untouched). It needs the low 1.5x threshold because a 2:1 split
+  error only moves shares 2x — the 5x rule would sail straight past it.
+  **WARN** when shares move ≥5x and the commit message names neither ticker nor company —
+  2 historical hits, roughly one alert every six weeks.
+  Matching the COMPANY NAME matters: "Update shares value for Atlassian" is a genuine TEAM
+  trade and ticker-only matching flags it. Verified by stubbing `fetch` and running the real
+  code path — not a reimplementation, which is how the narrative guard's first test lied.
+  LIMITS: per-user files are committed by Make with generic "Update data/portfolio-{nick}.json"
+  messages, so the WARN tier can never excuse a legitimate large move there. It compares only
+  commits from the last 8 days, so an alert ages out rather than shouting forever. If the
+  commits API is unreachable it reports "input NOT verified" — never a silent pass.
+- The two portfolio formats are NOT the same shape: `portfolio.json` is
+  `{profile, holdings[], meta}` with `name`; `portfolio-{nick}.json` is
+  `{nickname, stocks[], lastUpdated}` with `en`. Reading only `holdings` silently checked
+  nothing on four of the five files — caught only because unparsed revisions WARN.
 
 ## 8. KNOWN OPEN ITEMS
 *Each line is a claim about the world, and claims rot. Re-verify before acting — a stale entry
@@ -192,10 +213,6 @@ here caused a wrong diagnosis on 2026-08-20. Delete items when they close.*
   — every write Wed/Thu, never Sunday, though all three crons are Sunday. The `CRON_SECRET` fix
   is the leading candidate; **first real test is Sunday 2026-08-23 ~01:00 UTC.** If no commit
   lands, check Deployment Protection, which blocks cron invocations on Pro without a bypass.
-- **Nothing validates `portfolio.json`'s INPUT.** The narrative guard checks prose against
-  computed fields, but correct arithmetic on a wrong share count passes cleanly. Proposed: a
-  watchdog check flagging any holding whose share count changes >5x between commits without a
-  matching trade. Not built.
 - `users.json` still lives in the public repo. With the v2 model it leaks nothing usable, so not
   urgent — but `api/_auth.js` rewrites it on every sliding-session renewal, so it churns.
 - `BRIEFING_API_KEY` exposed in chat 2026-08-05, not rotated. A second key was exposed in the

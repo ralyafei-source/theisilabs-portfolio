@@ -81,6 +81,47 @@ async function probeNewest(makePath, maxDays) {
   return { latest: null, ageDays: null };
 }
 
+/**
+ * Recent commits touching one path, newest first.
+ * Same null-vs-empty discipline as listDir: null means "could not look", which
+ * must never be reported as "nothing wrong".
+ */
+async function commitsFor(path, n) {
+  const tok = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+  try {
+    const r = await fetch(`${API}/commits?path=${encodeURIComponent(path)}&sha=${BRANCH}&per_page=${n}`, {
+      headers: Object.assign({ 'Accept': 'application/vnd.github+json' },
+                             tok ? { Authorization: `Bearer ${tok}` } : {})
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (!Array.isArray(j)) return null;
+    return j.map(c => ({
+      sha: c.sha,
+      msg: String((c.commit && c.commit.message) || '').split('\n')[0],
+      date: String((c.commit && c.commit.committer && c.commit.committer.date) || '').slice(0, 10)
+    }));
+  } catch { return null; }
+}
+
+/**
+ * A file's contents at a specific commit. Pinned shas are immutable, so there is
+ * no cache-buster and the result is memoized — consecutive pairs share an
+ * endpoint, so this halves the fetches.
+ */
+const _rawAtCache = new Map();
+async function rawAt(sha, path) {
+  const key = sha + ':' + path;
+  if (_rawAtCache.has(key)) return _rawAtCache.get(key);
+  let out = null;
+  try {
+    const r = await fetch(`https://raw.githubusercontent.com/${REPO}/${sha}/${path}`);
+    if (r.ok) out = JSON.parse(await r.text());
+  } catch { out = null; }
+  _rawAtCache.set(key, out);
+  return out;
+}
+
 /** Newest dated file matching `prefix` in `dir`, and its age in days. */
 function newestDated(names, prefix) {
   const re = new RegExp('^' + prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\d{4}-\\d{2}-\\d{2})');
@@ -308,6 +349,147 @@ async function checkSecurity() {
   }
 }
 
+// ── 5. portfolio.json's INPUT is plausible ─────────────────────────────────
+// Everything downstream — weights, scores, the weekly narrative — assumes the
+// share counts are right. The narrative guard (SSOT §4) traces prose back to
+// COMPUTED fields, so correct arithmetic on a WRONG share count passes it
+// cleanly. Nothing checked the input itself. This does.
+//
+// TUNED AGAINST ALL 101 COMMIT PAIRS in the four portfolio files' history,
+// because a check that cries wolf gets switched off:
+//
+//   · WARN — shares move >=5x and the commit message names neither the ticker
+//     nor the company. 2 historical hits (2026-08-04 TEAM 129->1212 and
+//     2026-08-19 TEAM 212->12). Both were real edits, and both are exactly the
+//     kind of move where a typo would hide — the Aug 2026 TEAM history had to
+//     be re-verified by hand precisely because nobody could tell. Roughly one
+//     alert every six weeks. Matching the company name matters: "Update shares
+//     value for Atlassian" is a genuine TEAM trade and ticker-only matching
+//     would flag it.
+//
+//   · FAIL — shares move >=1.5x while shares*cost stays within 10%. ZERO
+//     historical hits, ever. No real trade does this: a buy adds book value, a
+//     sell removes it and leaves the cost basis untouched (average-cost, per
+//     SSOT §2). Shares and cost moving inversely means both fields were
+//     rewritten — a split adjustment applied to one side, or applied twice.
+//     That is the BSX-at-$50.43 concern in SSOT §2, and it moves shares only
+//     ~2x, which is why it needs a lower threshold than the 5x rule.
+const SHARE_FACTOR = 5;      // "somebody fat-fingered a digit" territory
+const SPLIT_FACTOR = 1.5;    // a 2:1 split only moves shares 2x
+const BOOK_TOLERANCE = 1.10; // shares*cost unchanged => money did not move
+
+// The two portfolio formats are NOT the same shape, which is easy to miss:
+// data/portfolio.json is {profile, holdings[], meta} with `name`, while the
+// per-user data/portfolio-{nick}.json is {nickname, stocks[], lastUpdated}
+// with `en`. Reading only `holdings` silently checked nothing on four of the
+// five files — caught here only because unparsed revisions WARN instead of
+// passing quietly.
+function holdingMap(doc) {
+  const arr = Array.isArray(doc) ? doc : (doc && (doc.holdings || doc.stocks || doc.positions));
+  if (!Array.isArray(arr)) return null;
+  const m = new Map();
+  for (const h of arr) {
+    const sym = String((h && (h.sym || h.symbol || h.ticker)) || '').toUpperCase();
+    const shares = Number(h && h.shares);
+    if (sym && isFinite(shares)) {
+      m.set(sym, { shares, cost: Number(h.cost), name: String((h.name || h.en) || '') });
+    }
+  }
+  return m;
+}
+
+/** Does the commit message name this holding, by ticker or by company name? */
+function commitNames(msg, sym, name) {
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (new RegExp('\\b' + esc(sym) + '\\b', 'i').test(msg)) return 'ticker';
+  for (const w of String(name).split(/\s+/)) {
+    if (w.length >= 4 && new RegExp('\\b' + esc(w) + '\\b', 'i').test(msg)) return 'name';
+  }
+  return null;
+}
+
+async function checkPortfolioInput() {
+  const users = await raw('data/users.json');
+  const list = Array.isArray(users) ? users : (users && users.users) || [];
+  const files = ['data/portfolio.json'];
+  for (const u of list) {
+    if (u && u.nickname && !u.isAdmin) files.push(`data/portfolio-${u.nickname}.json`);
+  }
+
+  for (const file of [...new Set(files)]) {
+    // Look back 6 commits so several edits between daily runs are all covered,
+    // then keep only recent pairs so an old alert ages out instead of shouting
+    // forever. Commits are filtered to this path, so these are portfolio edits
+    // only — the Make scenarios' constant commits to other data files never
+    // consume the window.
+    const commits = await commitsFor(file, 6);
+    if (commits === null) {
+      // Could not look. Say so — reporting "clean" here is the exact failure
+      // mode this whole watchdog exists to catch.
+      add(WARN, `portfolio input checked (${file})`, false,
+          'GitHub commits API unavailable (rate limit or outage) — input NOT verified');
+      continue;
+    }
+    if (commits.length < 2) {
+      add(WARN, `portfolio input checked (${file})`, commits.length === 1,
+          commits.length ? 'only one commit in history — nothing to compare yet'
+                         : 'no commits found for this path — is the file tracked?');
+      continue;
+    }
+
+    const findings = [];
+    let compared = 0, unreadable = 0;
+    for (let i = 0; i + 1 < commits.length; i++) {
+      const cur = commits[i], prev = commits[i + 1];
+      if (cur.date && daysBetween(cur.date, uaeDate()) > 8) break; // older than the alert window
+      const [bDoc, aDoc] = await Promise.all([rawAt(cur.sha, file), rawAt(prev.sha, file)]);
+      const b = holdingMap(bDoc), a = holdingMap(aDoc);
+      if (!a || !b) { unreadable++; continue; }
+      compared++;
+      for (const [sym, o] of a) {
+        if (!b.has(sym)) continue;                       // full exit = ordinary sell
+        const n = b.get(sym);
+        if (!(o.shares > 0) || !(n.shares > 0)) continue;
+        const ratio = Math.max(o.shares, n.shares) / Math.min(o.shares, n.shares);
+        if (ratio < SPLIT_FACTOR) continue;
+
+        const bookOld = o.shares * o.cost, bookNew = n.shares * n.cost;
+        const bookRatio = (bookOld > 0 && bookNew > 0)
+          ? Math.max(bookOld, bookNew) / Math.min(bookOld, bookNew) : null;
+
+        if (ratio >= SPLIT_FACTOR && bookRatio != null && bookRatio <= BOOK_TOLERANCE) {
+          findings.push({ sev: FAIL, sym,
+            detail: `${sym} ${o.shares} -> ${n.shares} shares (${ratio.toFixed(1)}x) while cost ` +
+                    `${o.cost} -> ${n.cost} left book value flat (${bookRatio.toFixed(2)}x) ` +
+                    `in ${cur.sha.slice(0, 8)} "${cur.msg}" — split/units error signature, no trade moves money like this` });
+          continue;
+        }
+        if (ratio >= SHARE_FACTOR && !commitNames(cur.msg, sym, o.name || n.name)) {
+          findings.push({ sev: WARN, sym,
+            detail: `${sym} ${o.shares} -> ${n.shares} shares (${ratio.toFixed(1)}x) in ` +
+                    `${cur.sha.slice(0, 8)} "${cur.msg}" — message names neither ticker nor company; confirm the trade was real` });
+        }
+      }
+    }
+
+    const fails = findings.filter(f => f.sev === FAIL);
+    const warns = findings.filter(f => f.sev === WARN);
+    // Detail strings are CONDITIONAL on the outcome — the earlier watchdog
+    // printed its failure text on passing checks and produced a confident wrong
+    // diagnosis (SSOT §7).
+    add(FAIL, `no implausible share rewrite in ${file}`, fails.length === 0,
+        fails.length ? fails.map(f => f.detail).join(' · ')
+                     : `${compared} recent commit pair(s) clean`);
+    add(WARN, `large share moves in ${file} are explained`, warns.length === 0,
+        warns.length ? warns.map(f => f.detail).join(' · ')
+                     : `${compared} recent commit pair(s) clean`);
+    if (unreadable) {
+      add(WARN, `every recent ${file} revision parsed`, false,
+          `${unreadable} revision(s) could not be read or parsed — those pairs were NOT checked`);
+    }
+  }
+}
+
 // ── report ─────────────────────────────────────────────────────────────────
 async function main() {
   await checkDaily();
@@ -315,6 +497,7 @@ async function main() {
   await checkWeekly();
   await checkSentiment();
   await checkSecurity();
+  await checkPortfolioInput();
 
   const failures = results.filter(r => !r.ok && r.severity === FAIL);
   const warnings = results.filter(r => !r.ok && r.severity === WARN);
