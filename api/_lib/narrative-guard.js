@@ -4,10 +4,15 @@
 //
 // The rule has always been: code computes every number, Claude writes only the
 // Arabic narrative from the fields it is given. Until now that was enforced by
-// asking nicely in a prompt, and it failed — a weekly report told Rashed that
-// TEAM was 20.5% of the portfolio when it was 0.16%. TEAM would have had to
-// trade at ~$11,188/share. Nothing caught it, and it sat in the SSOT as a known
-// risk for two weeks.
+// asking nicely in a prompt, and it failed: the 2026-07-21 weekly states a
+// cluster is worth $114,500 where code computed $121,379. A fabricated figure,
+// in a report Rashed reads and acts on.
+//
+// (An earlier version of this comment cited a TEAM concentration of 20.5% vs an
+// actual 0.16%. That was WRONG and is corrected here so nobody repeats it: the
+// 20.4% was accurate on 2026-08-05 — 1,211.99 shares at $109.95 — and Rashed
+// then sold the position down. The report was right; a note in the SSOT went
+// stale. See SSOT §4.)
 //
 // This checks every number that appears in Claude-written prose against the
 // numbers code actually computed. A number that cannot be traced to a computed
@@ -92,10 +97,10 @@ function computedNumbers(doc) {
 
     // DERIVED AGGREGATES. Claude summing three given weights to say "the top
     // three are 40% of the portfolio" is correct analysis, not invention — and
-    // an early version of this guard flagged exactly that. Adding a stock alone
-    // is the check that matters (TEAM's 20.5% claim was about ONE holding and
-    // matches no subset), so precompute the aggregates a competent analyst would
-    // reasonably state and treat those as traceable.
+    // an early version of this guard flagged exactly that. A claim about ONE
+    // holding matches no subset, which is what keeps the check meaningful, so
+    // precompute the aggregates a competent analyst would reasonably state and
+    // treat those as traceable.
     const w = rows.map(r => Number(r.weight)).filter(isFinite).sort((a, b) => b - a);
     const val = rows.map(r => Number(r.value)).filter(isFinite).sort((a, b) => b - a);
     for (const arr of [w, val]) {
