@@ -2,6 +2,13 @@ CLAUDE.md — Theisi Labs / Arabic Finance Intelligence System
 This file is read automatically at the start of every Claude Code session.
 It defines how to work on this repository. Read it fully before making changes.
 
+📘 READ THIS FIRST: THEISI_SSOT.md
+Before doing anything else, read THEISI_SSOT.md — the single source of truth for live
+system state: what is running, what is OFF, auth model, watchdog checks, and the open
+items list (§8). This file (CLAUDE.md) covers rules and conventions; the SSOT covers
+what is actually true right now. When the two disagree, the SSOT is newer — and when the
+SSOT disagrees with the repo, the repo wins.
+
 ⭐ CORE PRINCIPLE (highest authority on product philosophy)
 Before any build decision on dashboard, Telegram, Instagram, website, or AI prompts,
 check THEISI_CORE_PRINCIPLE.md. One line: we gather the scattered data and connect
@@ -68,10 +75,12 @@ Root (must stay in root):
   vercel.json             — Vercel deployment config. Required.
   package.json            — Node config. Required.
 
-api/ (all 12 functions — Vercel limit, do not delete any):
+api/ (core routes — do not delete any):
   analysis.js · auth.js · admin.js · briefing.js · chat.js
   generate-analysis.js · portfolio-for-ai.js · portfolio.js
   prices.js · translate.js · update-portfolio.js · user-portfolio.js
+  (These 12 are protected, not exhaustive — api/ currently holds 32 route files plus
+  7 helpers in api/_lib/. The old "all 12 functions" wording was a Hobby-plan relic.)
 
 data/ (live data — never delete, only archive old dated files):
   portfolio.json · users.json · invite-codes.json
@@ -109,8 +118,10 @@ api/analysis.js (and related) — saves/serves daily/weekly/monthly analysis
 data/portfolio.json — Rashed's portfolio (source of truth for holdings)
 data/portfolio-NAME.json — other users' portfolios
 
-Vercel function limit: 12 functions, currently AT the limit. Adding a new
-API route requires removing or merging one first. Plan around this.
+Vercel plan: PRO. No meaningful function cap — the 12-function limit was a Hobby-plan
+constraint and no longer applies. Adding a new API route does NOT require removing or
+merging an existing one; just add the file. (Pro also gives 40 crons and 300s
+maxDuration — see THEISI_SSOT.md §6.)
 
 DATA SOURCES
 
