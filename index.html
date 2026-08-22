@@ -2095,6 +2095,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:18px;}.hstat-
   <div class="sb-item" data-tab="sa-intel" style="display:none;" onclick="showTab('sa-intel',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><circle cx="8" cy="10" r="2"/><line x1="13" y1="8" x2="19" y2="8"/><line x1="13" y1="11" x2="19" y2="11"/><line x1="13" y1="14" x2="19" y2="14"/></svg></span><span class="sb-lbl">SA Intel</span></div>
   <div class="sb-item" data-tab="horizon" style="display:none;" onclick="showTab('horizon',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h18"/><path d="M5 14a7 7 0 0 1 14 0"/><line x1="12" y1="4" x2="12" y2="7"/><line x1="19.5" y1="9" x2="17.5" y2="10.5"/><line x1="4.5" y1="9" x2="6.5" y2="10.5"/></svg></span><span class="sb-lbl">Horizon</span></div>
   <div class="sb-item" data-tab="macro" onclick="showTab('macro',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5h6L11 22l8.5-11.5h-6z"/></svg></span><span class="sb-lbl">لو صار</span></div>
+  <div class="sb-item" data-tab="diversify" onclick="showTab('diversify',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.4 6.4"/><path d="M12 12l-8.5 3"/></svg></span><span class="sb-lbl">التنويع</span></div>
   <div class="sb-item" data-tab="setup"               onclick="showTab('setup',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="sb-lbl">Settings</span></div>
 </nav>
 <div id="appMain">
@@ -3774,6 +3775,48 @@ async function boot(){
 </div>
 </div>
 
+<div id="tab-diversify" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('macro',document.querySelector('[data-tab=macro]'))">← لو صار</div></div>
+<style>
+#tab-diversify{--dvup:#34D399;--dvdn:#F87171;--dvmid:#FBBF24}
+#tab-diversify .dv-wrap{max-width:1240px;margin:0 auto;padding:6px 4px 40px;direction:rtl}
+#tab-diversify h2{font-size:20px;font-weight:800;margin:0 0 3px}
+#tab-diversify .dv-sub{color:var(--text2);font-size:12.5px;line-height:1.8;margin:0 0 16px;max-width:74ch}
+#tab-diversify .dv-sec{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+#tab-diversify .dv-q{font-size:16px;font-weight:800;color:var(--text);margin:0 0 4px}
+#tab-diversify .dv-say{font-size:13px;color:var(--text2);line-height:1.9;margin:0 0 14px;max-width:74ch}
+#tab-diversify .dv-big{font-size:52px;font-weight:800;line-height:1;font-family:'IBM Plex Mono',monospace;color:var(--accent)}
+#tab-diversify .dv-bigrow{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+#tab-diversify .dv-note{font-size:12.5px;color:var(--text2);line-height:1.85;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 13px;margin-top:12px}
+#tab-diversify .dv-bar{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+#tab-diversify .dv-bl{width:132px;flex:none;font-size:12.5px;color:var(--text);line-height:1.4}
+#tab-diversify .dv-bt{flex:1;display:block;height:14px;background:var(--bg3);border-radius:7px;overflow:hidden}
+#tab-diversify .dv-bf{display:block;height:100%;border-radius:7px}
+#tab-diversify .dv-bv{width:56px;flex:none;text-align:left;font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--text2)}
+#tab-diversify .dv-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+#tab-diversify .dv-tbl th{text-align:right;font-size:10.5px;letter-spacing:.05em;color:var(--text3);font-weight:700;padding:8px 9px;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:bottom;line-height:1.5}
+#tab-diversify .dv-tbl td{padding:10px 9px;border-bottom:1px solid var(--border);vertical-align:top}
+#tab-diversify .dv-tbl tr:last-child td{border-bottom:0}
+#tab-diversify .dv-tbl tbody tr:hover{background:var(--bg3)}
+#tab-diversify .dv-sym{font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text)}
+#tab-diversify .dv-grp{font-size:10.5px;color:var(--text3)}
+#tab-diversify .dv-chip{display:inline-block;margin-top:3px;font-size:10px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:1px 7px}
+#tab-diversify .dv-mono{font-family:'IBM Plex Mono',monospace}
+#tab-diversify .dv-gh{background:var(--bg3);font-size:11px;font-weight:700;color:var(--text2)}
+#tab-diversify .dv-empty{color:var(--text3);font-size:13px;padding:40px 0;text-align:center}
+#tab-diversify .dv-scat{width:100%;height:auto;direction:ltr;display:block}
+#tab-diversify .dv-axis{direction:ltr;display:flex;justify-content:space-between;font-size:11.5px;color:var(--text2);margin:2px 2px 0}
+#tab-diversify .dv-ylab{font-size:11.5px;color:var(--text2);margin:0 2px 4px}
+#tab-diversify .dv-leg{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--text3);margin-top:8px}
+#tab-diversify .dv-cav{font-size:12px;color:var(--text3);line-height:1.9;border-top:1px solid var(--border);padding-top:12px;margin-top:6px}
+</style>
+<div class="dv-wrap">
+  <h2>التنويع — وين فيه خيارات فعلاً</h2>
+  <p class="dv-sub">النظام يقول لك إن فلوسك مركّزة. هذي الصفحة تجاوب على السؤال اللي بعده: مركّزة في وش بالضبط، ووش الأصول اللي تتحرك غير عن محفظتك — مو بس من قطاع ثاني، لكن تتفاعل مع مخاطر ثانية. وكل خيار مكتوب جنبه كم كلّف الاحتفاظ فيه خلال نفس الفترة، عشان تشوف الوجهين مو وجه واحد.</p>
+  <div id="dv-body"></div>
+  <div class="dv-empty" id="dv-empty">جاري تحميل قراءة التنويع…</div>
+</div>
+</div>
+
 <div id="tab-setup" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('alerts',document.querySelector('[data-tab=alerts]'))">Alerts | التنبيهات</div></div>
   <div class="grid-2">
     <div class="card" style="display:none;">
@@ -4924,7 +4967,11 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
     var R=window._riskEngData; if(!R) return ccPh('مخاطر المحفظة');
     var K=R.correlation||{}, C=R.concentration||{};
     var N=R.holdings||0;
-    var eib=(K.effective_independent_bets!=null)?K.effective_independent_bets:null;
+    var eib=(K.independent_names_unweighted!=null)?K.independent_names_unweighted:((K.effective_independent_bets!=null)?K.effective_independent_bets:null);
+    // NOTE: this number ignores how much money sits in each name. It is a
+    // property of the NAME LIST, not of the book. The money-weighted figure is
+    // in the التنويع tab (data/diversify-*.json). Do not relabel it back.
+    var wbets=(window._divData&&window._divData.ok&&window._divData.bets)?window._divData.bets.effective_bets_weighted:null;
     var beta=(C.portfolio_beta_24m!=null)?C.portfolio_beta_24m:null;
     var topC=(K.top_risk_contributors&&K.top_risk_contributors[0])||null;
     var usd=function(n){ if(n==null||isNaN(n)) return '—'; var a=Math.abs(n); return (n<0?'-':'')+'$'+(a>=1000?Math.round(a/1000)+'K':Math.round(a)); };
@@ -4943,7 +4990,8 @@ return '<div onclick="window._ccReadOpen(\'market\')" style="cursor:pointer;"><d
       +'</div>';
     det+='<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:2px;">'
       +'<span style="font-size:44px;font-weight:800;font-family:'+MONO+';color:'+AC+';line-height:1;">'+(eib!=null?eib:'—')+'</span>'
-      +'<span style="font-size:13px;color:var(--text2);">مراكز مستقلة حقيقية<br><span style="color:var(--text3);font-size:12px;">من أصل '+N+' اسم — نص تنويعك وهمي</span></span></div>';
+      +'<span style="font-size:13px;color:var(--text2);">اتجاهات مستقلة بين أسماءك<br><span style="color:var(--text3);font-size:12px;">من أصل '+N+' اسم — هذا الرقم يعامل كل اسم بالتساوي، ما ياخذ بالحسبان كم فلوس في كل واحد</span></span></div>';
+    if(wbets!=null){ det+='<div style="font-size:13px;color:var(--text2);line-height:1.85;background:var(--bg3);border:1px solid '+AC+'55;border-radius:10px;padding:10px 12px;margin:10px 0 6px;">وإذا حسبنا الفلوس نفسها — كم مركز عندك فعلاً بعد الأوزان — يطلع <b style="font-family:'+MONO+';color:'+AC+';">'+wbets+'</b>. الرقم الكبير فوق يوصف قائمة الأسماء، وهذا يوصف محفظتك. التفصيل كامل في تبويب «التنويع».</div>'; }
     det+=pips(9);
     det+='<div style="font-size:11px;color:var(--text3);margin:2px 0 10px;">كل مربّع = اسم · والمضيء = مركز مستقل فعلاً بعد دمج الأسماء المترابطة</div>';
     det+='<div style="font-size:13px;color:var(--text2);line-height:1.85;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:16px;">هذي القراءة تبيّن لك اللي ما تكشفه قائمة مراكزك: كم مركز مستقل تملك فعلاً، أي الأسماء تقود المخاطرة، وأيها يتحرك مع بعض. عندك '+N+' اسم، لكن كثير منها يصعد ويهبط سوا — فتنويعك الحقيقي أقل مما يبدو.</div>';
@@ -5925,6 +5973,7 @@ function showTab(name,el){
       if(typeof snapshotToday==='function') snapshotToday();
     }
     if(name==='macro'){ try{ if(typeof loadMacroSim==='function') loadMacroSim(); }catch(e){} }
+    if(name==='diversify'){ try{ if(typeof loadDiversify==='function') loadDiversify(); }catch(e){} }
     if(name==='weights') renderWeights();
     if(name==='alerts') renderAlerts();
     if(name==='prompt') renderPrompt();
@@ -17592,6 +17641,226 @@ function mcRenderScen(){
   }
 }
 })();
+</script>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────────────────
+   التنويع tab — renders data/diversify-{nick}-{date}.json (api/risk.js →
+   api/_lib/diversify-core.js). Every number here is measured by that module
+   over a stated historical window.
+
+   THE LINE, restated because this tab is the one most likely to drift across
+   it: the code measures, this view describes. No row is ranked as better, no
+   target weight is emitted, no figure is a forecast. Sorting is by how
+   independently a thing moved — that is a measurement, not a preference.
+   If you ever find yourself adding "الأفضل" or a recommended column, stop.
+   ──────────────────────────────────────────────────────────────────────────── */
+var DV={d:null,tried:false};
+function dvEsc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function dvL(s){return '⁦'+s+'⁩';}            // isolate LTR runs inside Arabic
+function dvPct(x,d){return (x==null||isNaN(x))?'—':((x>0?'+':'')+(+x).toFixed(d==null?1:d)+'%');}
+function dvUsd(n){ if(n==null||isNaN(n)) return '—'; var a=Math.abs(n);
+  return (n<0?'-':'')+'$'+(a>=1000?Math.round(a/1000)+'K':Math.round(a)); }
+
+window.loadDiversify=function(){
+  if(DV.d||DV.tried){ if(DV.d) dvRender(); return; }
+  DV.tried=true;
+  var nick='rashed'; try{ nick=(localStorage.getItem('theisilabs_nick')||'rashed').toLowerCase().trim()||'rashed'; }catch(e){}
+  var base='https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/diversify-'+nick+'-';
+  (async function(){
+    for(var o=0;o<9;o++){
+      var ds=new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10);
+      var d=null;
+      try{ var r=await fetch(base+ds+'.json?t='+Date.now()); if(r.ok) d=await r.json(); }catch(e){}
+      if(!d){ try{ var r2=await fetch('/api/gh?path=data/diversify-'+nick+'-'+ds+'.json'); if(r2.ok) d=await r2.json(); }catch(e){} }
+      if(d&&d.ok){ DV.d=d; window._divData=d; dvRender(); try{ renderCommandCenter(); }catch(e){} return; }
+      if(d&&d.ok===false){ document.getElementById('dv-empty').textContent='ما قدرنا نقيس التنويع: '+(d.reason||'بيانات ناقصة'); return; }
+    }
+    var em=document.getElementById('dv-empty');
+    if(em) em.textContent='ما في قراءة تنويع بعد — تتولّد تلقائياً كل أحد صباحاً مع تحديث المخاطر.';
+  })();
+};
+
+function dvRender(){
+  var D=DV.d, AC='var(--accent)';
+  document.getElementById('dv-empty').style.display='none';
+  var H='';
+
+  /* ── 1. كم رهان فعلي ───────────────────────────────────────────────────── */
+  var B=D.bets, C=D.coverage;
+  H+='<div class="dv-sec">'
+    +'<div class="dv-q">فلوسك كم رهان فعلي تسوّي؟</div>'
+    +'<div class="dv-say">عندك '+dvL(C.total_names)+' اسم. بس كثير منها يصعد وينزل سوا، فهي عملياً رهان واحد مو عدة رهانات. الرقم تحت يحسب الأسماء <b>مع حجم الفلوس اللي في كل وحدة</b> — لأن اسم ما فيه إلا شوي من فلوسك، ما يسوّي نفس الاسم اللي حاطط فيه جزء كبير منها.</div>'
+    +'<div class="dv-bigrow"><span class="dv-big">'+dvL(B.effective_bets_weighted)+'</span>'
+    +'<span style="font-size:13px;color:var(--text2);line-height:1.7">رهانات مستقلة فعلاً<br><span style="color:var(--text3);font-size:12px">من أصل '+dvL(C.names)+' اسم مقيس ('+dvL(C.coverage_pct+'%')+' من قيمة محفظتك)</span></span></div>';
+
+  var pp=B.top_bet_share_pct;
+  H+='<div class="dv-bar"><span class="dv-bl">أكبر رهان</span>'
+    +'<span class="dv-bt"><span class="dv-bf" style="width:'+Math.min(100,pp)+'%;background:'+AC+'"></span></span>'
+    +'<span class="dv-bv">'+dvL(pp+'%')+'</span></div>'
+    +'<div style="font-size:12.5px;color:var(--text2);line-height:1.85">'+dvL(pp+'%')+' من حركة محفظتك كلها جاية من اتجاه واحد. الأسماء اللي تقوده: <b class="dv-mono">'+dvL((B.top_bet_names||[]).join(' · '))+'</b>.'
+    +((B.second_bet_names&&B.second_bet_names.length)?(' والاتجاه الثاني وراه: <b class="dv-mono">'+dvL(B.second_bet_names.join(' · '))+'</b>.'):'')+'</div>';
+
+  if(B.equal_weight_note_ar){
+    H+='<div class="dv-note"><b>وش لو وزّعتها بالتساوي؟</b><br>'+dvEsc(B.equal_weight_note_ar)
+      +(D.if_equal_weighted?(' العائد يصير '+dvL(dvPct(D.if_equal_weighted.ret_pct))+' سنوياً بدل '+dvL(dvPct(D.you.ret_pct))+'، والتذبذب '+dvL(D.if_equal_weighted.vol_pct+'%')+' بدل '+dvL(D.you.vol_pct+'%')+'.'):'')
+      +'</div>';
+  }
+  H+='</div>';
+
+  /* ── 2. حركة محفظتك جاية من وين ───────────────────────────────────────── */
+  var L=D.layers, mx=Math.max.apply(null,L.factors.map(function(f){return f.share;}).concat([L.specific_pct/100]))||1;
+  H+='<div class="dv-sec">'
+    +'<div class="dv-q">حركة محفظتك جاية من وين؟</div>'
+    +'<div class="dv-say">كل صعود وهبوط في محفظتك ينقسم على مصادر. الشريط الطويل معناه إن هذا المصدر يحرّك محفظتك أكثر. آخر شريط — «خاص بالشركات نفسها» — هو الجزء اللي ما يفسّره أي سوق عام، يعني أخبار الشركة نفسها.</div>';
+  L.factors.forEach(function(f){
+    var v=f.share*100;
+    H+='<div class="dv-bar"><span class="dv-bl">'+dvEsc(f.ar)+'</span>'
+      +'<span class="dv-bt"><span class="dv-bf" style="width:'+Math.max(1,Math.min(100,(f.share/mx)*100))+'%;background:'+AC+'"></span></span>'
+      +'<span class="dv-bv">'+dvL(v.toFixed(1)+'%')+'</span></div>';
+  });
+  H+='<div class="dv-bar"><span class="dv-bl">خاص بالشركات نفسها</span>'
+    +'<span class="dv-bt"><span class="dv-bf" style="width:'+Math.max(1,Math.min(100,(L.specific_pct/100/mx)*100))+'%;background:#00c8ff"></span></span>'
+    +'<span class="dv-bv">'+dvL(L.specific_pct+'%')+'</span></div>';
+  var big=L.factors.slice().sort(function(a,b){return b.share-a.share;})[0];
+  if(big){
+    H+='<div class="dv-note">يعني بكلام واضح: لو '+dvEsc(big.ar)+' تحرّك، محفظتك تتحرك معه بمقدار '+dvL('×'+big.beta)+' تقريباً — و'+dvL((big.share*100).toFixed(0)+'%')
+      +' من تذبذبك كله يرجع له وحده. تذبذب محفظتك السنوي '+dvL(L.ann_vol_pct+'%')+'.</div>';
+  }
+  H+='</div>';
+
+  /* ── 3. أسوأ أيامك ─────────────────────────────────────────────────────── */
+  var W=D.worst_days;
+  H+='<div class="dv-sec">'
+    +'<div class="dv-q">وش يصير في أسوأ أيامك؟</div>'
+    +'<div class="dv-say">هذي أهم نقطة في الصفحة كلها. في أي فترة عادية، أصول كثيرة تبان «مستقلة» عن محفظتك. الاختبار الحقيقي هو يوم تنزل محفظتك بقوة — وقتها كثير منها ينزل معك. أخذنا أسوأ '+dvL(W.n)+' يوم عندك خلال الفترة، وشفنا وش سوّى كل خيار في نفس هذي الأيام بالضبط.</div>'
+    +'<div style="font-size:13px;color:var(--text2);line-height:1.9">متوسط أسوأ '+dvL(W.n)+' يوم عندك: <b class="dv-mono" style="color:var(--dvdn)">'+dvL(dvPct(W.avg_pct,2))+'</b> في اليوم · وأسوأ يوم لحاله: <b class="dv-mono" style="color:var(--dvdn)">'+dvL(dvPct(W.worst_pct,2))+'</b>.</div>'
+    +'</div>';
+
+  /* ── 4. القائمة ───────────────────────────────────────────────────────── */
+  var M=D.menu||[];
+  H+='<div class="dv-sec">'
+    +'<div class="dv-q">وش يتحرك غير عن محفظتك؟</div>'
+    +'<div class="dv-say">القائمة مرتّبة من الأقل ارتباطاً بمحفظتك للأكثر — وهذا <b>قياس، مو ترشيح</b>. لكل خيار عمودين لازم تقرأهم مع بعض: وش سوّى في أسوأ أيامك (يمين)، وكم كلّف الاحتفاظ فيه (يسار). الشي اللي يحميك في النزول عادةً يكلّفك عائد في الصعود — وهذا الاختيار اللي يخصّك أنت.</div>';
+
+  H+=dvScatter(M,D);
+
+  H+='<div style="overflow-x:auto;margin-top:18px"><table class="dv-tbl"><thead><tr>'
+    +'<th>الخيار</th>'
+    +'<th>يتحرك مع<br>محفظتك؟</th>'
+    +'<th>في أسوأ<br>'+dvL(W.n)+' يوم عندك</th>'
+    +'<th>طلع<br>كم يوم؟</th>'
+    +'<th>لما تنزل<br>محفظتك</th>'
+    +'<th>عائده<br>سنوياً</th>'
+    +'<th>تذبذبه</th>'
+    +'<th>أكبر<br>هبوط</th>'
+    +'<th>يتفاعل مع</th>'
+    +'</tr></thead><tbody>';
+
+  M.forEach(function(c){
+    var wc=c.on_worst_days_pct>=0?'var(--dvup)':(c.on_worst_days_pct>-1?'var(--dvmid)':'var(--dvdn)');
+    var cc=c.corr<0.2?'var(--dvup)':(c.corr<0.5?'var(--dvmid)':'var(--dvdn)');
+    // "reacts to" as a sentence, not a row of raw betas — the labels lesson
+    var rk=Object.keys(c.reacts||{}).map(function(s){return [s,c.reacts[s]];})
+             .filter(function(x){return Math.abs(x[1])>=0.25;})
+             .sort(function(a,b){return Math.abs(b[1])-Math.abs(a[1]);}).slice(0,2);
+    var fmap={}; (D.factors_used||[]).forEach(function(f){fmap[f.sym]=f.ar;});
+    var rs=rk.length?rk.map(function(x){
+             return x[1]<0 ? ('عكس '+dvEsc(fmap[x[0]]||x[0])+' '+dvL('×'+Math.abs(x[1])))
+                           : (dvEsc(fmap[x[0]]||x[0])+' '+dvL('×'+x[1]));}).join(' · ')
+                   :'<span style="color:var(--text3)">ما يتبع أي منها بوضوح</span>';
+    H+='<tr>'
+      +'<td><span class="dv-sym">'+dvEsc(c.sym)+'</span><br><span class="dv-grp">'+dvEsc(c.ar)+'</span>'
+      +(c.group?('<br><span class="dv-chip">'+dvEsc(c.group)+'</span>'):'')+'</td>'
+      +'<td class="dv-mono" style="color:'+cc+'">'+dvL(c.corr)+'</td>'
+      +'<td class="dv-mono" style="color:'+wc+';font-weight:700">'+dvL(dvPct(c.on_worst_days_pct,2))+'</td>'
+      +'<td class="dv-mono" style="color:var(--text2)">'+dvL(c.rose_on+'/'+c.of_worst)+'</td>'
+      +'<td class="dv-mono" style="color:var(--text2)">'+(c.beta_down==null?'—':dvL('×'+c.beta_down))+'</td>'
+      +'<td class="dv-mono" style="color:'+(c.own.ret_pct>=0?'var(--dvup)':'var(--dvdn)')+'">'+dvL(dvPct(c.own.ret_pct))+'</td>'
+      +'<td class="dv-mono" style="color:var(--text2)">'+dvL(c.own.vol_pct+'%')+'</td>'
+      +'<td class="dv-mono" style="color:var(--text3)">'+dvL(dvPct(c.own.maxdd_pct))+'</td>'
+      +'<td style="font-size:11.5px;color:var(--text2);line-height:1.7">'+rs+'</td>'
+      +'</tr>';
+  });
+  H+='</tbody></table></div>';
+  H+='<div class="dv-note"><b>كيف تقرأ الأعمدة</b><br>'
+    +'«يتحرك مع محفظتك» قريب من الصفر يعني حركته مستقلة عن حركتك، وقريب من 1 يعني يتحرك مثلك بالضبط.<br>'
+    +'«في أسوأ أيامك» هو متوسط حركته اليومية في نفس الأيام اللي نزلت فيها محفظتك أكثر شي — الرقم الأخضر يعني طلع وأنت نازل.<br>'
+    +'«لما تنزل محفظتك» يقول لك كم ينزل هو مقابل كل نزول عندك: '+dvL('×0.5')+' يعني ينزل نصف نزولك، والسالب يعني يطلع لما تنزل.<br>'
+    +'«يتفاعل مع» يكشف الخيار اللي من قطاع ثاني بس يتحرك بنفس السبب — وهذا اللي ما ينفع كتنويع.</div>';
+  H+='</div>';
+
+  /* ── 5. ما دخل في القياس + التحفّظ ─────────────────────────────────────── */
+  H+='<div class="dv-sec">';
+  H+='<div class="dv-cav" style="border-top:0;padding-top:0;margin-top:0">'
+    +'<b>على وش انقاس هذا الكلام</b><br>'
+    +'الفترة: من '+dvL(D.window.from)+' إلى '+dvL(D.window.to)+' ('+dvL(D.window.days)+' يوم تداول مشترك).<br>'
+    +'دخل في القياس '+dvL(C.names)+' اسم من محفظتك = '+dvL(dvUsd(C.covered_value))+' من أصل '+dvL(dvUsd(C.total_value))+'.'
+    +((C.skipped&&C.skipped.length)?(' وما دخل: <span class="dv-mono">'+dvL(C.skipped.join(' · '))+'</span> — ما عندها تاريخ أسعار كافي.'):'')+'<br>'
+    +((D.candidates_missing&&D.candidates_missing.length)?('خيارات ما وصلتنا أسعارها هالمرة: <span class="dv-mono">'+dvL(D.candidates_missing.join(' · '))+'</span>.<br>'):'')
+    +dvEsc(D.caveat_ar||'')+'</div>';
+  var nm=''; try{ nm=(localStorage.getItem('theisilabs_name')||localStorage.getItem('theisilabs_nick')||'').trim(); }catch(e){}
+  H+='<div style="font-size:13.5px;color:var(--text);font-weight:700;margin-top:14px">القرار في النهاية عندك'+(nm?(' يا '+dvEsc(nm)):'')+'</div>'
+    +'<div style="font-size:11.5px;color:var(--text3);margin-top:5px">'+dvEsc(D.disclaimer_ar||'تحليل معلوماتي — ليست نصيحة مالية')+'</div>';
+  H+='</div>';
+
+  document.getElementById('dv-body').innerHTML=H;
+}
+
+/* Two axes on one picture: how a thing behaved on the owner's worst days (x)
+   against what it returned over the same window (y). Neither axis is "good" on
+   its own — that is the whole point of showing them together. */
+function dvScatter(M,D){
+  if(!M.length) return '';
+  var W=980,Hh=380,ml=54,mr=16,mt=18,mb=52;
+  var xs=M.map(function(c){return c.on_worst_days_pct;});
+  var ys=M.map(function(c){return c.own.ret_pct;});
+  var x0=Math.min.apply(null,xs.concat([0])), x1=Math.max.apply(null,xs.concat([0]));
+  var y0=Math.min.apply(null,ys.concat([0])), y1=Math.max.apply(null,ys.concat([0]));
+  var px=(x1-x0)*0.12||1, py=(y1-y0)*0.12||1;
+  x0-=px;x1+=px;y0-=py;y1+=py;
+  var X=function(v){return ml+(v-x0)/(x1-x0)*(W-ml-mr);};
+  var Y=function(v){return mt+(1-(v-y0)/(y1-y0))*(Hh-mt-mb);};
+  var s='<svg class="dv-scat" viewBox="0 0 '+W+' '+Hh+'" preserveAspectRatio="xMidYMid meet" font-family="IBM Plex Mono, monospace">';
+  s+='<rect x="'+ml+'" y="'+mt+'" width="'+(W-ml-mr)+'" height="'+(Hh-mt-mb)+'" fill="none" stroke="var(--border)"/>';
+  // the two lines that split the picture into meaningful quadrants
+  s+='<line x1="'+X(0)+'" y1="'+mt+'" x2="'+X(0)+'" y2="'+(Hh-mb)+'" stroke="var(--text3)" stroke-dasharray="3 3" opacity=".55"/>';
+  s+='<line x1="'+ml+'" y1="'+Y(0)+'" x2="'+(W-mr)+'" y2="'+Y(0)+'" stroke="var(--text3)" stroke-dasharray="3 3" opacity=".55"/>';
+  // axis ticks
+  for(var i=0;i<=4;i++){
+    var xv=x0+(x1-x0)*i/4, yv=y0+(y1-y0)*i/4;
+    s+='<text x="'+X(xv)+'" y="'+(Hh-mb+16)+'" font-size="10" fill="var(--text3)" text-anchor="middle">'+xv.toFixed(1)+'%</text>';
+    s+='<text x="'+(ml-7)+'" y="'+(Y(yv)+3.5)+'" font-size="10" fill="var(--text3)" text-anchor="end">'+yv.toFixed(0)+'%</text>';
+  }
+  // defensive assets cluster hard against x=0, so labels collide — nudge each
+  // one off any label already placed near it instead of stacking them.
+  var placed=[];
+  M.forEach(function(c){
+    var cx=X(c.on_worst_days_pct), cy=Y(c.own.ret_pct);
+    var col=c.on_worst_days_pct>=0?'#34D399':(c.on_worst_days_pct>-1?'#FBBF24':'#F87171');
+    var r=4+Math.min(5,Math.abs(c.corr)*5);
+    s+='<circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="'+r.toFixed(1)+'" fill="'+col+'" fill-opacity=".78" stroke="'+col+'"><title>'
+      +c.sym+' \u2014 on your worst days '+c.on_worst_days_pct+'%, return '+c.own.ret_pct+'%/yr, correlation '+c.corr+'</title></circle>';
+    var lx=cx+r+3, ly=cy+3.5, guard=0;
+    while(placed.some(function(q){return Math.abs(q.x-lx)<34 && Math.abs(q.y-ly)<11;}) && guard++<14){ ly+=11.5; }
+    if(ly>Hh-mb-4){ ly=cy+3.5-11.5*(guard%5+1); }
+    placed.push({x:lx,y:ly});
+    if(Math.abs(ly-(cy+3.5))>2)
+      s+='<line x1="'+(cx+r+1).toFixed(1)+'" y1="'+cy.toFixed(1)+'" x2="'+(lx-1).toFixed(1)+'" y2="'+(ly-3.5).toFixed(1)+'" stroke="'+col+'" stroke-width=".7" opacity=".45"/>';
+    s+='<text x="'+lx.toFixed(1)+'" y="'+ly.toFixed(1)+'" font-size="10.5" fill="var(--text2)">'+c.sym+'</text>';
+  });
+  s+='</svg>';
+  // captions live in HTML, not in the SVG: inside an LTR <svg> the Arabic runs
+  // reorder and the arrows end up labelling the wrong ends of the axis.
+  s='<div class="dv-ylab">المحور العمودي: العائد السنوي على نفس الفترة</div>'+s
+    +'<div class="dv-axis"><span>يسار: نزل معك في أسوأ أيامك</span>'
+    +'<span>يمين: صمد أو طلع وأنت نازل</span></div>';
+  return s+'<div class="dv-leg">'
+    +'<span>حجم الدائرة = قد إيش يتحرك مثل محفظتك (أكبر = أشبه فيك)</span>'
+    +'<span style="color:#34D399">أخضر: طلع في أسوأ أيامك</span>'
+    +'<span style="color:#F87171">أحمر: نزل معك</span>'
+    +'</div>';
+}
 </script>
 
 </body>

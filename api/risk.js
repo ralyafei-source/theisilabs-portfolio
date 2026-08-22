@@ -38,6 +38,10 @@ const {
   makePrediction, gradePredictions, scorecard
 } = require('./_lib/macro-core');
 
+const {
+  buildDiversify, CANDIDATE_UNIVERSE, FACTOR_SET
+} = require('./_lib/diversify-core');
+
 const { findSession } = require('./_lib/pin');
 const uaeDate = () => new Date(Date.now() + 4 * 3600000).toISOString().slice(0, 10);
 
@@ -117,12 +121,21 @@ const PROXY_SYMS = Array.from(new Set([
   ...CATALOGUE.filter(c => c.proxy).map(c => c.proxy),
   ...COMPOSITES.flatMap(c => [c.market.proxy, ...c.channels.map(x => x.proxy)])
 ]));
+// The diversification menu needs the candidate universe + factor set on top of
+// the macro proxies. Most overlap (SPY/GLD/TLT/USO/UUP/SMH/IWM/HYG/TIP/FXI/XLE
+// are already proxies) so this adds ~20 symbols to one weekly run.
+const MENU_SYMS = Array.from(new Set([
+  ...CANDIDATE_UNIVERSE.map(c => c.sym),
+  ...FACTOR_SET.map(f => f.sym)
+])).filter(s => !PROXY_SYMS.includes(s));
+
 let _proxyCache = null;
 async function proxySeries() {
   if (_proxyCache) return _proxyCache;
   const out = {};
-  for (let i = 0; i < PROXY_SYMS.length; i += 6) {
-    const got = await Promise.all(PROXY_SYMS.slice(i, i + 6).map(s => fmpCloses(s).then(c => [s, c])));
+  const all = [...PROXY_SYMS, ...MENU_SYMS];
+  for (let i = 0; i < all.length; i += 6) {
+    const got = await Promise.all(all.slice(i, i + 6).map(s => fmpCloses(s).then(c => [s, c])));
     got.forEach(([s, c]) => { if (c) out[s] = c; });
   }
   _proxyCache = out;
@@ -283,9 +296,27 @@ async function runOne(nick, proxies, newsThemes) {
     macroSaved = await ghWrite(macroPath, macro);
   } catch (e) { macroPath = `macro failed: ${String(e && e.message || e).slice(0, 120)}`; }
 
+  // diversification menu — same fetched history, no extra holding calls.
+  // Answers the question the risk card never did: concentrated in what, and
+  // what else actually behaves differently from THIS book.
+  let divSaved = false, divPath = null, divBets = null;
+  try {
+    const byDate = Object.fromEntries(Object.entries(series).map(([s, v]) => [s, v.byDate]));
+    for (const [s, v] of Object.entries(proxies)) byDate[s] = byDate[s] || v.byDate;
+    const div = buildDiversify(rows.map(h => ({ sym: h.sym, value: h.value })), byDate,
+      { asOf: report.as_of, saDate: found.date, maxDays: DAYS });
+    divPath = `data/diversify-${nick}-${report.as_of}.json`;
+    divSaved = await ghWrite(divPath, div);
+    divBets = div.ok ? div.bets.effective_bets_weighted : null;
+  } catch (e) { divPath = `diversify failed: ${String(e && e.message || e).slice(0, 120)}`; }
+
   return { nick, ok: saved, path: saved ? path : null,
            macro_ok: macroSaved, macro_path: macroPath,
-           effective_independent_bets: report.correlation.effective_independent_bets ?? null,
+           diversify_ok: divSaved, diversify_path: divPath,
+           // weight-aware (Meucci). The unweighted figure below answers a
+           // different question and is kept only for continuity.
+           effective_bets_weighted: divBets,
+           independent_names_unweighted: report.correlation.independent_names_unweighted ?? null,
            beta: report.concentration.portfolio_beta_24m, exits: report.exits.length };
 }
 
@@ -341,4 +372,4 @@ module.exports = async function handler(req, res) {
 };
 
 // exported for offline tests only — not used by the handler
-module.exports._internals = { buildMacro, PROXY_SYMS };
+module.exports._internals = { buildMacro, PROXY_SYMS, MENU_SYMS };

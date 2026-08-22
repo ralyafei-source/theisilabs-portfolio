@@ -49,8 +49,22 @@ function eigenvalues(M) {
   return a.map((r, i) => r[i]);
 }
 
-/** Effective independent bets = participation ratio of the eigenvalues (n²/Σλ²). */
-function effectiveIndependentBets(C) {
+/**
+ * Participation ratio of the eigenvalues (n²/Σλ²) of the CORRELATION matrix.
+ *
+ * READ THE NAME CAREFULLY. This takes C and nothing else — it never sees the
+ * weights. So it answers "how many independent directions do these NAMES span,
+ * treating every name as equally important", NOT "how many independent bets is
+ * the owner's MONEY making". On Rashed's book (Aug 2026) the two differ wildly:
+ * this returns 10.3 across 46 names, while the money-weighted Meucci measure
+ * returns 1.68 — because 17% of the book sits in one position and most of the
+ * rest moves with the same market factor.
+ *
+ * The money-weighted number is diversify-core.weightedENB(). Any surface that
+ * says "your real independent positions" must use THAT one. This figure may
+ * only be presented as a property of the name list.
+ */
+function independentNamesUnweighted(C) {
   const n = C.length; if (!n) return null;
   const s2 = eigenvalues(C).reduce((a, l) => a + l * l, 0);
   return s2 ? n * n / s2 : null;
@@ -167,7 +181,7 @@ function buildReport(holdings, closes, saRaw, meta = {}) {
       C[i][j] = C[j][i] = c ?? 0; if (c != null) { cs += c; cn++; }
     }
     avgCorr = cn ? cs / cn : null;
-    effBets = effectiveIndependentBets(C);
+    effBets = independentNamesUnweighted(C);
     corrClusters = clusters(have, C, 0.6);
 
     const wv = have.map(s => holdings.find(h => h.sym === s).w);
@@ -204,7 +218,13 @@ function buildReport(holdings, closes, saRaw, meta = {}) {
     },
     correlation: have.length >= 5 ? {
       names_with_history: have.length,
+      // Property of the NAME LIST, weights ignored. The money-weighted answer
+      // lives in data/diversify-{nick}-{date}.json → bets.effective_bets_weighted.
+      independent_names_unweighted: effBets ? +effBets.toFixed(1) : null,
+      // deprecated alias — the old key meant the weighted measure to readers,
+      // which it never was. Kept only so an older dashboard build keeps rendering.
       effective_independent_bets: effBets ? +effBets.toFixed(1) : null,
+      weights_ignored: true,
       diversification_ratio: divRatio ? +divRatio.toFixed(2) : null,
       avg_pairwise_correlation: avgCorr ? +avgCorr.toFixed(2) : null,
       annualized_portfolio_vol_pct: portVol ? +(portVol*100).toFixed(1) : null,
@@ -224,6 +244,6 @@ function buildReport(holdings, closes, saRaw, meta = {}) {
 }
 
 module.exports = {
-  eigenvalues, effectiveIndependentBets, corr, clusters, logrets, mean, std,
+  eigenvalues, independentNamesUnweighted, effectiveIndependentBets: independentNamesUnweighted, corr, clusters, logrets, mean, std,
   exitSignals, scanExits, holdingsFromWorkbook, buildReport
 };
