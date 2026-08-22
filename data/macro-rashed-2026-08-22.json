@@ -1,0 +1,191 @@
+{
+  "as_of": "2026-08-22",
+  "sa_date": "2026-08-21",
+  "surfaced_risks": [
+    {
+      "id": "ai",
+      "hits": 1,
+      "evidence": [
+        "قطاع الذاكرة والرقائق يشهد طفرة في الطلب والاستثمارات MU تقتر"
+      ]
+    }
+  ],
+  "risks": [],
+  "composites": [
+    {
+      "scenario": "taiwan_war",
+      "ar": "حرب الصين وتايوان",
+      "assumptions": {
+        "market": {
+          "proxy": "SPY",
+          "shock_pct": -12
+        },
+        "channels": [
+          {
+            "proxy": "SMH",
+            "spread_pct": -18,
+            "why_ar": "أشباه الموصلات فوق هبوط السوق — تركّز التصنيع في تايوان"
+          },
+          {
+            "proxy": "FXI",
+            "spread_pct": -20,
+            "why_ar": "الأصول الصينية"
+          },
+          {
+            "proxy": "GLD",
+            "spread_pct": 12,
+            "why_ar": "هروب للأمان"
+          }
+        ]
+      },
+      "covered_value": 0,
+      "total_value": 627837,
+      "coverage_pct": 0,
+      "impact_usd": 0,
+      "impact_pct": 0,
+      "weak_names": [],
+      "no_history": [
+        "AAPL",
+        "ADBE",
+        "AEHR",
+        "AMZN",
+        "APH",
+        "ATYR",
+        "B",
+        "BSX",
+        "BTBT",
+        "COR",
+        "CRDO",
+        "CRM",
+        "DY",
+        "GEV",
+        "GOOGL",
+        "IONQ",
+        "IOT",
+        "MPC",
+        "MSFT",
+        "MU",
+        "MVST",
+        "MXL",
+        "MYRG",
+        "NEM",
+        "NTLA",
+        "NVO",
+        "ONTO",
+        "OSCR",
+        "PAAS",
+        "PLTR",
+        "PONY",
+        "SEZL",
+        "SMH",
+        "SMMT",
+        "SNDK",
+        "SOFI",
+        "SPUS",
+        "SPY",
+        "SVM",
+        "TTE",
+        "VICR",
+        "VISN",
+        "VOO",
+        "XLP",
+        "YOU",
+        "ZTO"
+      ],
+      "bands": [],
+      "names": [],
+      "salience": null,
+      "structural_note_ar": "حصة الإيراد من الصين الكبرى — تُعرض كحقيقة، وتحويلها لسعر يتطلب مرونة يحددها المستخدم"
+    },
+    {
+      "scenario": "hormuz",
+      "ar": "إغلاق مضيق هرمز",
+      "assumptions": {
+        "market": {
+          "proxy": "SPY",
+          "shock_pct": -8
+        },
+        "channels": [
+          {
+            "proxy": "USO",
+            "spread_pct": 55,
+            "why_ar": "صدمة نفط"
+          },
+          {
+            "proxy": "XLE",
+            "spread_pct": 18,
+            "why_ar": "قطاع الطاقة يستفيد"
+          },
+          {
+            "proxy": "GLD",
+            "spread_pct": 10,
+            "why_ar": "هروب للأمان"
+          }
+        ]
+      },
+      "covered_value": 0,
+      "total_value": 627837,
+      "coverage_pct": 0,
+      "impact_usd": 0,
+      "impact_pct": 0,
+      "weak_names": [],
+      "no_history": [
+        "AAPL",
+        "ADBE",
+        "AEHR",
+        "AMZN",
+        "APH",
+        "ATYR",
+        "B",
+        "BSX",
+        "BTBT",
+        "COR",
+        "CRDO",
+        "CRM",
+        "DY",
+        "GEV",
+        "GOOGL",
+        "IONQ",
+        "IOT",
+        "MPC",
+        "MSFT",
+        "MU",
+        "MVST",
+        "MXL",
+        "MYRG",
+        "NEM",
+        "NTLA",
+        "NVO",
+        "ONTO",
+        "OSCR",
+        "PAAS",
+        "PLTR",
+        "PONY",
+        "SEZL",
+        "SMH",
+        "SMMT",
+        "SNDK",
+        "SOFI",
+        "SPUS",
+        "SPY",
+        "SVM",
+        "TTE",
+        "VICR",
+        "VISN",
+        "VOO",
+        "XLP",
+        "YOU",
+        "ZTO"
+      ],
+      "bands": [],
+      "names": [],
+      "salience": null,
+      "structural_note_ar": "حصة الإيراد من الشرق الأوسط"
+    }
+  ],
+  "structural": {},
+  "caveat_ar": "محاكاة معلوماتية مبنية على علاقات تاريخية وافتراضات معلنة — مو تنبؤ. الأسماء ضعيفة التفسير معلّمة، والقرار في النهاية عندك.",
+  "scorecard": {
+    "n": 0
+  }
+}
