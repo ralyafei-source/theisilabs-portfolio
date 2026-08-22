@@ -11,7 +11,74 @@
     "portfolio_beta_24m": 1.84
   },
   "correlation": {
-    "note": "no price history — set FMP_API_KEY and run on a non-datacenter IP"
+    "names_with_history": 46,
+    "effective_independent_bets": 10.3,
+    "diversification_ratio": 1.95,
+    "avg_pairwise_correlation": 0.21,
+    "annualized_portfolio_vol_pct": 28.9,
+    "measured_beta_vs_spy": 1.4,
+    "top_risk_contributors": [
+      {
+        "sym": "PAAS",
+        "pct_of_risk": 20.4
+      },
+      {
+        "sym": "AEHR",
+        "pct_of_risk": 8.9
+      },
+      {
+        "sym": "MSFT",
+        "pct_of_risk": 6
+      },
+      {
+        "sym": "PONY",
+        "pct_of_risk": 5.8
+      },
+      {
+        "sym": "VICR",
+        "pct_of_risk": 4.3
+      },
+      {
+        "sym": "SVM",
+        "pct_of_risk": 4.3
+      },
+      {
+        "sym": "GEV",
+        "pct_of_risk": 4.3
+      },
+      {
+        "sym": "AMZN",
+        "pct_of_risk": 4
+      }
+    ],
+    "correlation_clusters": [
+      [
+        "AAPL",
+        "AMZN",
+        "APH",
+        "CRDO",
+        "GEV",
+        "MU",
+        "MXL",
+        "ONTO",
+        "SMH",
+        "SNDK",
+        "SOFI",
+        "SPUS",
+        "SPY",
+        "VOO"
+      ],
+      [
+        "B",
+        "NEM",
+        "PAAS",
+        "SVM"
+      ],
+      [
+        "ADBE",
+        "CRM"
+      ]
+    ]
   },
   "scenarios": [
     {
