@@ -73,9 +73,18 @@ async function latestWorkbook(nick) {
   return null;
 }
 
-/** Daily closes from FMP — returns BOTH shapes one fetch:
- *  closes array (risk-core/macro-core) and by-date map (replay). */
-async function fmpCloses(sym) {
+/** Daily closes — FMP primary, Yahoo chart fallback. FMP blocks datacenter IPs
+ *  on this plan (prices.js sees the same: "FMP(0) + Yahoo(N)"), so from Vercel
+ *  the Yahoo path is what actually runs; from a local node FMP works.
+ *  Returns BOTH shapes one fetch: closes array (risk-core/macro-core) and
+ *  by-date map + dates (replay/grading). */
+const YA_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
+function shapeRows(rows) {
+  rows = rows.filter(x => isFinite(x.c)).sort((a, b) => a.d < b.d ? -1 : 1).slice(-DAYS);
+  if (rows.length <= 20) return null;
+  return { closes: rows.map(x => x.c), byDate: Object.fromEntries(rows.map(x => [x.d, x.c])), dates: rows.map(x => x.d) };
+}
+async function fmpClosesRaw(sym) {
   if (!FMP) return null;
   try {
     const r = await fetch(`https://financialmodelingprep.com/stable/historical-price-eod/light?symbol=${sym}&apikey=${FMP}`,
@@ -83,11 +92,24 @@ async function fmpCloses(sym) {
     if (!r.ok) return null;
     const j = await r.json();
     const hist = Array.isArray(j) ? j : (j.historical || []);
-    const rows = hist.map(h => ({ d: h.date, c: +(h.close ?? h.price) })).filter(x => isFinite(x.c))
-      .sort((a, b) => a.d < b.d ? -1 : 1).slice(-DAYS);
-    if (rows.length <= 20) return null;
-    return { closes: rows.map(x => x.c), byDate: Object.fromEntries(rows.map(x => [x.d, x.c])), dates: rows.map(x => x.d) };
+    return shapeRows(hist.map(h => ({ d: h.date, c: +(h.close ?? h.price) })));
   } catch { return null; }
+}
+async function yahooCloses(sym) {
+  try {
+    const to = Math.floor(Date.now() / 1000), from = to - 86400 * 800; // ~2.2y ⊇ DAYS
+    const r = await fetch(`https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&period1=${from}&period2=${to}`,
+      { headers: { 'User-Agent': YA_UA } });
+    if (!r.ok) return null;
+    const j = await r.json();
+    const res = j && j.chart && j.chart.result && j.chart.result[0];
+    if (!res || !res.timestamp) return null;
+    const cl = ((res.indicators || {}).quote || [{}])[0].close || [];
+    return shapeRows(res.timestamp.map((t, i) => ({ d: new Date(t * 1000).toISOString().slice(0, 10), c: +cl[i] })));
+  } catch { return null; }
+}
+async function fmpCloses(sym) {
+  return (await fmpClosesRaw(sym)) || (await yahooCloses(sym));
 }
 
 // ── macro: factor proxies, fetched once per handler run ─────────────────────
