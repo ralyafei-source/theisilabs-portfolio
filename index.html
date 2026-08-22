@@ -2094,6 +2094,7 @@ body{font-size:15px;}.nav-tab{font-size:14px;}.logo-text{font-size:18px;}.hstat-
   <div class="sb-item" data-tab="transactions" style="display:none;"        onclick="showTab('transactions',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 4 3 8 7 12"/><line x1="3" y1="8" x2="16" y2="8"/><polyline points="17 12 21 16 17 20"/><line x1="8" y1="16" x2="21" y2="16"/></svg></span><span class="sb-lbl">Transactions</span></div>
   <div class="sb-item" data-tab="sa-intel" style="display:none;" onclick="showTab('sa-intel',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><circle cx="8" cy="10" r="2"/><line x1="13" y1="8" x2="19" y2="8"/><line x1="13" y1="11" x2="19" y2="11"/><line x1="13" y1="14" x2="19" y2="14"/></svg></span><span class="sb-lbl">SA Intel</span></div>
   <div class="sb-item" data-tab="horizon" style="display:none;" onclick="showTab('horizon',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h18"/><path d="M5 14a7 7 0 0 1 14 0"/><line x1="12" y1="4" x2="12" y2="7"/><line x1="19.5" y1="9" x2="17.5" y2="10.5"/><line x1="4.5" y1="9" x2="6.5" y2="10.5"/></svg></span><span class="sb-lbl">Horizon</span></div>
+  <div class="sb-item" data-tab="macro" onclick="showTab('macro',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5h6L11 22l8.5-11.5h-6z"/></svg></span><span class="sb-lbl">لو صار</span></div>
   <div class="sb-item" data-tab="setup"               onclick="showTab('setup',this)"><span class="sb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="sb-lbl">Settings</span></div>
 </nav>
 <div id="appMain">
@@ -3680,6 +3681,99 @@ async function boot(){
 
 
 <!-- ===== SETUP TAB ===== -->
+<div id="tab-macro" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('command',document.querySelector('[data-tab=command]'))">← Command</div></div>
+<style>
+#tab-macro{--mcup:#34D399;--mcdn:#F87171}
+#tab-macro .mc-wrap{max-width:1240px;margin:0 auto;padding:6px 4px 40px;direction:rtl}
+#tab-macro .mc-head h2{font-size:20px;font-weight:800;margin:0 0 2px}
+#tab-macro .mc-sub{color:var(--text2);font-size:12px;margin:0 0 12px;max-width:70ch}
+#tab-macro .mc-surf{display:flex;align-items:center;gap:9px;flex-wrap:wrap;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:9px 14px;margin-bottom:12px;font-size:11.5px}
+#tab-macro .mc-pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:mcpl 2s infinite}
+@keyframes mcpl{0%,100%{opacity:1}50%{opacity:.3}}
+#tab-macro .mc-schip{padding:3px 10px;border-radius:20px;background:rgba(255,10,120,.10);border:1px solid rgba(255,10,120,.24);color:var(--accent);font-weight:700}
+#tab-macro .mc-grid{display:grid;grid-template-columns:280px 1fr;gap:12px;align-items:start}
+@media(max-width:900px){#tab-macro .mc-grid{grid-template-columns:1fr}}
+#tab-macro .mc-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px}
+#tab-macro .mc-card h3{margin:0;padding:11px 14px 9px;font-size:10.5px;letter-spacing:.09em;color:var(--text3);font-weight:700;text-transform:uppercase;border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace}
+#tab-macro .mc-rrow{display:block;width:100%;text-align:right;background:none;border:none;color:inherit;font-family:inherit;padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .14s}
+#tab-macro .mc-rrow:last-child{border-bottom:0}
+#tab-macro .mc-rrow:hover{background:var(--bg3)}
+#tab-macro .mc-rrow[aria-pressed="true"]{background:var(--bg3);box-shadow:inset 3px 0 0 var(--accent)}
+#tab-macro .mc-rtop{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+#tab-macro .mc-rname{font-size:12px;font-weight:700}
+#tab-macro .mc-rdmg{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--mcdn);direction:ltr}
+#tab-macro .mc-rbar{height:4px;border-radius:2px;background:var(--bg4);margin-top:6px;overflow:hidden}
+#tab-macro .mc-rbar i{display:block;height:100%;background:linear-gradient(270deg,var(--mcdn),var(--accent))}
+#tab-macro .mc-rmeta{display:flex;gap:8px;margin-top:4px;font-size:9.5px;color:var(--text3)}
+#tab-macro .mc-news{color:var(--accent);font-weight:700}
+#tab-macro .mc-shead{padding:13px 16px 0}
+#tab-macro .mc-stitle{font-size:17px;font-weight:800}
+#tab-macro .mc-ssub{font-size:11.5px;color:var(--text2);margin-top:1px}
+#tab-macro .mc-sev{display:flex;gap:6px;margin-top:10px}
+#tab-macro .mc-sevbtn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:6px 13px;cursor:pointer;font-family:inherit;font-size:11.5px}
+#tab-macro .mc-sevbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+#tab-macro .mc-impact{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:12px 16px;margin-top:11px;border-top:1px solid var(--border);background:linear-gradient(90deg,rgba(248,113,113,.06),transparent 60%)}
+#tab-macro .mc-big{font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;color:var(--mcdn);direction:ltr}
+#tab-macro .mc-cap{font-size:11px;color:var(--text2);max-width:36ch;line-height:1.55}
+#tab-macro .mc-cover{font-size:10px;color:var(--text3);margin-inline-start:auto}
+#tab-macro .mc-bands{padding:6px 16px 14px}
+#tab-macro .mc-band{margin-top:11px}
+#tab-macro .mc-bhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+#tab-macro .mc-bname{font-size:12.5px;font-weight:800}
+#tab-macro .mc-bnums{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text2);direction:ltr}
+#tab-macro .mc-bnums b{color:var(--mcdn);font-weight:600}
+#tab-macro .mc-btrack{height:22px;border-radius:7px;background:var(--bg3);margin-top:5px;position:relative;overflow:hidden}
+#tab-macro .mc-bfill{position:absolute;inset:0 0 0 auto;border-radius:7px;opacity:.28}
+#tab-macro .mc-blabel{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-start;padding:0 9px;font-size:10px;color:var(--text2)}
+#tab-macro .mc-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+#tab-macro .mc-chip{font-family:'IBM Plex Mono',monospace;font-size:9.5px;padding:2px 7px;border-radius:5px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);direction:ltr}
+#tab-macro .mc-chip.weak{border-style:dashed;opacity:.7}
+#tab-macro .mc-split{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+@media(max-width:900px){#tab-macro .mc-split{grid-template-columns:1fr}}
+#tab-macro .mc-pad{padding:10px 14px 12px;font-size:11.5px;color:var(--text2)}
+#tab-macro .mc-arow{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid var(--border)}
+#tab-macro .mc-arow:last-child{border-bottom:0}
+#tab-macro .mc-arow .v{font-family:'IBM Plex Mono',monospace;direction:ltr;color:var(--text)}
+#tab-macro .mc-repwin{padding:8px 0;border-bottom:1px solid var(--border)}
+#tab-macro .mc-repwin:last-child{border-bottom:0}
+#tab-macro .mc-repd{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);direction:ltr;text-align:right}
+#tab-macro .mc-repn{font-size:11.5px;margin-top:2px}
+#tab-macro .mc-repn b{font-family:'IBM Plex Mono',monospace;color:var(--mcdn);direction:ltr;unicode-bidi:isolate}
+#tab-macro .mc-wnote{margin-top:9px;font-size:10.5px;color:var(--gold);line-height:1.65}
+#tab-macro .mc-foot{margin-top:14px;font-size:10.5px;color:var(--text3);line-height:1.8;border-top:1px solid var(--border);padding-top:11px}
+#tab-macro .mc-empty{padding:40px;text-align:center;color:var(--text3);font-size:13px}
+</style>
+<div class="mc-wrap">
+  <div class="mc-head"><h2>لو صار — محاكي المخاطر الكلية</h2></div>
+  <p class="mc-sub">اختر خطر — يجاوبك النظام: أي مجموعة من أسهمك تتأثر بشدة، وكم بالمئة، وكم بالدولار. الترتيب حسب الضرر على محفظتك أنت، والحاضر في الأخبار معلّم. يتحدث تلقائياً كل أسبوع.</p>
+  <div class="mc-surf" id="mc-surf" style="display:none"></div>
+  <div class="mc-grid" id="mc-grid" style="display:none">
+    <div class="mc-card"><h3>الأخطار — مرتّبة بضررها عليك</h3><div id="mc-rlist"></div></div>
+    <div>
+      <div class="mc-card">
+        <div class="mc-shead">
+          <div class="mc-stitle" id="mc-stitle"></div>
+          <div class="mc-ssub" id="mc-ssub"></div>
+          <div class="mc-sev" id="mc-sev"></div>
+        </div>
+        <div class="mc-impact">
+          <span class="mc-big" id="mc-impactn"></span>
+          <span class="mc-cap" id="mc-cap"></span>
+          <span class="mc-cover" id="mc-cover"></span>
+        </div>
+        <div class="mc-bands" id="mc-bands"></div>
+      </div>
+      <div class="mc-split">
+        <div class="mc-card"><h3>الافتراضات — معلنة</h3><div class="mc-pad" id="mc-assump"></div></div>
+        <div class="mc-card"><h3>آخر مرة صار فعلاً</h3><div class="mc-pad" id="mc-replays"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="mc-empty" id="mc-empty">جاري تحميل محاكي المخاطر…</div>
+  <div class="mc-foot" id="mc-foot" style="display:none"></div>
+</div>
+</div>
+
 <div id="tab-setup" class="tab-content"><div class="sub-pills"><div class="sub-pill" onclick="showTab('alerts',document.querySelector('[data-tab=alerts]'))">Alerts | التنبيهات</div></div>
   <div class="grid-2">
     <div class="card" style="display:none;">
@@ -3781,6 +3875,20 @@ function saFetch(body){
   var headers={'Content-Type':'application/json'};
   if(tok) headers['Authorization']='Bearer '+tok;
   return fetch('/api/sa-analyze',{method:'POST',headers:headers,body:JSON.stringify(body)});
+}
+
+// Session token + JSON headers for any endpoint that now requires auth.
+// Added 2026-08-21 alongside the server-side gating of /api/translate,
+// /api/chat, /api/market-pulse and the backtest routes — those endpoints spend
+// Anthropic credits or write data files and were previously open to the world.
+function sessionToken(){
+  try{ return localStorage.getItem('theisilabs_session')||''; }catch(e){ return ''; }
+}
+function authHeaders(extra){
+  var h = Object.assign({'Content-Type':'application/json'}, extra||{});
+  var t = sessionToken();
+  if(t) h['Authorization']='Bearer '+t;
+  return h;
 }
 
 // Active stocks array — populated after login
@@ -5448,7 +5556,7 @@ window.loadPulse = function(force){
   var nick = (window.currentNickname || window._nickname || 'rashed');
   fetch(MP_ENDPOINT, {
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers:authHeaders(),
     body: JSON.stringify({ mode:'pulse', nickname: nick, forceRefresh: !!force })
   })
   .then(function(r){ return r.json(); })
@@ -5816,6 +5924,7 @@ function showTab(name,el){
       if(typeof loadBriefData==='function') loadBriefData();
       if(typeof snapshotToday==='function') snapshotToday();
     }
+    if(name==='macro'){ try{ if(typeof loadMacroSim==='function') loadMacroSim(); }catch(e){} }
     if(name==='weights') renderWeights();
     if(name==='alerts') renderAlerts();
     if(name==='prompt') renderPrompt();
@@ -7143,7 +7252,7 @@ async function translateAnalysis(data){
       try{
         const r=await fetch('/api/translate',{
           method:'POST',
-          headers:{'Content-Type':'application/json'},
+          headers:authHeaders(),
           body:JSON.stringify({text:textToTranslate, date:cacheKey})
         });
         const d=await r.json();
@@ -7904,7 +8013,7 @@ async function lookupStock() {
       try {
         const tRes = await fetch('/api/translate', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify({ text: d.description.slice(0, 500), target: 'ar', date: 'lookup-desc' })
         });
         const tData = await tRes.json();
@@ -9455,7 +9564,7 @@ async function runBacktest(){
     showBtStep(res, 2, 4, 'تشغيل محرك التحليل بالبيانات التاريخية…', 'نفس البرومت المستخدم في Make.com · يستغرق 30-60 ثانية');
     const claudeResp = await fetch('/api/backtest-analyze', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: authHeaders(),
       body: JSON.stringify({
         portfolioText: _btState.snapshotText,
         date
@@ -9698,7 +9807,7 @@ async function downloadHistoricalData(retrySymbols = null) {
   if (retrySymbols) url += `&retry=${retrySymbols.join(',')}`;
 
   try {
-    const resp    = await fetch(url);
+    const resp    = await fetch(url, { headers: authHeaders() });
     const reader  = resp.body.getReader();
     const decoder = new TextDecoder();
     let buffer    = '';
@@ -9875,7 +9984,7 @@ async function runExtendedBacktest(){
     try {
       const resp = await fetch('/api/backtest-batch', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ date })
       });
 
@@ -9915,7 +10024,7 @@ async function runExtendedBacktest(){
     try {
       const resp = await fetch('/api/backtest-save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ runs: newResults })
       });
 
@@ -11069,7 +11178,9 @@ async function lookupTicker(sym){
   if (!nameEl) return;
   nameEl.placeholder = 'Looking up ' + sym + '…';
   try {
-    const r = await fetch('https://theisilabs.vercel.app/api/portfolio-for-ai?mode=ticker-lookup&symbol=' + encodeURIComponent(sym));
+    // Relative, not absolute: the hardcoded prod host made preview deployments and
+    // local runs silently hit production. mode=ticker-lookup is in PUBLIC_MODES.
+    const r = await fetch('/api/portfolio-for-ai?mode=ticker-lookup&symbol=' + encodeURIComponent(sym));
     if (r.ok) {
       const d = await r.json();
       if (selectedSym === sym) {
@@ -12518,7 +12629,7 @@ async function sendChatMsg() {
 
     const res = await fetch('/api/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify(body)
     });
 
@@ -12805,7 +12916,7 @@ const glossaryTooltip = {
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({
           message: `Define the financial/business term "${term}" in exactly this format — no other text:
 EN: [one clear sentence definition in English, max 20 words]
@@ -14489,7 +14600,9 @@ document.addEventListener('DOMContentLoaded',function(){
 // ═══ END CALM FIRST PAGE ENGINE ═══
 
 // ── Live data ──
-const _API='https://theisilabs.vercel.app';
+// Same-origin. Was hardcoded to the prod host, which made every preview
+// deployment and local run call production instead of itself.
+const _API='';
 const _GH='https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main';
 let _liveLoaded=false;
 
@@ -17056,7 +17169,7 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
     for(var i=0;i<list.length;i+=12){                   // small chunks to stay under the function timeout
       var chunk=list.slice(i,i+12);
       try{
-        var r=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texts:chunk,target:'en'})});
+        var r=await fetch('/api/translate',{method:'POST',headers:authHeaders(),body:JSON.stringify({texts:chunk,target:'en'})});
         var j=await r.json();
         if(j&&Array.isArray(j.translations)){ chunk.forEach(function(s,k){ var en=j.translations[k]; if(en&&en!==s) TRC[hh(s)]=en; }); saveCache(); applyCache(collectAr(document.body)); }
       }catch(e){}
@@ -17355,6 +17468,129 @@ body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-ri
     window.setViewMode(mode);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initView); else initView();
+})();
+</script>
+
+<script>
+// ═══ MACRO RISK SIMULATOR TAB («لو صار») ═══
+// Renders data/macro-{nick}-{date}.json (written weekly by api/risk.js).
+// Pure display: every number comes from the file; nothing is computed here
+// beyond layout percentages.
+(function(){
+"use strict";
+var MC={d:null,tried:false,cur:0,sev:0};
+var mcFmtK=function(n){var a=Math.abs(n);return (n<0?'−':'+')+'$'+(a>=1000?Math.round(a/1000)+'K':Math.round(a));};
+var mcEsc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+var MC_NAMES={ai:'فقاعة الذكاء الاصطناعي',market:'تصحيح سوق',rates:'الفائدة',china:'الصين وتايوان',oil:'نفط وهرمز',credit:'ائتمان',recession:'ركود',dollar:'الدولار',tariffs:'رسوم جمركية',inflation:'تضخم',safehaven:'هروب للأمان',energy:'طاقة'};
+
+window.loadMacroSim=function(){
+  if(MC.d||MC.tried){ if(MC.d) mcRenderAll(); return; }
+  MC.tried=true;
+  var nick='rashed'; try{ nick=(localStorage.getItem('theisilabs_nick')||'rashed').toLowerCase().trim()||'rashed'; }catch(e){}
+  var base='https://raw.githubusercontent.com/ralyafei-source/theisilabs-portfolio/main/data/macro-'+nick+'-';
+  (async function(){
+    for(var o=0;o<9;o++){
+      var ds=new Date(Date.now()+4*3600000-o*86400000).toISOString().slice(0,10);
+      var d=null;
+      try{ var r=await fetch(base+ds+'.json?t='+Date.now()); if(r.ok) d=await r.json(); }catch(e){}
+      if(!d){ try{ var r2=await fetch('/api/gh?path=data/macro-'+nick+'-'+ds+'.json'); if(r2.ok) d=await r2.json(); }catch(e){} }
+      if(d&&d.risks&&d.risks.length){ MC.d=d; mcRenderAll(); return; }
+    }
+    var em=document.getElementById('mc-empty');
+    if(em) em.textContent='ما في تحليل مخاطر كلية بعد — يتولّد تلقائياً كل أحد صباحاً.';
+  })();
+};
+
+function mcScen(){
+  var D=MC.d, SC=[];
+  D.risks.forEach(function(r){ if(r.sims&&r.sims.length&&r.sims[0].bands)
+    SC.push({kind:'factor',id:r.id,ar:r.ar,proxy:r.proxy,note:r.note_ar,salience:r.salience,sims:r.sims,windows:r.windows||[],dmg:r.sims[0].impact_usd}); });
+  (D.composites||[]).forEach(function(c){ if(c.bands&&c.bands.length)
+    SC.push({kind:'composite',id:c.scenario,ar:c.ar,salience:c.salience,assumptions:c.assumptions,sims:[c],windows:[],structNote:c.structural_note_ar,dmg:c.impact_usd}); });
+  SC.sort(function(a,b){return a.dmg-b.dmg;});
+  return SC;
+}
+
+function mcRenderAll(){
+  var D=MC.d;
+  document.getElementById('mc-empty').style.display='none';
+  document.getElementById('mc-grid').style.display='';
+  var surf=document.getElementById('mc-surf');
+  if(D.surfaced_risks&&D.surfaced_risks.length){
+    surf.style.display='';
+    surf.innerHTML='<span class="mc-pulse"></span><span style="color:var(--text3);letter-spacing:.07em;font-family:\'IBM Plex Mono\',monospace;font-size:10px">حاضر في أخبار اليوم</span>'+
+      D.surfaced_risks.map(function(s){return '<span class="mc-schip">'+mcEsc(MC_NAMES[s.id]||s.id)+'</span>';}).join('')+
+      '<span style="margin-inline-start:auto;color:var(--text3)">'+mcEsc(D.as_of)+'</span>';
+  } else { surf.style.display='none'; }
+  var foot=document.getElementById('mc-foot');
+  foot.style.display='';
+  foot.innerHTML='<b style="color:var(--text2)">من وين جت الأرقام:</b> حساسية كل سهم مقاسة من أسعار حقيقية (~500 يوم)، والنوافذ التاريخية حقيقية بتواريخها، والأخطار الحاضرة في الأخبار مرصودة بقواعد نصية — بدون أي حكم بشري أو ذكاء اصطناعي في الأرقام. التصنيف الدقيق للفئة يصيب قرابة النصف وضمن فئة مجاورة ~85% (تحقق مستقل 22-08-2026). '+mcEsc(D.caveat_ar||'')+
+    (D.scorecard&&D.scorecard.n?('<br><b style="color:var(--text2)">دقة النموذج الحيّة:</b> متوسط الخطأ '+D.scorecard.mae_pp+' نقطة مئوية على '+D.scorecard.n+' توقع متحقق.'):'<br>النموذج يجمّد توقعاته أسبوعياً ويصحح نفسه — سجل الدقة الحي يظهر هنا أول ما تتراكم توقعات متحققة.');
+  mcRenderList(); mcRenderScen();
+}
+
+function mcRenderList(){
+  var SC=mcScen(), max=Math.min.apply(null,SC.map(function(s){return s.dmg;}));
+  document.getElementById('mc-rlist').innerHTML=SC.map(function(s,i){
+    return '<button class="mc-rrow" aria-pressed="'+(i===MC.cur)+'" data-i="'+i+'">'+
+      '<div class="mc-rtop"><span class="mc-rname">'+mcEsc(s.ar)+'</span><span class="mc-rdmg">'+mcFmtK(s.dmg)+'</span></div>'+
+      '<div class="mc-rbar"><i style="width:'+Math.max(4,s.dmg/max*100)+'%"></i></div>'+
+      '<div class="mc-rmeta">'+(s.salience?'<span class="mc-news">● في الأخبار الآن</span>':'')+
+      '<span>'+(s.kind==='composite'?'سيناريو مركّب':'عامل واحد')+'</span></div></button>';
+  }).join('');
+  [].forEach.call(document.querySelectorAll('#tab-macro .mc-rrow'),function(b){
+    b.addEventListener('click',function(){MC.cur=+b.dataset.i;MC.sev=0;mcRenderList();mcRenderScen();});
+  });
+}
+
+function mcRenderScen(){
+  var SC=mcScen(), s=SC[MC.cur]; if(!s) return;
+  var sim=s.sims[Math.min(MC.sev,s.sims.length-1)];
+  document.getElementById('mc-stitle').textContent=s.ar;
+  document.getElementById('mc-ssub').textContent=s.kind==='composite'?'سيناريو مركّب — صدمة سوق + فروقات خاصة بكل قناة':'قناة واحدة: '+s.proxy+(s.note?' — '+s.note:'');
+  var sv=document.getElementById('mc-sev');
+  if(s.sims.length>1){
+    sv.style.display='flex';
+    sv.innerHTML=s.sims.map(function(x,i){return '<button class="mc-sevbtn" aria-pressed="'+(i===MC.sev)+'" data-i="'+i+'">'+(i===0?'متوسط':(i===1?'حاد':'أقصى'))+' <span style="font-family:\'IBM Plex Mono\',monospace;direction:ltr;unicode-bidi:isolate">'+x.shock_pct+'%</span></button>';}).join('');
+    [].forEach.call(sv.querySelectorAll('.mc-sevbtn'),function(b){b.addEventListener('click',function(){MC.sev=+b.dataset.i;mcRenderScen();});});
+  } else sv.style.display='none';
+  document.getElementById('mc-impactn').textContent=mcFmtK(sim.impact_usd);
+  document.getElementById('mc-cap').innerHTML='لو تحقق هذا الخطر — تقدير الأثر على الجزء المغطى (<span style="font-family:\'IBM Plex Mono\',monospace;direction:ltr;unicode-bidi:isolate">'+sim.impact_pct+'%</span>)';
+  document.getElementById('mc-cover').textContent='المغطى: $'+(sim.covered_value||0).toLocaleString('en-US')+' من $'+(sim.total_value||0).toLocaleString('en-US');
+  var namesBySym={}; ((s.sims[0]||{}).names||[]).forEach(function(n){namesBySym[n.sym]=n;});
+  var covV=sim.covered_value||1;
+  document.getElementById('mc-bands').innerHTML=(sim.bands||[]).map(function(b){
+    var share=Math.round(b.value/covV*100);
+    var chips=(b.syms||[]).map(function(sy){var n=namesBySym[sy];var weak=n&&n.weak;
+      return '<span class="mc-chip'+(weak?' weak':'')+'">'+sy+(n&&n.est_pct!=null?' <b>'+n.est_pct+'%</b>':'')+(weak?' ~':'')+'</span>';}).join('');
+    return '<div class="mc-band"><div class="mc-bhead"><span class="mc-bname" style="color:'+b.color+'">'+mcEsc(b.ar)+' · '+b.count+'</span>'+
+      '<span class="mc-bnums">$'+b.value.toLocaleString('en-US')+' · '+b.pct+'% · <b>'+mcFmtK(b.impact_usd)+'</b></span></div>'+
+      '<div class="mc-btrack"><div class="mc-bfill" style="width:'+Math.max(3,share)+'%;background:'+b.color+'"></div>'+
+      '<div class="mc-blabel">'+share+'% من قيمة المحفظة المغطاة</div></div>'+
+      '<div class="mc-chips">'+chips+'</div></div>';
+  }).join('')+((sim.weak_names&&sim.weak_names.length)?'<div class="mc-wnote">⚠ المعلّم بـ ~ : العوامل الكلية تفسّر أقل من 15% من حركته — مخاطره غالباً خاصة بالشركة ('+sim.weak_names.join('، ')+')</div>':'');
+  var A=document.getElementById('mc-assump');
+  if(s.kind==='composite'&&s.assumptions){
+    A.innerHTML='<div class="mc-arow"><span>صدمة السوق ('+mcEsc(s.assumptions.market.proxy)+')</span><span class="v">'+s.assumptions.market.shock_pct+'%</span></div>'+
+      (s.assumptions.channels||[]).map(function(c){return '<div class="mc-arow"><span>'+mcEsc(c.why_ar||c.proxy)+'</span><span class="v">'+(c.spread_pct>0?'+':'')+c.spread_pct+'pp</span></div>';}).join('')+
+      (s.structNote?'<div style="margin-top:8px;font-size:10px;color:var(--text3)">'+mcEsc(s.structNote)+'</div>':'');
+  } else {
+    A.innerHTML='<div class="mc-arow"><span>الصدمة على '+mcEsc(s.proxy)+'</span><span class="v">'+sim.shock_pct+'%</span></div>'+
+      '<div class="mc-arow"><span>الطريقة</span><span style="font-size:10.5px">بيتا مقاسة لكل سهم × الصدمة</span></div>'+
+      '<div class="mc-arow"><span>العيّنة</span><span class="v">~500 يوم</span></div>';
+  }
+  var R=document.getElementById('mc-replays');
+  if(s.windows&&s.windows.length){
+    R.innerHTML=s.windows.map(function(w){
+      var worst=(w.names||[]).slice(0,4).map(function(n){return n.sym+' <b>'+n.move_pct+'%</b>';}).join(' · ');
+      return '<div class="mc-repwin"><div class="mc-repd">'+mcEsc(w.from)+' → '+mcEsc(w.to)+'</div>'+
+        '<div class="mc-repn">'+mcEsc(s.proxy)+' <b>'+w.factor_pct+'%</b>'+(w.bench_pct!=null?' مقابل السوق <b>'+w.bench_pct+'%</b>':'')+' — محفظتك الحالية كانت بتتحرك <b>'+w.book_pct+'%</b> ('+mcFmtK(w.impact_usd)+')</div>'+
+        '<div class="mc-repn" style="font-size:10.5px;color:var(--text3)">الأسوأ: '+worst+'</div></div>';
+    }).join('');
+  } else {
+    R.innerHTML='<div style="font-size:11px;color:var(--text3);line-height:1.7">هذا السيناريو ما صار بهذا الشكل في تاريخ الأسعار — التقدير مبني على تفكيكه لقنوات مقاسة والافتراضات معلنة جنبه. أول ما يصير حدث مشابه تظهر إعادة التشغيل هنا.</div>';
+  }
+}
 })();
 </script>
 
