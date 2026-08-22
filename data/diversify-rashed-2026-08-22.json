@@ -1,0 +1,1047 @@
+{
+  "as_of": "2026-08-22",
+  "sa_date": "2026-08-21",
+  "ok": true,
+  "window": {
+    "from": "2025-02-13",
+    "to": "2026-08-21",
+    "days": 382
+  },
+  "coverage": {
+    "names": 46,
+    "total_names": 46,
+    "covered_value": 627837,
+    "total_value": 627837,
+    "coverage_pct": 100,
+    "skipped": []
+  },
+  "bets": {
+    "effective_bets_weighted": 1.68,
+    "top_bet_share_pct": 90.1,
+    "top_bet_names": [
+      "SPUS",
+      "VOO",
+      "SPY",
+      "SMH",
+      "SOFI"
+    ],
+    "second_bet_names": [
+      "ADBE",
+      "CRM",
+      "IOT",
+      "MSFT",
+      "AAPL"
+    ],
+    "distribution": [
+      0.90103,
+      0.00065,
+      0.05305,
+      0.01042,
+      0.00002,
+      0.0011,
+      0.00005,
+      0.00007,
+      0.00115,
+      0.00022
+    ],
+    "if_equal_weighted": 1.35,
+    "equal_weight_note_ar": "لو وزّعت نفس الأسماء بالتساوي، عدد الرهانات ينزل إلى 1.35 بدل 1.68 — لأن أكبر مركز عندك هو نفسه اللي يفرّق حركتك عن السوق."
+  },
+  "layers": {
+    "ann_vol_pct": 30.3,
+    "factors": [
+      {
+        "sym": "SPY",
+        "ar": "السوق الأمريكي",
+        "beta": 1.4,
+        "share": 0.6604
+      },
+      {
+        "sym": "GLD",
+        "ar": "الذهب",
+        "beta": 0.36,
+        "share": 0.0929
+      },
+      {
+        "sym": "SMH",
+        "ar": "أشباه الموصلات",
+        "beta": 0.24,
+        "share": 0.0344
+      },
+      {
+        "sym": "IWM",
+        "ar": "الشركات الصغيرة",
+        "beta": 0.4,
+        "share": 0.0206
+      },
+      {
+        "sym": "TLT",
+        "ar": "الفائدة",
+        "beta": -0.22,
+        "share": 0.0065
+      },
+      {
+        "sym": "UUP",
+        "ar": "الدولار",
+        "beta": -0.19,
+        "share": 0.0018
+      },
+      {
+        "sym": "USO",
+        "ar": "النفط",
+        "beta": -0.01,
+        "share": 0.0001
+      }
+    ],
+    "specific_pct": 18.3
+  },
+  "you": {
+    "ret_pct": 39.9,
+    "vol_pct": 30.3,
+    "maxdd_pct": -25.6
+  },
+  "if_equal_weighted": {
+    "ret_pct": 35.9,
+    "vol_pct": 30.8,
+    "maxdd_pct": -27.7
+  },
+  "worst_days": {
+    "n": 20,
+    "avg_pct": -4.22,
+    "worst_pct": -7.33
+  },
+  "menu": [
+    {
+      "sym": "BTAL",
+      "ar": "ضد بيتا السوق",
+      "group": "استراتيجيات بديلة",
+      "corr": -0.75,
+      "beta_down": -0.53,
+      "beta_up": -0.55,
+      "on_worst_days_pct": 2.35,
+      "rose_on": 19,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": -23.6,
+        "vol_pct": 23.7,
+        "maxdd_pct": -49.1
+      },
+      "reacts": {
+        "SPY": -0.92,
+        "GLD": -0.16,
+        "SMH": -0.48,
+        "IWM": -0.81,
+        "TLT": -0.14,
+        "UUP": 0.03,
+        "USO": 0.08
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 31.7,
+        "vol_pct": 25.5,
+        "maxdd_pct": -22.3
+      }
+    },
+    {
+      "sym": "UUP",
+      "ar": "الدولار",
+      "group": "عملات",
+      "corr": -0.15,
+      "beta_down": 0,
+      "beta_up": -0.04,
+      "on_worst_days_pct": 0,
+      "rose_on": 13,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": -3,
+        "vol_pct": 7.5,
+        "maxdd_pct": -9.9
+      },
+      "reacts": {
+        "SPY": 0,
+        "GLD": -0.12,
+        "SMH": 0,
+        "IWM": -0.01,
+        "TLT": -0.09,
+        "UUP": 1,
+        "USO": 0.03
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 34.9,
+        "vol_pct": 27.2,
+        "maxdd_pct": -23.6
+      }
+    },
+    {
+      "sym": "USO",
+      "ar": "نفط",
+      "group": "سلع",
+      "corr": -0.05,
+      "beta_down": 0.35,
+      "beta_up": -0.07,
+      "on_worst_days_pct": -1.23,
+      "rose_on": 7,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 45.5,
+        "vol_pct": 43.9,
+        "maxdd_pct": -32.5
+      },
+      "reacts": {
+        "SPY": -0.09,
+        "GLD": -0.03,
+        "SMH": -0.05,
+        "IWM": -0.21,
+        "TLT": -1.11,
+        "UUP": 1.18,
+        "USO": 1
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 40.5,
+        "vol_pct": 27.4,
+        "maxdd_pct": -24.9
+      }
+    },
+    {
+      "sym": "SHY",
+      "ar": "سندات حكومية قصيرة",
+      "group": "سندات",
+      "corr": -0.03,
+      "beta_down": -0.01,
+      "beta_up": 0,
+      "on_worst_days_pct": 0.02,
+      "rose_on": 12,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 0,
+        "vol_pct": 1.8,
+        "maxdd_pct": -1.7
+      },
+      "reacts": {
+        "SPY": 0,
+        "GLD": 0.01,
+        "SMH": 0,
+        "IWM": 0,
+        "TLT": 0.09,
+        "UUP": -0.07,
+        "USO": -0.01
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 35.3,
+        "vol_pct": 27.3,
+        "maxdd_pct": -23.3
+      }
+    },
+    {
+      "sym": "XLP",
+      "ar": "سلع استهلاكية أساسية",
+      "group": "أسهم دفاعية",
+      "corr": -0.03,
+      "beta_down": -0.06,
+      "beta_up": 0.1,
+      "on_worst_days_pct": 0.1,
+      "rose_on": 11,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 3.7,
+        "vol_pct": 14.8,
+        "maxdd_pct": -9.9
+      },
+      "reacts": {
+        "SPY": 0.17,
+        "GLD": 0.01,
+        "SMH": -0.05,
+        "IWM": 0.13,
+        "TLT": 0.25,
+        "UUP": -0.14,
+        "USO": -0.02
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 35.8,
+        "vol_pct": 27.3,
+        "maxdd_pct": -23.9
+      }
+    },
+    {
+      "sym": "IEF",
+      "ar": "سندات حكومية ١٠ سنوات",
+      "group": "سندات",
+      "corr": -0.02,
+      "beta_down": -0.03,
+      "beta_up": 0,
+      "on_worst_days_pct": 0.09,
+      "rose_on": 12,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": -0.1,
+        "vol_pct": 5.4,
+        "maxdd_pct": -5.3
+      },
+      "reacts": {
+        "SPY": 0.01,
+        "GLD": 0.03,
+        "SMH": 0,
+        "IWM": 0.02,
+        "TLT": 0.43,
+        "UUP": -0.19,
+        "USO": -0.04
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 35.3,
+        "vol_pct": 27.3,
+        "maxdd_pct": -23.2
+      }
+    },
+    {
+      "sym": "TLT",
+      "ar": "سندات حكومية ٢٠ سنة",
+      "group": "سندات",
+      "corr": 0.06,
+      "beta_down": -0.04,
+      "beta_up": 0.05,
+      "on_worst_days_pct": 0.04,
+      "rose_on": 12,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": -5,
+        "vol_pct": 11.1,
+        "maxdd_pct": -12.4
+      },
+      "reacts": {
+        "SPY": 0.1,
+        "GLD": 0.03,
+        "SMH": 0.02,
+        "IWM": 0.09,
+        "TLT": 1,
+        "UUP": -0.2,
+        "USO": -0.07
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 34.6,
+        "vol_pct": 27.4,
+        "maxdd_pct": -23.4
+      }
+    },
+    {
+      "sym": "TIP",
+      "ar": "سندات مربوطة بالتضخم",
+      "group": "سندات",
+      "corr": 0.06,
+      "beta_down": 0,
+      "beta_up": 0.02,
+      "on_worst_days_pct": -0.02,
+      "rose_on": 10,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": -0.8,
+        "vol_pct": 4.4,
+        "maxdd_pct": -4.8
+      },
+      "reacts": {
+        "SPY": 0.03,
+        "GLD": 0.03,
+        "SMH": 0.01,
+        "IWM": 0.03,
+        "TLT": 0.31,
+        "UUP": -0.12,
+        "USO": -0.01
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 35.2,
+        "vol_pct": 27.3,
+        "maxdd_pct": -23.3
+      }
+    },
+    {
+      "sym": "DBC",
+      "ar": "سلع واسعة",
+      "group": "سلع",
+      "corr": 0.16,
+      "beta_down": 0.34,
+      "beta_up": 0.03,
+      "on_worst_days_pct": -1.22,
+      "rose_on": 4,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 24.6,
+        "vol_pct": 19.3,
+        "maxdd_pct": -16.5
+      },
+      "reacts": {
+        "SPY": 0.1,
+        "GLD": 0.2,
+        "SMH": 0.05,
+        "IWM": 0.04,
+        "TLT": -0.47,
+        "UUP": 0.3,
+        "USO": 0.39
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 38.3,
+        "vol_pct": 27.6,
+        "maxdd_pct": -24.4
+      }
+    },
+    {
+      "sym": "XLE",
+      "ar": "قطاع الطاقة",
+      "group": "أصول حقيقية",
+      "corr": 0.21,
+      "beta_down": 0.46,
+      "beta_up": 0.21,
+      "on_worst_days_pct": -1.65,
+      "rose_on": 7,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 26,
+        "vol_pct": 24.7,
+        "maxdd_pct": -18.8
+      },
+      "reacts": {
+        "SPY": 0.49,
+        "GLD": -0.01,
+        "SMH": 0.12,
+        "IWM": 0.36,
+        "TLT": -0.27,
+        "UUP": 0.57,
+        "USO": 0.36
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 38.5,
+        "vol_pct": 27.9,
+        "maxdd_pct": -24.8
+      }
+    },
+    {
+      "sym": "XLU",
+      "ar": "مرافق",
+      "group": "أسهم دفاعية",
+      "corr": 0.23,
+      "beta_down": 0.11,
+      "beta_up": 0.19,
+      "on_worst_days_pct": -0.6,
+      "rose_on": 8,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 5,
+        "vol_pct": 15.9,
+        "maxdd_pct": -10.4
+      },
+      "reacts": {
+        "SPY": 0.32,
+        "GLD": 0.09,
+        "SMH": 0.08,
+        "IWM": 0.25,
+        "TLT": 0.39,
+        "UUP": -0.15,
+        "USO": 0.01
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 36,
+        "vol_pct": 27.7,
+        "maxdd_pct": -24.1
+      }
+    },
+    {
+      "sym": "XLV",
+      "ar": "رعاية صحية",
+      "group": "أسهم دفاعية",
+      "corr": 0.24,
+      "beta_down": 0.14,
+      "beta_up": 0.23,
+      "on_worst_days_pct": -0.57,
+      "rose_on": 6,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 12.4,
+        "vol_pct": 17.5,
+        "maxdd_pct": -14
+      },
+      "reacts": {
+        "SPY": 0.44,
+        "GLD": 0.06,
+        "SMH": 0.06,
+        "IWM": 0.36,
+        "TLT": 0.37,
+        "UUP": -0.17,
+        "USO": -0.05
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 36.9,
+        "vol_pct": 27.7,
+        "maxdd_pct": -24.1
+      }
+    },
+    {
+      "sym": "DBA",
+      "ar": "سلع زراعية",
+      "group": "سلع",
+      "corr": 0.25,
+      "beta_down": 0.13,
+      "beta_up": 0.11,
+      "on_worst_days_pct": -0.58,
+      "rose_on": 6,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 0.3,
+        "vol_pct": 12.5,
+        "maxdd_pct": -11
+      },
+      "reacts": {
+        "SPY": 0.19,
+        "GLD": 0.05,
+        "SMH": 0.06,
+        "IWM": 0.14,
+        "TLT": -0.01,
+        "UUP": -0.02,
+        "USO": 0.07
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 35.4,
+        "vol_pct": 27.6,
+        "maxdd_pct": -24.2
+      }
+    },
+    {
+      "sym": "LQD",
+      "ar": "سندات شركات ممتازة",
+      "group": "سندات",
+      "corr": 0.29,
+      "beta_down": 0.02,
+      "beta_up": 0.1,
+      "on_worst_days_pct": -0.15,
+      "rose_on": 9,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": -1,
+        "vol_pct": 6.4,
+        "maxdd_pct": -6.4
+      },
+      "reacts": {
+        "SPY": 0.15,
+        "GLD": 0.04,
+        "SMH": 0.05,
+        "IWM": 0.13,
+        "TLT": 0.51,
+        "UUP": -0.16,
+        "USO": -0.04
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 35.2,
+        "vol_pct": 27.5,
+        "maxdd_pct": -23.5
+      }
+    },
+    {
+      "sym": "VNQ",
+      "ar": "عقار مدرّج",
+      "group": "أصول حقيقية",
+      "corr": 0.33,
+      "beta_down": 0.15,
+      "beta_up": 0.29,
+      "on_worst_days_pct": -0.78,
+      "rose_on": 6,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 4.6,
+        "vol_pct": 16.2,
+        "maxdd_pct": -15.4
+      },
+      "reacts": {
+        "SPY": 0.49,
+        "GLD": 0.07,
+        "SMH": 0.09,
+        "IWM": 0.44,
+        "TLT": 0.48,
+        "UUP": -0.2,
+        "USO": -0.02
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 35.9,
+        "vol_pct": 27.8,
+        "maxdd_pct": -24.5
+      }
+    },
+    {
+      "sym": "GLD",
+      "ar": "ذهب",
+      "group": "سلع",
+      "corr": 0.43,
+      "beta_down": 0.5,
+      "beta_up": 0.32,
+      "on_worst_days_pct": -1.92,
+      "rose_on": 4,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 34.5,
+        "vol_pct": 26.2,
+        "maxdd_pct": -26.4
+      },
+      "reacts": {
+        "SPY": 0.23,
+        "GLD": 1,
+        "SMH": 0.14,
+        "IWM": 0.24,
+        "TLT": 0.17,
+        "UUP": -1.5,
+        "USO": -0.01
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 39.4,
+        "vol_pct": 28.5,
+        "maxdd_pct": -23.3
+      }
+    },
+    {
+      "sym": "INDA",
+      "ar": "أسهم الهند",
+      "group": "أسهم خارج أمريكا",
+      "corr": 0.43,
+      "beta_down": 0.25,
+      "beta_up": 0.3,
+      "on_worst_days_pct": -1.08,
+      "rose_on": 1,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": -1,
+        "vol_pct": 15.6,
+        "maxdd_pct": -18.7
+      },
+      "reacts": {
+        "SPY": 0.46,
+        "GLD": 0.12,
+        "SMH": 0.15,
+        "IWM": 0.34,
+        "TLT": 0.19,
+        "UUP": -0.43,
+        "USO": -0.12
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 35.2,
+        "vol_pct": 28,
+        "maxdd_pct": -23.5
+      }
+    },
+    {
+      "sym": "USMV",
+      "ar": "أسهم أقل تذبذباً",
+      "group": "أسهم دفاعية",
+      "corr": 0.43,
+      "beta_down": 0.19,
+      "beta_up": 0.25,
+      "on_worst_days_pct": -0.78,
+      "rose_on": 4,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 5.3,
+        "vol_pct": 11.6,
+        "maxdd_pct": -9.7
+      },
+      "reacts": {
+        "SPY": 0.45,
+        "GLD": 0.05,
+        "SMH": 0.09,
+        "IWM": 0.32,
+        "TLT": 0.24,
+        "UUP": -0.12,
+        "USO": 0
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 36,
+        "vol_pct": 27.8,
+        "maxdd_pct": -24.1
+      }
+    },
+    {
+      "sym": "IGF",
+      "ar": "بنية تحتية",
+      "group": "أصول حقيقية",
+      "corr": 0.46,
+      "beta_down": 0.2,
+      "beta_up": 0.25,
+      "on_worst_days_pct": -0.84,
+      "rose_on": 3,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 13,
+        "vol_pct": 12.7,
+        "maxdd_pct": -8.7
+      },
+      "reacts": {
+        "SPY": 0.39,
+        "GLD": 0.16,
+        "SMH": 0.13,
+        "IWM": 0.32,
+        "TLT": 0.3,
+        "UUP": -0.56,
+        "USO": 0
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 37,
+        "vol_pct": 27.9,
+        "maxdd_pct": -23.9
+      }
+    },
+    {
+      "sym": "DBMF",
+      "ar": "عقود آجلة مُدارة",
+      "group": "استراتيجيات بديلة",
+      "corr": 0.46,
+      "beta_down": 0.27,
+      "beta_up": 0.12,
+      "on_worst_days_pct": -1.36,
+      "rose_on": 1,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 11.3,
+        "vol_pct": 11.9,
+        "maxdd_pct": -8.3
+      },
+      "reacts": {
+        "SPY": 0.23,
+        "GLD": 0.21,
+        "SMH": 0.12,
+        "IWM": 0.2,
+        "TLT": -0.06,
+        "UUP": -0.1,
+        "USO": 0.09
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 36.8,
+        "vol_pct": 27.8,
+        "maxdd_pct": -24
+      }
+    },
+    {
+      "sym": "FXI",
+      "ar": "أسهم صينية كبرى",
+      "group": "أسهم خارج أمريكا",
+      "corr": 0.49,
+      "beta_down": 0.45,
+      "beta_up": 0.42,
+      "on_worst_days_pct": -2.14,
+      "rose_on": 0,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 3.3,
+        "vol_pct": 23.7,
+        "maxdd_pct": -24.3
+      },
+      "reacts": {
+        "SPY": 0.69,
+        "GLD": 0.26,
+        "SMH": 0.26,
+        "IWM": 0.51,
+        "TLT": 0.14,
+        "UUP": -0.71,
+        "USO": 0
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 35.8,
+        "vol_pct": 28.5,
+        "maxdd_pct": -24.8
+      }
+    },
+    {
+      "sym": "IBIT",
+      "ar": "بتكوين",
+      "group": "أصول رقمية",
+      "corr": 0.52,
+      "beta_down": 0.77,
+      "beta_up": 0.74,
+      "on_worst_days_pct": -3.35,
+      "rose_on": 3,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": -13.9,
+        "vol_pct": 44.5,
+        "maxdd_pct": -53.3
+      },
+      "reacts": {
+        "SPY": 1.12,
+        "GLD": 0.37,
+        "SMH": 0.43,
+        "IWM": 0.97,
+        "TLT": 0.04,
+        "UUP": -0.66,
+        "USO": 0
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 33.3,
+        "vol_pct": 29.8,
+        "maxdd_pct": -25.3
+      }
+    },
+    {
+      "sym": "SLV",
+      "ar": "فضة",
+      "group": "سلع",
+      "corr": 0.53,
+      "beta_down": 1.51,
+      "beta_up": 0.64,
+      "on_worst_days_pct": -6.11,
+      "rose_on": 3,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 64.8,
+        "vol_pct": 54.8,
+        "maxdd_pct": -52.3
+      },
+      "reacts": {
+        "SPY": 0.83,
+        "GLD": 1.65,
+        "SMH": 0.43,
+        "IWM": 0.72,
+        "TLT": 0.1,
+        "UUP": -2.22,
+        "USO": -0.05
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 42.2,
+        "vol_pct": 30.5,
+        "maxdd_pct": -24.1
+      }
+    },
+    {
+      "sym": "HYG",
+      "ar": "سندات شركات عالية العائد",
+      "group": "سندات",
+      "corr": 0.62,
+      "beta_down": 0.1,
+      "beta_up": 0.15,
+      "on_worst_days_pct": -0.47,
+      "rose_on": 2,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 0,
+        "vol_pct": 5.3,
+        "maxdd_pct": -5.5
+      },
+      "reacts": {
+        "SPY": 0.24,
+        "GLD": 0.03,
+        "SMH": 0.08,
+        "IWM": 0.19,
+        "TLT": 0.2,
+        "UUP": -0.07,
+        "USO": -0.01
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 35.3,
+        "vol_pct": 27.6,
+        "maxdd_pct": -23.8
+      }
+    },
+    {
+      "sym": "VGK",
+      "ar": "أسهم أوروبا",
+      "group": "أسهم خارج أمريكا",
+      "corr": 0.66,
+      "beta_down": 0.38,
+      "beta_up": 0.49,
+      "on_worst_days_pct": -1.62,
+      "rose_on": 1,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 20.4,
+        "vol_pct": 17.6,
+        "maxdd_pct": -14.7
+      },
+      "reacts": {
+        "SPY": 0.73,
+        "GLD": 0.25,
+        "SMH": 0.26,
+        "IWM": 0.56,
+        "TLT": 0.43,
+        "UUP": -0.94,
+        "USO": -0.09
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 37.8,
+        "vol_pct": 28.5,
+        "maxdd_pct": -24.2
+      }
+    },
+    {
+      "sym": "EWJ",
+      "ar": "أسهم اليابان",
+      "group": "أسهم خارج أمريكا",
+      "corr": 0.67,
+      "beta_down": 0.5,
+      "beta_up": 0.6,
+      "on_worst_days_pct": -2.45,
+      "rose_on": 1,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 23.4,
+        "vol_pct": 22,
+        "maxdd_pct": -14.5
+      },
+      "reacts": {
+        "SPY": 0.88,
+        "GLD": 0.28,
+        "SMH": 0.36,
+        "IWM": 0.69,
+        "TLT": 0.31,
+        "UUP": -0.68,
+        "USO": -0.08
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 38.2,
+        "vol_pct": 28.8,
+        "maxdd_pct": -24.3
+      }
+    },
+    {
+      "sym": "EFA",
+      "ar": "أسهم دول متقدمة",
+      "group": "أسهم خارج أمريكا",
+      "corr": 0.7,
+      "beta_down": 0.41,
+      "beta_up": 0.5,
+      "on_worst_days_pct": -1.84,
+      "rose_on": 1,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 20.3,
+        "vol_pct": 17.4,
+        "maxdd_pct": -14.1
+      },
+      "reacts": {
+        "SPY": 0.76,
+        "GLD": 0.25,
+        "SMH": 0.28,
+        "IWM": 0.59,
+        "TLT": 0.39,
+        "UUP": -0.82,
+        "USO": -0.08
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 37.8,
+        "vol_pct": 28.5,
+        "maxdd_pct": -24.2
+      }
+    },
+    {
+      "sym": "EEM",
+      "ar": "أسهم ناشئة",
+      "group": "أسهم خارج أمريكا",
+      "corr": 0.75,
+      "beta_down": 0.66,
+      "beta_up": 0.56,
+      "on_worst_days_pct": -2.82,
+      "rose_on": 0,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 32.1,
+        "vol_pct": 23.4,
+        "maxdd_pct": -15
+      },
+      "reacts": {
+        "SPY": 0.93,
+        "GLD": 0.36,
+        "SMH": 0.47,
+        "IWM": 0.73,
+        "TLT": 0.38,
+        "UUP": -0.84,
+        "USO": -0.1
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 39.1,
+        "vol_pct": 29.1,
+        "maxdd_pct": -24.5
+      }
+    },
+    {
+      "sym": "IWM",
+      "ar": "شركات أمريكية صغيرة",
+      "group": "أسهم أمريكية",
+      "corr": 0.8,
+      "beta_down": 0.58,
+      "beta_up": 0.58,
+      "on_worst_days_pct": -2.54,
+      "rose_on": 0,
+      "of_worst": 20,
+      "own": {
+        "ret_pct": 20.5,
+        "vol_pct": 21.7,
+        "maxdd_pct": -23.1
+      },
+      "reacts": {
+        "SPY": 1.07,
+        "GLD": 0.16,
+        "SMH": 0.4,
+        "IWM": 1,
+        "TLT": 0.35,
+        "UUP": -0.1,
+        "USO": -0.05
+      },
+      "at_blend": {
+        "weight_pct": 10,
+        "ret_pct": 37.9,
+        "vol_pct": 29,
+        "maxdd_pct": -25.3
+      }
+    }
+  ],
+  "factors_used": [
+    {
+      "sym": "SPY",
+      "ar": "السوق الأمريكي"
+    },
+    {
+      "sym": "GLD",
+      "ar": "الذهب"
+    },
+    {
+      "sym": "SMH",
+      "ar": "أشباه الموصلات"
+    },
+    {
+      "sym": "IWM",
+      "ar": "الشركات الصغيرة"
+    },
+    {
+      "sym": "TLT",
+      "ar": "الفائدة"
+    },
+    {
+      "sym": "UUP",
+      "ar": "الدولار"
+    },
+    {
+      "sym": "USO",
+      "ar": "النفط"
+    }
+  ],
+  "candidates_missing": [],
+  "caveat_ar": "قياس تاريخي على النافذة المذكورة — مو تنبؤ. الترتيب حسب الاستقلالية فقط، وما فيه أي ترشيح. القرار في النهاية عندك.",
+  "disclaimer_ar": "تحليل معلوماتي — ليست نصيحة مالية"
+}
